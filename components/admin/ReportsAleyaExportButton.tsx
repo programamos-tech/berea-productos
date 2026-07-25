@@ -99,8 +99,9 @@ export function ReportsAleyaExportButton({
             Mes a exportar
           </p>
           <p className="mt-1 text-xs leading-relaxed text-stone-500 dark:text-zinc-400">
-            Productos vendidos en el mes, con costos y utilidad. Los totales
-            deben cuadrar con el resumen de reportes.
+            Productos vendidos en el mes, con costos, utilidad y stock (inicio,
+            vendido y restante). Los totales deben cuadrar con el resumen de
+            reportes.
           </p>
           <input
             type="month"

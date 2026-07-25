@@ -4,9 +4,12 @@ import {
   fetchOrdersCreatedInReportYmdWindow,
 } from "@/lib/admin-fetch-orders-for-report";
 import {
+  addCalendarDaysReport,
+  createdAtBoundsForReportYmdRange,
   dayInRange,
   monthAleyaLabel,
   reportCalendarDayKeyFromIso,
+  todayYmdInReportStore,
 } from "@/lib/admin-report-range";
 import {
   lineNetGrossCents,
@@ -42,11 +45,19 @@ export type AleyaExportMonthStats = {
   marginPesos: number;
 };
 
+/** Stock del mes: inicio reconstruido, vendido y restante actual. */
+export type AleyaExportStockStats = {
+  stockStart: number;
+  stockSold: number;
+  stockLeft: number;
+};
+
 export type AleyaExportSoldRow = {
   product: AleyaExportCatalogProduct | null;
   displayName: string;
   reference: string | null;
   month: AleyaExportMonthStats;
+  stock: AleyaExportStockStats;
 };
 
 export type AleyaExportPayload = {
@@ -97,12 +108,198 @@ function emptyMonthStats(): AleyaExportMonthStats {
   };
 }
 
+function emptyStockStats(): AleyaExportStockStats {
+  return { stockStart: 0, stockSold: 0, stockLeft: 0 };
+}
+
 function addMonth(target: AleyaExportMonthStats, delta: AleyaExportMonthStats): void {
   target.qty += delta.qty;
   target.ivaAlePesos += delta.ivaAlePesos;
   target.costGrossPesos += delta.costGrossPesos;
   target.salesGrossPesos += delta.salesGrossPesos;
   target.marginPesos += delta.marginPesos;
+}
+
+function addStock(target: AleyaExportStockStats, delta: AleyaExportStockStats): void {
+  target.stockStart += delta.stockStart;
+  target.stockSold += delta.stockSold;
+  target.stockLeft += delta.stockLeft;
+}
+
+function floorQty(v: unknown): number {
+  return Math.max(0, Math.floor(Number(v ?? 0)));
+}
+
+/**
+ * Variación neta de unidades desde el inicio del mes hasta hoy
+ * (ajustes manuales + altas de producto). Las ventas se reconstruyen aparte.
+ */
+async function fetchNetStockAdjustmentsSince(
+  supabase: SupabaseClient,
+  fromYmd: string,
+  toYmd: string,
+  productIds: Set<string>,
+): Promise<Map<string, number>> {
+  const deltas = new Map<string, number>();
+  if (productIds.size === 0) return deltas;
+
+  const bounds = createdAtBoundsForReportYmdRange(fromYmd, toYmd);
+  if (!bounds) return deltas;
+
+  const pageSize = 400;
+  let offset = 0;
+
+  while (true) {
+    const { data, error } = await supabase
+      .from("admin_activity_log")
+      .select("action_type, entity_id, metadata")
+      .gte("created_at", bounds.gte)
+      .lt("created_at", bounds.lt)
+      .in("action_type", ["stock_adjusted", "product_created"])
+      .order("created_at", { ascending: true })
+      .range(offset, offset + pageSize - 1);
+
+    if (error) {
+      console.error("[aleya-export] stock adjustments:", error.message);
+      break;
+    }
+
+    const rows = data ?? [];
+    for (const row of rows) {
+      const action = String(row.action_type ?? "");
+      const productId = row.entity_id != null ? String(row.entity_id) : "";
+      if (!productId || !productIds.has(productId)) continue;
+      const m = (row.metadata ?? {}) as Record<string, unknown>;
+
+      if (action === "stock_adjusted") {
+        const prev = floorQty(m.previous_local) + floorQty(m.previous_warehouse);
+        const next = floorQty(m.next_local) + floorQty(m.next_warehouse);
+        deltas.set(productId, (deltas.get(productId) ?? 0) + (next - prev));
+        continue;
+      }
+
+      if (action === "product_created") {
+        const qty = floorQty(m.stock_local) + floorQty(m.stock_warehouse);
+        deltas.set(productId, (deltas.get(productId) ?? 0) + qty);
+      }
+    }
+
+    if (rows.length < pageSize) break;
+    offset += pageSize;
+  }
+
+  return deltas;
+}
+
+/** Unidades vendidas (pedidos pagados) desde fromYmd hasta toYmd, por producto. */
+async function fetchPaidSoldQtyByProduct(
+  supabase: SupabaseClient,
+  fromYmd: string,
+  toYmd: string,
+  productIds: Set<string>,
+): Promise<Map<string, number>> {
+  const sold = new Map<string, number>();
+  if (productIds.size === 0) return sold;
+
+  const { rows: orderRows, error: ordersErr } =
+    await fetchOrdersCreatedInReportYmdWindow(
+      supabase,
+      fromYmd,
+      toYmd,
+      "id,status,created_at",
+    );
+  if (ordersErr) {
+    console.error("[aleya-export] stock sold window:", ordersErr);
+    return sold;
+  }
+
+  const paidIds = (orderRows as { id?: string; status?: string; created_at?: string }[])
+    .filter(
+      (o) =>
+        o.status === "paid" &&
+        typeof o.created_at === "string" &&
+        dayInRange(reportCalendarDayKeyFromIso(o.created_at), fromYmd, toYmd),
+    )
+    .map((o) => String(o.id))
+    .filter(Boolean);
+
+  if (paidIds.length === 0) return sold;
+
+  const { rows: itemRows, error: itemsErr } = await fetchOrderItemsInChunks(
+    supabase,
+    paidIds,
+    "product_id,quantity",
+  );
+  if (itemsErr) {
+    console.error("[aleya-export] stock sold items:", itemsErr);
+    return sold;
+  }
+
+  for (const raw of itemRows) {
+    const productId = raw.product_id ? String(raw.product_id) : "";
+    if (!productId || !productIds.has(productId)) continue;
+    const qty = floorQty(raw.quantity);
+    if (qty <= 0) continue;
+    sold.set(productId, (sold.get(productId) ?? 0) + qty);
+  }
+
+  return sold;
+}
+
+async function fetchCurrentStockByProduct(
+  supabase: SupabaseClient,
+  productIds: string[],
+): Promise<Map<string, number>> {
+  const map = new Map<string, number>();
+  for (let i = 0; i < productIds.length; i += 120) {
+    const part = productIds.slice(i, i + 120);
+    const { data, error } = await supabase
+      .from("products")
+      .select("id,stock_quantity")
+      .in("id", part);
+    if (error) {
+      console.error("[aleya-export] current stock:", error.message);
+      break;
+    }
+    for (const p of data ?? []) {
+      map.set(String(p.id), floorQty(p.stock_quantity));
+    }
+  }
+  return map;
+}
+
+function buildStockStats(params: {
+  stockLeft: number;
+  stockSoldMonth: number;
+  soldSinceMonthStart: number;
+  netAdjustSinceMonthStart: number;
+}): AleyaExportStockStats {
+  const stockLeft = Math.max(0, Math.round(params.stockLeft));
+  const stockSold = Math.max(0, Math.round(params.stockSoldMonth));
+  // current = start + ajustes − ventas ⇒ start = current − ajustes + ventas
+  const stockStart = Math.max(
+    0,
+    Math.round(
+      stockLeft - params.netAdjustSinceMonthStart + params.soldSinceMonthStart,
+    ),
+  );
+  return { stockStart, stockSold, stockLeft };
+}
+
+/** Stock al cierre del periodo: actual menos movimientos posteriores al mes. */
+function stockAtPeriodEnd(params: {
+  currentStock: number;
+  soldAfterPeriod: number;
+  netAdjustAfterPeriod: number;
+}): number {
+  return Math.max(
+    0,
+    Math.round(
+      params.currentStock -
+        params.netAdjustAfterPeriod +
+        params.soldAfterPeriod,
+    ),
+  );
 }
 
 function referenceSortKey(reference: string | null): number {
@@ -170,6 +367,14 @@ function buildMonthCells(stats: AleyaExportMonthStats): string[] {
   ];
 }
 
+function buildStockCells(stock: AleyaExportStockStats): string[] {
+  return [
+    intCell(stock.stockStart),
+    intCell(stock.stockSold),
+    intCell(stock.stockLeft),
+  ];
+}
+
 export function buildAleyaExportCsv(payload: AleyaExportPayload): string {
   const mes = payload.monthLabel;
   const headers = [
@@ -187,6 +392,9 @@ export function buildAleyaExportCsv(payload: AleyaExportPayload): string {
     "COSTO DE COMPRA MILAGROS",
     "VENTA TOTAL ",
     "UTILIDAD",
+    `STOCK INICIO ${mes}`,
+    `STOCK VENDIDO ${mes}`,
+    `STOCK QUEDÓ ${mes}`,
   ];
 
   const lines: string[] = [];
@@ -198,17 +406,26 @@ export function buildAleyaExportCsv(payload: AleyaExportPayload): string {
     const desc = row.reference
       ? `${row.displayName} (ref. ${row.reference})`
       : row.displayName;
-    const cells = [desc, ...catalog, ...buildMonthCells(row.month)];
+    const cells = [
+      desc,
+      ...catalog,
+      ...buildMonthCells(row.month),
+      ...buildStockCells(row.stock),
+    ];
     lines.push(cells.map((c) => csvEscape(String(c))).join(","));
   }
 
   const t = payload.totals;
+  const stockTotals = emptyStockStats();
+  for (const row of payload.rows) addStock(stockTotals, row.stock);
+
   lines.push("");
   lines.push(
     [
       "TOTALES",
       ...Array(8).fill(""),
       ...buildMonthCells(t),
+      ...buildStockCells(stockTotals),
     ]
       .map((c) => csvEscape(String(c)))
       .join(","),
@@ -252,6 +469,8 @@ export function buildAleyaExportCsv(payload: AleyaExportPayload): string {
       `Mes: ${payload.yearMonth}`,
       `Pedidos pagados: ${payload.paidOrdersCount}`,
       `Unidades vendidas: ${t.qty}`,
+      `Stock inicio (suma): ${intCell(stockTotals.stockStart)}`,
+      `Stock quedó (suma): ${intCell(stockTotals.stockLeft)}`,
       `Ingresos sin IVA: ${moneyCell(payload.reportIngresosSinIva)}`,
       `GASTOS: ${moneyCell(payload.expensesPesos)}`,
       `UTILIDAD NETA: ${moneyCell(netMargin)}`,
@@ -432,14 +651,69 @@ export async function fetchAleyaExportPayload(
 
   const soldRows: AleyaExportSoldRow[] = [];
 
+  const productIdList = [...monthByProductId.keys()];
+  const productIdSet = new Set(productIdList);
+  const todayYmd = todayYmdInReportStore();
+  const stockToYmd = todayYmd < rangeFrom ? rangeFrom : todayYmd;
+  const dayAfterMonth = addCalendarDaysReport(rangeTo, 1);
+  const hasAfterMonth = dayAfterMonth <= stockToYmd;
+
+  const [
+    currentStockById,
+    soldSinceStart,
+    netAdjustSinceStart,
+    soldAfterMonth,
+    netAdjustAfterMonth,
+  ] = await Promise.all([
+    fetchCurrentStockByProduct(supabase, productIdList),
+    fetchPaidSoldQtyByProduct(supabase, rangeFrom, stockToYmd, productIdSet),
+    fetchNetStockAdjustmentsSince(
+      supabase,
+      rangeFrom,
+      stockToYmd,
+      productIdSet,
+    ),
+    hasAfterMonth
+      ? fetchPaidSoldQtyByProduct(
+          supabase,
+          dayAfterMonth,
+          stockToYmd,
+          productIdSet,
+        )
+      : Promise.resolve(new Map<string, number>()),
+    hasAfterMonth
+      ? fetchNetStockAdjustmentsSince(
+          supabase,
+          dayAfterMonth,
+          stockToYmd,
+          productIdSet,
+        )
+      : Promise.resolve(new Map<string, number>()),
+  ]);
+
   for (const [productId, month] of monthByProductId) {
     if (month.qty <= 0) continue;
     const product = productsById.get(productId) ?? null;
+    const currentStock = currentStockById.get(productId) ?? 0;
+    const stockLeft = stockAtPeriodEnd({
+      currentStock,
+      soldAfterPeriod: soldAfterMonth.get(productId) ?? 0,
+      netAdjustAfterPeriod: netAdjustAfterMonth.get(productId) ?? 0,
+    });
+    const stock = buildStockStats({
+      stockLeft: currentStock,
+      stockSoldMonth: month.qty,
+      soldSinceMonthStart: soldSinceStart.get(productId) ?? 0,
+      netAdjustSinceMonthStart: netAdjustSinceStart.get(productId) ?? 0,
+    });
+    // stockStart usa current; stockLeft es cierre del mes exportado
+    stock.stockLeft = stockLeft;
     soldRows.push({
       product,
       displayName: product?.name ?? "Producto",
       reference: product?.reference ?? null,
       month,
+      stock,
     });
   }
 
@@ -450,6 +724,11 @@ export async function fetchAleyaExportPayload(
       displayName: name,
       reference: null,
       month,
+      stock: {
+        stockStart: 0,
+        stockSold: month.qty,
+        stockLeft: 0,
+      },
     });
   }
 
