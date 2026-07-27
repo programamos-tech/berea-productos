@@ -355,6 +355,12 @@ export async function startCheckout(formData: FormData) {
       .single();
 
     if (cErr || !insertedCustomer) {
+      console.error("[checkout] customers insert failed", {
+        message: cErr?.message,
+        code: cErr?.code,
+        details: cErr?.details,
+        hint: cErr?.hint,
+      });
       redirect("/checkout?error=order");
     }
     customerId = insertedCustomer.id as string;
@@ -387,6 +393,15 @@ export async function startCheckout(formData: FormData) {
     .single();
 
   if (oErr || !orderRow) {
+    console.error("[checkout] orders insert failed", {
+      message: oErr?.message,
+      code: oErr?.code,
+      details: oErr?.details,
+      hint: oErr?.hint,
+      customerId,
+      useTransfer,
+      shippingMunicipalityId: municipalityRow.id,
+    });
     redirect("/checkout?error=order");
   }
 
