@@ -45,6 +45,27 @@ function isEmail(v: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
 }
 
+function isMissingDbColumnError(err: {
+  message?: string;
+  code?: string;
+} | null): boolean {
+  if (!err) return false;
+  if (err.code === "42703") return true;
+  return /column .* does not exist/i.test(err.message ?? "");
+}
+
+/** Si la BD aún no tiene barrio/referencia, se guardan en la dirección. */
+function shippingAddressWithExtras(
+  address: string,
+  neighborhood: string,
+  reference: string,
+): string {
+  const parts = [address.trim()];
+  if (neighborhood.trim()) parts.push(`Barrio: ${neighborhood.trim()}`);
+  if (reference.trim()) parts.push(`Ref.: ${reference.trim()}`);
+  return parts.filter(Boolean).join(" · ");
+}
+
 export async function startCheckout(formData: FormData) {
   const customerEmail = String(formData.get("email") ?? "").trim();
   const firstName = String(formData.get("firstName") ?? "").trim();
@@ -323,36 +344,64 @@ export async function startCheckout(formData: FormData) {
 
   let customerId: string;
 
+  const customerShippingFull = {
+    name: resolvedName,
+    phone: shippingPhone,
+    shipping_address: shippingAddress,
+    shipping_city: resolvedShippingCity,
+    shipping_neighborhood: shippingNeighborhood || null,
+    shipping_reference: shippingReference || null,
+    shipping_postal_code: shippingPostalCode || null,
+  };
+  const customerShippingCompat = {
+    name: resolvedName,
+    phone: shippingPhone,
+    shipping_address: shippingAddressWithExtras(
+      shippingAddress,
+      shippingNeighborhood,
+      shippingReference,
+    ),
+    shipping_city: resolvedShippingCity,
+    shipping_postal_code: shippingPostalCode || null,
+  };
+
   if (existingCustomer?.id) {
     customerId = existingCustomer.id as string;
-    await supabase
+    const { error: uErr } = await supabase
       .from("customers")
-      .update({
-        name: resolvedName,
-        phone: shippingPhone,
-        shipping_address: shippingAddress,
-        shipping_city: resolvedShippingCity,
-        shipping_neighborhood: shippingNeighborhood || null,
-        shipping_reference: shippingReference || null,
-        shipping_postal_code: shippingPostalCode || null,
-      })
+      .update(customerShippingFull)
       .eq("id", customerId);
+    if (uErr && isMissingDbColumnError(uErr)) {
+      await supabase
+        .from("customers")
+        .update(customerShippingCompat)
+        .eq("id", customerId);
+    }
   } else {
-    const { data: insertedCustomer, error: cErr } = await supabase
+    let { data: insertedCustomer, error: cErr } = await supabase
       .from("customers")
       .insert({
-        name: resolvedName,
+        ...customerShippingFull,
         email: emailLc,
-        phone: shippingPhone,
-        shipping_address: shippingAddress,
-        shipping_city: resolvedShippingCity,
-        shipping_neighborhood: shippingNeighborhood || null,
-        shipping_reference: shippingReference || null,
-        shipping_postal_code: shippingPostalCode || null,
         source: "storefront",
       })
       .select("id")
       .single();
+
+    if (cErr && isMissingDbColumnError(cErr)) {
+      console.warn("[checkout] customers insert retry without barrio/referencia columns", {
+        message: cErr.message,
+      });
+      ({ data: insertedCustomer, error: cErr } = await supabase
+        .from("customers")
+        .insert({
+          ...customerShippingCompat,
+          email: emailLc,
+          source: "storefront",
+        })
+        .select("id")
+        .single());
+    }
 
     if (cErr || !insertedCustomer) {
       console.error("[checkout] customers insert failed", {
@@ -368,29 +417,51 @@ export async function startCheckout(formData: FormData) {
 
   const transferSessionToken = useTransfer ? randomUUID() : null;
 
-  const { data: orderRow, error: oErr } = await supabase
+  const orderBase = {
+    customer_id: customerId,
+    customer_email: customerEmailForOrder,
+    customer_name: resolvedName,
+    total_cents: orderTotalCents,
+    currency,
+    status: "pending" as const,
+    shipping_city: resolvedShippingCity,
+    shipping_postal_code: shippingPostalCode || null,
+    shipping_phone: shippingPhone,
+    shipping_cents: shippingCents,
+    shipping_municipality_id: municipalityRow.id,
+    checkout_payment_method: useTransfer ? "transfer" : "wompi",
+    transfer_session_token: transferSessionToken,
+    fulfillment_status: useTransfer ? "awaiting_payment" : null,
+  };
+
+  let { data: orderRow, error: oErr } = await supabase
     .from("orders")
     .insert({
-      customer_id: customerId,
-      customer_email: customerEmailForOrder,
-      customer_name: resolvedName,
-      total_cents: orderTotalCents,
-      currency,
-      status: "pending",
+      ...orderBase,
       shipping_address: shippingAddress,
-      shipping_city: resolvedShippingCity,
       shipping_neighborhood: shippingNeighborhood || null,
       shipping_reference: shippingReference || null,
-      shipping_postal_code: shippingPostalCode || null,
-      shipping_phone: shippingPhone,
-      shipping_cents: shippingCents,
-      shipping_municipality_id: municipalityRow.id,
-      checkout_payment_method: useTransfer ? "transfer" : "wompi",
-      transfer_session_token: transferSessionToken,
-      fulfillment_status: useTransfer ? "awaiting_payment" : null,
     })
     .select("id")
     .single();
+
+  if (oErr && isMissingDbColumnError(oErr)) {
+    console.warn("[checkout] orders insert retry without barrio/referencia columns", {
+      message: oErr.message,
+    });
+    ({ data: orderRow, error: oErr } = await supabase
+      .from("orders")
+      .insert({
+        ...orderBase,
+        shipping_address: shippingAddressWithExtras(
+          shippingAddress,
+          shippingNeighborhood,
+          shippingReference,
+        ),
+      })
+      .select("id")
+      .single());
+  }
 
   if (oErr || !orderRow) {
     console.error("[checkout] orders insert failed", {
