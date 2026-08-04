@@ -36,11 +36,16 @@ export type AleyaExportCatalogProduct = {
   vat_percent: number | null;
 };
 
-/** Totales del mes por producto (columnas J–N del Excel). */
+/** Totales del mes por producto (columnas de movimiento del Excel). */
 export type AleyaExportMonthStats = {
   qty: number;
   ivaAlePesos: number;
   costGrossPesos: number;
+  /** Precio lista (catálogo con IVA) × unidades — sin descuentos. */
+  catalogSalesGrossPesos: number;
+  /** max(0, catálogo − cobrado): POS, mayorista, cupones, etc. */
+  discountPesos: number;
+  /** Lo realmente cobrado con IVA (igual que reportes / ticket). */
   salesGrossPesos: number;
   marginPesos: number;
 };
@@ -103,6 +108,8 @@ function emptyMonthStats(): AleyaExportMonthStats {
     qty: 0,
     ivaAlePesos: 0,
     costGrossPesos: 0,
+    catalogSalesGrossPesos: 0,
+    discountPesos: 0,
     salesGrossPesos: 0,
     marginPesos: 0,
   };
@@ -116,6 +123,8 @@ function addMonth(target: AleyaExportMonthStats, delta: AleyaExportMonthStats): 
   target.qty += delta.qty;
   target.ivaAlePesos += delta.ivaAlePesos;
   target.costGrossPesos += delta.costGrossPesos;
+  target.catalogSalesGrossPesos += delta.catalogSalesGrossPesos;
+  target.discountPesos += delta.discountPesos;
   target.salesGrossPesos += delta.salesGrossPesos;
   target.marginPesos += delta.marginPesos;
 }
@@ -362,6 +371,8 @@ function buildMonthCells(stats: AleyaExportMonthStats): string[] {
     moneyCell(stats.ivaAlePesos),
     intCell(stats.qty),
     moneyCell(stats.costGrossPesos),
+    moneyCell(stats.catalogSalesGrossPesos),
+    moneyCell(stats.discountPesos),
     moneyCell(stats.salesGrossPesos),
     moneyCell(stats.marginPesos),
   ];
@@ -390,6 +401,8 @@ export function buildAleyaExportCsv(payload: AleyaExportPayload): string {
     `IVA A PAGAR ALEYA ${mes}`,
     `VENDIDOS ${mes}`,
     "COSTO DE COMPRA MILAGROS",
+    "VENTA CATÁLOGO ",
+    "DESCUENTO ",
     "VENTA TOTAL ",
     "UTILIDAD",
     `STOCK INICIO ${mes}`,
@@ -438,7 +451,7 @@ export function buildAleyaExportCsv(payload: AleyaExportPayload): string {
       "",
       "Ingresos con IVA (reportes)",
       moneyCell(payload.reportIngresosConIva),
-      "Suma VENTA TOTAL (este archivo)",
+      "Suma VENTA TOTAL cobrada (este archivo)",
       moneyCell(t.salesGrossPesos),
       "Diferencia",
       moneyCell(t.salesGrossPesos - payload.reportIngresosConIva),
@@ -469,6 +482,9 @@ export function buildAleyaExportCsv(payload: AleyaExportPayload): string {
       `Mes: ${payload.yearMonth}`,
       `Pedidos pagados: ${payload.paidOrdersCount}`,
       `Unidades vendidas: ${t.qty}`,
+      `Venta catálogo: ${moneyCell(t.catalogSalesGrossPesos)}`,
+      `Descuentos (POS/mayorista/cupones): ${moneyCell(t.discountPesos)}`,
+      `Venta cobrada: ${moneyCell(t.salesGrossPesos)}`,
       `Stock inicio (suma): ${intCell(stockTotals.stockStart)}`,
       `Stock quedó (suma): ${intCell(stockTotals.stockLeft)}`,
       `Ingresos sin IVA: ${moneyCell(payload.reportIngresosSinIva)}`,
@@ -600,12 +616,25 @@ export async function fetchAleyaExportPayload(
     const costGross = catalog
       ? Math.max(costNet, Math.round(catalog.cost_gross_cents || costNet))
       : 0;
-    const ivaAleUnit = catalog ? catalogIvaAleUnit(catalog) : 0;
+    const catalogUnitGross = catalog
+      ? unitPriceGrossCents(
+          catalog.price_cents,
+          catalog.has_vat,
+          catalog.vat_percent,
+        )
+      : 0;
+    const catalogSalesGross = catalog ? catalogUnitGross * qty : lg.gross;
+    const discountPesos = Math.max(0, catalogSalesGross - lg.gross);
+    const purchaseVatLine = Math.max(0, costGross - costNet) * qty;
+    const saleVatCharged = Math.max(0, lg.gross - lg.net);
+    const ivaAlePesos = Math.max(0, saleVatCharged - purchaseVatLine);
 
     const delta: AleyaExportMonthStats = {
       qty,
-      ivaAlePesos: ivaAleUnit * qty,
+      ivaAlePesos,
       costGrossPesos: costGross * qty,
+      catalogSalesGrossPesos: catalogSalesGross,
+      discountPesos,
       salesGrossPesos: lg.gross,
       marginPesos: lg.net - costNet * qty,
     };
@@ -785,4 +814,30 @@ export async function fetchAleyaExportPayload(
 
 export function aleyaExportFilename(yearMonth: string): string {
   return `ventas-aleya-${yearMonth}.csv`;
+}
+
+export function aleyaExportRangeFilename(fromYm: string, toYm: string): string {
+  if (fromYm === toYm) return aleyaExportFilename(fromYm);
+  return `ventas-aleya-${fromYm}_a_${toYm}.csv`;
+}
+
+/** Une varios meses en un CSV (BOM una sola vez; sección por mes). */
+export function buildAleyaExportMultiMonthCsv(
+  payloads: AleyaExportPayload[],
+): string {
+  if (payloads.length === 0) return "\uFEFF\r\n";
+  if (payloads.length === 1) return buildAleyaExportCsv(payloads[0]!);
+
+  const chunks: string[] = [];
+  for (let i = 0; i < payloads.length; i++) {
+    const p = payloads[i]!;
+    let body = buildAleyaExportCsv(p).replace(/^\uFEFF/, "").replace(/\r?\n$/, "");
+    if (i > 0) {
+      chunks.push("");
+      chunks.push(`===== ${p.monthLabel} ${p.yearMonth} =====`);
+      chunks.push("");
+    }
+    chunks.push(body);
+  }
+  return `\uFEFF${chunks.join("\r\n")}\r\n`;
 }

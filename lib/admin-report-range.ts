@@ -311,3 +311,42 @@ export function prettyYearMonthLabel(yearMonth: string): string {
 export function currentYearMonthInReportStore(now: Date = new Date()): string {
   return reportYearMonthFromIso(now.toISOString()) || todayYmdInReportStore(now).slice(0, 7);
 }
+
+/** Suma o resta meses calendario a un `YYYY-MM`. */
+export function addYearMonths(yearMonth: string, deltaMonths: number): string | null {
+  if (!isValidYearMonth(yearMonth)) return null;
+  const [ys, ms] = yearMonth.split("-").map(Number);
+  if (!ys || !ms) return null;
+  const idx = ys * 12 + (ms - 1) + Math.trunc(deltaMonths);
+  if (idx < 0) return null;
+  const y = Math.floor(idx / 12);
+  const m = (idx % 12) + 1;
+  return `${y}-${String(m).padStart(2, "0")}`;
+}
+
+/**
+ * Lista inclusiva de meses `YYYY-MM` entre `fromYm` y `toYm` (ordenados).
+ * Máximo 24 meses para evitar exports enormes.
+ */
+export function yearMonthsInclusive(
+  fromYm: string,
+  toYm: string,
+  maxMonths = 24,
+): string[] | null {
+  if (!isValidYearMonth(fromYm) || !isValidYearMonth(toYm)) return null;
+  let a = fromYm;
+  let b = toYm;
+  if (a > b) {
+    const t = a;
+    a = b;
+    b = t;
+  }
+  const out: string[] = [];
+  let cur: string | null = a;
+  while (cur && cur <= b) {
+    out.push(cur);
+    if (out.length > maxMonths) return null;
+    cur = addYearMonths(cur, 1);
+  }
+  return out;
+}

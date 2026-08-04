@@ -2,6 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 
+function mayOfYearFromYm(ym: string): string {
+  const y = ym.slice(0, 4);
+  return /^\d{4}$/.test(y) ? `${y}-05` : "2026-05";
+}
+
 export function ReportsAleyaExportButton({
   defaultYearMonth,
 }: {
@@ -9,11 +14,20 @@ export function ReportsAleyaExportButton({
 }) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
-  const [yearMonth, setYearMonth] = useState(defaultYearMonth);
+  const [fromMonth, setFromMonth] = useState(() =>
+    mayOfYearFromYm(defaultYearMonth),
+  );
+  const [toMonth, setToMonth] = useState(defaultYearMonth);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    setYearMonth(defaultYearMonth);
+    setToMonth(defaultYearMonth);
+    setFromMonth((prev) => {
+      const may = mayOfYearFromYm(defaultYearMonth);
+      // Si el “hasta” sigue en el mismo año que mayo sugerido, mantener mayo como desde.
+      if (prev.slice(0, 4) === defaultYearMonth.slice(0, 4)) return may;
+      return may;
+    });
   }, [defaultYearMonth]);
 
   useEffect(() => {
@@ -26,10 +40,12 @@ export function ReportsAleyaExportButton({
   }, [open]);
 
   async function handleExport() {
-    if (!yearMonth) return;
+    if (!fromMonth || !toMonth) return;
+    const from = fromMonth <= toMonth ? fromMonth : toMonth;
+    const to = fromMonth <= toMonth ? toMonth : fromMonth;
     setLoading(true);
     try {
-      const params = new URLSearchParams({ month: yearMonth });
+      const params = new URLSearchParams({ from, to });
       const res = await fetch(
         `/api/admin/reports/aleya-export?${params.toString()}`,
       );
@@ -47,7 +63,11 @@ export function ReportsAleyaExportButton({
       const blob = await res.blob();
       const disposition = res.headers.get("Content-Disposition") ?? "";
       const match = disposition.match(/filename="([^"]+)"/);
-      const filename = match?.[1] ?? `ventas-aleya-${yearMonth}.csv`;
+      const filename =
+        match?.[1] ??
+        (from === to
+          ? `ventas-aleya-${from}.csv`
+          : `ventas-aleya-${from}_a_${to}.csv`);
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -96,23 +116,53 @@ export function ReportsAleyaExportButton({
           aria-label="Exportar ventas mensuales"
         >
           <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-stone-400 dark:text-zinc-500">
-            Mes a exportar
+            Periodo a exportar
           </p>
           <p className="mt-1 text-xs leading-relaxed text-stone-500 dark:text-zinc-400">
-            Productos vendidos en el mes, con costos, utilidad y stock (inicio,
-            vendido y restante). Los totales deben cuadrar con el resumen de
-            reportes.
+            <span className="font-medium text-stone-600 dark:text-zinc-300">
+              VENTA TOTAL
+            </span>{" "}
+            es lo cobrado (descuentos POS, mayorista y cupones). También incluye
+            venta a precio de lista y la columna DESCUENTO.
           </p>
-          <input
-            type="month"
-            value={yearMonth}
-            onChange={(e) => setYearMonth(e.target.value)}
-            className="mt-3 w-full rounded-lg border border-rose-200/70 bg-white px-3 py-2 text-sm text-rose-950 dark:border-zinc-600 dark:bg-zinc-950 dark:text-zinc-100"
-          />
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <label className="block">
+              <span className="text-[10px] font-medium uppercase tracking-wide text-stone-400 dark:text-zinc-500">
+                Desde
+              </span>
+              <input
+                type="month"
+                value={fromMonth}
+                onChange={(e) => setFromMonth(e.target.value)}
+                className="mt-1 w-full rounded-lg border border-rose-200/70 bg-white px-2.5 py-2 text-sm text-rose-950 dark:border-zinc-600 dark:bg-zinc-950 dark:text-zinc-100"
+              />
+            </label>
+            <label className="block">
+              <span className="text-[10px] font-medium uppercase tracking-wide text-stone-400 dark:text-zinc-500">
+                Hasta
+              </span>
+              <input
+                type="month"
+                value={toMonth}
+                onChange={(e) => setToMonth(e.target.value)}
+                className="mt-1 w-full rounded-lg border border-rose-200/70 bg-white px-2.5 py-2 text-sm text-rose-950 dark:border-zinc-600 dark:bg-zinc-950 dark:text-zinc-100"
+              />
+            </label>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              setFromMonth(mayOfYearFromYm(defaultYearMonth));
+              setToMonth(defaultYearMonth);
+            }}
+            className="mt-2 text-left text-[11px] font-medium text-rose-800/80 underline-offset-2 hover:underline dark:text-zinc-300"
+          >
+            Usar mayo → mes actual
+          </button>
           <button
             type="button"
             onClick={() => void handleExport()}
-            disabled={loading || !yearMonth}
+            disabled={loading || !fromMonth || !toMonth}
             className="mt-3 w-full rounded-lg bg-rose-950 px-3 py-2.5 text-sm font-semibold text-white transition hover:bg-rose-900 disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-white"
           >
             {loading ? "Generando…" : "Descargar CSV"}
