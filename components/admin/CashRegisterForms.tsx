@@ -47,36 +47,18 @@ function newSubmissionId() {
 const cardClass =
   "rounded-xl border border-zinc-200/90 bg-white p-4 shadow-sm ring-1 ring-zinc-950/5 sm:p-5 dark:border-zinc-700/90 dark:bg-zinc-900 dark:shadow-none dark:ring-white/[0.06]";
 
-type Tone = "rose" | "emerald" | "amber" | "sky" | "violet" | "zinc";
+const metricShell =
+  "rounded-lg border border-zinc-200/80 bg-zinc-50/60 px-3 py-2.5 dark:border-zinc-700 dark:bg-zinc-950/40";
 
-const toneBox: Record<Tone, string> = {
-  rose: "border-rose-200/80 bg-rose-50/80 dark:border-rose-900/40 dark:bg-rose-950/25",
-  emerald:
-    "border-emerald-200/80 bg-emerald-50/80 dark:border-emerald-900/40 dark:bg-emerald-950/25",
-  amber:
-    "border-amber-200/80 bg-amber-50/80 dark:border-amber-900/40 dark:bg-amber-950/25",
-  sky: "border-sky-200/80 bg-sky-50/80 dark:border-sky-900/40 dark:bg-sky-950/25",
-  violet:
-    "border-violet-200/80 bg-violet-50/70 dark:border-violet-900/40 dark:bg-violet-950/25",
-  zinc: "border-zinc-200/80 bg-zinc-50/80 dark:border-zinc-700 dark:bg-zinc-950/50",
-};
+/** Acento solo en el ícono — fondos siempre neutros. */
+type Accent = "neutral" | "brand" | "ok" | "warn" | "info";
 
-const toneIcon: Record<Tone, string> = {
-  rose: "text-rose-700 dark:text-rose-300",
-  emerald: "text-emerald-700 dark:text-emerald-300",
-  amber: "text-amber-700 dark:text-amber-300",
-  sky: "text-sky-700 dark:text-sky-300",
-  violet: "text-violet-700 dark:text-violet-300",
-  zinc: "text-zinc-500 dark:text-zinc-400",
-};
-
-const toneLabel: Record<Tone, string> = {
-  rose: "text-rose-800/80 dark:text-rose-200/80",
-  emerald: "text-emerald-800/80 dark:text-emerald-200/80",
-  amber: "text-amber-900/80 dark:text-amber-200/80",
-  sky: "text-sky-800/80 dark:text-sky-200/80",
-  violet: "text-violet-800/80 dark:text-violet-200/80",
-  zinc: "text-zinc-500 dark:text-zinc-400",
+const accentIcon: Record<Accent, string> = {
+  neutral: "text-zinc-500 dark:text-zinc-400",
+  brand: "text-rose-800/70 dark:text-rose-300/80",
+  ok: "text-emerald-700/80 dark:text-emerald-400/80",
+  warn: "text-amber-700/75 dark:text-amber-400/75",
+  info: "text-sky-700/75 dark:text-sky-400/75",
 };
 
 function paymentLabel(pm: string) {
@@ -96,18 +78,26 @@ function MetricCard({
   label,
   value,
   icon: Icon,
-  tone = "zinc",
+  accent = "neutral",
+  emphasize,
 }: {
   label: string;
   value: string;
   icon: LucideIcon;
-  tone?: Tone;
+  accent?: Accent;
+  emphasize?: boolean;
 }) {
   return (
-    <div className={`rounded-xl border px-3 py-3 ${toneBox[tone]}`}>
+    <div
+      className={`${metricShell} ${
+        emphasize ? "ring-1 ring-rose-900/10 dark:ring-rose-100/10" : ""
+      }`}
+    >
       <div className="flex items-center gap-2">
-        <Icon className={`h-4 w-4 shrink-0 ${toneIcon[tone]}`} aria-hidden />
-        <p className={`text-[11px] font-medium ${toneLabel[tone]}`}>{label}</p>
+        <Icon className={`h-4 w-4 shrink-0 ${accentIcon[accent]}`} aria-hidden />
+        <p className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400">
+          {label}
+        </p>
       </div>
       <p className="mt-1.5 text-lg font-semibold tabular-nums tracking-tight text-zinc-900 dark:text-zinc-50">
         {value}
@@ -118,21 +108,19 @@ function MetricCard({
 
 function SectionTitle({
   icon: Icon,
-  tone,
+  accent = "neutral",
   children,
   hint,
 }: {
   icon: LucideIcon;
-  tone: Tone;
+  accent?: Accent;
   children: React.ReactNode;
   hint?: string;
 }) {
   return (
     <div className="flex items-start gap-2.5">
-      <span
-        className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border ${toneBox[tone]}`}
-      >
-        <Icon className={`h-4 w-4 ${toneIcon[tone]}`} aria-hidden />
+      <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-950/50">
+        <Icon className={`h-4 w-4 ${accentIcon[accent]}`} aria-hidden />
       </span>
       <div className="min-w-0">
         <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
@@ -162,7 +150,7 @@ export function CashRegisterOpenForm({
       <input type="hidden" name="submission_id" value={submissionId} />
       <div className="min-w-0 md:col-span-1">
         <div className="flex items-center gap-2">
-          <PiggyBank className="h-5 w-5 text-rose-700 dark:text-rose-300" aria-hidden />
+          <PiggyBank className={`h-5 w-5 ${accentIcon.brand}`} aria-hidden />
           <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
             Abrir caja · {businessDayLabel}
           </h2>
@@ -221,7 +209,7 @@ function StockOutTable({ lines }: { lines: CashStockOutLine[] }) {
               <td className="py-2 pr-3 font-mono text-xs text-zinc-500">
                 {l.reference ?? "—"}
               </td>
-              <td className="py-2 text-right tabular-nums font-semibold text-rose-800 dark:text-rose-200">
+              <td className="py-2 text-right tabular-nums font-medium text-zinc-900 dark:text-zinc-100">
                 {l.quantity}
               </td>
             </tr>
@@ -271,7 +259,7 @@ function ExpensesTable({
                 {paymentLabel(l.payment_method)}
               </td>
               {hideAmounts ? null : (
-                <td className="py-2 text-right tabular-nums font-medium text-amber-900 dark:text-amber-100">
+                <td className="py-2 text-right tabular-nums font-medium text-zinc-900 dark:text-zinc-100">
                   {formatCop(l.amount_cents ?? 0)}
                 </td>
               )}
@@ -317,36 +305,34 @@ export function CashRegisterClosePanel({
             label="Facturas"
             value={String(blind.salesCount)}
             icon={Receipt}
-            tone="sky"
+            accent="info"
           />
           <MetricCard
             label="Unidades vendidas"
             value={String(blind.unitsSold)}
             icon={Package}
-            tone="rose"
+            accent="brand"
+            emphasize
           />
           <MetricCard
             label="Productos distintos"
             value={String(blind.stockOutLines.length)}
             icon={ShoppingBag}
-            tone="violet"
           />
           <MetricCard
             label="Egresos"
             value={String(blind.expenseLines.length)}
             icon={ArrowDownLeft}
-            tone="amber"
+            accent="warn"
           />
         </div>
       </section>
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1.35fr)_minmax(0,0.85fr)_minmax(300px,380px)] xl:items-start">
-        <section
-          className={`${cardClass} border-rose-200/70 ring-rose-950/5 dark:border-rose-900/40`}
-        >
+        <section className={cardClass}>
           <SectionTitle
             icon={Package}
-            tone="rose"
+            accent="brand"
             hint="Listado de lo que salió por ventas hoy — revisalo antes de cerrar."
           >
             Lo vendido hoy · {blind.unitsSold} ud
@@ -356,12 +342,10 @@ export function CashRegisterClosePanel({
           </div>
         </section>
 
-        <section
-          className={`${cardClass} border-amber-200/70 ring-amber-950/5 dark:border-amber-900/40`}
-        >
+        <section className={cardClass}>
           <SectionTitle
             icon={ArrowDownLeft}
-            tone="amber"
+            accent="warn"
             hint="Conceptos del día (sin montos hasta cerrar)."
           >
             Egresos · {blind.expenseLines.length}
@@ -371,12 +355,10 @@ export function CashRegisterClosePanel({
           </div>
         </section>
 
-        <section
-          className={`${cardClass} border-emerald-200/70 ring-emerald-950/5 dark:border-emerald-900/40`}
-        >
+        <section className={cardClass}>
           <SectionTitle
             icon={Wallet}
-            tone="emerald"
+            accent="ok"
             hint="Contá billetes y monedas. El sistema calcula el esperado."
           >
             Cerrar caja
@@ -397,8 +379,8 @@ export function CashRegisterClosePanel({
               </div>
             </div>
 
-            <div className="flex gap-2 rounded-lg border border-sky-200/80 bg-sky-50/80 px-3 py-2.5 text-sm text-sky-950 dark:border-sky-900/40 dark:bg-sky-950/30 dark:text-sky-100">
-              <Scale className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+            <div className="flex gap-2 rounded-lg border border-zinc-200 bg-zinc-50/80 px-3 py-2.5 text-sm text-zinc-600 dark:border-zinc-700 dark:bg-zinc-950/40 dark:text-zinc-300">
+              <Scale className={`mt-0.5 h-4 w-4 shrink-0 ${accentIcon.neutral}`} aria-hidden />
               <span>
                 Al confirmar comparamos con el sistema. Si hay diferencia, la nota es
                 obligatoria.
@@ -445,10 +427,8 @@ export function CashStockOutReadonly({
       ? unitsSold
       : lines.reduce((s, l) => s + l.quantity, 0);
   return (
-    <section
-      className={`${cardClass} border-rose-200/70 ring-rose-950/5 dark:border-rose-900/40`}
-    >
-      <SectionTitle icon={Package} tone="rose" hint="Productos que salieron por ventas.">
+    <section className={cardClass}>
+      <SectionTitle icon={Package} accent="brand" hint="Productos que salieron por ventas.">
         Lo vendido ese día · {ud} ud
       </SectionTitle>
       <div className="mt-4">
@@ -461,12 +441,10 @@ export function CashStockOutReadonly({
 export function CashExpensesReadonly({ lines }: { lines: CashExpenseLine[] }) {
   const total = lines.reduce((s, l) => s + l.amount_cents, 0);
   return (
-    <section
-      className={`${cardClass} border-amber-200/70 ring-amber-950/5 dark:border-amber-900/40`}
-    >
+    <section className={cardClass}>
       <SectionTitle
         icon={ArrowDownLeft}
-        tone="amber"
+        accent="warn"
         hint={lines.length === 0 ? undefined : `${lines.length} movimientos`}
       >
         Egresos del día · {formatCop(total)}
@@ -490,16 +468,16 @@ type MoneyToneKey =
 
 const moneyToneMeta: Record<
   MoneyToneKey,
-  { tone: Tone; icon: LucideIcon }
+  { accent: Accent; icon: LucideIcon; emphasize?: boolean }
 > = {
-  fondo: { tone: "violet", icon: PiggyBank },
-  ventas: { tone: "rose", icon: ShoppingBag },
-  efectivo: { tone: "emerald", icon: Banknote },
-  transfer: { tone: "sky", icon: Receipt },
-  mixtas: { tone: "zinc", icon: ClipboardList },
-  egreso: { tone: "amber", icon: ArrowDownLeft },
-  esperado: { tone: "rose", icon: Scale },
-  contado: { tone: "emerald", icon: Wallet },
+  fondo: { accent: "neutral", icon: PiggyBank },
+  ventas: { accent: "brand", icon: ShoppingBag },
+  efectivo: { accent: "ok", icon: Banknote },
+  transfer: { accent: "info", icon: Receipt },
+  mixtas: { accent: "neutral", icon: ClipboardList },
+  egreso: { accent: "warn", icon: ArrowDownLeft },
+  esperado: { accent: "brand", icon: Scale, emphasize: true },
+  contado: { accent: "ok", icon: Wallet, emphasize: true },
 };
 
 export function CashClosedMoneyGrid({
@@ -515,7 +493,7 @@ export function CashClosedMoneyGrid({
 }) {
   return (
     <section className={cardClass}>
-      <SectionTitle icon={ClipboardList} tone="zinc" hint="Totales congelados al cerrar.">
+      <SectionTitle icon={ClipboardList} hint="Totales congelados al cerrar.">
         Resumen monetario
       </SectionTitle>
       <dl className="mt-4 grid gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
@@ -525,10 +503,17 @@ export function CashClosedMoneyGrid({
           return (
             <div
               key={r.label}
-              className={`rounded-xl border px-3 py-2.5 ${toneBox[meta.tone]}`}
+              className={`${metricShell} ${
+                meta.emphasize
+                  ? "ring-1 ring-rose-900/10 dark:ring-rose-100/10"
+                  : ""
+              }`}
             >
-              <dt className={`flex items-center gap-1.5 text-xs font-medium ${toneLabel[meta.tone]}`}>
-                <Icon className={`h-3.5 w-3.5 ${toneIcon[meta.tone]}`} aria-hidden />
+              <dt className="flex items-center gap-1.5 text-xs font-medium text-zinc-500 dark:text-zinc-400">
+                <Icon
+                  className={`h-3.5 w-3.5 ${accentIcon[meta.accent]}`}
+                  aria-hidden
+                />
                 {r.label}
               </dt>
               <dd className="mt-1.5 text-sm font-semibold tabular-nums text-zinc-900 dark:text-zinc-100">
