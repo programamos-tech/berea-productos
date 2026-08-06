@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import {
   CashExpensesReadonly,
   CashStockOutReadonly,
@@ -23,6 +23,11 @@ export default async function AdminCajaDetailPage({
   const supabase = await createSupabaseServerClient();
   const session = await fetchCashSessionById(supabase, id);
   if (!session) notFound();
+
+  // Mientras esté abierta, el detalle completo no se muestra (cierre a ciegas).
+  if (session.status === "open") {
+    redirect("/admin/caja");
+  }
 
   const dayLabel = prettyReportDayShortLabel(session.business_day);
   const diff = session.cash_difference_cents;
@@ -60,23 +65,15 @@ export default async function AdminCajaDetailPage({
             Registro del {dayLabel}
           </h1>
           <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
-            {session.status === "closed"
-              ? "Cierre congelado — no se modifica."
-              : "Sesión aún abierta."}
+            Cierre congelado — no se modifica.
           </p>
         </div>
-        <span
-          className={
-            session.status === "open"
-              ? "rounded-md bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-900 dark:bg-amber-950/40 dark:text-amber-100"
-              : "rounded-md bg-zinc-100 px-2.5 py-1 text-xs font-medium text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
-          }
-        >
-          {session.status === "open" ? "Abierta" : "Cerrada"}
+        <span className="rounded-md bg-zinc-100 px-2.5 py-1 text-xs font-medium text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200">
+          Cerrada
         </span>
       </div>
 
-      {session.status === "closed" && diff != null ? (
+      {diff != null ? (
         <div
           className={`rounded-xl border px-4 py-3 text-sm ${
             diff === 0
@@ -89,8 +86,8 @@ export default async function AdminCajaDetailPage({
           {diff === 0
             ? "La caja cuadró."
             : diff > 0
-              ? `Sobrante registrado: ${formatCop(diff)}`
-              : `Faltante registrado: ${formatCop(Math.abs(diff))}`}
+              ? `Discrepancia: sobrante ${formatCop(diff)}`
+              : `Discrepancia: faltante ${formatCop(Math.abs(diff))}`}
           {session.units_sold != null ? (
             <span className="ml-2 opacity-80">· {session.units_sold} ud vendidas</span>
           ) : null}
@@ -98,6 +95,12 @@ export default async function AdminCajaDetailPage({
             <span className="ml-2 opacity-80">
               · {session.expense_lines.length} egresos
             </span>
+          ) : null}
+          {session.notes ? (
+            <p className="mt-2 text-sm opacity-90">
+              <span className="font-medium">Nota: </span>
+              {session.notes}
+            </p>
           ) : null}
         </div>
       ) : null}

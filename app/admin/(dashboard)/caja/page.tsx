@@ -12,6 +12,7 @@ import {
   fetchCashDayLiveTotals,
   fetchOpenCashSession,
   fetchRecentCashSessions,
+  toBlindCashSummary,
 } from "@/lib/cash-register";
 import { formatCop } from "@/lib/money";
 import { requireAdminAnyPermission } from "@/lib/require-admin-permission";
@@ -37,6 +38,8 @@ function errorMessage(code: string | undefined): string | null {
       return "No se pudo validar el envío. Recargá e intentá de nuevo.";
     case "db":
       return "No se pudo guardar el cierre. Intentá de nuevo.";
+    case "notes_required":
+      return "Hay una diferencia entre el efectivo contado y el esperado. Dejá una nota con el motivo e intentá de nuevo.";
     default:
       return null;
   }
@@ -65,6 +68,7 @@ export default async function AdminCajaPage({
         open.opening_float_cents,
       )
     : null;
+  const blind = live ? toBlindCashSummary(live) : null;
 
   const dayLabel = prettyReportDayShortLabel(open?.business_day ?? today);
 
@@ -75,8 +79,9 @@ export default async function AdminCajaPage({
           Cierre de caja
         </h1>
         <p className="mt-2 max-w-3xl text-sm text-zinc-500 dark:text-zinc-400">
-          Registro diario del negocio: abrís con un fondo, durante el día se acumulan ventas y
-          egresos, y al cerrar ingresás el efectivo contado junto con el stock y egresos del día.
+          Cierre a ciegas: abrís con un fondo, durante el día se venden productos y se cargan
+          egresos. Al cerrar contás el efectivo sin ver el esperado; el sistema compara y, si no
+          cuadra, pide una nota con el motivo.
         </p>
       </div>
 
@@ -96,13 +101,12 @@ export default async function AdminCajaPage({
         </p>
       ) : null}
 
-      {open && live ? (
+      {open && blind ? (
         canManage ? (
           <CashRegisterClosePanel
             sessionId={open.id}
             businessDayLabel={dayLabel}
-            openingFloatCents={open.opening_float_cents}
-            live={live}
+            blind={blind}
           />
         ) : (
           <div className="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-700 dark:bg-zinc-900">
@@ -110,8 +114,8 @@ export default async function AdminCajaPage({
               Caja abierta · {dayLabel}
             </p>
             <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-300">
-              Fondo {formatCop(open.opening_float_cents)} · esperado{" "}
-              {formatCop(live.expectedCashCents)} · {live.unitsSold} ud vendidas
+              {blind.salesCount} facturas · {blind.unitsSold} ud vendidas ·{" "}
+              {blind.expenseLines.length} egresos. Los montos de efectivo se revelan al cerrar.
             </p>
           </div>
         )

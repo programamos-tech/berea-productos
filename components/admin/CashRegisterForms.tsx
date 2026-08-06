@@ -16,7 +16,7 @@ import {
   productLabelClass as labelClass,
 } from "@/components/admin/product-form-primitives";
 import type {
-  CashDayLiveTotals,
+  CashDayBlindSummary,
   CashExpenseLine,
   CashStockOutLine,
 } from "@/lib/cash-register";
@@ -64,8 +64,8 @@ export function CashRegisterOpenForm({
           Abrir caja · {businessDayLabel}
         </h2>
         <p className="mt-1 text-sm leading-relaxed text-zinc-600 dark:text-zinc-300">
-          Ingresá el fondo inicial. El esperado al cierre será fondo + ventas en efectivo − egresos
-          en efectivo del día.
+          Ingresá el fondo inicial. Al cerrar, la vendedora cuenta el efectivo a ciegas; el sistema
+          compara solo después de confirmar.
         </p>
       </div>
       <div>
@@ -89,39 +89,11 @@ export function CashRegisterOpenForm({
   );
 }
 
-function Metric({
-  label,
-  value,
-  emphasize,
-}: {
-  label: string;
-  value: string;
-  emphasize?: boolean;
-}) {
+function Metric({ label, value }: { label: string; value: string }) {
   return (
-    <div
-      className={
-        emphasize
-          ? "rounded-lg border border-rose-200/80 bg-rose-50/70 px-3 py-2.5 dark:border-rose-900/50 dark:bg-rose-950/30"
-          : "rounded-lg border border-zinc-200/80 bg-zinc-50/80 px-3 py-2.5 dark:border-zinc-700 dark:bg-zinc-950/50"
-      }
-    >
-      <p
-        className={
-          emphasize
-            ? "text-[11px] font-medium text-rose-800 dark:text-rose-200"
-            : "text-[11px] text-zinc-500 dark:text-zinc-400"
-        }
-      >
-        {label}
-      </p>
-      <p
-        className={
-          emphasize
-            ? "mt-1 text-base font-semibold tabular-nums text-rose-950 dark:text-rose-100"
-            : "mt-1 text-sm font-semibold tabular-nums text-zinc-900 dark:text-zinc-100"
-        }
-      >
+    <div className="rounded-lg border border-zinc-200/80 bg-zinc-50/80 px-3 py-2.5 dark:border-zinc-700 dark:bg-zinc-950/50">
+      <p className="text-[11px] text-zinc-500 dark:text-zinc-400">{label}</p>
+      <p className="mt-1 text-sm font-semibold tabular-nums text-zinc-900 dark:text-zinc-100">
         {value}
       </p>
     </div>
@@ -167,12 +139,22 @@ function StockOutTable({ lines }: { lines: CashStockOutLine[] }) {
   );
 }
 
-function ExpensesTable({ lines }: { lines: CashExpenseLine[] }) {
+function ExpensesTable({
+  lines,
+  hideAmounts,
+}: {
+  lines: Array<{
+    id: string;
+    concept: string;
+    payment_method: string;
+    amount_cents?: number;
+  }>;
+  hideAmounts?: boolean;
+}) {
   if (lines.length === 0) {
     return (
       <p className="text-sm text-zinc-500 dark:text-zinc-400">
-        No hay egresos cargados para este día. Si registrás uno en Egresos, aparece acá y baja el
-        efectivo esperado (si es en efectivo).
+        No hay egresos cargados para este día. Si registrás uno en Egresos, aparece acá.
       </p>
     );
   }
@@ -183,7 +165,9 @@ function ExpensesTable({ lines }: { lines: CashExpenseLine[] }) {
           <tr className="border-b border-zinc-200 text-xs uppercase tracking-wide text-zinc-500 dark:border-zinc-700 dark:text-zinc-400">
             <th className="py-2 pr-3 font-medium">Concepto</th>
             <th className="py-2 pr-3 font-medium">Medio</th>
-            <th className="py-2 text-right font-medium">Monto</th>
+            {hideAmounts ? null : (
+              <th className="py-2 text-right font-medium">Monto</th>
+            )}
           </tr>
         </thead>
         <tbody>
@@ -193,9 +177,11 @@ function ExpensesTable({ lines }: { lines: CashExpenseLine[] }) {
               <td className="py-2 pr-3 text-zinc-600 dark:text-zinc-300">
                 {paymentLabel(l.payment_method)}
               </td>
-              <td className="py-2 text-right tabular-nums font-medium text-zinc-900 dark:text-zinc-100">
-                {formatCop(l.amount_cents)}
-              </td>
+              {hideAmounts ? null : (
+                <td className="py-2 text-right tabular-nums font-medium text-zinc-900 dark:text-zinc-100">
+                  {formatCop(l.amount_cents ?? 0)}
+                </td>
+              )}
             </tr>
           ))}
         </tbody>
@@ -204,79 +190,65 @@ function ExpensesTable({ lines }: { lines: CashExpenseLine[] }) {
   );
 }
 
+/** Cierre a ciegas: sin montos de efectivo / esperado hasta confirmar. */
 export function CashRegisterClosePanel({
   sessionId,
   businessDayLabel,
-  openingFloatCents,
-  live,
+  blind,
 }: {
   sessionId: string;
   businessDayLabel: string;
-  openingFloatCents: number;
-  live: CashDayLiveTotals;
+  blind: CashDayBlindSummary;
 }) {
-  const [countedCents, setCountedCents] = useState(Math.max(0, live.expectedCashCents));
+  const [countedCents, setCountedCents] = useState(0);
+  const [notes, setNotes] = useState("");
   const [submissionId] = useState(newSubmissionId);
-  const diff = countedCents - live.expectedCashCents;
 
   return (
     <div className="space-y-5">
       <section className={cardClass}>
-        <div className="flex flex-wrap items-end justify-between gap-2">
-          <div>
-            <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
-              Movimiento del día · {businessDayLabel}
-            </h2>
-            <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-300">
-              Totales en vivo (Bogotá). Al cerrar se congelan ventas, egresos y stock.
-            </p>
-          </div>
+        <div>
+          <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
+            Actividad del día · {businessDayLabel}
+          </h2>
+          <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-300">
+            Conteo a ciegas: no se muestran montos de caja. Contá el efectivo físico e ingresalo;
+            el sistema compara al confirmar y, si no cuadra, pide una nota.
+          </p>
         </div>
-        <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6">
-          <Metric label="Fondo inicial" value={formatCop(openingFloatCents)} />
-          <Metric label="Ventas (total)" value={formatCop(live.salesTotalCents)} />
-          <Metric label="Ventas efectivo" value={formatCop(live.salesCashCents)} />
-          <Metric label="Ventas transferencia" value={formatCop(live.salesTransferCents)} />
+        <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+          <Metric label="Facturas del día" value={String(blind.salesCount)} />
+          <Metric label="Unidades vendidas" value={String(blind.unitsSold)} />
           <Metric
-            label="Ventas mixtas / otras"
-            value={formatCop(live.salesMixedCents + live.salesOtherCents)}
+            label="Egresos registrados"
+            value={String(blind.expenseLines.length)}
           />
-          <Metric label="Egresos efectivo" value={formatCop(live.expensesCashCents)} />
-          <Metric label="Egresos otros medios" value={formatCop(live.expensesOtherCents)} />
-          <Metric label="Facturas" value={String(live.salesCount)} />
-          <Metric label="Unidades vendidas" value={String(live.unitsSold)} />
-          <Metric label="Egresos (#)" value={String(live.expenseLines.length)} />
-          <div className="col-span-2 sm:col-span-3 lg:col-span-2 xl:col-span-2">
-            <Metric
-              label="Efectivo esperado (fondo + efectivo − egresos efectivo)"
-              value={formatCop(live.expectedCashCents)}
-              emphasize
-            />
-          </div>
+          <Metric
+            label="Productos distintos"
+            value={String(blind.stockOutLines.length)}
+          />
         </div>
       </section>
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(300px,400px)] xl:items-start">
         <section className={cardClass}>
           <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-            Stock que salió (ventas) · {live.unitsSold} ud
+            Stock que salió (ventas) · {blind.unitsSold} ud
           </h3>
           <div className="mt-3">
-            <StockOutTable lines={live.stockOutLines} />
+            <StockOutTable lines={blind.stockOutLines} />
           </div>
         </section>
 
         <section className={cardClass}>
           <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-            Egresos del día · {live.expenseLines.length} ·{" "}
-            {formatCop(live.expensesCashCents + live.expensesOtherCents)}
+            Egresos del día · {blind.expenseLines.length}
           </h3>
           <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-            Efectivo {formatCop(live.expensesCashCents)} · otros{" "}
-            {formatCop(live.expensesOtherCents)}. Los de efectivo ya restan del esperado.
+            Conceptos del día (sin montos hasta cerrar). Revisá que estén todos registrados.
           </p>
           <div className="mt-3">
-            <ExpensesTable lines={live.expenseLines} />
+            <ExpensesTable lines={blind.expenseLines} hideAmounts />
           </div>
         </section>
 
@@ -285,7 +257,8 @@ export function CashRegisterClosePanel({
             Cerrar caja
           </h2>
           <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-300">
-            Contá el efectivo físico. La diferencia queda en el registro del día.
+            Contá billetes y monedas e ingresá el total. No hace falta calcular el esperado: eso lo
+            hace el sistema.
           </p>
           <form action={closeCashRegisterSession} className="mt-4 space-y-4">
             <input type="hidden" name="session_id" value={sessionId} />
@@ -303,31 +276,22 @@ export function CashRegisterClosePanel({
               </div>
             </div>
 
-            <div
-              className={`rounded-lg border px-3 py-2.5 text-sm ${
-                diff === 0
-                  ? "border-emerald-200 bg-emerald-50 text-emerald-900 dark:border-emerald-900/50 dark:bg-emerald-950/30 dark:text-emerald-100"
-                  : diff > 0
-                    ? "border-amber-200 bg-amber-50 text-amber-950 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-100"
-                    : "border-red-200 bg-red-50 text-red-900 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-100"
-              }`}
-            >
-              {diff === 0
-                ? "Cuadra con el esperado"
-                : diff > 0
-                  ? `Sobrante: ${formatCop(diff)}`
-                  : `Faltante: ${formatCop(Math.abs(diff))}`}
+            <div className="rounded-lg border border-zinc-200 bg-zinc-50/80 px-3 py-2.5 text-sm text-zinc-600 dark:border-zinc-700 dark:bg-zinc-950/40 dark:text-zinc-300">
+              Al confirmar, el sistema compara con ventas y egresos en efectivo. Si hay diferencia,
+              tenés que dejar una nota con el motivo.
             </div>
 
             <div>
               <label htmlFor="caja-notes" className={labelClass}>
-                Notas (opcional)
+                Nota / motivo
               </label>
               <textarea
                 id="caja-notes"
                 name="notes"
-                rows={2}
-                placeholder="Ej. Faltante por cambio mal entregado"
+                rows={3}
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Obligatoria si no cuadra (ej. cambio mal entregado, faltante, etc.)"
                 className={`${productInputClass} mt-2 resize-none`}
               />
             </div>

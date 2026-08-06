@@ -109,17 +109,6 @@ export async function closeCashRegisterSession(formData: FormData) {
   if (!sessionId) redirectCaja("session");
   if (countedCash < 0) redirectCaja("counted");
 
-  const claim = await claimAdminFormToken(
-    supabase,
-    readSubmissionToken(formData),
-    `cash_register_close:${sessionId}`,
-  );
-  if (claim === "duplicate") {
-    revalidatePath("/admin/caja");
-    redirect(`/admin/caja/${sessionId}`);
-  }
-  if (claim === "error") redirectCaja("token");
-
   const { data: session, error: fetchErr } = await supabase
     .from("cash_register_sessions")
     .select("id,status,business_day,opening_float_cents")
@@ -141,6 +130,22 @@ export async function closeCashRegisterSession(formData: FormData) {
     live.expensesCashCents,
   );
   const difference = countedCash - expected;
+
+  // Validar antes del token: si falla, pueden reintentar con el mismo formulario.
+  if (difference !== 0 && !notes) {
+    redirectCaja("notes_required");
+  }
+
+  const claim = await claimAdminFormToken(
+    supabase,
+    readSubmissionToken(formData),
+    `cash_register_close:${sessionId}`,
+  );
+  if (claim === "duplicate") {
+    revalidatePath("/admin/caja");
+    redirect(`/admin/caja/${sessionId}`);
+  }
+  if (claim === "error") redirectCaja("token");
 
   const { error: updErr } = await supabase
     .from("cash_register_sessions")
@@ -197,6 +202,7 @@ export async function closeCashRegisterSession(formData: FormData) {
       expenses_other_cents: live.expensesOtherCents,
       units_sold: live.unitsSold,
       expense_count: live.expenseLines.length,
+      notes: notes ?? null,
     },
   });
 

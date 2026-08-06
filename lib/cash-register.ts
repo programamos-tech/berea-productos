@@ -67,6 +67,33 @@ export type CashDayLiveTotals = {
   expectedCashCents: number;
 };
 
+/** Payload seguro para el cierre a ciegas (sin montos de caja). */
+export type CashDayBlindSummary = {
+  businessDay: string;
+  salesCount: number;
+  unitsSold: number;
+  stockOutLines: CashStockOutLine[];
+  expenseLines: Array<{
+    id: string;
+    concept: string;
+    payment_method: string;
+  }>;
+};
+
+export function toBlindCashSummary(live: CashDayLiveTotals): CashDayBlindSummary {
+  return {
+    businessDay: live.businessDay,
+    salesCount: live.salesCount,
+    unitsSold: live.unitsSold,
+    stockOutLines: live.stockOutLines,
+    expenseLines: live.expenseLines.map((e) => ({
+      id: e.id,
+      concept: e.concept,
+      payment_method: e.payment_method,
+    })),
+  };
+}
+
 const SESSION_SELECT =
   "id,business_day,status,opening_float_cents,opened_at,opened_by,sales_count,sales_total_cents,sales_cash_cents,sales_transfer_cents,sales_mixed_cents,sales_other_cents,expenses_cash_cents,expenses_other_cents,expected_cash_cents,counted_cash_cents,cash_difference_cents,units_sold,stock_out_lines,expense_lines,notes,closed_at,closed_by,created_at";
 
