@@ -5,7 +5,10 @@ import { redirect } from "next/navigation";
 import { todayYmdInReportStore } from "@/lib/admin-report-range";
 import { EXPENSE_CANCELLATION_REASON_MIN_LENGTH } from "@/lib/expenses-constants";
 import { loadAdminPermissions } from "@/lib/load-admin-permissions";
-import { requireAdminPermission } from "@/lib/require-admin-permission";
+import {
+  assertCashRegisterOpenForStaff,
+  requireAdminPermission,
+} from "@/lib/require-admin-permission";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 const UUID_RE =
@@ -19,6 +22,7 @@ function revalidateEgresosList() {
 
 export async function createStoreExpense(formData: FormData) {
   await requireAdminPermission("egresos_crear");
+  await assertCashRegisterOpenForStaff();
   const supabase = await createSupabaseServerClient();
 
   const concept = String(formData.get("concept") ?? "").trim();

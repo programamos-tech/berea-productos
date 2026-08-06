@@ -40,6 +40,8 @@ function errorMessage(code: string | undefined): string | null {
       return "No se pudo guardar el cierre. Intentá de nuevo.";
     case "notes_required":
       return "Hay una diferencia entre el efectivo contado y el esperado. Dejá una nota con el motivo e intentá de nuevo.";
+    case "need_open":
+      return "Primero abrí la caja del día para poder facturar y usar el panel.";
     default:
       return null;
   }

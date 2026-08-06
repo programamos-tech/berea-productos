@@ -10,7 +10,7 @@ import {
   verifyInsertedRowInDev,
   verifyRowCountAtLeastInDev,
 } from "@/lib/admin-insert-verify";
-import { requireAdminPermission } from "@/lib/require-admin-permission";
+import { requireAdminPermission, assertCashRegisterOpenForStaff } from "@/lib/require-admin-permission";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
   unitPriceAfterWholesaleCents,
@@ -124,6 +124,7 @@ async function decrementPosStockLocal(
 
 export async function createPosInvoiceAction(formData: FormData) {
   const { userId } = await requireAdminPermission("ventas_crear");
+  await assertCashRegisterOpenForStaff();
   const supabase = await createSupabaseServerClient();
 
   let payload: PosInvoicePayload;

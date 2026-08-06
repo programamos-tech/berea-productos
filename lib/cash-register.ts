@@ -373,6 +373,24 @@ export async function fetchCashDayLiveTotals(
   };
 }
 
+export async function fetchCashSessionForBusinessDay(
+  supabase: SupabaseClient,
+  businessDayYmd: string,
+): Promise<CashRegisterSessionRow | null> {
+  const day = businessDayYmd.slice(0, 10);
+  const { data, error } = await supabase
+    .from("cash_register_sessions")
+    .select(SESSION_SELECT)
+    .eq("business_day", day)
+    .maybeSingle();
+  if (error) {
+    console.error("fetchCashSessionForBusinessDay", error);
+    return null;
+  }
+  if (!data) return null;
+  return mapCashSessionRow(data as Record<string, unknown>);
+}
+
 export async function fetchOpenCashSession(
   supabase: SupabaseClient,
 ): Promise<CashRegisterSessionRow | null> {

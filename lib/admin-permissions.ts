@@ -160,7 +160,7 @@ export function defaultPermissionsOwner(): PermissionMap {
 export function defaultPermissionsCashier(): PermissionMap {
   const m: PermissionMap = {};
   for (const k of PERMISSION_KEYS) m[k] = false;
-  m.inicio_reportes = true;
+  m.inicio_reportes = false;
   m.ventas_ver = true;
   m.ventas_crear = true;
   m.clientes_ver = true;

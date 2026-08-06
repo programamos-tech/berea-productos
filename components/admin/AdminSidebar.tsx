@@ -54,6 +54,17 @@ const navSections: {
     title: "Comercial",
     items: [
       {
+        href: "/admin/caja",
+        label: "Caja",
+        icon: (
+          <Icon>
+            <rect x="2" y="6" width="20" height="12" rx="2" />
+            <circle cx="12" cy="12" r="3" />
+            <path d="M6 12h.01M18 12h.01" />
+          </Icon>
+        ),
+      },
+      {
         href: "/admin",
         label: "Reportes",
         icon: (
@@ -69,17 +80,6 @@ const navSections: {
           <Icon>
             <path d="M6 3h12v18l-2-1-2 1-2-1-2 1-2-1-2 1V3Z" />
             <path d="M9 8h6M9 12h6M9 16h4" />
-          </Icon>
-        ),
-      },
-      {
-        href: "/admin/caja",
-        label: "Cierre de caja",
-        icon: (
-          <Icon>
-            <rect x="2" y="6" width="20" height="12" rx="2" />
-            <circle cx="12" cy="12" r="3" />
-            <path d="M6 12h.01M18 12h.01" />
           </Icon>
         ),
       },

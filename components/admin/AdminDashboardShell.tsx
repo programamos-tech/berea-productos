@@ -1,21 +1,39 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { AdminOrderNotificationsProvider } from "@/components/admin/AdminOrderNotificationsProvider";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { AdminTopBar } from "@/components/admin/AdminTopBar";
+import { CashRegisterMorningGateModal } from "@/components/admin/CashRegisterMorningGateModal";
+import { pathAllowedDuringCashGate } from "@/lib/cash-register-gate";
 
 export function AdminDashboardShell({
   children,
   allowedNavHrefs,
   notifyNewWebOrders = false,
+  cashGate = null,
 }: {
   children: React.ReactNode;
   /** Hrefs del menú lateral permitidos para esta sesión (incluye `/admin/cuenta` y `/`). */
   allowedNavHrefs: string[];
   notifyNewWebOrders?: boolean;
+  cashGate?: {
+    mustOpen: boolean;
+    businessDayLabel: string;
+    displayName: string | null;
+  } | null;
 }) {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const pathname = usePathname();
+  const router = useRouter();
+  const mustOpen = Boolean(cashGate?.mustOpen);
+
+  useEffect(() => {
+    if (!mustOpen) return;
+    if (pathAllowedDuringCashGate(pathname)) return;
+    router.replace("/admin/caja");
+  }, [mustOpen, pathname, router]);
 
   useEffect(() => {
     if (!mobileNavOpen) return;
@@ -38,34 +56,41 @@ export function AdminDashboardShell({
   const closeNav = () => setMobileNavOpen(false);
 
   return (
-    <AdminOrderNotificationsProvider enabled={notifyNewWebOrders}>
+    <AdminOrderNotificationsProvider enabled={notifyNewWebOrders && !mustOpen}>
       <div className="isolate flex min-h-screen items-stretch antialiased">
-      {mobileNavOpen ? (
-        <button
-          type="button"
-          className="fixed inset-0 z-[40] bg-black/40 backdrop-blur-[1px] lg:hidden"
-          aria-label="Cerrar menú"
-          onClick={closeNav}
-        />
-      ) : null}
+        {mobileNavOpen ? (
+          <button
+            type="button"
+            className="fixed inset-0 z-[40] bg-black/40 backdrop-blur-[1px] lg:hidden"
+            aria-label="Cerrar menú"
+            onClick={closeNav}
+          />
+        ) : null}
 
-      <AdminSidebar
-        allowedNavHrefs={allowedNavHrefs}
-        mobileOpen={mobileNavOpen}
-        onNavigate={closeNav}
-      />
-
-      <div className="relative z-10 flex min-h-screen min-w-0 flex-1 flex-col overflow-x-visible overflow-y-visible bg-gradient-to-b from-rose-50/40 via-stone-50/95 to-stone-100/90 dark:from-zinc-950 dark:via-zinc-950 dark:to-zinc-950 lg:ml-64 print:ml-0 print:bg-white">
-        <AdminTopBar
-          menuOpen={mobileNavOpen}
-          onMenuClick={() => setMobileNavOpen(true)}
-          showOrderNotifications={notifyNewWebOrders}
+        <AdminSidebar
+          allowedNavHrefs={allowedNavHrefs}
+          mobileOpen={mobileNavOpen}
+          onNavigate={closeNav}
         />
-        <main className="flex-1 p-3 sm:p-4 md:p-6 print:bg-white print:p-8">
-          {children}
-        </main>
+
+        <div className="relative z-10 flex min-h-screen min-w-0 flex-1 flex-col overflow-x-visible overflow-y-visible bg-gradient-to-b from-rose-50/40 via-stone-50/95 to-stone-100/90 dark:from-zinc-950 dark:via-zinc-950 dark:to-zinc-950 lg:ml-64 print:ml-0 print:bg-white">
+          <AdminTopBar
+            menuOpen={mobileNavOpen}
+            onMenuClick={() => setMobileNavOpen(true)}
+            showOrderNotifications={notifyNewWebOrders && !mustOpen}
+          />
+          <main className="flex-1 p-3 sm:p-4 md:p-6 print:bg-white print:p-8">
+            {children}
+          </main>
+        </div>
+
+        {mustOpen && cashGate ? (
+          <CashRegisterMorningGateModal
+            businessDayLabel={cashGate.businessDayLabel}
+            displayName={cashGate.displayName}
+          />
+        ) : null}
       </div>
-    </div>
     </AdminOrderNotificationsProvider>
   );
 }

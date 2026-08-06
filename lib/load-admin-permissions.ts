@@ -3,6 +3,7 @@ import { withTimeout } from "@/lib/async-timeout";
 import {
   mergePermissionsWithDefaults,
   normalizeCollaboratorJobRole,
+  type CollaboratorJobRole,
   type PermissionMap,
 } from "@/lib/admin-permissions";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -12,6 +13,7 @@ const ADMIN_AUTH_TIMEOUT_MS = 12_000;
 async function loadAdminPermissionsUncached(): Promise<{
   userId: string;
   permissions: PermissionMap;
+  jobRole: CollaboratorJobRole;
 } | null> {
   const supabase = await createSupabaseServerClient();
   const authResult = (await withTimeout(
@@ -49,7 +51,7 @@ async function loadAdminPermissionsUncached(): Promise<{
     jobRole,
   );
 
-  return { userId: user.id, permissions };
+  return { userId: user.id, permissions, jobRole };
 }
 
 /** Una sola lectura de perfil por request (layout + página + permisos de sección). */

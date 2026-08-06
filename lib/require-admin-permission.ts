@@ -1,5 +1,10 @@
 import type { PermissionKey } from "@/lib/admin-permissions";
+import {
+  fetchCashSessionForBusinessDay,
+  todayBusinessDayYmd,
+} from "@/lib/cash-register";
 import { loadAdminPermissions } from "@/lib/load-admin-permissions";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 
 /** Redirección cuando una acción o página requiere un permiso que el usuario no tiene. */
@@ -30,4 +35,24 @@ export async function requireAdminAnyPermission(keys: PermissionKey[]) {
 /** Para server actions: misma regla que las páginas (redirect). */
 export async function assertActionPermission(key: PermissionKey): Promise<void> {
   await requireAdminPermission(key);
+}
+
+/**
+ * Vendedora: no puede operar ventas/egresos sin caja abierta del día.
+ * Dueña no está bloqueada. Si el día ya cerró, también bloquea altas.
+ */
+export async function assertCashRegisterOpenForStaff(): Promise<void> {
+  const perm = await requireAdminSession();
+  if (perm.jobRole === "owner") return;
+  if (!perm.permissions.caja_gestionar) return;
+
+  const supabase = await createSupabaseServerClient();
+  const today = todayBusinessDayYmd();
+  const todaySession = await fetchCashSessionForBusinessDay(supabase, today);
+  if (todaySession?.status === "open") return;
+  redirect(
+    todaySession?.status === "closed"
+      ? "/admin/caja?error=day_closed"
+      : "/admin/caja?error=need_open",
+  );
 }
