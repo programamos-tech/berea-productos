@@ -1,6 +1,5 @@
 import { Suspense } from "react";
 import Link from "next/link";
-import { VentasFilteredSummary } from "@/components/admin/VentasFilteredSummary";
 import {
   VentasFiltersBar,
   VentasRefreshButton,
@@ -11,7 +10,6 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { adminPanelClass } from "@/lib/admin-ui";
 import { fetchAdminVentasPage, type VentaOrderRow } from "@/lib/supabase/admin-ventas-list";
 import { buildAdminVentasListHref } from "@/lib/admin-ventas-list-url";
-import type { VentasFilterStats } from "@/lib/ventas-filter-stats";
 import type { VentaEstadoFilter, VentaPagoFilter } from "@/lib/ventas-sales";
 
 const VENTAS_PAGE_SIZE = 20;
@@ -60,19 +58,12 @@ export async function VentasPageBody({
   let page = pageRequested;
   let pageRows: VentaOrderRow[] = [];
   let totalFiltered = 0;
-  let filterStats: VentasFilterStats = {
-    totalCents: 0,
-    cashCents: 0,
-    transferCents: 0,
-    mixedCents: 0,
-    otherCents: 0,
-    paidCount: 0,
-  };
   let error: string | null = null;
 
   try {
-    ({ rows: pageRows, total: totalFiltered, filterStats, error } =
-      await fetchAdminVentasPage(supabase, {
+    ({ rows: pageRows, total: totalFiltered, error } = await fetchAdminVentasPage(
+      supabase,
+      {
         q: qRaw,
         status,
         payment,
@@ -80,7 +71,8 @@ export async function VentasPageBody({
         dateTo,
         page,
         pageSize: VENTAS_PAGE_SIZE,
-      }));
+      },
+    ));
   } catch (err) {
     console.error("[ventas] fetchAdminVentasPage:", err);
     return (
@@ -101,8 +93,9 @@ export async function VentasPageBody({
   const totalPages = Math.max(1, Math.ceil(totalFiltered / VENTAS_PAGE_SIZE));
   if (page > totalPages && totalFiltered > 0) {
     page = totalPages;
-    ({ rows: pageRows, total: totalFiltered, filterStats } =
-      await fetchAdminVentasPage(supabase, {
+    ({ rows: pageRows, total: totalFiltered } = await fetchAdminVentasPage(
+      supabase,
+      {
         q: qRaw,
         status,
         payment,
@@ -110,7 +103,8 @@ export async function VentasPageBody({
         dateTo,
         page,
         pageSize: VENTAS_PAGE_SIZE,
-      }));
+      },
+    ));
   }
 
   const buildPageHref = (p: number) =>
@@ -134,9 +128,6 @@ export async function VentasPageBody({
 
   return (
     <div className={`${adminPanelClass} overflow-hidden`}>
-      <div className="border-b border-rose-100/80 bg-rose-50/25 px-3 py-2.5 dark:border-zinc-800 dark:bg-zinc-800/30 sm:px-4 md:px-5">
-        <VentasFilteredSummary stats={filterStats} />
-      </div>
       <Suspense
         fallback={
           <div

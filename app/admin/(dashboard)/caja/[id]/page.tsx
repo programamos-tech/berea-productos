@@ -1,13 +1,13 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import {
+  CashClosedMoneyGrid,
+  CashDiscrepancyBanner,
   CashExpensesReadonly,
   CashStockOutReadonly,
 } from "@/components/admin/CashRegisterForms";
-import { StaticCopCents } from "@/components/admin/ReportsAnimatedFigures";
 import { prettyReportDayShortLabel } from "@/lib/admin-report-range";
 import { fetchCashSessionById } from "@/lib/cash-register";
-import { formatCop } from "@/lib/money";
 import { requireAdminAnyPermission } from "@/lib/require-admin-permission";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -32,22 +32,43 @@ export default async function AdminCajaDetailPage({
   const dayLabel = prettyReportDayShortLabel(session.business_day);
   const diff = session.cash_difference_cents;
 
-  const moneyRows: { label: string; value: number | null }[] = [
-    { label: "Fondo inicial", value: session.opening_float_cents },
-    { label: "Ventas total", value: session.sales_total_cents },
-    { label: "Ventas efectivo", value: session.sales_cash_cents },
-    { label: "Ventas transferencia", value: session.sales_transfer_cents },
+  const moneyRows = [
+    { label: "Fondo inicial", value: session.opening_float_cents, kind: "fondo" as const },
+    { label: "Ventas total", value: session.sales_total_cents, kind: "ventas" as const },
+    { label: "Ventas efectivo", value: session.sales_cash_cents, kind: "efectivo" as const },
+    {
+      label: "Ventas transferencia",
+      value: session.sales_transfer_cents,
+      kind: "transfer" as const,
+    },
     {
       label: "Ventas mixtas / otras",
       value:
         session.sales_mixed_cents != null || session.sales_other_cents != null
           ? (session.sales_mixed_cents ?? 0) + (session.sales_other_cents ?? 0)
           : null,
+      kind: "mixtas" as const,
     },
-    { label: "Egresos efectivo", value: session.expenses_cash_cents },
-    { label: "Egresos otros", value: session.expenses_other_cents },
-    { label: "Efectivo esperado", value: session.expected_cash_cents },
-    { label: "Efectivo contado", value: session.counted_cash_cents },
+    {
+      label: "Egresos efectivo",
+      value: session.expenses_cash_cents,
+      kind: "egreso" as const,
+    },
+    {
+      label: "Egresos otros",
+      value: session.expenses_other_cents,
+      kind: "egreso" as const,
+    },
+    {
+      label: "Efectivo esperado",
+      value: session.expected_cash_cents,
+      kind: "esperado" as const,
+    },
+    {
+      label: "Efectivo contado",
+      value: session.counted_cash_cents,
+      kind: "contado" as const,
+    },
   ];
 
   return (
@@ -74,64 +95,21 @@ export default async function AdminCajaDetailPage({
       </div>
 
       {diff != null ? (
-        <div
-          className={`rounded-xl border px-4 py-3 text-sm ${
-            diff === 0
-              ? "border-emerald-200 bg-emerald-50 text-emerald-900 dark:border-emerald-900/50 dark:bg-emerald-950/30 dark:text-emerald-100"
-              : diff > 0
-                ? "border-amber-200 bg-amber-50 text-amber-950 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-100"
-                : "border-red-200 bg-red-50 text-red-900 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-100"
-          }`}
-        >
-          {diff === 0
-            ? "La caja cuadró."
-            : diff > 0
-              ? `Discrepancia: sobrante ${formatCop(diff)}`
-              : `Discrepancia: faltante ${formatCop(Math.abs(diff))}`}
-          {session.units_sold != null ? (
-            <span className="ml-2 opacity-80">· {session.units_sold} ud vendidas</span>
-          ) : null}
-          {session.expense_lines.length > 0 ? (
-            <span className="ml-2 opacity-80">
-              · {session.expense_lines.length} egresos
-            </span>
-          ) : null}
-          {session.notes ? (
-            <p className="mt-2 text-sm opacity-90">
-              <span className="font-medium">Nota: </span>
-              {session.notes}
-            </p>
-          ) : null}
-        </div>
+        <CashDiscrepancyBanner
+          diff={diff}
+          unitsSold={session.units_sold}
+          expenseCount={session.expense_lines.length}
+          notes={session.notes}
+        />
       ) : null}
 
-      <section className="rounded-xl border border-zinc-200/90 bg-white p-5 shadow-sm dark:border-zinc-700/90 dark:bg-zinc-900">
-        <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-          Resumen monetario
-        </h2>
-        <dl className="mt-4 grid gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-          {moneyRows.map((r) => (
-            <div
-              key={r.label}
-              className="rounded-lg border border-zinc-200/80 bg-zinc-50/70 px-3 py-2.5 dark:border-zinc-700 dark:bg-zinc-950/40"
-            >
-              <dt className="text-xs text-zinc-500 dark:text-zinc-400">{r.label}</dt>
-              <dd className="mt-1 text-sm font-semibold tabular-nums text-zinc-900 dark:text-zinc-100">
-                {r.value == null ? "—" : <StaticCopCents cents={r.value} />}
-              </dd>
-            </div>
-          ))}
-        </dl>
-        {session.notes ? (
-          <p className="mt-4 text-sm text-zinc-600 dark:text-zinc-300">
-            <span className="font-medium text-zinc-800 dark:text-zinc-200">Notas: </span>
-            {session.notes}
-          </p>
-        ) : null}
-      </section>
+      <CashClosedMoneyGrid rows={moneyRows} />
 
       <div className="grid gap-5 lg:grid-cols-2">
-        <CashStockOutReadonly lines={session.stock_out_lines} />
+        <CashStockOutReadonly
+          lines={session.stock_out_lines}
+          unitsSold={session.units_sold}
+        />
         <CashExpensesReadonly lines={session.expense_lines} />
       </div>
     </div>
