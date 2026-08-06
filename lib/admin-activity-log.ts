@@ -9,11 +9,17 @@ export const ADMIN_ACTIVITY_ACTIONS = [
   "stock_transferred",
   "sale_created",
   "sale_cancelled",
+  "cash_session_opened",
+  "cash_session_closed",
 ] as const;
 
 export type AdminActivityAction = (typeof ADMIN_ACTIVITY_ACTIONS)[number];
 
-export type AdminActivityEntityType = "customer" | "product" | "order";
+export type AdminActivityEntityType =
+  | "customer"
+  | "product"
+  | "order"
+  | "cash_session";
 
 /** Fila listada en el panel de actividades. */
 export type AdminActivityLogRow = {
@@ -112,6 +118,10 @@ export function actionTypeLabel(action: AdminActivityAction): string {
       return "Nueva venta";
     case "sale_cancelled":
       return "Anulación de venta";
+    case "cash_session_opened":
+      return "Apertura de caja";
+    case "cash_session_closed":
+      return "Cierre de caja";
     default:
       return action;
   }

@@ -59,6 +59,16 @@ function IconCancel({ className }: { className?: string }) {
   );
 }
 
+function IconCash({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} className={className} aria-hidden>
+      <rect x="2" y="6" width="20" height="12" rx="2" />
+      <circle cx="12" cy="12" r="3" />
+      <path d="M6 12h.01M18 12h.01" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 function actionIcon(action: AdminActivityAction): typeof IconUser {
   switch (action) {
     case "customer_created":
@@ -75,6 +85,9 @@ function actionIcon(action: AdminActivityAction): typeof IconUser {
       return IconSale;
     case "sale_cancelled":
       return IconCancel;
+    case "cash_session_opened":
+    case "cash_session_closed":
+      return IconCash;
     default:
       return IconPackage;
   }
@@ -90,6 +103,8 @@ function entityLink(row: AdminActivityLogRow): { href: string; label: string } |
       return { href: `/admin/products/${id}/edit`, label: "Producto" };
     case "order":
       return { href: `/admin/orders/${id}`, label: "Factura" };
+    case "cash_session":
+      return { href: `/admin/caja/${id}`, label: "Cierre de caja" };
     default:
       return null;
   }

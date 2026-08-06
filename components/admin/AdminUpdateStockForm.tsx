@@ -3,6 +3,10 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import {
+  AdminFormSubmitButton,
+  adminPrimarySubmitButtonFullWidthClass,
+} from "@/components/admin/AdminFormSubmitButton";
+import {
   ProductQuantityInput,
   productInputClass,
   productLabelClass as labelClass,
@@ -26,6 +30,13 @@ function fmtQty(n: number) {
   return n <= 0 ? "0" : formatQuantityInputGrouping(n);
 }
 
+function newSubmissionId() {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return crypto.randomUUID();
+  }
+  return `sub_${Date.now()}_${Math.random().toString(36).slice(2, 12)}`;
+}
+
 export function AdminUpdateStockForm({
   productName,
   referenceLabel,
@@ -37,6 +48,7 @@ export function AdminUpdateStockForm({
   const [movementMode, setMovementMode] = useState<MovementMode>("replace");
   const [location, setLocation] = useState<StockLoc>("local");
   const [quantity, setQuantity] = useState(0);
+  const [submissionId] = useState(newSubmissionId);
 
   const currentForLoc = location === "local" ? stockLocal : stockWarehouse;
 
@@ -70,6 +82,7 @@ export function AdminUpdateStockForm({
       <input type="hidden" name="movement_mode" value={movementMode} />
       <input type="hidden" name="location" value={location} />
       <input type="hidden" name="return_to" value={returnTo} />
+      <input type="hidden" name="submission_id" value={submissionId} />
 
       <div className="space-y-8">
         <section className={shellMain}>
@@ -205,12 +218,12 @@ export function AdminUpdateStockForm({
           <p className="mt-3 text-sm leading-relaxed text-zinc-600 dark:text-zinc-300">
             Cuando confirmes, se actualizará el inventario de este producto.
           </p>
-          <button
-            type="submit"
-            className="mt-6 w-full rounded-xl border border-rose-950 bg-rose-950 py-3.5 text-sm font-medium text-white transition hover:bg-rose-900 hover:border-rose-900 dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-white"
+          <AdminFormSubmitButton
+            pendingLabel="Actualizando…"
+            className={`${adminPrimarySubmitButtonFullWidthClass} mt-6 rounded-xl`}
           >
             Actualizar stock
-          </button>
+          </AdminFormSubmitButton>
         </section>
       </div>
     </form>

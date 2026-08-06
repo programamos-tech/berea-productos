@@ -5,6 +5,7 @@ import {
   activityStockTraceToMetadata,
   buildPosSaleStockTrace,
 } from "@/lib/activity-log-stock";
+import { claimAdminFormToken } from "@/lib/admin-form-token";
 import {
   verifyInsertedRowInDev,
   verifyRowCountAtLeastInDev,
@@ -57,6 +58,8 @@ export type PosInvoicePayload = {
   mixedTransferCents?: number;
   shippingAddress: string | null;
   shippingPhone: string | null;
+  /** Token de un solo uso para evitar doble factura por doble clic. */
+  submissionId?: string | null;
 };
 
 function redirectError(code: string): never {
@@ -299,6 +302,20 @@ export async function createPosInvoiceAction(formData: FormData) {
 
   if (!Number.isFinite(totalCents) || totalCents < 0) redirectError("validation");
 
+  const submissionId = String(payload.submissionId ?? "").trim();
+  const claim = await claimAdminFormToken(
+    supabase,
+    submissionId,
+    `pos_invoice:${customerId}`,
+  );
+  if (claim === "duplicate") {
+    revalidatePath("/admin/ventas");
+    redirect("/admin/ventas");
+  }
+  if (claim === "error") {
+    redirectError("validation");
+  }
+
   const emailRaw =
     customerRow.email != null ? String(customerRow.email).trim() : "";
   const customerEmail =
@@ -516,6 +533,7 @@ export async function createPosInvoiceAction(formData: FormData) {
         : {}),
       line_items: lines.length,
       kit_lines: kitLines.length,
+      submission_id: submissionId || null,
       ...activityStockTraceToMetadata(stockTrace),
     },
   });

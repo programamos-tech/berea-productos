@@ -1,6 +1,10 @@
 "use server";
 
 import { logAdminActivity } from "@/lib/admin-activity-log";
+import {
+  claimAdminFormToken,
+  readSubmissionToken,
+} from "@/lib/admin-form-token";
 import { verifyInsertedRowInDev } from "@/lib/admin-insert-verify";
 import {
   legacySizeFromOptions,
@@ -609,6 +613,17 @@ export async function deleteProduct(productId: string) {
   redirect("/admin/products");
 }
 
+function revalidateAfterStockChange(productId: string) {
+  revalidateStoreProductCache();
+  revalidatePath("/products");
+  revalidatePath(`/products/${productId}`);
+  revalidatePath("/admin/products");
+  revalidatePath(`/admin/products/${productId}`);
+  revalidatePath(`/admin/products/${productId}/stock`);
+  revalidatePath(`/admin/products/${productId}/transfer`);
+  revalidatePath("/admin/actividades");
+}
+
 export async function adjustProductStock(productId: string, formData: FormData) {
   const supabase = await createSupabaseServerClient();
   const {
@@ -617,50 +632,82 @@ export async function adjustProductStock(productId: string, formData: FormData) 
   if (!user) redirect("/admin/login");
   await assertActionPermission("stock_actualizar");
 
+  const returnTo = safeStockAdjustReturnTo(String(formData.get("return_to") ?? ""));
   const location = String(formData.get("location") ?? "local");
   const movementMode = String(formData.get("movement_mode") ?? "replace");
   const qty = parseNonNegInt(
     formData.get("quantity") ?? formData.get("new_quantity"),
   );
-
-  const { data: row, error: fetchErr } = await supabase
-    .from("products")
-    .select("stock_local, stock_warehouse")
-    .eq("id", productId)
-    .maybeSingle();
-
-  if (fetchErr || !row) {
-    console.error("adjustProductStock fetch", fetchErr);
-    redirect("/admin/products?error=stock");
-  }
-
-  const curLocal = Math.max(0, Math.floor(Number(row.stock_local ?? 0)));
-  const curWh = Math.max(0, Math.floor(Number(row.stock_warehouse ?? 0)));
-
-  let nextLocal = curLocal;
-  let nextWh = curWh;
-
   const isWarehouse = location === "warehouse";
   const isAdd = movementMode === "add";
 
-  if (isWarehouse) {
-    nextWh = isAdd ? curWh + qty : qty;
-  } else {
-    nextLocal = isAdd ? curLocal + qty : qty;
+  const claim = await claimAdminFormToken(
+    supabase,
+    readSubmissionToken(formData),
+    `stock_adjust:${productId}`,
+  );
+  if (claim === "duplicate") {
+    revalidateAfterStockChange(productId);
+    redirect(returnTo);
+  }
+  if (claim === "error") {
+    redirect("/admin/products?error=stock");
   }
 
-  nextLocal = Math.min(Math.max(0, nextLocal), Number.MAX_SAFE_INTEGER);
-  nextWh = Math.min(Math.max(0, nextWh), Number.MAX_SAFE_INTEGER);
+  let curLocal = 0;
+  let curWh = 0;
+  let nextLocal = 0;
+  let nextWh = 0;
 
-  const { error } = await supabase
-    .from("products")
-    .update({
-      stock_local: nextLocal,
-      stock_warehouse: nextWh,
-    })
-    .eq("id", productId);
+  if (isAdd) {
+    if (qty < 1) redirect("/admin/products?error=stock");
+    const { data: rpcRows, error: rpcErr } = await supabase.rpc(
+      "adjust_product_stock_add",
+      {
+        p_product_id: productId,
+        p_location: isWarehouse ? "warehouse" : "local",
+        p_qty: qty,
+      },
+    );
+    if (rpcErr) {
+      console.error("adjustProductStock add rpc", rpcErr);
+      redirect("/admin/products?error=stock");
+    }
+    const row = Array.isArray(rpcRows) ? rpcRows[0] : rpcRows;
+    if (!row) redirect("/admin/products?error=stock");
+    curLocal = Math.max(0, Math.floor(Number(row.previous_local ?? 0)));
+    curWh = Math.max(0, Math.floor(Number(row.previous_warehouse ?? 0)));
+    nextLocal = Math.max(0, Math.floor(Number(row.next_local ?? 0)));
+    nextWh = Math.max(0, Math.floor(Number(row.next_warehouse ?? 0)));
+  } else {
+    const { data: row, error: fetchErr } = await supabase
+      .from("products")
+      .select("stock_local, stock_warehouse")
+      .eq("id", productId)
+      .maybeSingle();
 
-  if (error) redirect("/admin/products?error=stock");
+    if (fetchErr || !row) {
+      console.error("adjustProductStock fetch", fetchErr);
+      redirect("/admin/products?error=stock");
+    }
+
+    curLocal = Math.max(0, Math.floor(Number(row.stock_local ?? 0)));
+    curWh = Math.max(0, Math.floor(Number(row.stock_warehouse ?? 0)));
+    nextLocal = isWarehouse ? curLocal : qty;
+    nextWh = isWarehouse ? qty : curWh;
+    nextLocal = Math.min(Math.max(0, nextLocal), Number.MAX_SAFE_INTEGER);
+    nextWh = Math.min(Math.max(0, nextWh), Number.MAX_SAFE_INTEGER);
+
+    const { error } = await supabase
+      .from("products")
+      .update({
+        stock_local: nextLocal,
+        stock_warehouse: nextWh,
+      })
+      .eq("id", productId);
+
+    if (error) redirect("/admin/products?error=stock");
+  }
 
   await logAdminActivity(supabase, {
     actorId: user.id,
@@ -676,19 +723,11 @@ export async function adjustProductStock(productId: string, formData: FormData) 
       previous_warehouse: curWh,
       next_local: nextLocal,
       next_warehouse: nextWh,
+      submission_id: readSubmissionToken(formData) || null,
     },
   });
-  revalidatePath("/admin/actividades");
 
-  const returnTo = safeStockAdjustReturnTo(String(formData.get("return_to") ?? ""));
-
-  revalidateStoreProductCache();
-  revalidatePath("/products");
-  revalidatePath(`/products/${productId}`);
-  revalidatePath("/admin/products");
-  revalidatePath(`/admin/products/${productId}`);
-  revalidatePath(`/admin/products/${productId}/stock`);
-  revalidatePath(`/admin/products/${productId}/transfer`);
+  revalidateAfterStockChange(productId);
   redirect(returnTo);
 }
 
@@ -702,48 +741,48 @@ export async function transferProductStock(productId: string, formData: FormData
 
   const direction = String(formData.get("direction") ?? "local_to_warehouse");
   const qty = parseNonNegInt(formData.get("quantity"));
-
-  const { data: row, error: fetchErr } = await supabase
-    .from("products")
-    .select("stock_local, stock_warehouse")
-    .eq("id", productId)
-    .maybeSingle();
-
-  if (fetchErr || !row) {
-    console.error("transferProductStock fetch", fetchErr);
-    redirect("/admin/products?error=stock");
-  }
-
-  const curLocal = Math.max(0, Math.floor(Number(row.stock_local ?? 0)));
-  const curWh = Math.max(0, Math.floor(Number(row.stock_warehouse ?? 0)));
-
-  const fromLocal = direction === "local_to_warehouse";
-  const available = fromLocal ? curLocal : curWh;
-
   const transferPage = `/admin/products/${productId}/transfer`;
-  if (qty < 1 || qty > available) {
+  const returnTo = safeStockAdjustReturnTo(String(formData.get("return_to") ?? ""));
+  const fromLocal = direction === "local_to_warehouse";
+
+  const claim = await claimAdminFormToken(
+    supabase,
+    readSubmissionToken(formData),
+    `stock_transfer:${productId}`,
+  );
+  if (claim === "duplicate") {
+    revalidateAfterStockChange(productId);
+    redirect(returnTo);
+  }
+  if (claim === "error") {
     redirect(`${transferPage}?error=transfer`);
   }
 
-  let nextLocal = curLocal;
-  let nextWh = curWh;
-  if (fromLocal) {
-    nextLocal = curLocal - qty;
-    nextWh = curWh + qty;
-  } else {
-    nextWh = curWh - qty;
-    nextLocal = curLocal + qty;
+  if (qty < 1) {
+    redirect(`${transferPage}?error=transfer`);
   }
 
-  const { error } = await supabase
-    .from("products")
-    .update({
-      stock_local: nextLocal,
-      stock_warehouse: nextWh,
-    })
-    .eq("id", productId);
+  const { data: rpcRows, error: rpcErr } = await supabase.rpc(
+    "transfer_product_stock_qty",
+    {
+      p_product_id: productId,
+      p_direction: fromLocal ? "local_to_warehouse" : "warehouse_to_local",
+      p_qty: qty,
+    },
+  );
 
-  if (error) redirect(`${transferPage}?error=transfer`);
+  if (rpcErr) {
+    console.error("transferProductStock rpc", rpcErr);
+    redirect(`${transferPage}?error=transfer`);
+  }
+
+  const row = Array.isArray(rpcRows) ? rpcRows[0] : rpcRows;
+  if (!row) redirect(`${transferPage}?error=transfer`);
+
+  const curLocal = Math.max(0, Math.floor(Number(row.previous_local ?? 0)));
+  const curWh = Math.max(0, Math.floor(Number(row.previous_warehouse ?? 0)));
+  const nextLocal = Math.max(0, Math.floor(Number(row.next_local ?? 0)));
+  const nextWh = Math.max(0, Math.floor(Number(row.next_warehouse ?? 0)));
 
   await logAdminActivity(supabase, {
     actorId: user.id,
@@ -758,17 +797,10 @@ export async function transferProductStock(productId: string, formData: FormData
       previous_warehouse: curWh,
       next_local: nextLocal,
       next_warehouse: nextWh,
+      submission_id: readSubmissionToken(formData) || null,
     },
   });
-  revalidatePath("/admin/actividades");
 
-  const returnTo = safeStockAdjustReturnTo(String(formData.get("return_to") ?? ""));
-
-  revalidateStoreProductCache();
-  revalidatePath("/products");
-  revalidatePath(`/products/${productId}`);
-  revalidatePath("/admin/products");
-  revalidatePath(`/admin/products/${productId}`);
-  revalidatePath(`/admin/products/${productId}/transfer`);
+  revalidateAfterStockChange(productId);
   redirect(returnTo);
 }

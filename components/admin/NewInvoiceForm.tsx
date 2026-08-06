@@ -306,6 +306,11 @@ export function NewInvoiceForm({
   const [shipOptions, setShipOptions] = useState<ShipOption[]>([]);
   const [shipChoice, setShipChoice] = useState<string | null>(null);
   const [shipLoading, setShipLoading] = useState(false);
+  const [submissionId] = useState(() =>
+    typeof crypto !== "undefined" && "randomUUID" in crypto
+      ? crypto.randomUUID()
+      : `pos_${Date.now()}_${Math.random().toString(36).slice(2, 12)}`,
+  );
   /** Evita un segundo fetch de pos-profile cuando ya aplicamos el perfil (p. ej. ?customer=). */
   const profileAppliedForIdRef = useRef<string | null>(null);
   const shipLoadGenRef = useRef(0);
@@ -883,6 +888,7 @@ export function NewInvoiceForm({
         : {}),
       shippingAddress: address,
       shippingPhone: phone,
+      submissionId,
     });
   }, [
     customer,
@@ -894,6 +900,7 @@ export function NewInvoiceForm({
     shipChoice,
     shipOptions,
     customerWholesalePct,
+    submissionId,
   ]);
 
   const banner = errorMessage(initialError);

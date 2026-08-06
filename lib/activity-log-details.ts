@@ -174,5 +174,32 @@ export function getActivityDetailRows(
     }
   }
 
+  if (action === "cash_session_opened" || action === "cash_session_closed") {
+    const day = str(m.business_day);
+    if (day) rows.push({ label: "Día", value: day });
+    const float = num(m.opening_float_cents);
+    if (float != null) rows.push({ label: "Fondo inicial", value: formatMoneyCOP(float) });
+    if (action === "cash_session_closed") {
+      const expected = num(m.expected_cash_cents);
+      const counted = num(m.counted_cash_cents);
+      const diff = num(m.cash_difference_cents);
+      if (expected != null) rows.push({ label: "Efectivo esperado", value: formatMoneyCOP(expected) });
+      if (counted != null) rows.push({ label: "Efectivo contado", value: formatMoneyCOP(counted) });
+      if (diff != null) {
+        rows.push({
+          label: "Diferencia",
+          value:
+            diff === 0
+              ? "Cuadró"
+              : diff > 0
+                ? `Sobrante ${formatMoneyCOP(diff)}`
+                : `Faltante ${formatMoneyCOP(Math.abs(diff))}`,
+        });
+      }
+      const units = num(m.units_sold);
+      if (units != null) rows.push({ label: "Unidades vendidas", value: String(units) });
+    }
+  }
+
   return rows;
 }

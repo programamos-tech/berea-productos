@@ -3,6 +3,10 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import {
+  AdminFormSubmitButton,
+  adminPrimarySubmitButtonFullWidthClass,
+} from "@/components/admin/AdminFormSubmitButton";
+import {
   ProductQuantityInput,
   productLabelClass as labelClass,
   productSectionTitle as sectionTitle,
@@ -23,6 +27,13 @@ function fmtQty(n: number) {
   return n <= 0 ? "0" : formatQuantityInputGrouping(n);
 }
 
+function newSubmissionId() {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return crypto.randomUUID();
+  }
+  return `sub_${Date.now()}_${Math.random().toString(36).slice(2, 12)}`;
+}
+
 export function AdminTransferStockForm({
   productName,
   stockLocal,
@@ -32,6 +43,7 @@ export function AdminTransferStockForm({
 }: Props) {
   const [direction, setDirection] = useState<TransferDirection>("local_to_warehouse");
   const [quantity, setQuantity] = useState(0);
+  const [submissionId] = useState(newSubmissionId);
 
   const fromLocal = direction === "local_to_warehouse";
   const available = fromLocal ? stockLocal : stockWarehouse;
@@ -75,6 +87,7 @@ export function AdminTransferStockForm({
     >
       <input type="hidden" name="direction" value={direction} />
       <input type="hidden" name="return_to" value={returnTo} />
+      <input type="hidden" name="submission_id" value={submissionId} />
 
       <div className="space-y-8">
         <section className={shellMain}>
@@ -141,12 +154,12 @@ export function AdminTransferStockForm({
             </div>
           </div>
 
-          <button
-            type="submit"
-            className="mt-10 w-full rounded-xl border border-rose-950 bg-rose-950 py-3.5 text-sm font-medium text-white transition hover:bg-rose-900 hover:border-rose-900 dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-white"
+          <AdminFormSubmitButton
+            pendingLabel="Transfiriendo…"
+            className={`${adminPrimarySubmitButtonFullWidthClass} mt-10 rounded-xl`}
           >
             Transferir
-          </button>
+          </AdminFormSubmitButton>
         </section>
       </div>
 

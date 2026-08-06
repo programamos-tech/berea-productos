@@ -28,6 +28,8 @@ export const PERMISSION_KEYS = [
   "categorias_gestionar",
   "stock_actualizar",
   "stock_transferir",
+  "caja_ver",
+  "caja_gestionar",
   "roles_ver",
   "colaboradores_gestionar",
   "sucursales_ver",
@@ -103,6 +105,14 @@ export const PERMISSION_MODULES: PermissionModule[] = [
     ],
   },
   {
+    id: "caja",
+    label: "Caja",
+    items: [
+      { key: "caja_ver", label: "Ver cierre de caja" },
+      { key: "caja_gestionar", label: "Abrir y cerrar caja" },
+    ],
+  },
+  {
     id: "administracion",
     label: "Administración",
     items: [
@@ -161,6 +171,8 @@ export function defaultPermissionsCashier(): PermissionMap {
   m.proveedores_ver = true;
   m.inventario_ver = true;
   m.kits_ver = true;
+  m.caja_ver = true;
+  m.caja_gestionar = true;
   m.actividades_ver = true;
   m.marketing_ver = false;
   m.ajustes_tienda_ver = false;
