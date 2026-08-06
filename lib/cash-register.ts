@@ -17,6 +17,13 @@ export type CashStockOutLine = {
   quantity: number;
 };
 
+export type CashExpenseLine = {
+  id: string;
+  concept: string;
+  payment_method: string;
+  amount_cents: number;
+};
+
 export type CashRegisterSessionRow = {
   id: string;
   business_day: string;
@@ -37,6 +44,7 @@ export type CashRegisterSessionRow = {
   cash_difference_cents: number | null;
   units_sold: number | null;
   stock_out_lines: CashStockOutLine[];
+  expense_lines: CashExpenseLine[];
   notes: string | null;
   closed_at: string | null;
   closed_by: string | null;
@@ -55,11 +63,12 @@ export type CashDayLiveTotals = {
   expensesOtherCents: number;
   unitsSold: number;
   stockOutLines: CashStockOutLine[];
+  expenseLines: CashExpenseLine[];
   expectedCashCents: number;
 };
 
 const SESSION_SELECT =
-  "id,business_day,status,opening_float_cents,opened_at,opened_by,sales_count,sales_total_cents,sales_cash_cents,sales_transfer_cents,sales_mixed_cents,sales_other_cents,expenses_cash_cents,expenses_other_cents,expected_cash_cents,counted_cash_cents,cash_difference_cents,units_sold,stock_out_lines,notes,closed_at,closed_by,created_at";
+  "id,business_day,status,opening_float_cents,opened_at,opened_by,sales_count,sales_total_cents,sales_cash_cents,sales_transfer_cents,sales_mixed_cents,sales_other_cents,expenses_cash_cents,expenses_other_cents,expected_cash_cents,counted_cash_cents,cash_difference_cents,units_sold,stock_out_lines,expense_lines,notes,closed_at,closed_by,created_at";
 
 function parseStockLines(raw: unknown): CashStockOutLine[] {
   if (!Array.isArray(raw)) return [];
@@ -76,6 +85,26 @@ function parseStockLines(raw: unknown): CashStockOutLine[] {
         ? null
         : String(r.reference).trim();
     out.push({ product_id: productId, name, reference, quantity: qty });
+  }
+  return out;
+}
+
+function parseExpenseLines(raw: unknown): CashExpenseLine[] {
+  if (!Array.isArray(raw)) return [];
+  const out: CashExpenseLine[] = [];
+  for (const row of raw) {
+    if (!row || typeof row !== "object") continue;
+    const r = row as Record<string, unknown>;
+    const id = String(r.id ?? "").trim();
+    const concept = String(r.concept ?? "").trim();
+    const amount = Math.max(0, Math.floor(Number(r.amount_cents ?? 0)));
+    if (!id || !concept || amount <= 0) continue;
+    out.push({
+      id,
+      concept,
+      payment_method: String(r.payment_method ?? "").trim() || "otro",
+      amount_cents: amount,
+    });
   }
   return out;
 }
@@ -133,6 +162,7 @@ export function mapCashSessionRow(raw: Record<string, unknown>): CashRegisterSes
     units_sold:
       raw.units_sold == null ? null : Math.max(0, Math.floor(Number(raw.units_sold))),
     stock_out_lines: parseStockLines(raw.stock_out_lines),
+    expense_lines: parseExpenseLines(raw.expense_lines),
     notes: raw.notes == null ? null : String(raw.notes),
     closed_at: raw.closed_at == null ? null : String(raw.closed_at),
     closed_by: raw.closed_by == null ? null : String(raw.closed_by),
@@ -172,6 +202,7 @@ export async function fetchCashDayLiveTotals(
       expensesOtherCents: 0,
       unitsSold: 0,
       stockOutLines: [],
+      expenseLines: [],
       expectedCashCents: expectedCashFromParts(openingFloatCents, 0, 0),
     };
   }
@@ -187,8 +218,9 @@ export async function fetchCashDayLiveTotals(
       .lt("created_at", bounds.lt),
     supabase
       .from("store_expenses")
-      .select("amount_cents,payment_method,expense_date,is_cancelled")
-      .eq("expense_date", businessDayYmd),
+      .select("id,concept,amount_cents,payment_method,expense_date,is_cancelled")
+      .eq("expense_date", businessDayYmd)
+      .order("created_at", { ascending: true }),
   ]);
 
   const orders = (ordersRes.data ?? []) as Array<
@@ -213,12 +245,20 @@ export async function fetchCashDayLiveTotals(
 
   let expensesCash = 0;
   let expensesOther = 0;
+  const expenseLines: CashExpenseLine[] = [];
   for (const e of expensesRes.data ?? []) {
     if ((e as { is_cancelled?: boolean }).is_cancelled) continue;
     const amount = Math.max(0, Math.floor(Number(e.amount_cents ?? 0)));
-    const pm = String(e.payment_method ?? "").trim().toLowerCase();
+    if (amount <= 0) continue;
+    const pm = String(e.payment_method ?? "").trim().toLowerCase() || "otro";
     if (pm === "efectivo") expensesCash += amount;
     else expensesOther += amount;
+    expenseLines.push({
+      id: String(e.id),
+      concept: String(e.concept ?? "Egreso").trim() || "Egreso",
+      payment_method: pm,
+      amount_cents: amount,
+    });
   }
 
   let unitsSold = 0;
@@ -297,6 +337,7 @@ export async function fetchCashDayLiveTotals(
     expensesOtherCents: expensesOther,
     unitsSold,
     stockOutLines,
+    expenseLines,
     expectedCashCents: expectedCashFromParts(
       openingFloatCents,
       salesCash,

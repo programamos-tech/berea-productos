@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { CashStockOutReadonly } from "@/components/admin/CashRegisterForms";
+import {
+  CashExpensesReadonly,
+  CashStockOutReadonly,
+} from "@/components/admin/CashRegisterForms";
 import { StaticCopCents } from "@/components/admin/ReportsAnimatedFigures";
 import { prettyReportDayShortLabel } from "@/lib/admin-report-range";
 import { fetchCashSessionById } from "@/lib/cash-register";
@@ -43,7 +46,7 @@ export default async function AdminCajaDetailPage({
   ];
 
   return (
-    <div className="mx-auto max-w-4xl space-y-8">
+    <div className="w-full max-w-none space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
@@ -91,6 +94,11 @@ export default async function AdminCajaDetailPage({
           {session.units_sold != null ? (
             <span className="ml-2 opacity-80">· {session.units_sold} ud vendidas</span>
           ) : null}
+          {session.expense_lines.length > 0 ? (
+            <span className="ml-2 opacity-80">
+              · {session.expense_lines.length} egresos
+            </span>
+          ) : null}
         </div>
       ) : null}
 
@@ -98,7 +106,7 @@ export default async function AdminCajaDetailPage({
         <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
           Resumen monetario
         </h2>
-        <dl className="mt-4 grid gap-3 sm:grid-cols-2">
+        <dl className="mt-4 grid gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
           {moneyRows.map((r) => (
             <div
               key={r.label}
@@ -119,7 +127,10 @@ export default async function AdminCajaDetailPage({
         ) : null}
       </section>
 
-      <CashStockOutReadonly lines={session.stock_out_lines} />
+      <div className="grid gap-5 lg:grid-cols-2">
+        <CashStockOutReadonly lines={session.stock_out_lines} />
+        <CashExpensesReadonly lines={session.expense_lines} />
+      </div>
     </div>
   );
 }

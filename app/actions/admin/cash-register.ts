@@ -159,6 +159,7 @@ export async function closeCashRegisterSession(formData: FormData) {
       cash_difference_cents: difference,
       units_sold: live.unitsSold,
       stock_out_lines: live.stockOutLines,
+      expense_lines: live.expenseLines,
       notes,
       closed_at: new Date().toISOString(),
       closed_by: user.id,
@@ -183,7 +184,7 @@ export async function closeCashRegisterSession(formData: FormData) {
     actionType: "cash_session_closed",
     entityType: "cash_session",
     entityId: sessionId,
-    summary: `Caja cerrada · ${diffLabel} · ${live.unitsSold} ud vendidas`,
+    summary: `Caja cerrada · ${diffLabel} · ${live.unitsSold} ud · ${live.expenseLines.length} egresos`,
     metadata: {
       business_day: businessDay,
       opening_float_cents: openingFloat,
@@ -192,7 +193,10 @@ export async function closeCashRegisterSession(formData: FormData) {
       cash_difference_cents: difference,
       sales_total_cents: live.salesTotalCents,
       sales_cash_cents: live.salesCashCents,
+      expenses_cash_cents: live.expensesCashCents,
+      expenses_other_cents: live.expensesOtherCents,
       units_sold: live.unitsSold,
+      expense_count: live.expenseLines.length,
     },
   });
 

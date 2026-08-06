@@ -69,14 +69,14 @@ export default async function AdminCajaPage({
   const dayLabel = prettyReportDayShortLabel(open?.business_day ?? today);
 
   return (
-    <div className="mx-auto max-w-5xl space-y-8">
+    <div className="w-full max-w-none space-y-6">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 sm:text-3xl">
           Cierre de caja
         </h1>
-        <p className="mt-2 max-w-2xl text-sm text-zinc-500 dark:text-zinc-400">
+        <p className="mt-2 max-w-3xl text-sm text-zinc-500 dark:text-zinc-400">
           Registro diario del negocio: abrís con un fondo, durante el día se acumulan ventas y
-          egresos, y al cerrar ingresás el efectivo contado junto con el stock que salió.
+          egresos, y al cerrar ingresás el efectivo contado junto con el stock y egresos del día.
         </p>
       </div>
 
