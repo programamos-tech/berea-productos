@@ -12,7 +12,7 @@ import {
 } from "@/lib/email/send";
 import { formatCop } from "@/lib/money";
 import { getPublicSiteUrl } from "@/lib/public-site-url";
-import { STORE_BRAND, STORE_BRAND_HOVER } from "@/lib/store-theme";
+import { STORE_BRAND } from "@/lib/store-theme";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { readFileSync } from "fs";
 import { join } from "path";
@@ -47,16 +47,17 @@ export type CashCloseReportInput = {
 type HourBucket = { hour: number; label: string; cents: number; count: number };
 type StaffRow = { name: string; sales: number; actions: number };
 
-/** Rosa de marca + tipografía del panel (rosa / piedra). */
+/** Neutros del admin; rosa solo como acento (CTA / barras). */
 const BRAND = STORE_BRAND;
-const BRAND_HOVER = STORE_BRAND_HOVER;
-const ROSE_INK = "#9f1239";
-const ROSE_MUTED = "#be185d";
-const BG = "#fff5f8";
-const CARD_BORDER = "#fbcfe8";
-const INK = "#4c0519";
-const MUTED = "#9d174d";
-const SOFT = "#fdf2f8";
+const BG = "#f4f4f5";
+const CARD_BORDER = "#e4e4e7";
+const INK = "#18181b";
+const MUTED = "#71717a";
+const SOFT = "#fafafa";
+const RULE = "#f4f4f5";
+const BAR_TRACK = "#f4f4f5";
+const BAR_FILL = "#a1a1aa";
+const BAR_ACCENT = BRAND;
 
 const LOGO_CID = "logo-milagros";
 
@@ -135,10 +136,10 @@ function barRow(
   const pct = max > 0 ? Math.max(2, Math.round((value / max) * 100)) : 0;
   return `
     <tr>
-      <td style="padding:6px 8px 6px 0;font-size:13px;color:${INK};width:42%;vertical-align:middle;">${esc(label)}</td>
+      <td style="padding:6px 8px 6px 0;font-size:13px;color:#3f3f46;width:42%;vertical-align:middle;">${esc(label)}</td>
       <td style="padding:6px 0;width:58%;vertical-align:middle;">
-        <div style="background:#fce7f3;border-radius:999px;height:12px;overflow:hidden;">
-          <div style="width:${pct}%;height:12px;background:${color};border-radius:999px;"></div>
+        <div style="background:${BAR_TRACK};border-radius:999px;height:10px;overflow:hidden;">
+          <div style="width:${pct}%;height:10px;background:${color};border-radius:999px;"></div>
         </div>
         <div style="font-size:11px;color:${MUTED};margin-top:3px;">${esc(valueLabel ?? formatCop(value))}</div>
       </td>
@@ -148,10 +149,10 @@ function barRow(
 function metricCard(label: string, value: string, sub?: string): string {
   return `
     <td style="width:33%;padding:6px;">
-      <div style="border:1px solid ${CARD_BORDER};border-radius:14px;padding:12px;background:${SOFT};">
-        <div style="font-size:10px;color:${MUTED};text-transform:uppercase;letter-spacing:0.08em;font-weight:600;">${esc(label)}</div>
+      <div style="border:1px solid ${CARD_BORDER};border-radius:12px;padding:12px;background:${SOFT};">
+        <div style="font-size:10px;color:${MUTED};text-transform:uppercase;letter-spacing:0.06em;font-weight:600;">${esc(label)}</div>
         <div style="font-size:17px;font-weight:700;color:${INK};margin-top:5px;">${esc(value)}</div>
-        ${sub ? `<div style="font-size:11px;color:#9f1239;opacity:0.7;margin-top:3px;">${esc(sub)}</div>` : ""}
+        ${sub ? `<div style="font-size:11px;color:${MUTED};margin-top:3px;">${esc(sub)}</div>` : ""}
       </div>
     </td>`;
 }
@@ -173,11 +174,11 @@ function dayColumn(args: {
     .join("");
   return `
     <td style="width:50%;padding:6px;vertical-align:top;">
-      <div style="border:1px solid ${CARD_BORDER};border-radius:14px;padding:14px 14px 12px;background:#fff;height:100%;">
-        <div style="display:inline-block;background:${SOFT};color:${ROSE_MUTED};font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:4px 9px;border-radius:999px;margin-bottom:8px;">${esc(args.badge)}</div>
+      <div style="border:1px solid ${CARD_BORDER};border-radius:12px;padding:14px 14px 12px;background:#fff;height:100%;">
+        <div style="display:inline-block;background:${SOFT};color:#52525b;font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:4px 9px;border-radius:999px;margin-bottom:8px;border:1px solid ${CARD_BORDER};">${esc(args.badge)}</div>
         <div style="font-size:15px;font-weight:700;color:${INK};margin-bottom:8px;">${esc(args.title)}</div>
         <table width="100%" cellpadding="0" cellspacing="0">${rows}</table>
-        <div style="margin-top:10px;padding-top:10px;border-top:1px solid #fce7f3;font-size:11px;color:${MUTED};line-height:1.45;">${esc(args.footer)}</div>
+        <div style="margin-top:10px;padding-top:10px;border-top:1px solid ${RULE};font-size:11px;color:${MUTED};line-height:1.45;">${esc(args.footer)}</div>
       </div>
     </td>`;
 }
@@ -323,14 +324,14 @@ export function buildCashCloseReportHtml(
         <tr>
           <td style="padding:7px 8px 7px 0;font-size:13px;color:${INK};">
             ${esc(p.name)}
-            <div style="font-size:11px;color:${MUTED};opacity:0.75;">Ref ${esc(p.reference ?? "—")}</div>
+            <div style="font-size:11px;color:${MUTED};">Ref ${esc(p.reference ?? "—")}</div>
           </td>
           <td style="padding:7px 0;width:45%;">
-            <div style="background:#fce7f3;border-radius:999px;height:12px;overflow:hidden;">
-              <div style="width:${pct}%;height:12px;background:${BRAND};border-radius:999px;"></div>
+            <div style="background:${BAR_TRACK};border-radius:999px;height:10px;overflow:hidden;">
+              <div style="width:${pct}%;height:10px;background:${BAR_ACCENT};border-radius:999px;"></div>
             </div>
           </td>
-          <td style="padding:7px 0 7px 10px;font-size:13px;font-weight:700;text-align:right;color:${ROSE_INK};white-space:nowrap;">${p.quantity} ud</td>
+          <td style="padding:7px 0 7px 10px;font-size:13px;font-weight:700;text-align:right;color:${INK};white-space:nowrap;">${p.quantity} ud</td>
         </tr>`;
     })
     .join("");
@@ -338,23 +339,18 @@ export function buildCashCloseReportHtml(
   const hourBars = extras.hourly
     .filter((h) => h.count > 0)
     .map((h) =>
-      barRow(
-        `${h.label} · ${h.count} fact.`,
-        h.cents,
-        hourMax,
-        BRAND_HOVER,
-      ),
+      barRow(`${h.label} · ${h.count} fact.`, h.cents, hourMax, BAR_FILL),
     )
     .join("");
 
   const payBars = [
-    barRow("Efectivo", input.salesCashCents, payMax, BRAND),
-    barRow("Transferencia", input.salesTransferCents, payMax, ROSE_MUTED),
+    barRow("Efectivo", input.salesCashCents, payMax, BAR_ACCENT),
+    barRow("Transferencia", input.salesTransferCents, payMax, "#71717a"),
     barRow(
       "Mixtas / otras",
       input.salesMixedCents + input.salesOtherCents,
       payMax,
-      "#db2777",
+      "#a1a1aa",
     ),
   ].join("");
 
@@ -373,8 +369,8 @@ export function buildCashCloseReportHtml(
                 <div style="font-size:11px;color:${MUTED};">${esc(e.payment_method)}</div>
               </td>
               <td style="padding:7px 0;width:40%;">
-                <div style="background:#fce7f3;border-radius:999px;height:10px;overflow:hidden;">
-                  <div style="width:${pct}%;height:10px;background:${BRAND_HOVER};border-radius:999px;"></div>
+                <div style="background:${BAR_TRACK};border-radius:999px;height:10px;overflow:hidden;">
+                  <div style="width:${pct}%;height:10px;background:${BAR_FILL};border-radius:999px;"></div>
                 </div>
               </td>
               <td style="padding:7px 0 7px 10px;font-size:13px;font-weight:600;text-align:right;color:${INK};white-space:nowrap;">${esc(formatCop(e.amount_cents))}</td>
@@ -389,9 +385,9 @@ export function buildCashCloseReportHtml(
           .map(
             (s) => `
           <tr>
-            <td style="padding:8px 0;border-bottom:1px solid #fce7f3;font-size:13px;font-weight:600;color:${INK};">${esc(s.name)}</td>
-            <td style="padding:8px 0;border-bottom:1px solid #fce7f3;font-size:13px;text-align:right;color:${ROSE_INK};">${s.sales} ventas</td>
-            <td style="padding:8px 0;border-bottom:1px solid #fce7f3;font-size:13px;text-align:right;color:${MUTED};">${s.actions} acciones</td>
+            <td style="padding:8px 0;border-bottom:1px solid ${RULE};font-size:13px;font-weight:600;color:${INK};">${esc(s.name)}</td>
+            <td style="padding:8px 0;border-bottom:1px solid ${RULE};font-size:13px;text-align:right;color:${INK};">${s.sales} ventas</td>
+            <td style="padding:8px 0;border-bottom:1px solid ${RULE};font-size:13px;text-align:right;color:${MUTED};">${s.actions} acciones</td>
           </tr>`,
           )
           .join("");
@@ -444,13 +440,13 @@ export function buildCashCloseReportHtml(
 </head>
 <body style="margin:0;padding:0;background:${BG};font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:${INK};">
   <div style="max-width:680px;margin:0 auto;padding:28px 14px;">
-    <div style="background:#ffffff;border:1px solid ${CARD_BORDER};border-radius:20px;overflow:hidden;box-shadow:0 12px 40px -24px rgba(190,24,93,0.35);">
-      <div style="background:linear-gradient(180deg,${SOFT} 0%,#ffffff 100%);padding:22px 22px 16px;text-align:center;border-bottom:1px solid ${CARD_BORDER};">
-        <img src="cid:${LOGO_CID}" alt="${esc(brandName)}" width="140" height="140" style="display:block;margin:0 auto 12px;width:140px;height:140px;object-fit:contain;border:0;outline:none;" />
-        <div style="font-size:11px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:${MUTED};">Cierre de caja</div>
+    <div style="background:#ffffff;border:1px solid ${CARD_BORDER};border-radius:16px;overflow:hidden;">
+      <div style="padding:22px 22px 16px;text-align:center;border-bottom:1px solid ${CARD_BORDER};">
+        <img src="cid:${LOGO_CID}" alt="${esc(brandName)}" width="120" height="120" style="display:block;margin:0 auto 12px;width:120px;height:120px;object-fit:contain;border:0;outline:none;" />
+        <div style="font-size:11px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:${MUTED};">Cierre de caja</div>
         <div style="font-size:22px;font-weight:700;color:${INK};margin-top:4px;">${esc(brandName)}</div>
-        <div style="font-size:14px;color:${ROSE_MUTED};margin-top:2px;">${esc(dayLabel)}</div>
-        <div style="margin-top:12px;display:inline-block;background:${BRAND};color:#fff;border-radius:999px;padding:7px 14px;font-size:12px;font-weight:700;">
+        <div style="font-size:14px;color:${MUTED};margin-top:2px;">${esc(dayLabel)}</div>
+        <div style="margin-top:12px;display:inline-block;background:${SOFT};color:#3f3f46;border:1px solid ${CARD_BORDER};border-radius:999px;padding:6px 12px;font-size:12px;font-weight:600;">
           ${esc(statusPill)}
         </div>
       </div>
@@ -475,31 +471,31 @@ export function buildCashCloseReportHtml(
       </div>
 
       <div style="padding:8px 16px 6px;">
-        <div style="border:1px solid ${CARD_BORDER};border-radius:14px;padding:14px 16px;background:#fff;">
-          <div style="font-size:12px;font-weight:700;color:${MUTED};text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px;">Movimiento de efectivo</div>
-          <table width="100%" cellpadding="0" cellspacing="0" style="font-size:13px;color:${INK};">
-            <tr><td style="padding:4px 0;">Fondo inicial</td><td style="text-align:right;font-weight:600;">${esc(formatCop(input.openingFloatCents))}</td></tr>
-            <tr><td style="padding:4px 0;">+ Ventas en efectivo</td><td style="text-align:right;font-weight:600;">${esc(formatCop(input.salesCashCents))}</td></tr>
-            <tr><td style="padding:4px 0;">+ Ventas transferencia</td><td style="text-align:right;font-weight:600;">${esc(formatCop(input.salesTransferCents))}</td></tr>
-            <tr><td style="padding:4px 0;">− Egresos efectivo</td><td style="text-align:right;font-weight:600;">${esc(formatCop(input.expensesCashCents))}</td></tr>
-            <tr><td style="padding:4px 0;">− Egresos otros</td><td style="text-align:right;font-weight:600;">${esc(formatCop(input.expensesOtherCents))}</td></tr>
-            <tr><td style="padding:10px 0 4px;border-top:1px solid #fce7f3;font-weight:700;">Efectivo esperado</td><td style="padding:10px 0 4px;border-top:1px solid #fce7f3;text-align:right;font-weight:700;color:${ROSE_INK};">${esc(formatCop(input.expectedCashCents))}</td></tr>
+        <div style="border:1px solid ${CARD_BORDER};border-radius:12px;padding:14px 16px;background:#fff;">
+          <div style="font-size:12px;font-weight:600;color:${MUTED};text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px;">Movimiento de efectivo</div>
+          <table width="100%" cellpadding="0" cellspacing="0" style="font-size:13px;color:#3f3f46;">
+            <tr><td style="padding:4px 0;">Fondo inicial</td><td style="text-align:right;font-weight:600;color:${INK};">${esc(formatCop(input.openingFloatCents))}</td></tr>
+            <tr><td style="padding:4px 0;">+ Ventas en efectivo</td><td style="text-align:right;font-weight:600;color:${INK};">${esc(formatCop(input.salesCashCents))}</td></tr>
+            <tr><td style="padding:4px 0;">+ Ventas transferencia</td><td style="text-align:right;font-weight:600;color:${INK};">${esc(formatCop(input.salesTransferCents))}</td></tr>
+            <tr><td style="padding:4px 0;">− Egresos efectivo</td><td style="text-align:right;font-weight:600;color:${INK};">${esc(formatCop(input.expensesCashCents))}</td></tr>
+            <tr><td style="padding:4px 0;">− Egresos otros</td><td style="text-align:right;font-weight:600;color:${INK};">${esc(formatCop(input.expensesOtherCents))}</td></tr>
+            <tr><td style="padding:10px 0 4px;border-top:1px solid ${RULE};font-weight:700;color:${INK};">Efectivo esperado</td><td style="padding:10px 0 4px;border-top:1px solid ${RULE};text-align:right;font-weight:700;color:${INK};">${esc(formatCop(input.expectedCashCents))}</td></tr>
             <tr><td style="padding:4px 0;">Diferencia</td><td style="text-align:right;font-weight:700;color:${diffColor};">${esc(diffLabel)}</td></tr>
           </table>
         </div>
       </div>
 
       <div style="padding:10px 16px;text-align:center;">
-        <a href="${esc(sessionUrl)}" style="display:inline-block;background:${BRAND};color:#ffffff;text-decoration:none;font-size:14px;font-weight:700;padding:14px 22px;border-radius:12px;box-shadow:0 8px 20px -10px rgba(232,90,142,0.85);">
+        <a href="${esc(sessionUrl)}" style="display:inline-block;background:${BRAND};color:#ffffff;text-decoration:none;font-size:14px;font-weight:700;padding:12px 20px;border-radius:10px;">
           Ver cierre de caja del día
         </a>
-        <div style="margin-top:8px;font-size:11px;color:${MUTED};">
-          <a href="${esc(sessionUrl)}" style="color:${ROSE_MUTED};">${esc(sessionUrl)}</a>
+        <div style="margin-top:8px;font-size:11px;color:${MUTED};word-break:break-all;">
+          <a href="${esc(sessionUrl)}" style="color:${MUTED};">${esc(sessionUrl)}</a>
         </div>
       </div>
 
       <div style="padding:8px 16px;">
-        <div style="border:1px solid ${CARD_BORDER};border-radius:14px;padding:14px 16px;background:#fff;">
+        <div style="border:1px solid ${CARD_BORDER};border-radius:12px;padding:14px 16px;background:#fff;">
           <div style="font-size:14px;font-weight:700;color:${INK};margin-bottom:4px;">Producto más vendido</div>
           <div style="font-size:13px;color:${MUTED};margin-bottom:10px;">
             ${
@@ -513,34 +509,34 @@ export function buildCashCloseReportHtml(
       </div>
 
       <div style="padding:8px 16px;">
-        <div style="border:1px solid ${CARD_BORDER};border-radius:14px;padding:14px 16px;background:#fff;">
+        <div style="border:1px solid ${CARD_BORDER};border-radius:12px;padding:14px 16px;background:#fff;">
           <div style="font-size:14px;font-weight:700;color:${INK};margin-bottom:10px;">Ventas por forma de pago</div>
           <table width="100%" cellpadding="0" cellspacing="0">${payBars}</table>
         </div>
       </div>
 
       <div style="padding:8px 16px;">
-        <div style="border:1px solid ${CARD_BORDER};border-radius:14px;padding:14px 16px;background:#fff;">
+        <div style="border:1px solid ${CARD_BORDER};border-radius:12px;padding:14px 16px;background:#fff;">
           <div style="font-size:14px;font-weight:700;color:${INK};margin-bottom:10px;">Actividad por hora (Bogotá)</div>
           <table width="100%" cellpadding="0" cellspacing="0">${hourBars || `<tr><td style="color:${MUTED};font-size:13px;">Sin ventas horarias.</td></tr>`}</table>
         </div>
       </div>
 
       <div style="padding:8px 16px;">
-        <div style="border:1px solid ${CARD_BORDER};border-radius:14px;padding:14px 16px;background:#fff;">
+        <div style="border:1px solid ${CARD_BORDER};border-radius:12px;padding:14px 16px;background:#fff;">
           <div style="font-size:14px;font-weight:700;color:${INK};margin-bottom:10px;">Quién operó hoy</div>
           <table width="100%" cellpadding="0" cellspacing="0">${staffRows}</table>
         </div>
       </div>
 
       <div style="padding:8px 16px 22px;">
-        <div style="border:1px solid ${CARD_BORDER};border-radius:14px;padding:14px 16px;background:#fff;">
+        <div style="border:1px solid ${CARD_BORDER};border-radius:12px;padding:14px 16px;background:#fff;">
           <div style="font-size:14px;font-weight:700;color:${INK};margin-bottom:10px;">Egresos del día · ${esc(formatCop(input.expensesCashCents + input.expensesOtherCents))}</div>
           <table width="100%" cellpadding="0" cellspacing="0">${expenseRows}</table>
         </div>
       </div>
 
-      <div style="background:${SOFT};border-top:1px solid ${CARD_BORDER};padding:16px 18px;text-align:center;">
+      <div style="background:${SOFT};border-top:1px solid ${CARD_BORDER};padding:14px 18px;text-align:center;">
         <div style="font-size:11px;color:${MUTED};">
           Reporte automático · ${esc(brandName)}
           ${partial ? " · vista previa (caja aún abierta)" : ""}
