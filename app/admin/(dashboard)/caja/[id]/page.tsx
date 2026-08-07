@@ -1,5 +1,10 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { resendCashCloseReport } from "@/app/actions/admin/cash-register";
+import {
+  AdminFormSubmitButton,
+  adminPrimarySubmitButtonClass,
+} from "@/components/admin/AdminFormSubmitButton";
 import {
   CashClosedMoneyGrid,
   CashDiscrepancyBanner,
@@ -15,11 +20,17 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminCajaDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  await requireAdminAnyPermission(["caja_ver", "caja_gestionar"]);
+  const perm = await requireAdminAnyPermission(["caja_ver", "caja_gestionar"]);
+  const canManage = Boolean(perm.permissions.caja_gestionar);
   const { id } = await params;
+  const sp = await searchParams;
+  const reportRaw = typeof sp.report === "string" ? sp.report : undefined;
+
   const supabase = await createSupabaseServerClient();
   const session = await fetchCashSessionById(supabase, id);
   if (!session) notFound();
@@ -71,6 +82,15 @@ export default async function AdminCajaDetailPage({
     },
   ];
 
+  const reportBanner =
+    reportRaw === "sent"
+      ? "Reporte enviado a programamos.st@gmail.com."
+      : reportRaw === "error"
+        ? "No se pudo enviar el reporte. Revisá RESEND_API_KEY en Vercel."
+        : reportRaw === "missing"
+          ? "No hay cierre para reenviar."
+          : null;
+
   return (
     <div className="w-full max-w-none space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -89,10 +109,35 @@ export default async function AdminCajaDetailPage({
             Cierre congelado — no se modifica.
           </p>
         </div>
-        <span className="rounded-md bg-zinc-100 px-2.5 py-1 text-xs font-medium text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200">
-          Cerrada
-        </span>
+        <div className="flex flex-wrap items-center gap-2">
+          {canManage ? (
+            <form action={resendCashCloseReport}>
+              <input type="hidden" name="session_id" value={session.id} />
+              <AdminFormSubmitButton
+                pendingLabel="Enviando…"
+                className={`${adminPrimarySubmitButtonClass} px-4`}
+              >
+                Enviar reporte por correo
+              </AdminFormSubmitButton>
+            </form>
+          ) : null}
+          <span className="rounded-md bg-zinc-100 px-2.5 py-1 text-xs font-medium text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200">
+            Cerrada
+          </span>
+        </div>
       </div>
+
+      {reportBanner ? (
+        <p
+          className={`rounded-xl border px-4 py-3 text-sm ${
+            reportRaw === "sent"
+              ? "border-emerald-200 bg-emerald-50 text-emerald-900 dark:border-emerald-900/50 dark:bg-emerald-950/30 dark:text-emerald-100"
+              : "border-amber-200 bg-amber-50 text-amber-950 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-100"
+          }`}
+        >
+          {reportBanner}
+        </p>
+      ) : null}
 
       {diff != null ? (
         <CashDiscrepancyBanner

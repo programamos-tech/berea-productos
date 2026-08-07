@@ -6,8 +6,13 @@ import {
   readSubmissionToken,
 } from "@/lib/admin-form-token";
 import {
+  resolveProfileName,
+  sendCashCloseReportEmail,
+} from "@/lib/cash-close-report";
+import {
   expectedCashFromParts,
   fetchCashDayLiveTotals,
+  fetchCashSessionById,
   fetchOpenCashSession,
   todayBusinessDayYmd,
 } from "@/lib/cash-register";
@@ -111,7 +116,7 @@ export async function closeCashRegisterSession(formData: FormData) {
 
   const { data: session, error: fetchErr } = await supabase
     .from("cash_register_sessions")
-    .select("id,status,business_day,opening_float_cents")
+    .select("id,status,business_day,opening_float_cents,opened_by,opened_at")
     .eq("id", sessionId)
     .maybeSingle();
 
@@ -206,8 +211,102 @@ export async function closeCashRegisterSession(formData: FormData) {
     },
   });
 
+  // Reporte del día por correo (no bloquea el cierre si falla).
+  let reportQuery = "";
+  try {
+    const [openedByName, closedByName] = await Promise.all([
+      resolveProfileName(supabase, session.opened_by ?? null),
+      resolveProfileName(supabase, user.id),
+    ]);
+    const emailResult = await sendCashCloseReportEmail(supabase, {
+      businessDay,
+      openingFloatCents: openingFloat,
+      salesCount: live.salesCount,
+      salesTotalCents: live.salesTotalCents,
+      salesCashCents: live.salesCashCents,
+      salesTransferCents: live.salesTransferCents,
+      salesMixedCents: live.salesMixedCents,
+      salesOtherCents: live.salesOtherCents,
+      expensesCashCents: live.expensesCashCents,
+      expensesOtherCents: live.expensesOtherCents,
+      expectedCashCents: expected,
+      countedCashCents: countedCash,
+      cashDifferenceCents: difference,
+      unitsSold: live.unitsSold,
+      stockOutLines: live.stockOutLines,
+      expenseLines: live.expenseLines,
+      notes,
+      openedByName,
+      closedByName,
+      openedAt: session.opened_at ? String(session.opened_at) : null,
+      closedAt: new Date().toISOString(),
+    });
+    if (!emailResult.ok) {
+      console.error("[caja] reporte email:", emailResult.error);
+      reportQuery = "?report=error";
+    } else {
+      reportQuery = "?report=sent";
+    }
+  } catch (e) {
+    console.error("[caja] reporte email exception:", e);
+    reportQuery = "?report=error";
+  }
+
   revalidatePath("/admin/caja");
   revalidatePath(`/admin/caja/${sessionId}`);
   revalidatePath("/admin/actividades");
-  redirect(`/admin/caja/${sessionId}`);
+  redirect(`/admin/caja/${sessionId}${reportQuery}`);
+}
+
+export async function resendCashCloseReport(formData: FormData) {
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/admin/login");
+  await assertActionPermission("caja_gestionar");
+
+  const sessionId = String(formData.get("session_id") ?? "").trim();
+  if (!sessionId) redirect("/admin/caja");
+
+  const closed = await fetchCashSessionById(supabase, sessionId);
+  if (!closed || closed.status !== "closed") {
+    redirect(`/admin/caja/${sessionId}?report=missing`);
+  }
+
+  const [openedByName, closedByName] = await Promise.all([
+    resolveProfileName(supabase, closed.opened_by),
+    resolveProfileName(supabase, closed.closed_by),
+  ]);
+
+  const emailResult = await sendCashCloseReportEmail(supabase, {
+    businessDay: closed.business_day,
+    openingFloatCents: closed.opening_float_cents,
+    salesCount: closed.sales_count ?? 0,
+    salesTotalCents: closed.sales_total_cents ?? 0,
+    salesCashCents: closed.sales_cash_cents ?? 0,
+    salesTransferCents: closed.sales_transfer_cents ?? 0,
+    salesMixedCents: closed.sales_mixed_cents ?? 0,
+    salesOtherCents: closed.sales_other_cents ?? 0,
+    expensesCashCents: closed.expenses_cash_cents ?? 0,
+    expensesOtherCents: closed.expenses_other_cents ?? 0,
+    expectedCashCents: closed.expected_cash_cents ?? 0,
+    countedCashCents: closed.counted_cash_cents ?? 0,
+    cashDifferenceCents: closed.cash_difference_cents ?? 0,
+    unitsSold: closed.units_sold ?? 0,
+    stockOutLines: closed.stock_out_lines,
+    expenseLines: closed.expense_lines,
+    notes: closed.notes,
+    openedByName,
+    closedByName,
+    openedAt: closed.opened_at,
+    closedAt: closed.closed_at,
+  });
+
+  revalidatePath(`/admin/caja/${sessionId}`);
+  redirect(
+    emailResult.ok
+      ? `/admin/caja/${sessionId}?report=sent`
+      : `/admin/caja/${sessionId}?report=error`,
+  );
 }
