@@ -13,6 +13,7 @@ import {
 } from "@/components/admin/CashRegisterForms";
 import { prettyReportDayShortLabel } from "@/lib/admin-report-range";
 import { fetchCashSessionById } from "@/lib/cash-register";
+import { cashCloseReportRecipientsLabel } from "@/lib/email/send";
 import { requireAdminAnyPermission } from "@/lib/require-admin-permission";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -84,7 +85,7 @@ export default async function AdminCajaDetailPage({
 
   const reportBanner =
     reportRaw === "sent"
-      ? "Reporte enviado a programamos.st@gmail.com."
+      ? `Reporte enviado a ${cashCloseReportRecipientsLabel()}.`
       : reportRaw === "error"
         ? "No se pudo enviar el reporte. Revisá RESEND_API_KEY en Vercel."
         : reportRaw === "missing"

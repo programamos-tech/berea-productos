@@ -6,7 +6,7 @@ import {
 import { storeBrand } from "@/lib/brand";
 import type { CashExpenseLine, CashStockOutLine } from "@/lib/cash-register";
 import {
-  cashCloseReportToAddress,
+  cashCloseReportToAddresses,
   sendHtmlEmail,
   type EmailInlineAttachment,
 } from "@/lib/email/send";
@@ -576,14 +576,33 @@ export async function sendCashCloseReportEmail(
   const extras = await gatherCashCloseReportExtras(supabase, input.businessDay);
   const { subject, html, text } = buildCashCloseReportHtml(input, extras);
   const logo = loadMilagrosEmailLogo();
-  const result = await sendHtmlEmail({
-    to: cashCloseReportToAddress(),
-    subject,
-    html,
-    text,
-    attachments: logo ? [logo] : undefined,
-  });
-  if (!result.ok) return { ok: false, error: result.error };
+  const recipients = cashCloseReportToAddresses();
+  const errors: string[] = [];
+  let sent = 0;
+
+  // Un envío por destinatario: con Resend en modo test, fallar uno no bloquea al dueño de la cuenta.
+  for (const to of recipients) {
+    const result = await sendHtmlEmail({
+      to,
+      subject,
+      html,
+      text,
+      attachments: logo ? [logo] : undefined,
+    });
+    if (result.ok) {
+      sent += 1;
+    } else {
+      errors.push(`${to}: ${result.error}`);
+      console.error("[caja] reporte email falló para", to, result.error);
+    }
+  }
+
+  if (sent === 0) {
+    return { ok: false, error: errors.join(" · ") || "No se pudo enviar" };
+  }
+  if (errors.length > 0) {
+    console.error("[caja] reporte parcial:", errors.join(" · "));
+  }
   return { ok: true };
 }
 

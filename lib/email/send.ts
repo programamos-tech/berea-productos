@@ -4,11 +4,25 @@ export type SendEmailResult =
   | { ok: true; id: string | null }
   | { ok: false; error: string };
 
+export function cashCloseReportToAddresses(): string[] {
+  const fromEnv = process.env.CASH_CLOSE_REPORT_TO?.trim();
+  const defaults = [
+    "programamos.st@gmail.com",
+    "aleyashopoficial@gmail.com",
+  ];
+  const parsed = (fromEnv ? fromEnv.split(/[,;]+/) : defaults)
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean);
+  return [...new Set(parsed.length > 0 ? parsed : defaults)];
+}
+
+/** @deprecated Prefer `cashCloseReportToAddresses`. */
 export function cashCloseReportToAddress(): string {
-  return (
-    process.env.CASH_CLOSE_REPORT_TO?.trim() ||
-    "programamos.st@gmail.com"
-  );
+  return cashCloseReportToAddresses()[0] ?? "programamos.st@gmail.com";
+}
+
+export function cashCloseReportRecipientsLabel(): string {
+  return cashCloseReportToAddresses().join(", ");
 }
 
 export function emailFromAddress(): string {
