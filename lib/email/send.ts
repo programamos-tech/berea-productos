@@ -18,11 +18,19 @@ export function emailFromAddress(): string {
   );
 }
 
+export type EmailInlineAttachment = {
+  filename: string;
+  content: Buffer;
+  contentId: string;
+  contentType?: string;
+};
+
 export async function sendHtmlEmail(args: {
   to: string | string[];
   subject: string;
   html: string;
   text?: string;
+  attachments?: EmailInlineAttachment[];
 }): Promise<SendEmailResult> {
   const apiKey = process.env.RESEND_API_KEY?.trim();
   if (!apiKey) {
@@ -40,6 +48,12 @@ export async function sendHtmlEmail(args: {
       subject: args.subject,
       html: args.html,
       text: args.text,
+      attachments: args.attachments?.map((a) => ({
+        filename: a.filename,
+        content: a.content,
+        contentId: a.contentId,
+        contentType: a.contentType,
+      })),
     });
     if (error) {
       console.error("[email] resend:", error);

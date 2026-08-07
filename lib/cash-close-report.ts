@@ -5,11 +5,17 @@ import {
 } from "@/lib/admin-report-range";
 import { storeBrand } from "@/lib/brand";
 import type { CashExpenseLine, CashStockOutLine } from "@/lib/cash-register";
-import { cashCloseReportToAddress, sendHtmlEmail } from "@/lib/email/send";
+import {
+  cashCloseReportToAddress,
+  sendHtmlEmail,
+  type EmailInlineAttachment,
+} from "@/lib/email/send";
 import { formatCop } from "@/lib/money";
 import { getPublicSiteUrl } from "@/lib/public-site-url";
 import { STORE_BRAND, STORE_BRAND_HOVER } from "@/lib/store-theme";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { readFileSync } from "fs";
+import { join } from "path";
 
 export type CashCloseReportInput = {
   sessionId: string;
@@ -52,6 +58,8 @@ const INK = "#4c0519";
 const MUTED = "#9d174d";
 const SOFT = "#fdf2f8";
 
+const LOGO_CID = "logo-milagros";
+
 function esc(s: string): string {
   return s
     .replace(/&/g, "&amp;")
@@ -79,10 +87,42 @@ function hourInBogota(iso: string): number {
   return Math.max(0, Math.min(23, Number(h ?? 0)));
 }
 
-function absoluteAssetUrl(path: string): string {
-  const base = getPublicSiteUrl().replace(/\/$/, "");
-  const p = path.startsWith("/") ? path : `/${path}`;
-  return `${base}${p}`;
+/** Base URL del admin (el dominio real del deploy, no un host fantasma). */
+function cashCloseAdminBaseUrl(): string {
+  const raw = getPublicSiteUrl().replace(/\/$/, "");
+  try {
+    const host = new URL(raw).hostname.toLowerCase();
+    if (host.includes("milagrosguacari.com") || host === "localhost") {
+      return "https://www.aleyashop.net";
+    }
+  } catch {
+    return "https://www.aleyashop.net";
+  }
+  return raw || "https://www.aleyashop.net";
+}
+
+function loadMilagrosEmailLogo(): EmailInlineAttachment | null {
+  const candidates = [
+    join(process.cwd(), "lib/email/assets/logo-milagros.jpg"),
+    join(process.cwd(), "public/email/logo-milagros.jpg"),
+  ];
+  for (const path of candidates) {
+    try {
+      const content = readFileSync(path);
+      if (content.length > 0) {
+        return {
+          filename: "logo-milagros.jpg",
+          content,
+          contentId: LOGO_CID,
+          contentType: "image/jpeg",
+        };
+      }
+    } catch {
+      /* try next */
+    }
+  }
+  console.error("[caja] no se pudo cargar logo de email");
+  return null;
 }
 
 function barRow(
@@ -256,10 +296,8 @@ export function buildCashCloseReportHtml(
   const diffColor =
     diff === 0 ? "#047857" : diff > 0 ? "#b45309" : "#b91c1c";
 
-  const site = getPublicSiteUrl().replace(/\/$/, "");
+  const site = cashCloseAdminBaseUrl();
   const sessionUrl = `${site}/admin/caja/${encodeURIComponent(input.sessionId)}`;
-  // Logo rosa Milagros (legible en fondos claros); fallback admin si no existe el path.
-  const logoUrl = absoluteAssetUrl("/logo-milagros.png");
   const brandName = storeBrand;
 
   const top = [...input.stockOutLines]
@@ -408,7 +446,7 @@ export function buildCashCloseReportHtml(
   <div style="max-width:680px;margin:0 auto;padding:28px 14px;">
     <div style="background:#ffffff;border:1px solid ${CARD_BORDER};border-radius:20px;overflow:hidden;box-shadow:0 12px 40px -24px rgba(190,24,93,0.35);">
       <div style="background:linear-gradient(180deg,${SOFT} 0%,#ffffff 100%);padding:22px 22px 16px;text-align:center;border-bottom:1px solid ${CARD_BORDER};">
-        <img src="${esc(logoUrl)}" alt="${esc(brandName)}" width="168" height="auto" style="display:inline-block;max-width:168px;height:auto;margin:0 auto 10px;" />
+        <img src="cid:${LOGO_CID}" alt="${esc(brandName)}" width="140" height="140" style="display:block;margin:0 auto 12px;width:140px;height:140px;object-fit:contain;border:0;outline:none;" />
         <div style="font-size:11px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:${MUTED};">Cierre de caja</div>
         <div style="font-size:22px;font-weight:700;color:${INK};margin-top:4px;">${esc(brandName)}</div>
         <div style="font-size:14px;color:${ROSE_MUTED};margin-top:2px;">${esc(dayLabel)}</div>
@@ -541,11 +579,13 @@ export async function sendCashCloseReportEmail(
 ): Promise<{ ok: boolean; error?: string }> {
   const extras = await gatherCashCloseReportExtras(supabase, input.businessDay);
   const { subject, html, text } = buildCashCloseReportHtml(input, extras);
+  const logo = loadMilagrosEmailLogo();
   const result = await sendHtmlEmail({
     to: cashCloseReportToAddress(),
     subject,
     html,
     text,
+    attachments: logo ? [logo] : undefined,
   });
   if (!result.ok) return { ok: false, error: result.error };
   return { ok: true };
