@@ -3,12 +3,16 @@ import {
   prettyReportDayShortLabel,
   REPORT_STORE_TIME_ZONE,
 } from "@/lib/admin-report-range";
+import { storeBrand } from "@/lib/brand";
 import type { CashExpenseLine, CashStockOutLine } from "@/lib/cash-register";
 import { cashCloseReportToAddress, sendHtmlEmail } from "@/lib/email/send";
 import { formatCop } from "@/lib/money";
+import { getPublicSiteUrl } from "@/lib/public-site-url";
+import { STORE_BRAND, STORE_BRAND_HOVER } from "@/lib/store-theme";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 export type CashCloseReportInput = {
+  sessionId: string;
   businessDay: string;
   openingFloatCents: number;
   salesCount: number;
@@ -30,10 +34,23 @@ export type CashCloseReportInput = {
   closedByName: string | null;
   openedAt: string | null;
   closedAt: string | null;
+  /** Vista previa con día aún abierto (simula cierre con totales actuales). */
+  isPartialPreview?: boolean;
 };
 
 type HourBucket = { hour: number; label: string; cents: number; count: number };
 type StaffRow = { name: string; sales: number; actions: number };
+
+/** Rosa de marca + tipografía del panel (rosa / piedra). */
+const BRAND = STORE_BRAND;
+const BRAND_HOVER = STORE_BRAND_HOVER;
+const ROSE_INK = "#9f1239";
+const ROSE_MUTED = "#be185d";
+const BG = "#fff5f8";
+const CARD_BORDER = "#fbcfe8";
+const INK = "#4c0519";
+const MUTED = "#9d174d";
+const SOFT = "#fdf2f8";
 
 function esc(s: string): string {
   return s
@@ -41,6 +58,15 @@ function esc(s: string): string {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
+}
+
+function formatBogota(iso: string | null | undefined): string {
+  if (!iso) return "—";
+  return new Date(iso).toLocaleString("es-CO", {
+    timeZone: REPORT_STORE_TIME_ZONE,
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
 }
 
 function hourInBogota(iso: string): number {
@@ -53,27 +79,65 @@ function hourInBogota(iso: string): number {
   return Math.max(0, Math.min(23, Number(h ?? 0)));
 }
 
-function barRow(label: string, value: number, max: number, color: string): string {
+function absoluteAssetUrl(path: string): string {
+  const base = getPublicSiteUrl().replace(/\/$/, "");
+  const p = path.startsWith("/") ? path : `/${path}`;
+  return `${base}${p}`;
+}
+
+function barRow(
+  label: string,
+  value: number,
+  max: number,
+  color: string,
+  valueLabel?: string,
+): string {
   const pct = max > 0 ? Math.max(2, Math.round((value / max) * 100)) : 0;
   return `
     <tr>
-      <td style="padding:6px 8px 6px 0;font-size:13px;color:#3f3f46;width:42%;vertical-align:middle;">${esc(label)}</td>
+      <td style="padding:6px 8px 6px 0;font-size:13px;color:${INK};width:42%;vertical-align:middle;">${esc(label)}</td>
       <td style="padding:6px 0;width:58%;vertical-align:middle;">
-        <div style="background:#f4f4f5;border-radius:999px;height:12px;overflow:hidden;">
+        <div style="background:#fce7f3;border-radius:999px;height:12px;overflow:hidden;">
           <div style="width:${pct}%;height:12px;background:${color};border-radius:999px;"></div>
         </div>
-        <div style="font-size:11px;color:#71717a;margin-top:3px;">${esc(formatCop(value))}</div>
+        <div style="font-size:11px;color:${MUTED};margin-top:3px;">${esc(valueLabel ?? formatCop(value))}</div>
       </td>
     </tr>`;
 }
 
 function metricCard(label: string, value: string, sub?: string): string {
   return `
-    <td style="width:33%;padding:8px;">
-      <div style="border:1px solid #e4e4e7;border-radius:12px;padding:12px;background:#fafafa;">
-        <div style="font-size:11px;color:#71717a;text-transform:uppercase;letter-spacing:0.04em;">${esc(label)}</div>
-        <div style="font-size:18px;font-weight:700;color:#18181b;margin-top:4px;">${esc(value)}</div>
-        ${sub ? `<div style="font-size:11px;color:#a1a1aa;margin-top:2px;">${esc(sub)}</div>` : ""}
+    <td style="width:33%;padding:6px;">
+      <div style="border:1px solid ${CARD_BORDER};border-radius:14px;padding:12px;background:${SOFT};">
+        <div style="font-size:10px;color:${MUTED};text-transform:uppercase;letter-spacing:0.08em;font-weight:600;">${esc(label)}</div>
+        <div style="font-size:17px;font-weight:700;color:${INK};margin-top:5px;">${esc(value)}</div>
+        ${sub ? `<div style="font-size:11px;color:#9f1239;opacity:0.7;margin-top:3px;">${esc(sub)}</div>` : ""}
+      </div>
+    </td>`;
+}
+
+function dayColumn(args: {
+  title: string;
+  badge: string;
+  rows: Array<{ label: string; value: string; strong?: boolean }>;
+  footer: string;
+}): string {
+  const rows = args.rows
+    .map(
+      (r) => `
+      <tr>
+        <td style="padding:7px 0;font-size:12px;color:${MUTED};">${esc(r.label)}</td>
+        <td style="padding:7px 0;font-size:13px;text-align:right;color:${INK};${r.strong ? "font-weight:700;" : "font-weight:600;"}">${esc(r.value)}</td>
+      </tr>`,
+    )
+    .join("");
+  return `
+    <td style="width:50%;padding:6px;vertical-align:top;">
+      <div style="border:1px solid ${CARD_BORDER};border-radius:14px;padding:14px 14px 12px;background:#fff;height:100%;">
+        <div style="display:inline-block;background:${SOFT};color:${ROSE_MUTED};font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:4px 9px;border-radius:999px;margin-bottom:8px;">${esc(args.badge)}</div>
+        <div style="font-size:15px;font-weight:700;color:${INK};margin-bottom:8px;">${esc(args.title)}</div>
+        <table width="100%" cellpadding="0" cellspacing="0">${rows}</table>
+        <div style="margin-top:10px;padding-top:10px;border-top:1px solid #fce7f3;font-size:11px;color:${MUTED};line-height:1.45;">${esc(args.footer)}</div>
       </div>
     </td>`;
 }
@@ -181,6 +245,7 @@ export function buildCashCloseReportHtml(
   extras: { hourly: HourBucket[]; staff: StaffRow[] },
 ): { subject: string; html: string; text: string } {
   const dayLabel = prettyReportDayShortLabel(input.businessDay);
+  const partial = Boolean(input.isPartialPreview);
   const diff = input.cashDifferenceCents;
   const diffLabel =
     diff === 0
@@ -190,6 +255,12 @@ export function buildCashCloseReportHtml(
         : `Faltante ${formatCop(Math.abs(diff))}`;
   const diffColor =
     diff === 0 ? "#047857" : diff > 0 ? "#b45309" : "#b91c1c";
+
+  const site = getPublicSiteUrl().replace(/\/$/, "");
+  const sessionUrl = `${site}/admin/caja/${encodeURIComponent(input.sessionId)}`;
+  // Logo rosa Milagros (legible en fondos claros); fallback admin si no existe el path.
+  const logoUrl = absoluteAssetUrl("/logo-milagros.png");
+  const brandName = storeBrand;
 
   const top = [...input.stockOutLines]
     .sort((a, b) => b.quantity - a.quantity)
@@ -208,160 +279,249 @@ export function buildCashCloseReportHtml(
 
   const topBars = top
     .map((p) => {
-      const pct = topMax > 0 ? Math.max(4, Math.round((p.quantity / topMax) * 100)) : 0;
+      const pct =
+        topMax > 0 ? Math.max(4, Math.round((p.quantity / topMax) * 100)) : 0;
       return `
         <tr>
-          <td style="padding:7px 8px 7px 0;font-size:13px;color:#27272a;">
+          <td style="padding:7px 8px 7px 0;font-size:13px;color:${INK};">
             ${esc(p.name)}
-            <div style="font-size:11px;color:#a1a1aa;">Ref ${esc(p.reference ?? "—")}</div>
+            <div style="font-size:11px;color:${MUTED};opacity:0.75;">Ref ${esc(p.reference ?? "—")}</div>
           </td>
           <td style="padding:7px 0;width:45%;">
-            <div style="background:#f4f4f5;border-radius:999px;height:12px;overflow:hidden;">
-              <div style="width:${pct}%;height:12px;background:#9f1239;border-radius:999px;"></div>
+            <div style="background:#fce7f3;border-radius:999px;height:12px;overflow:hidden;">
+              <div style="width:${pct}%;height:12px;background:${BRAND};border-radius:999px;"></div>
             </div>
           </td>
-          <td style="padding:7px 0 7px 10px;font-size:13px;font-weight:700;text-align:right;white-space:nowrap;">${p.quantity} ud</td>
+          <td style="padding:7px 0 7px 10px;font-size:13px;font-weight:700;text-align:right;color:${ROSE_INK};white-space:nowrap;">${p.quantity} ud</td>
         </tr>`;
     })
     .join("");
 
   const hourBars = extras.hourly
-    .map((h) => barRow(`${h.label} · ${h.count} fact.`, h.cents, hourMax, "#0e7490"))
+    .filter((h) => h.count > 0)
+    .map((h) =>
+      barRow(
+        `${h.label} · ${h.count} fact.`,
+        h.cents,
+        hourMax,
+        BRAND_HOVER,
+      ),
+    )
     .join("");
 
   const payBars = [
-    barRow("Efectivo", input.salesCashCents, payMax, "#059669"),
-    barRow("Transferencia", input.salesTransferCents, payMax, "#0284c7"),
+    barRow("Efectivo", input.salesCashCents, payMax, BRAND),
+    barRow("Transferencia", input.salesTransferCents, payMax, ROSE_MUTED),
     barRow(
       "Mixtas / otras",
       input.salesMixedCents + input.salesOtherCents,
       payMax,
-      "#7c3aed",
+      "#db2777",
     ),
   ].join("");
 
   const expenseRows =
     input.expenseLines.length === 0
-      ? `<tr><td colspan="3" style="padding:8px 0;color:#71717a;font-size:13px;">Sin egresos este día.</td></tr>`
+      ? `<tr><td colspan="3" style="padding:8px 0;color:${MUTED};font-size:13px;">Sin egresos este día.</td></tr>`
       : input.expenseLines
           .map((e) => {
-            const pct = Math.max(4, Math.round((e.amount_cents / expMax) * 100));
+            const pct = Math.max(
+              4,
+              Math.round((e.amount_cents / expMax) * 100),
+            );
             return `
             <tr>
-              <td style="padding:7px 8px 7px 0;font-size:13px;">${esc(e.concept)}
-                <div style="font-size:11px;color:#a1a1aa;">${esc(e.payment_method)}</div>
+              <td style="padding:7px 8px 7px 0;font-size:13px;color:${INK};">${esc(e.concept)}
+                <div style="font-size:11px;color:${MUTED};">${esc(e.payment_method)}</div>
               </td>
               <td style="padding:7px 0;width:40%;">
-                <div style="background:#f4f4f5;border-radius:999px;height:10px;overflow:hidden;">
-                  <div style="width:${pct}%;height:10px;background:#d97706;border-radius:999px;"></div>
+                <div style="background:#fce7f3;border-radius:999px;height:10px;overflow:hidden;">
+                  <div style="width:${pct}%;height:10px;background:${BRAND_HOVER};border-radius:999px;"></div>
                 </div>
               </td>
-              <td style="padding:7px 0 7px 10px;font-size:13px;font-weight:600;text-align:right;white-space:nowrap;">${esc(formatCop(e.amount_cents))}</td>
+              <td style="padding:7px 0 7px 10px;font-size:13px;font-weight:600;text-align:right;color:${INK};white-space:nowrap;">${esc(formatCop(e.amount_cents))}</td>
             </tr>`;
           })
           .join("");
 
   const staffRows =
     extras.staff.length === 0
-      ? `<tr><td style="padding:8px 0;color:#71717a;font-size:13px;">Sin actividad registrada de colaboradores.</td></tr>`
+      ? `<tr><td style="padding:8px 0;color:${MUTED};font-size:13px;">Sin actividad registrada de colaboradores.</td></tr>`
       : extras.staff
           .map(
             (s) => `
           <tr>
-            <td style="padding:8px 0;border-bottom:1px solid #f4f4f5;font-size:13px;font-weight:600;">${esc(s.name)}</td>
-            <td style="padding:8px 0;border-bottom:1px solid #f4f4f5;font-size:13px;text-align:right;">${s.sales} ventas</td>
-            <td style="padding:8px 0;border-bottom:1px solid #f4f4f5;font-size:13px;text-align:right;color:#71717a;">${s.actions} acciones</td>
+            <td style="padding:8px 0;border-bottom:1px solid #fce7f3;font-size:13px;font-weight:600;color:${INK};">${esc(s.name)}</td>
+            <td style="padding:8px 0;border-bottom:1px solid #fce7f3;font-size:13px;text-align:right;color:${ROSE_INK};">${s.sales} ventas</td>
+            <td style="padding:8px 0;border-bottom:1px solid #fce7f3;font-size:13px;text-align:right;color:${MUTED};">${s.actions} acciones</td>
           </tr>`,
           )
           .join("");
 
+  const statusPill = partial
+    ? "Vista previa · día en curso"
+    : diffLabel;
+
+  const openCol = dayColumn({
+    title: "Inicio del día",
+    badge: "Apertura",
+    rows: [
+      { label: "Fondo en caja", value: formatCop(input.openingFloatCents), strong: true },
+      { label: "Abrió", value: input.openedByName ?? "—" },
+      { label: "Hora", value: formatBogota(input.openedAt) },
+    ],
+    footer: "Base con la que empezó la jornada en el local.",
+  });
+
+  const closeCol = dayColumn({
+    title: partial ? "Cierre (simulado ahora)" : "Cierre del día",
+    badge: partial ? "Parcial" : "Cierre",
+    rows: [
+      {
+        label: "Efectivo esperado",
+        value: formatCop(input.expectedCashCents),
+        strong: true,
+      },
+      {
+        label: partial ? "Efectivo contado (sim.)" : "Efectivo contado",
+        value: formatCop(input.countedCashCents),
+      },
+      { label: "Diferencia", value: diffLabel },
+      { label: partial ? "Cerraría" : "Cerró", value: input.closedByName ?? "—" },
+      { label: "Hora", value: formatBogota(input.closedAt) },
+    ],
+    footer: partial
+      ? "Simulación con lo vendido hasta ahora. Al cerrar caja se congela el real."
+      : input.notes
+        ? `Nota: ${input.notes}`
+        : "Totales congelados al confirmar el cierre.",
+  });
+
   const html = `<!DOCTYPE html>
 <html lang="es">
-<head><meta charset="utf-8" /><meta name="viewport" content="width=device-width" /></head>
-<body style="margin:0;padding:0;background:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#18181b;">
-  <div style="max-width:680px;margin:0 auto;padding:24px 12px;">
-    <div style="background:#4c0519;color:#fff;border-radius:16px 16px 0 0;padding:22px 24px;">
-      <div style="font-size:12px;opacity:0.8;letter-spacing:0.08em;text-transform:uppercase;">Cierre de caja</div>
-      <div style="font-size:24px;font-weight:700;margin-top:4px;">Milagros Guacarí · ${esc(dayLabel)}</div>
-      <div style="margin-top:10px;display:inline-block;background:rgba(255,255,255,0.12);border-radius:999px;padding:6px 12px;font-size:13px;">
-        ${esc(diffLabel)}
-      </div>
-    </div>
-
-    <div style="background:#fff;border:1px solid #e4e4e7;border-top:0;border-radius:0 0 16px 16px;padding:20px 18px 28px;">
-      <table width="100%" cellpadding="0" cellspacing="0" role="presentation"><tr>
-        ${metricCard("Ventas del día", formatCop(input.salesTotalCents), `${input.salesCount} facturas`)}
-        ${metricCard("Unidades", String(input.unitsSold), topProduct ? `Top: ${topProduct.name}` : undefined)}
-        ${metricCard("Efectivo contado", formatCop(input.countedCashCents), `Esperado ${formatCop(input.expectedCashCents)}`)}
-      </tr></table>
-
-      <div style="margin-top:18px;border:1px solid #e4e4e7;border-radius:12px;padding:14px 16px;">
-        <div style="font-size:14px;font-weight:700;margin-bottom:8px;">Resumen de caja</div>
-        <table width="100%" cellpadding="0" cellspacing="0" style="font-size:13px;color:#3f3f46;">
-          <tr><td style="padding:4px 0;">Fondo inicial</td><td style="text-align:right;font-weight:600;">${esc(formatCop(input.openingFloatCents))}</td></tr>
-          <tr><td style="padding:4px 0;">Ventas efectivo</td><td style="text-align:right;font-weight:600;">${esc(formatCop(input.salesCashCents))}</td></tr>
-          <tr><td style="padding:4px 0;">Ventas transferencia</td><td style="text-align:right;font-weight:600;">${esc(formatCop(input.salesTransferCents))}</td></tr>
-          <tr><td style="padding:4px 0;">Egresos efectivo</td><td style="text-align:right;font-weight:600;">${esc(formatCop(input.expensesCashCents))}</td></tr>
-          <tr><td style="padding:4px 0;">Egresos otros</td><td style="text-align:right;font-weight:600;">${esc(formatCop(input.expensesOtherCents))}</td></tr>
-          <tr><td style="padding:8px 0 4px;border-top:1px solid #f4f4f5;">Efectivo esperado</td><td style="padding:8px 0 4px;border-top:1px solid #f4f4f5;text-align:right;font-weight:700;">${esc(formatCop(input.expectedCashCents))}</td></tr>
-          <tr><td style="padding:4px 0;">Diferencia</td><td style="text-align:right;font-weight:700;color:${diffColor};">${esc(diffLabel)}</td></tr>
-        </table>
-        <div style="margin-top:10px;font-size:12px;color:#71717a;">
-          Abrió: ${esc(input.openedByName ?? "—")}${input.openedAt ? ` · ${esc(new Date(input.openedAt).toLocaleString("es-CO", { timeZone: REPORT_STORE_TIME_ZONE }))}` : ""}<br/>
-          Cerró: ${esc(input.closedByName ?? "—")}${input.closedAt ? ` · ${esc(new Date(input.closedAt).toLocaleString("es-CO", { timeZone: REPORT_STORE_TIME_ZONE }))}` : ""}
-          ${input.notes ? `<br/>Nota: ${esc(input.notes)}` : ""}
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width" />
+  <title>Cierre de caja · ${esc(dayLabel)}</title>
+</head>
+<body style="margin:0;padding:0;background:${BG};font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:${INK};">
+  <div style="max-width:680px;margin:0 auto;padding:28px 14px;">
+    <div style="background:#ffffff;border:1px solid ${CARD_BORDER};border-radius:20px;overflow:hidden;box-shadow:0 12px 40px -24px rgba(190,24,93,0.35);">
+      <div style="background:linear-gradient(180deg,${SOFT} 0%,#ffffff 100%);padding:22px 22px 16px;text-align:center;border-bottom:1px solid ${CARD_BORDER};">
+        <img src="${esc(logoUrl)}" alt="${esc(brandName)}" width="168" height="auto" style="display:inline-block;max-width:168px;height:auto;margin:0 auto 10px;" />
+        <div style="font-size:11px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:${MUTED};">Cierre de caja</div>
+        <div style="font-size:22px;font-weight:700;color:${INK};margin-top:4px;">${esc(brandName)}</div>
+        <div style="font-size:14px;color:${ROSE_MUTED};margin-top:2px;">${esc(dayLabel)}</div>
+        <div style="margin-top:12px;display:inline-block;background:${BRAND};color:#fff;border-radius:999px;padding:7px 14px;font-size:12px;font-weight:700;">
+          ${esc(statusPill)}
         </div>
       </div>
 
-      <div style="margin-top:18px;border:1px solid #e4e4e7;border-radius:12px;padding:14px 16px;">
-        <div style="font-size:14px;font-weight:700;margin-bottom:4px;">Producto más vendido</div>
-        <div style="font-size:13px;color:#52525b;margin-bottom:10px;">
-          ${
-            topProduct
-              ? `<strong style="color:#18181b;">${esc(topProduct.name)}</strong> · ${topProduct.quantity} unidades`
-              : "Sin unidades vendidas."
-          }
+      <div style="padding:18px 16px 8px;">
+        <table width="100%" cellpadding="0" cellspacing="0" role="presentation"><tr>
+          ${metricCard("Ventas del día", formatCop(input.salesTotalCents), `${input.salesCount} facturas`)}
+          ${metricCard("Unidades", String(input.unitsSold), topProduct ? `Top: ${topProduct.name}` : undefined)}
+          ${metricCard(
+            partial ? "Efectivo ahora" : "Efectivo contado",
+            formatCop(partial ? input.expectedCashCents : input.countedCashCents),
+            `Esperado ${formatCop(input.expectedCashCents)}`,
+          )}
+        </tr></table>
+      </div>
+
+      <div style="padding:4px 10px 8px;">
+        <table width="100%" cellpadding="0" cellspacing="0" role="presentation"><tr>
+          ${openCol}
+          ${closeCol}
+        </tr></table>
+      </div>
+
+      <div style="padding:8px 16px 6px;">
+        <div style="border:1px solid ${CARD_BORDER};border-radius:14px;padding:14px 16px;background:#fff;">
+          <div style="font-size:12px;font-weight:700;color:${MUTED};text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px;">Movimiento de efectivo</div>
+          <table width="100%" cellpadding="0" cellspacing="0" style="font-size:13px;color:${INK};">
+            <tr><td style="padding:4px 0;">Fondo inicial</td><td style="text-align:right;font-weight:600;">${esc(formatCop(input.openingFloatCents))}</td></tr>
+            <tr><td style="padding:4px 0;">+ Ventas en efectivo</td><td style="text-align:right;font-weight:600;">${esc(formatCop(input.salesCashCents))}</td></tr>
+            <tr><td style="padding:4px 0;">+ Ventas transferencia</td><td style="text-align:right;font-weight:600;">${esc(formatCop(input.salesTransferCents))}</td></tr>
+            <tr><td style="padding:4px 0;">− Egresos efectivo</td><td style="text-align:right;font-weight:600;">${esc(formatCop(input.expensesCashCents))}</td></tr>
+            <tr><td style="padding:4px 0;">− Egresos otros</td><td style="text-align:right;font-weight:600;">${esc(formatCop(input.expensesOtherCents))}</td></tr>
+            <tr><td style="padding:10px 0 4px;border-top:1px solid #fce7f3;font-weight:700;">Efectivo esperado</td><td style="padding:10px 0 4px;border-top:1px solid #fce7f3;text-align:right;font-weight:700;color:${ROSE_INK};">${esc(formatCop(input.expectedCashCents))}</td></tr>
+            <tr><td style="padding:4px 0;">Diferencia</td><td style="text-align:right;font-weight:700;color:${diffColor};">${esc(diffLabel)}</td></tr>
+          </table>
         </div>
-        <table width="100%" cellpadding="0" cellspacing="0">${topBars}</table>
       </div>
 
-      <div style="margin-top:18px;border:1px solid #e4e4e7;border-radius:12px;padding:14px 16px;">
-        <div style="font-size:14px;font-weight:700;margin-bottom:10px;">Ventas por forma de pago</div>
-        <table width="100%" cellpadding="0" cellspacing="0">${payBars}</table>
+      <div style="padding:10px 16px;text-align:center;">
+        <a href="${esc(sessionUrl)}" style="display:inline-block;background:${BRAND};color:#ffffff;text-decoration:none;font-size:14px;font-weight:700;padding:14px 22px;border-radius:12px;box-shadow:0 8px 20px -10px rgba(232,90,142,0.85);">
+          Ver cierre de caja del día
+        </a>
+        <div style="margin-top:8px;font-size:11px;color:${MUTED};">
+          <a href="${esc(sessionUrl)}" style="color:${ROSE_MUTED};">${esc(sessionUrl)}</a>
+        </div>
       </div>
 
-      <div style="margin-top:18px;border:1px solid #e4e4e7;border-radius:12px;padding:14px 16px;">
-        <div style="font-size:14px;font-weight:700;margin-bottom:10px;">Actividad por hora (Bogotá)</div>
-        <table width="100%" cellpadding="0" cellspacing="0">${hourBars || `<tr><td style="color:#71717a;font-size:13px;">Sin ventas horarias.</td></tr>`}</table>
+      <div style="padding:8px 16px;">
+        <div style="border:1px solid ${CARD_BORDER};border-radius:14px;padding:14px 16px;background:#fff;">
+          <div style="font-size:14px;font-weight:700;color:${INK};margin-bottom:4px;">Producto más vendido</div>
+          <div style="font-size:13px;color:${MUTED};margin-bottom:10px;">
+            ${
+              topProduct
+                ? `<strong style="color:${INK};">${esc(topProduct.name)}</strong> · ${topProduct.quantity} unidades`
+                : "Sin unidades vendidas."
+            }
+          </div>
+          <table width="100%" cellpadding="0" cellspacing="0">${topBars}</table>
+        </div>
       </div>
 
-      <div style="margin-top:18px;border:1px solid #e4e4e7;border-radius:12px;padding:14px 16px;">
-        <div style="font-size:14px;font-weight:700;margin-bottom:10px;">Quién operó hoy</div>
-        <table width="100%" cellpadding="0" cellspacing="0">${staffRows}</table>
+      <div style="padding:8px 16px;">
+        <div style="border:1px solid ${CARD_BORDER};border-radius:14px;padding:14px 16px;background:#fff;">
+          <div style="font-size:14px;font-weight:700;color:${INK};margin-bottom:10px;">Ventas por forma de pago</div>
+          <table width="100%" cellpadding="0" cellspacing="0">${payBars}</table>
+        </div>
       </div>
 
-      <div style="margin-top:18px;border:1px solid #e4e4e7;border-radius:12px;padding:14px 16px;">
-        <div style="font-size:14px;font-weight:700;margin-bottom:10px;">Egresos del día · ${esc(formatCop(input.expensesCashCents + input.expensesOtherCents))}</div>
-        <table width="100%" cellpadding="0" cellspacing="0">${expenseRows}</table>
+      <div style="padding:8px 16px;">
+        <div style="border:1px solid ${CARD_BORDER};border-radius:14px;padding:14px 16px;background:#fff;">
+          <div style="font-size:14px;font-weight:700;color:${INK};margin-bottom:10px;">Actividad por hora (Bogotá)</div>
+          <table width="100%" cellpadding="0" cellspacing="0">${hourBars || `<tr><td style="color:${MUTED};font-size:13px;">Sin ventas horarias.</td></tr>`}</table>
+        </div>
       </div>
 
-      <p style="margin:22px 0 0;font-size:11px;color:#a1a1aa;text-align:center;">
-        Reporte automático al cerrar caja · Milagros Guacarí
-      </p>
+      <div style="padding:8px 16px;">
+        <div style="border:1px solid ${CARD_BORDER};border-radius:14px;padding:14px 16px;background:#fff;">
+          <div style="font-size:14px;font-weight:700;color:${INK};margin-bottom:10px;">Quién operó hoy</div>
+          <table width="100%" cellpadding="0" cellspacing="0">${staffRows}</table>
+        </div>
+      </div>
+
+      <div style="padding:8px 16px 22px;">
+        <div style="border:1px solid ${CARD_BORDER};border-radius:14px;padding:14px 16px;background:#fff;">
+          <div style="font-size:14px;font-weight:700;color:${INK};margin-bottom:10px;">Egresos del día · ${esc(formatCop(input.expensesCashCents + input.expensesOtherCents))}</div>
+          <table width="100%" cellpadding="0" cellspacing="0">${expenseRows}</table>
+        </div>
+      </div>
+
+      <div style="background:${SOFT};border-top:1px solid ${CARD_BORDER};padding:16px 18px;text-align:center;">
+        <div style="font-size:11px;color:${MUTED};">
+          Reporte automático · ${esc(brandName)}
+          ${partial ? " · vista previa (caja aún abierta)" : ""}
+        </div>
+      </div>
     </div>
   </div>
 </body>
 </html>`;
 
+  const subjectPrefix = partial ? "[Vista previa] " : "";
   const text = [
-    `Cierre de caja · ${dayLabel}`,
+    `${subjectPrefix}Cierre de caja · ${dayLabel}`,
+    `Ver en admin: ${sessionUrl}`,
+    `Inicio — fondo ${formatCop(input.openingFloatCents)} · ${input.openedByName ?? "—"} · ${formatBogota(input.openedAt)}`,
+    `Cierre — esperado ${formatCop(input.expectedCashCents)} · contado ${formatCop(input.countedCashCents)} · ${diffLabel}`,
     `Ventas: ${formatCop(input.salesTotalCents)} (${input.salesCount} facturas)`,
     `Unidades: ${input.unitsSold}`,
     topProduct ? `Top producto: ${topProduct.name} (${topProduct.quantity} ud)` : null,
-    `Fondo: ${formatCop(input.openingFloatCents)}`,
-    `Efectivo esperado: ${formatCop(input.expectedCashCents)}`,
-    `Efectivo contado: ${formatCop(input.countedCashCents)}`,
-    `Diferencia: ${diffLabel}`,
     `Abrió: ${input.openedByName ?? "—"}`,
     `Cerró: ${input.closedByName ?? "—"}`,
   ]
@@ -369,7 +529,7 @@ export function buildCashCloseReportHtml(
     .join("\n");
 
   return {
-    subject: `Cierre de caja · ${dayLabel} · ${diffLabel}`,
+    subject: `${subjectPrefix}Cierre de caja · ${dayLabel} · ${diffLabel}`,
     html,
     text,
   };

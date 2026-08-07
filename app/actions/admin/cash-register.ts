@@ -219,6 +219,7 @@ export async function closeCashRegisterSession(formData: FormData) {
       resolveProfileName(supabase, user.id),
     ]);
     const emailResult = await sendCashCloseReportEmail(supabase, {
+      sessionId,
       businessDay,
       openingFloatCents: openingFloat,
       salesCount: live.salesCount,
@@ -280,6 +281,7 @@ export async function resendCashCloseReport(formData: FormData) {
   ]);
 
   const emailResult = await sendCashCloseReportEmail(supabase, {
+    sessionId,
     businessDay: closed.business_day,
     openingFloatCents: closed.opening_float_cents,
     salesCount: closed.sales_count ?? 0,
