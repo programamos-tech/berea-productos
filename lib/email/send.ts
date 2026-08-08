@@ -28,8 +28,8 @@ export function cashCloseReportRecipientsLabel(): string {
 export function emailFromAddress(): string {
   return (
     process.env.EMAIL_FROM?.trim() ||
-    // Requiere dominio verificado en Resend (aleyashop.com).
-    "Milagros Guacarí <caja@aleyashop.com>"
+    // Dominio compartido Berea (verificar en Resend).
+    "Milagros Guacarí <caja@berea.house>"
   );
 }
 
