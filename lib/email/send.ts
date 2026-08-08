@@ -28,8 +28,8 @@ export function cashCloseReportRecipientsLabel(): string {
 export function emailFromAddress(): string {
   return (
     process.env.EMAIL_FROM?.trim() ||
-    // Dominio verificado en Resend (permite enviar a cualquier destinatario).
-    "Milagros Guacarí <caja@rogerbox.co>"
+    // Requiere dominio verificado en Resend (aleyashop.com).
+    "Milagros Guacarí <caja@aleyashop.com>"
   );
 }
 
