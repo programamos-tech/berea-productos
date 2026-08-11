@@ -174,6 +174,11 @@ export async function updateAdminOrderStatus(
 
   if (!orderBefore) return { ok: false as const, error: "db" as const };
 
+  // Cotizaciones solo se anulan desde este selector; para cobrar usá «Facturar cotización».
+  if (String(orderBefore.status) === "quotation" && next !== "cancelled") {
+    return { ok: false as const, error: "invalid" as const };
+  }
+
   let payload: { status: string; cancellation_reason: string | null };
   let stockWasRestored = orderBefore.stock_restored_at != null;
 

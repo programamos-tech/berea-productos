@@ -9,6 +9,7 @@ import { ORDER_CANCELLATION_REASON_MIN_LENGTH } from "@/lib/orders-constants";
 
 const INVOICE_OPTIONS: { value: string; label: string }[] = [
   { value: "paid", label: "Finalizada" },
+  { value: "quotation", label: "Cotización" },
   { value: "pending", label: "Pendiente" },
   { value: "cancelled", label: "Anulada" },
   { value: "failed", label: "Fallida" },
@@ -20,6 +21,8 @@ function selectClassForStatus(status: string): string {
   switch (status) {
     case "paid":
       return `${base} border-emerald-200 bg-emerald-50 text-emerald-900 dark:border-emerald-800/70 dark:bg-emerald-950/45 dark:text-emerald-100`;
+    case "quotation":
+      return `${base} border-violet-200 bg-violet-50 text-violet-900 dark:border-violet-800/70 dark:bg-violet-950/45 dark:text-violet-100`;
     case "pending":
       return `${base} border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-800/70 dark:bg-amber-950/45 dark:text-amber-100`;
     case "cancelled":
@@ -214,6 +217,13 @@ export function OrderInvoiceStatusSelect({
     setValue(currentStatus);
   }, [currentStatus]);
 
+  const options =
+    currentStatus === "quotation"
+      ? INVOICE_OPTIONS.filter(
+          (o) => o.value === "quotation" || o.value === "cancelled",
+        )
+      : INVOICE_OPTIONS.filter((o) => o.value !== "quotation");
+
   return (
     <>
       <select
@@ -238,7 +248,7 @@ export function OrderInvoiceStatusSelect({
         }}
         className={`${selectClassForStatus(value)} disabled:opacity-60`}
       >
-        {INVOICE_OPTIONS.map((o) => (
+        {options.map((o) => (
           <option key={o.value} value={o.value}>
             {o.label}
           </option>

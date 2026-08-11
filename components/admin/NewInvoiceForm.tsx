@@ -219,7 +219,7 @@ export function NewInvoiceHeader() {
           Nueva factura
         </h1>
         <p className="mt-2 max-w-2xl text-sm text-zinc-500 dark:text-zinc-400">
-          Selecciona el cliente, agrega productos al carrito y elige el método de pago.
+          Seleccioná el cliente, agregá productos y elegí si es venta o cotización.
         </p>
       </div>
       <Link
@@ -253,14 +253,20 @@ function errorMessage(code: string | undefined): string | null {
   }
 }
 
-function ConfirmInvoiceButton({ disabled }: { disabled: boolean }) {
+function ConfirmInvoiceButton({
+  disabled,
+  documentKind,
+}: {
+  disabled: boolean;
+  documentKind: "sale" | "quotation";
+}) {
   return (
     <AdminFormSubmitButton
       pendingLabel="Guardando…"
       disabled={disabled}
       data-invoice-confirm="true"
     >
-      Confirmar factura
+      {documentKind === "quotation" ? "Guardar cotización" : "Confirmar factura"}
     </AdminFormSubmitButton>
   );
 }
@@ -325,6 +331,7 @@ export function NewInvoiceForm({
   const [lines, setLines] = useState<CartLine[]>([]);
   const [kitLines, setKitLines] = useState<KitCartLine[]>([]);
   const [payment, setPayment] = useState<PaymentTab>("cash");
+  const [documentKind, setDocumentKind] = useState<"sale" | "quotation">("sale");
   const [cashGivenRaw, setCashGivenRaw] = useState("");
   const [transferRef, setTransferRef] = useState("");
   const [mixedCashRaw, setMixedCashRaw] = useState("");
@@ -743,7 +750,8 @@ export function NewInvoiceForm({
     mixedCashCents + mixedTransferCents === totalCents && totalCents > 0;
 
   /** Efectivo y transferencia no exigen campos extra; el monto en efectivo es solo ayuda para el vuelto. */
-  const paymentOk = payment !== "mixed" || mixedOk;
+  const paymentOk =
+    documentKind === "quotation" || payment !== "mixed" || mixedOk;
 
   const canSubmit =
     customer !== null &&
@@ -751,7 +759,7 @@ export function NewInvoiceForm({
     totalCents > 0 &&
     shipChoice !== null &&
     shipChoice !== "" &&
-    !cartStockExceeded &&
+    (documentKind === "quotation" || !cartStockExceeded) &&
     paymentOk;
 
   function selectCustomer(c: CustomerHit) {
@@ -933,6 +941,7 @@ export function NewInvoiceForm({
         quantity: l.quantity,
       })),
       paymentMethod: payment,
+      documentKind,
       ...(payment === "mixed"
         ? {
             mixedCashCents: mixedCashCents,
@@ -948,6 +957,7 @@ export function NewInvoiceForm({
     lines,
     kitLines,
     payment,
+    documentKind,
     mixedCashCents,
     mixedTransferCents,
     shipChoice,
@@ -1284,7 +1294,9 @@ export function NewInvoiceForm({
               </ul>
               {cartStockExceeded ? (
                 <p className="mt-3 text-sm text-red-600 dark:text-red-400">
-                  La cantidad supera el stock disponible. Ajustá cantidades o quitá líneas.
+                  {documentKind === "quotation"
+                    ? "Hay líneas sin stock suficiente. Podés guardar la cotización; al facturar se validará el inventario."
+                    : "La cantidad supera el stock disponible. Ajustá cantidades o quitá líneas."}
                 </p>
               ) : null}
               </>
@@ -1462,6 +1474,53 @@ export function NewInvoiceForm({
             </section>
 
             <section className={`${cardSectionClass} order-5 xl:order-none`}>
+              <h2 className={sectionTitle}>Tipo de documento</h2>
+              <div className="mt-4 flex rounded-xl border border-zinc-200/90 bg-zinc-100 p-1 dark:border-zinc-700 dark:bg-zinc-800/80">
+                {(
+                  [
+                    {
+                      id: "sale" as const,
+                      label: "Venta",
+                      hint: "Cobra y descuenta stock",
+                    },
+                    {
+                      id: "quotation" as const,
+                      label: "Cotización",
+                      hint: "Pre-factura sin cobro",
+                    },
+                  ] as const
+                ).map((tab) => {
+                  const active = documentKind === tab.id;
+                  return (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      onClick={() => setDocumentKind(tab.id)}
+                      className={[
+                        "flex flex-1 flex-col items-center justify-center gap-0.5 rounded-lg px-2 py-2.5 text-center transition",
+                        active
+                          ? "border border-zinc-300 bg-white text-zinc-900 shadow-sm dark:border-zinc-600 dark:bg-zinc-950 dark:text-zinc-100 dark:shadow-none"
+                          : "text-zinc-600 hover:bg-white/80 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-900/70 dark:hover:text-zinc-100",
+                      ].join(" ")}
+                    >
+                      <span className="text-xs font-semibold sm:text-sm">{tab.label}</span>
+                      <span className="text-[10px] font-medium text-zinc-500 dark:text-zinc-400">
+                        {tab.hint}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+              {documentKind === "quotation" ? (
+                <p className="mt-3 text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
+                  La cotización queda como pre-factura: sin descontar stock ni registrar cobro.
+                  Desde el detalle podés descargarla, enviarla por correo y facturarla después.
+                </p>
+              ) : null}
+            </section>
+
+            {documentKind === "sale" ? (
+            <section className={`${cardSectionClass} order-5 xl:order-none`}>
               <h2 className={sectionTitle}>Método de pago</h2>
               <div className="mt-4 flex rounded-xl border border-zinc-200/90 bg-zinc-100 p-1 dark:border-zinc-700 dark:bg-zinc-800/80">
                 {(
@@ -1557,6 +1616,7 @@ export function NewInvoiceForm({
                 </div>
               ) : null}
             </section>
+            ) : null}
 
             <section className={`${cardSectionClass} order-6 xl:order-none`}>
               <h2 className={sectionTitle}>Resumen</h2>
@@ -1617,17 +1677,18 @@ export function NewInvoiceForm({
               </div>
               <div className="mt-5 border-t border-zinc-200/70 pt-5 dark:border-zinc-700/90">
                 <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
-                  Total a cobrar
+                  {documentKind === "quotation" ? "Total cotizado" : "Total a cobrar"}
                 </p>
                 <p className="mt-1 text-xl font-medium tabular-nums text-zinc-900 dark:text-zinc-50 sm:text-2xl">
                   {formatCop(totalCents)}
                 </p>
               </div>
               <p className="mt-5 text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
-                Verifica cliente, productos y pago antes de confirmar. La factura quedará
-                registrada como venta en mostrador.
+                {documentKind === "quotation"
+                  ? "Verificá cliente y productos. Se guarda como cotización (pre-factura) sin cobro ni descuento de stock."
+                  : "Verifica cliente, productos y pago antes de confirmar. La factura quedará registrada como venta en mostrador."}
               </p>
-              <ConfirmInvoiceButton disabled={!canSubmit} />
+              <ConfirmInvoiceButton disabled={!canSubmit} documentKind={documentKind} />
             </section>
           </div>
         </div>

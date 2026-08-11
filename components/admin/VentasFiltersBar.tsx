@@ -159,6 +159,7 @@ export function VentasFiltersBar({ initialQ, initialFrom, initialTo }: VentasFil
           >
             <option value="all">Todas</option>
             <option value="paid">Finalizada</option>
+            <option value="quotation">Cotización</option>
             <option value="cancelled">Anulada</option>
             <option value="pending">Pendiente</option>
             <option value="failed">Fallida</option>

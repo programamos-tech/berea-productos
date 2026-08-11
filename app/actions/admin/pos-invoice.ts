@@ -51,6 +51,8 @@ export type PosInvoicePayload = {
   customerId: string;
   lines: PosInvoiceLinePayload[];
   kitLines?: PosInvoiceKitLinePayload[];
+  /** venta = factura cobrada; quotation = cotización / pre-factura. */
+  documentKind?: "sale" | "quotation";
   paymentMethod: "cash" | "transfer" | "mixed";
   /** Solo si paymentMethod === "mixed": centavos en efectivo. */
   mixedCashCents?: number;
@@ -124,7 +126,6 @@ async function decrementPosStockLocal(
 
 export async function createPosInvoiceAction(formData: FormData) {
   const { userId } = await requireAdminPermission("ventas_crear");
-  await assertCashRegisterOpenForStaff();
   const supabase = await createSupabaseServerClient();
 
   let payload: PosInvoicePayload;
@@ -134,6 +135,15 @@ export async function createPosInvoiceAction(formData: FormData) {
     payload = JSON.parse(raw) as PosInvoicePayload;
   } catch {
     redirectError("validation");
+  }
+
+  const documentKind =
+    payload.documentKind === "quotation" ? "quotation" : "sale";
+  const isQuotation = documentKind === "quotation";
+
+  // Cotización no exige caja abierta; la venta sí.
+  if (!isQuotation) {
+    await assertCashRegisterOpenForStaff();
   }
 
   const customerId = String(payload.customerId ?? "").trim();
@@ -174,7 +184,12 @@ export async function createPosInvoiceAction(formData: FormData) {
   }
 
   const paymentMethod = payload.paymentMethod;
-  if (paymentMethod !== "cash" && paymentMethod !== "transfer" && paymentMethod !== "mixed") {
+  if (
+    !isQuotation &&
+    paymentMethod !== "cash" &&
+    paymentMethod !== "transfer" &&
+    paymentMethod !== "mixed"
+  ) {
     redirectError("validation");
   }
 
@@ -211,9 +226,11 @@ export async function createPosInvoiceAction(formData: FormData) {
     if (kitsById.size !== kitIds.length) redirectError("products");
     for (const kl of kitLines) {
       const kit = kitsById.get(kl.kitId)!;
-      if (!kitIsAvailable(kit, "pos")) redirectError("stock");
-      const maxK = maxKitsAvailableFromItems(kit.items ?? [], "pos");
-      if (maxK < kl.quantity) redirectError("stock");
+      if (!isQuotation) {
+        if (!kitIsAvailable(kit, "pos")) redirectError("stock");
+        const maxK = maxKitsAvailableFromItems(kit.items ?? [], "pos");
+        if (maxK < kl.quantity) redirectError("stock");
+      }
     }
   }
 
@@ -256,8 +273,10 @@ export async function createPosInvoiceAction(formData: FormData) {
     for (const [pid, qty] of qtyByProduct) {
       const p = productById.get(pid);
       if (!p) redirectError("products");
-      const stock = Number(p.stock_local ?? 0);
-      if (stock < qty) redirectError("stock");
+      if (!isQuotation) {
+        const stock = Number(p.stock_local ?? 0);
+        if (stock < qty) redirectError("stock");
+      }
     }
     for (const pid of lineProductIds) {
       if (!productById.has(pid)) redirectError("products");
@@ -307,7 +326,7 @@ export async function createPosInvoiceAction(formData: FormData) {
   const claim = await claimAdminFormToken(
     supabase,
     submissionId,
-    `pos_invoice:${customerId}`,
+    `pos_invoice:${documentKind}:${customerId}`,
   );
   if (claim === "duplicate") {
     revalidatePath("/admin/ventas");
@@ -334,11 +353,11 @@ export async function createPosInvoiceAction(formData: FormData) {
         ? String(customerRow.phone).trim() || null
         : null;
 
-  const wompiRef = `POS:${paymentMethod}`;
+  const wompiRef = isQuotation ? "POS:quotation" : `POS:${paymentMethod}`;
 
   let posMixedCashCents: number | null = null;
   let posMixedTransferCents: number | null = null;
-  if (paymentMethod === "mixed") {
+  if (!isQuotation && paymentMethod === "mixed") {
     const cash = Math.floor(Number(payload.mixedCashCents ?? 0));
     const transfer = Math.floor(Number(payload.mixedTransferCents ?? 0));
     if (
@@ -357,7 +376,7 @@ export async function createPosInvoiceAction(formData: FormData) {
   const { data: orderRow, error: oErr } = await supabase
     .from("orders")
     .insert({
-      status: "paid",
+      status: isQuotation ? "quotation" : "paid",
       customer_name: String(customerRow.name ?? "Cliente"),
       customer_email: customerEmail,
       customer_id: customerId,
@@ -366,7 +385,7 @@ export async function createPosInvoiceAction(formData: FormData) {
       wompi_reference: wompiRef,
       shipping_address: shippingAddress,
       shipping_phone: shippingPhone,
-      ...(paymentMethod === "mixed"
+      ...(!isQuotation && paymentMethod === "mixed"
         ? {
             pos_mixed_cash_cents: posMixedCashCents,
             pos_mixed_transfer_cents: posMixedTransferCents,
@@ -408,7 +427,7 @@ export async function createPosInvoiceAction(formData: FormData) {
       product_name_snapshot: String(p.name ?? "Producto"),
       line_discount_percent: pctForCalc,
       line_discount_amount_cents: pctForCalc != null ? 0 : amtForCalc,
-      stock_deducted_local: l.quantity,
+      stock_deducted_local: isQuotation ? 0 : l.quantity,
       stock_deducted_warehouse: 0,
       kit_component_deductions: null,
     };
@@ -418,7 +437,9 @@ export async function createPosInvoiceAction(formData: FormData) {
     const kit = kitsById.get(kl.kitId)!;
     const items = kit.items ?? [];
     const unitKit = resolveKitSalePriceCents(kit, items, "pos");
-    const deductions = buildKitPosComponentDeductions(kit, kl.quantity);
+    const deductions = isQuotation
+      ? null
+      : buildKitPosComponentDeductions(kit, kl.quantity);
     return {
       order_id: orderId,
       product_id: null,
@@ -495,37 +516,48 @@ export async function createPosInvoiceAction(formData: FormData) {
       );
       return {
         kitName: String(kit.name ?? "Kit"),
-        deductions: buildKitPosComponentDeductions(kit, kl.quantity),
+        deductions: isQuotation
+          ? []
+          : buildKitPosComponentDeductions(kit, kl.quantity),
         productNames,
       };
     }),
     stockByProductId,
   });
 
-  const stockResult = await decrementPosStockLocal(supabase, qtyByProduct, stockProductById);
-  if (stockResult !== "ok") {
-    await supabase.from("orders").delete().eq("id", orderId);
-    redirectError(stockResult === "stock" ? "stock" : "db");
+  if (!isQuotation) {
+    const stockResult = await decrementPosStockLocal(
+      supabase,
+      qtyByProduct,
+      stockProductById,
+    );
+    if (stockResult !== "ok") {
+      await supabase.from("orders").delete().eq("id", orderId);
+      redirectError(stockResult === "stock" ? "stock" : "db");
+    }
   }
 
   const totalFormatted = new Intl.NumberFormat("es-CO", {
     style: "currency",
     currency: "COP",
     maximumFractionDigits: 0,
-  }).format(totalCents / 100);
+  }).format(totalCents);
 
   void logAdminActivity(supabase, {
     actorId: userId,
     actionType: "sale_created",
     entityType: "order",
     entityId: orderId,
-    summary: `Venta a ${String(customerRow.name ?? "Cliente")} · ${totalFormatted}`,
+    summary: isQuotation
+      ? `Cotización a ${String(customerRow.name ?? "Cliente")} · ${totalFormatted}`
+      : `Venta a ${String(customerRow.name ?? "Cliente")} · ${totalFormatted}`,
     metadata: {
       customer_id: customerId,
+      document_kind: documentKind,
       subtotal_cents: subtotalCents,
       vat_cents: vatCents,
       total_cents: totalCents,
-      payment_method: paymentMethod,
+      payment_method: isQuotation ? null : paymentMethod,
       ...(paymentMethod === "mixed" && posMixedCashCents != null
         ? {
             mixed_cash_cents: posMixedCashCents,
@@ -535,7 +567,7 @@ export async function createPosInvoiceAction(formData: FormData) {
       line_items: lines.length,
       kit_lines: kitLines.length,
       submission_id: submissionId || null,
-      ...activityStockTraceToMetadata(stockTrace),
+      ...(isQuotation ? {} : activityStockTraceToMetadata(stockTrace)),
     },
   });
   revalidatePath("/admin/ventas");

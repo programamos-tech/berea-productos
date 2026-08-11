@@ -18,6 +18,7 @@ export function ventaFormaPagoLabel(
   if (r === "POS:cash") return "Efectivo";
   if (r === "POS:transfer") return "Transferencia";
   if (r === "POS:mixed") return "Mixto";
+  if (r === "POS:quotation") return "Cotización";
   if (r.startsWith("POS:")) return "Mostrador";
   if (opts?.checkoutPaymentMethod === "transfer") return "Transferencia (web)";
   return "En línea";
@@ -46,6 +47,13 @@ export function ventaFormaPagoBadge(
   if (r === "POS:mixed") {
     return {
       label: "Mixto",
+      className:
+        "bg-violet-50 text-violet-900 ring-1 ring-violet-200/90 dark:bg-violet-950/45 dark:text-violet-100 dark:ring-violet-700/50",
+    };
+  }
+  if (r === "POS:quotation") {
+    return {
+      label: "Cotización",
       className:
         "bg-violet-50 text-violet-900 ring-1 ring-violet-200/90 dark:bg-violet-950/45 dark:text-violet-100 dark:ring-violet-700/50",
     };
@@ -96,7 +104,13 @@ export function matchesVentaPagoFilter(
   return true;
 }
 
-export type VentaEstadoFilter = "all" | "paid" | "cancelled" | "pending" | "failed";
+export type VentaEstadoFilter =
+  | "all"
+  | "paid"
+  | "cancelled"
+  | "pending"
+  | "failed"
+  | "quotation";
 
 /** Estado del cobro (columna distinta al ciclo de factura en el detalle). */
 export function ventaPagoRecibidoBadge(status: string): { label: string; className: string } {
@@ -106,6 +120,12 @@ export function ventaPagoRecibidoBadge(status: string): { label: string; classNa
         label: "Pagado",
         className:
           "bg-emerald-50 text-emerald-800 ring-1 ring-emerald-200/90 dark:bg-emerald-950/45 dark:text-emerald-100 dark:ring-emerald-700/50",
+      };
+    case "quotation":
+      return {
+        label: "Sin cobro (cotización)",
+        className:
+          "bg-violet-50 text-violet-900 ring-1 ring-violet-200/90 dark:bg-violet-950/45 dark:text-violet-100 dark:ring-violet-700/50",
       };
     case "pending":
       return {
@@ -141,6 +161,12 @@ export function ventaEstadoBadge(status: string): { label: string; className: st
         label: "Finalizada",
         className:
           "bg-emerald-50 text-emerald-800 ring-1 ring-emerald-200/90 dark:bg-emerald-950/45 dark:text-emerald-100 dark:ring-emerald-700/50",
+      };
+    case "quotation":
+      return {
+        label: "Cotización",
+        className:
+          "bg-violet-50 text-violet-900 ring-1 ring-violet-200/90 dark:bg-violet-950/45 dark:text-violet-100 dark:ring-violet-700/50",
       };
     case "cancelled":
       return {

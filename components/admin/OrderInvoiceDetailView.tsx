@@ -3,6 +3,7 @@ import {
   OrderInvoicePrintButton,
   OrderInvoiceStatusSelect,
 } from "@/components/admin/OrderInvoiceHeaderControls";
+import { OrderQuotationActions } from "@/components/admin/OrderQuotationActions";
 import { OrderInvoiceFulfillmentSelect } from "@/components/admin/OrderInvoiceFulfillmentSelect";
 import { adminOwnerDisplayName } from "@/lib/admin-owner";
 import {
@@ -23,7 +24,6 @@ import {
   formatStoreInvoiceDateTime,
 } from "@/lib/store-datetime-format";
 import {
-  ventaEstadoBadge,
   ventaFormaPagoBadge,
   ventaPagoRecibidoBadge,
 } from "@/lib/ventas-sales";
@@ -211,12 +211,13 @@ export function OrderInvoiceDetailView(props: OrderInvoiceDetailViewProps) {
   } = props;
 
   const isTransferWeb = checkoutPaymentMethod === "transfer";
+  const isQuotation = status === "quotation";
+  const docNoun = isQuotation ? "Cotización" : "Factura";
 
   const pagoBadge = ventaFormaPagoBadge(wompiReference, {
     checkoutPaymentMethod: checkoutPaymentMethod ?? undefined,
   });
   const pagoRecibido = ventaPagoRecibidoBadge(status);
-  const docEstado = ventaEstadoBadge(status);
 
   const subtotalLines = lines.reduce(
     (s, l) => s + l.unitPriceCents * l.quantity,
@@ -263,7 +264,7 @@ export function OrderInvoiceDetailView(props: OrderInvoiceDetailViewProps) {
         </Link>
         <span className="mx-2 text-zinc-300 dark:text-zinc-600">/</span>
         <span className="text-zinc-800 dark:text-zinc-200 print:text-zinc-800">
-          Factura #{invoiceRef}
+          {docNoun} #{invoiceRef}
         </span>
       </nav>
 
@@ -294,7 +295,7 @@ export function OrderInvoiceDetailView(props: OrderInvoiceDetailViewProps) {
               TEL: {storeSupportPhone}
             </p>
             <p className="print:mt-2 print:text-center print:text-[10px] print:font-bold">
-              Factura #{invoiceRef}
+              {docNoun} #{invoiceRef}
             </p>
             <p className="print:text-center print:text-[10px] print:tabular-nums">
               {formatInvoiceDateShort(createdAt)}
@@ -327,7 +328,7 @@ export function OrderInvoiceDetailView(props: OrderInvoiceDetailViewProps) {
 
         <div className="flex items-center justify-between gap-3 print:hidden">
           <h1 className="min-w-0 flex-1 text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 sm:text-2xl md:text-3xl">
-            Factura #{invoiceRef}
+            {docNoun} #{invoiceRef}
           </h1>
           <Link
             href={ventasListHref}
@@ -444,11 +445,22 @@ export function OrderInvoiceDetailView(props: OrderInvoiceDetailViewProps) {
           <div className="min-w-0 print:hidden">
             <p className={labelClass}>Impresión</p>
             <div className="mt-2">
-              <OrderInvoicePrintButton />
+              {isQuotation ? (
+                <OrderQuotationActions
+                  orderId={orderId}
+                  invoiceRef={invoiceRef}
+                  customerEmail={customerEmail}
+                  totalCents={totalCents}
+                />
+              ) : (
+                <OrderInvoicePrintButton />
+              )}
             </div>
           </div>
           <div className="min-w-0 print:hidden sm:col-span-2 xl:col-span-1 xl:text-right">
-            <p className={`${labelClass} xl:text-right`}>Estado de la factura</p>
+            <p className={`${labelClass} xl:text-right`}>
+              {isQuotation ? "Estado del documento" : "Estado de la factura"}
+            </p>
             <div className="mt-2 xl:ml-auto xl:max-w-[min(100%,220px)]">
               <OrderInvoiceStatusSelect
                 orderId={orderId}
@@ -530,7 +542,9 @@ export function OrderInvoiceDetailView(props: OrderInvoiceDetailViewProps) {
       ) : null}
 
       <div className="rounded-2xl border border-zinc-200/90 bg-white p-5 shadow-[0_1px_0_0_rgb(24_24_27/0.04)] dark:border-zinc-700/90 dark:bg-zinc-900 dark:shadow-none md:p-7 print:rounded-none print:border-0 print:p-0 print:shadow-none dark:print:border-0 dark:print:bg-white">
-        <p className={`${labelClass} print:hidden`}>Productos de la factura</p>
+        <p className={`${labelClass} print:hidden`}>
+          {isQuotation ? "Productos de la cotización" : "Productos de la factura"}
+        </p>
 
         {lines.length === 0 ? (
           <p className="mt-6 text-sm text-zinc-500 dark:text-zinc-400">No hay ítems en este pedido.</p>
@@ -659,7 +673,7 @@ export function OrderInvoiceDetailView(props: OrderInvoiceDetailViewProps) {
                     ) : null}
                     <div className="mt-3 flex justify-between gap-4 border-t-2 border-black pt-3 print:border-zinc-800 dark:border-zinc-700/90">
                       <span className="font-bold text-zinc-900 print:text-[11px] print:text-black dark:text-zinc-200">
-                        Total a pagar
+                        {isQuotation ? "Total cotizado" : "Total a pagar"}
                       </span>
                       <span className="text-lg font-bold tabular-nums text-zinc-900 print:text-base print:text-black dark:text-zinc-50">
                         {formatCop(totalCents)}
@@ -675,13 +689,15 @@ export function OrderInvoiceDetailView(props: OrderInvoiceDetailViewProps) {
 
       <div className="hidden print:mt-4 print:block print:text-black">
         <p className="border-t border-dashed border-zinc-600 pt-8 text-center text-[10px]">
-          Firma cliente
+          {isQuotation ? "Firma / conformidad" : "Firma cliente"}
         </p>
         <p className="mt-3 text-center text-[10px] font-semibold leading-snug">
           {lines.length} producto{lines.length === 1 ? "" : "s"} · IVA incluido
         </p>
         <p className="mt-1 text-center text-[11px] font-bold">
-          ¡Gracias por su compra! · {invoiceTradeName}
+          {isQuotation
+            ? `Cotización · ${invoiceTradeName}`
+            : `¡Gracias por su compra! · ${invoiceTradeName}`}
         </p>
       </div>
     </div>
