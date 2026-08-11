@@ -87,7 +87,7 @@ export default async function AdminCajaDetailPage({
     reportRaw === "sent"
       ? `Reporte enviado a ${cashCloseReportRecipientsLabel()}.`
       : reportRaw === "error"
-        ? "No se pudo enviar el reporte. Revisá RESEND_API_KEY en Vercel."
+        ? "No se pudo enviar el reporte. Revisá EMAIL_FROM / dominio en Resend."
         : reportRaw === "missing"
           ? "No hay cierre para reenviar."
           : null;
