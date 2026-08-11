@@ -32,6 +32,7 @@ import {
 import { StaticCopCents } from "@/components/admin/ReportsAnimatedFigures";
 import type {
   CashDayBlindSummary,
+  CashDayLiveTotals,
   CashExpenseLine,
   CashStockOutLine,
 } from "@/lib/cash-register";
@@ -278,19 +279,137 @@ function ExpensesTable({
   );
 }
 
-/** Cierre a ciegas: sin montos de efectivo / esperado hasta confirmar. */
+/** Cierre: conteo a ciegas → revisar (revela esperado) → confirmar. */
 export function CashRegisterClosePanel({
   sessionId,
   businessDayLabel,
   blind,
+  live,
+  openingFloatCents,
 }: {
   sessionId: string;
   businessDayLabel: string;
   blind: CashDayBlindSummary;
+  live: CashDayLiveTotals;
+  openingFloatCents: number;
 }) {
+  const [phase, setPhase] = useState<"count" | "review">("count");
   const [countedCents, setCountedCents] = useState(0);
   const [notes, setNotes] = useState("");
   const [submissionId] = useState(newSubmissionId);
+
+  const expected = live.expectedCashCents;
+  const diff = countedCents - expected;
+  const needsNote = diff !== 0;
+  const mixedOther =
+    live.salesMixedCents + live.salesOtherCents;
+
+  const moneyRows: Array<{
+    label: string;
+    value: number | null;
+    kind: MoneyToneKey;
+  }> = [
+    { label: "Fondo inicial", value: openingFloatCents, kind: "fondo" },
+    { label: "Ventas total", value: live.salesTotalCents, kind: "ventas" },
+    { label: "Ventas efectivo", value: live.salesCashCents, kind: "efectivo" },
+    {
+      label: "Ventas transferencia",
+      value: live.salesTransferCents,
+      kind: "transfer",
+    },
+    {
+      label: "Ventas mixtas / otras",
+      value: mixedOther > 0 ? mixedOther : null,
+      kind: "mixtas",
+    },
+    { label: "Egresos efectivo", value: live.expensesCashCents, kind: "egreso" },
+    {
+      label: "Egresos otros",
+      value: live.expensesOtherCents > 0 ? live.expensesOtherCents : null,
+      kind: "egreso",
+    },
+    { label: "Efectivo esperado", value: expected, kind: "esperado" },
+    { label: "Efectivo contado", value: countedCents, kind: "contado" },
+  ];
+
+  if (phase === "review") {
+    return (
+      <div className="space-y-5">
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-950 dark:border-emerald-900/50 dark:bg-emerald-950/30 dark:text-emerald-100">
+          <p className="font-semibold">Cierre revelado — resumen completo</p>
+          <p className="mt-1 opacity-90">
+            Acá ves lo mismo que administración: esperado, diferencia y todos los totales.
+            Revisá y confirmá para congelar el cierre.
+          </p>
+        </div>
+
+        <CashDiscrepancyBanner
+          diff={diff}
+          unitsSold={blind.unitsSold}
+          expenseCount={live.expenseLines.length}
+          notes={notes.trim() || null}
+        />
+
+        <CashClosedMoneyGrid rows={moneyRows} />
+
+        <div className="grid gap-5 lg:grid-cols-2">
+          <CashStockOutReadonly
+            lines={blind.stockOutLines}
+            unitsSold={blind.unitsSold}
+          />
+          <CashExpensesReadonly lines={live.expenseLines} />
+        </div>
+
+        <section className={cardClass}>
+          <SectionTitle
+            icon={Wallet}
+            accent="ok"
+            hint="Si no cuadra, la nota es obligatoria antes de confirmar."
+          >
+            Confirmar cierre · {businessDayLabel}
+          </SectionTitle>
+          <form action={closeCashRegisterSession} className="mt-4 space-y-4">
+            <input type="hidden" name="session_id" value={sessionId} />
+            <input type="hidden" name="submission_id" value={submissionId} />
+            <input type="hidden" name="counted_cash_cents" value={countedCents} />
+
+            <div>
+              <label htmlFor="caja-notes-review" className={labelClass}>
+                Nota / motivo{needsNote ? " (obligatoria)" : " (opcional)"}
+              </label>
+              <textarea
+                id="caja-notes-review"
+                name="notes"
+                rows={3}
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                required={needsNote}
+                placeholder="Obligatoria si no cuadra (ej. cambio mal entregado)"
+                className={`${productInputClass} mt-2 resize-none`}
+              />
+            </div>
+
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              <AdminFormSubmitButton
+                pendingLabel="Cerrando…"
+                className={`${adminPrimarySubmitButtonClass} w-full px-6 sm:flex-1`}
+                disabled={needsNote && notes.trim().length === 0}
+              >
+                Confirmar y congelar cierre
+              </AdminFormSubmitButton>
+              <button
+                type="button"
+                onClick={() => setPhase("count")}
+                className="w-full rounded-lg border border-zinc-200 bg-white px-4 py-3.5 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-50 sm:w-auto dark:border-zinc-600 dark:bg-zinc-950 dark:text-zinc-200 dark:hover:bg-zinc-800"
+              >
+                Volver a contar
+              </button>
+            </div>
+          </form>
+        </section>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-5">
@@ -301,9 +420,10 @@ export function CashRegisterClosePanel({
               Actividad del día · {businessDayLabel}
             </h2>
             <p className="mt-1 max-w-2xl text-sm text-zinc-600 dark:text-zinc-300">
-              Acá ves <span className="font-medium text-zinc-800 dark:text-zinc-100">qué
-              vendiste</span> (productos y unidades). Los montos de efectivo se revelan recién al
-              confirmar el cierre.
+              Contá el efectivo{" "}
+              <span className="font-medium text-zinc-800 dark:text-zinc-100">sin ver el
+              esperado</span>
+              . Al revisar se revela el resumen completo (igual que administración).
             </p>
           </div>
         </div>
@@ -353,7 +473,7 @@ export function CashRegisterClosePanel({
           <SectionTitle
             icon={ArrowDownLeft}
             accent="warn"
-            hint="Conceptos del día (sin montos hasta cerrar)."
+            hint="Conceptos del día (montos al revelar)."
           >
             Egresos · {blind.expenseLines.length}
           </SectionTitle>
@@ -366,19 +486,16 @@ export function CashRegisterClosePanel({
           <SectionTitle
             icon={Wallet}
             accent="ok"
-            hint="Contá billetes y monedas. El sistema calcula el esperado."
+            hint="Contá billetes y monedas. Después ves el esperado y la diferencia."
           >
-            Cerrar caja
+            Contar efectivo
           </SectionTitle>
-          <form action={closeCashRegisterSession} className="mt-4 space-y-4">
-            <input type="hidden" name="session_id" value={sessionId} />
-            <input type="hidden" name="submission_id" value={submissionId} />
-
+          <div className="mt-4 space-y-4">
             <div>
               <span className={labelClass}>Efectivo contado en caja</span>
               <div className="mt-2">
                 <ProductMoneyInput
-                  name="counted_cash_cents"
+                  name="counted_cash_cents_ui"
                   value={countedCents}
                   onChange={setCountedCents}
                   required
@@ -389,33 +506,33 @@ export function CashRegisterClosePanel({
             <div className="flex gap-2 rounded-lg border border-zinc-200 bg-zinc-50/80 px-3 py-2.5 text-sm text-zinc-600 dark:border-zinc-700 dark:bg-zinc-950/40 dark:text-zinc-300">
               <Scale className={`mt-0.5 h-4 w-4 shrink-0 ${accentIcon.neutral}`} aria-hidden />
               <span>
-                Al confirmar comparamos con el sistema. Si hay diferencia, la nota es
-                obligatoria.
+                Todavía no se cierra. Al revisar vas a ver esperado, diferencia y todos los
+                totales.
               </span>
             </div>
 
             <div>
               <label htmlFor="caja-notes" className={labelClass}>
-                Nota / motivo
+                Nota / motivo (opcional por ahora)
               </label>
               <textarea
                 id="caja-notes"
-                name="notes"
                 rows={3}
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                placeholder="Obligatoria si no cuadra (ej. cambio mal entregado)"
+                placeholder="Si ya sabés un motivo, podés anotarlo"
                 className={`${productInputClass} mt-2 resize-none`}
               />
             </div>
 
-            <AdminFormSubmitButton
-              pendingLabel="Cerrando…"
-              className={adminPrimarySubmitButtonFullWidthClass}
+            <button
+              type="button"
+              onClick={() => setPhase("review")}
+              className={`${adminPrimarySubmitButtonFullWidthClass}`}
             >
-              Confirmar cierre de caja
-            </AdminFormSubmitButton>
-          </form>
+              Revisar cierre (revelar totales)
+            </button>
+          </div>
         </section>
       </div>
     </div>

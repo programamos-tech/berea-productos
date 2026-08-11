@@ -128,12 +128,14 @@ export default async function AdminCajaPage({
         </p>
       ) : null}
 
-      {open && blind ? (
+      {open && blind && live ? (
         canManage ? (
           <CashRegisterClosePanel
             sessionId={open.id}
             businessDayLabel={dayLabel}
             blind={blind}
+            live={live}
+            openingFloatCents={open.opening_float_cents}
           />
         ) : (
           <div className="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-700 dark:bg-zinc-900">
@@ -142,7 +144,7 @@ export default async function AdminCajaPage({
             </p>
             <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-300">
               {blind.salesCount} facturas · {blind.unitsSold} ud vendidas ·{" "}
-              {blind.expenseLines.length} egresos. Los montos de efectivo se revelan al cerrar.
+              {blind.expenseLines.length} egresos. Al cerrar se revela el resumen completo.
             </p>
           </div>
         )
