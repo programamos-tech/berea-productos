@@ -146,6 +146,13 @@ export function CashRegisterOpenForm({
     <form
       action={openCashRegisterSession}
       className={`${cardClass} grid gap-4 md:grid-cols-[1fr_minmax(240px,320px)_auto] md:items-end`}
+      onSubmit={(e) => {
+        if (floatCents !== 0) return;
+        const ok = window.confirm(
+          "El fondo inicial está en $0.\n\n¿Estás segura de que la caja va a comenzar en 0?",
+        );
+        if (!ok) e.preventDefault();
+      }}
     >
       <input type="hidden" name="submission_id" value={submissionId} />
       <div className="min-w-0 md:col-span-1">
