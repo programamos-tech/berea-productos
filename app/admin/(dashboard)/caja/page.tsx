@@ -10,6 +10,7 @@ import {
 } from "@/lib/admin-report-range";
 import {
   fetchCashDayLiveTotals,
+  fetchCashSessionForBusinessDay,
   fetchOpenCashSession,
   fetchRecentCashSessions,
   toBlindCashSummary,
@@ -29,7 +30,7 @@ function errorMessage(code: string | undefined): string | null {
     case "already_open":
       return "Ya hay una caja abierta.";
     case "day_closed":
-      return "Este día ya tiene un cierre registrado.";
+      return "Este día ya tiene un cierre. La próxima caja se puede abrir mañana a partir de las 12:00 a. m. (hora Colombia).";
     case "not_open":
       return "La sesión ya no está abierta.";
     case "session":
@@ -60,8 +61,11 @@ export default async function AdminCajaPage({
 
   const supabase = await createSupabaseServerClient();
   const today = todayYmdInReportStore();
-  const open = await fetchOpenCashSession(supabase);
-  const recent = await fetchRecentCashSessions(supabase, 21);
+  const [open, todaySession, recent] = await Promise.all([
+    fetchOpenCashSession(supabase),
+    fetchCashSessionForBusinessDay(supabase, today),
+    fetchRecentCashSessions(supabase, 21),
+  ]);
 
   const live = open
     ? await fetchCashDayLiveTotals(
@@ -73,6 +77,9 @@ export default async function AdminCajaPage({
   const blind = live ? toBlindCashSummary(live) : null;
 
   const dayLabel = prettyReportDayShortLabel(open?.business_day ?? today);
+  const todayAlreadyClosed =
+    !open && todaySession?.status === "closed";
+  const canOpenToday = canManage && !open && !todayAlreadyClosed;
 
   return (
     <div className="w-full max-w-none space-y-6">
@@ -93,11 +100,29 @@ export default async function AdminCajaPage({
         </p>
       ) : null}
 
-      {!open && canManage ? (
+      {canOpenToday ? (
         <CashRegisterOpenForm businessDayLabel={dayLabel} />
       ) : null}
 
-      {!open && !canManage ? (
+      {todayAlreadyClosed && todaySession ? (
+        <div className="rounded-xl border border-zinc-200 bg-white px-4 py-5 sm:px-5 dark:border-zinc-700 dark:bg-zinc-900">
+          <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+            Caja del {prettyReportDayShortLabel(today)} ya cerrada
+          </p>
+          <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-zinc-600 dark:text-zinc-300">
+            No se puede abrir otra vez el mismo día. La caja de mañana se habilita a partir de
+            las 12:00 a. m. (hora Colombia).
+          </p>
+          <Link
+            href={`/admin/caja/${todaySession.id}`}
+            className="mt-3 inline-flex text-sm font-semibold text-rose-950 underline decoration-rose-200 underline-offset-2 hover:text-rose-900 dark:text-zinc-100 dark:decoration-zinc-600 dark:hover:text-white"
+          >
+            Ver cierre de hoy
+          </Link>
+        </div>
+      ) : null}
+
+      {!open && !canManage && !todayAlreadyClosed ? (
         <p className="rounded-xl border border-zinc-200 bg-white px-4 py-6 text-sm text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">
           No hay caja abierta ahora. Pedile a alguien con permiso de gestionar caja que la abra.
         </p>
