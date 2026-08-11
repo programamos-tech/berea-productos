@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { withTimeout } from "@/lib/async-timeout";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 /**
@@ -11,9 +12,19 @@ export async function requireAdminApiSession(): Promise<
   | { ok: false; response: NextResponse }
 > {
   const supabase = await createSupabaseServerClient();
+  const sessionResult = await withTimeout(supabase.auth.getSession(), 5_000);
+  if (!sessionResult) {
+    return {
+      ok: false,
+      response: NextResponse.json(
+        { error: "Auth no respondió a tiempo" },
+        { status: 503 },
+      ),
+    };
+  }
   const {
     data: { session },
-  } = await supabase.auth.getSession();
+  } = sessionResult;
   const user = session?.user ?? null;
   if (!user) {
     return {
@@ -22,11 +33,21 @@ export async function requireAdminApiSession(): Promise<
     };
   }
 
-  const { data: profile, error: profileError } = await supabase
-    .from("profiles")
-    .select("id")
-    .eq("id", user.id)
-    .maybeSingle();
+  const profileResult = await withTimeout(
+    supabase.from("profiles").select("id").eq("id", user.id).maybeSingle(),
+    5_000,
+  );
+  if (!profileResult) {
+    return {
+      ok: false,
+      response: NextResponse.json(
+        { error: "Perfil no respondió a tiempo" },
+        { status: 503 },
+      ),
+    };
+  }
+
+  const { data: profile, error: profileError } = profileResult;
 
   if (profileError || !profile) {
     return {

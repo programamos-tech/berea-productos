@@ -28,11 +28,13 @@ function isPublicStorePath(path: string): boolean {
   return false;
 }
 
-/** Rutas públicas sin sesión Supabase en middleware (menos latencia). */
+/** Rutas sin getUser en edge (menos latencia / evita cuelgues de Auth). */
 function skipsMiddlewareAuth(path: string): boolean {
   return (
     path.startsWith("/api/products/") ||
     path.startsWith("/api/webhooks/") ||
+    // Auth en requireAdminApiSession (getSession local), no en edge.
+    path.startsWith("/api/admin/") ||
     path === "/icon.svg" ||
     isPublicStorePath(path)
   );
@@ -46,6 +48,15 @@ export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
 
   if (skipsMiddlewareAuth(path)) {
+    return NextResponse.next({ request });
+  }
+
+  // Admin (excepto login): solo cookie. El layout valida sesión/perfil.
+  // Evita getUser en cada navegación (POS, ventas, etc.) — fuente típica de cuelgues.
+  if (path.startsWith("/admin") && !path.startsWith("/admin/login")) {
+    if (!hasSupabaseAuthCookie(request)) {
+      return NextResponse.redirect(new URL("/admin/login", request.url));
+    }
     return NextResponse.next({ request });
   }
 
@@ -143,14 +154,6 @@ export async function middleware(request: NextRequest) {
         if (user.email) next.searchParams.set("email", user.email);
         return NextResponse.redirect(next);
       }
-    }
-    return response;
-  }
-
-  if (path.startsWith("/admin") && !path.startsWith("/admin/login")) {
-    // Sin llamada a Supabase Auth en edge: el layout admin valida sesión y perfil.
-    if (!hasSupabaseAuthCookie(request)) {
-      return NextResponse.redirect(new URL("/admin/login", request.url));
     }
     return response;
   }

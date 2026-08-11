@@ -6,6 +6,7 @@ import {
 } from "@/components/admin/VentasFiltersBar";
 import { VentasPagination } from "@/components/admin/VentasPagination";
 import { VentasSalesTable } from "@/components/admin/VentasSalesTable";
+import { withTimeout } from "@/lib/async-timeout";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { adminPanelClass } from "@/lib/admin-ui";
 import { fetchAdminVentasPage, type VentaOrderRow } from "@/lib/supabase/admin-ventas-list";
@@ -13,20 +14,29 @@ import { buildAdminVentasListHref } from "@/lib/admin-ventas-list-url";
 import type { VentaEstadoFilter, VentaPagoFilter } from "@/lib/ventas-sales";
 
 const VENTAS_PAGE_SIZE = 20;
+const VENTAS_FETCH_TIMEOUT_MS = 15_000;
 
 function VentasTableSkeleton() {
   return (
-    <div className="border-t border-zinc-100 dark:border-zinc-800" role="status">
-      <span className="sr-only">Cargando ventas…</span>
+    <div
+      className={`${adminPanelClass} overflow-hidden`}
+      role="status"
+    >
+      <div className="border-b border-zinc-100 px-4 py-3 dark:border-zinc-800">
+        <p className="text-sm font-medium text-zinc-600 dark:text-zinc-300">
+          Cargando ventas…
+        </p>
+        <span className="sr-only">Cargando listado de ventas</span>
+      </div>
       <div className="space-y-0 divide-y divide-zinc-100 dark:divide-zinc-800">
         {Array.from({ length: 8 }).map((_, i) => (
           <div
             key={i}
             className="flex animate-pulse items-center gap-4 px-4 py-4 motion-reduce:animate-none sm:px-5"
           >
-            <div className="h-4 w-24 rounded bg-zinc-200/80 dark:bg-zinc-800" />
-            <div className="h-4 max-w-xs flex-1 rounded bg-zinc-200/60 dark:bg-zinc-800/80" />
-            <div className="h-4 w-20 rounded bg-zinc-200/80 dark:bg-zinc-800" />
+            <div className="h-4 w-24 rounded bg-zinc-200/80 dark:bg-zinc-700" />
+            <div className="h-4 max-w-xs flex-1 rounded bg-zinc-200/60 dark:bg-zinc-700/80" />
+            <div className="h-4 w-20 rounded bg-zinc-200/80 dark:bg-zinc-700" />
           </div>
         ))}
       </div>
@@ -61,9 +71,8 @@ export async function VentasPageBody({
   let error: string | null = null;
 
   try {
-    ({ rows: pageRows, total: totalFiltered, error } = await fetchAdminVentasPage(
-      supabase,
-      {
+    const fetched = await withTimeout(
+      fetchAdminVentasPage(supabase, {
         q: qRaw,
         status,
         payment,
@@ -71,8 +80,18 @@ export async function VentasPageBody({
         dateTo,
         page,
         pageSize: VENTAS_PAGE_SIZE,
-      },
-    ));
+      }),
+      VENTAS_FETCH_TIMEOUT_MS,
+    );
+    if (!fetched) {
+      return (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950 dark:border-amber-800/80 dark:bg-amber-950/35 dark:text-amber-100">
+          La carga de ventas tardó demasiado. Recargá la página o probá de
+          nuevo en unos segundos.
+        </div>
+      );
+    }
+    ({ rows: pageRows, total: totalFiltered, error } = fetched);
   } catch (err) {
     console.error("[ventas] fetchAdminVentasPage:", err);
     return (

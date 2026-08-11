@@ -27,6 +27,10 @@ import {
   applyPosLineNetDiscountCents,
   discountedUnitNetCentsFromLine,
 } from "@/lib/pos-line-discount";
+import {
+  ADMIN_SEARCH_TIMEOUT_MS,
+  abortSignalWithTimeout,
+} from "@/lib/abort-signal-timeout";
 import { saleVatPercentLabel, unitPriceGrossCents } from "@/lib/product-vat-price";
 
 const cardSectionClass =
@@ -299,6 +303,9 @@ export function NewInvoiceForm({
   const debouncedCustomerQ = useDebounced(customerQuery, 280);
   const [customerHits, setCustomerHits] = useState<CustomerHit[]>([]);
   const [customerLoading, setCustomerLoading] = useState(false);
+  const [customerSearchError, setCustomerSearchError] = useState<string | null>(
+    null,
+  );
 
   const [customer, setCustomer] = useState<CustomerHit | null>(null);
   const [customerWholesalePct, setCustomerWholesalePct] = useState(0);
@@ -392,20 +399,50 @@ export function NewInvoiceForm({
     const trimmed = q.trim();
     if (trimmed.length < 1) {
       setCustomerHits([]);
+      setCustomerSearchError(null);
       return;
     }
     setCustomerLoading(true);
+    setCustomerSearchError(null);
+    const { signal: timed, cleanup } = abortSignalWithTimeout(
+      ADMIN_SEARCH_TIMEOUT_MS,
+      signal,
+    );
     try {
       const res = await fetch(
         `/api/admin/customers-search?q=${encodeURIComponent(trimmed)}`,
-        { cache: "no-store", signal },
+        { cache: "no-store", signal: timed },
       );
+      if (!res.ok) {
+        if (!timed.aborted) {
+          setCustomerHits([]);
+          setCustomerSearchError(
+            res.status === 401
+              ? "Sesión expirada. Recargá e iniciá sesión."
+              : "No se pudo buscar. Tocá para reintentar.",
+          );
+        }
+        return;
+      }
       const j = (await res.json()) as { customers?: CustomerHit[] };
-      if (!signal?.aborted) setCustomerHits(j.customers ?? []);
+      if (!timed.aborted) {
+        setCustomerHits(j.customers ?? []);
+        setCustomerSearchError(null);
+      }
     } catch (err) {
-      if (err instanceof DOMException && err.name === "AbortError") return;
-      if (!signal?.aborted) setCustomerHits([]);
+      if (err instanceof DOMException && err.name === "AbortError") {
+        // Abort del useEffect (cleanup): no mostrar error.
+        if (signal?.aborted) return;
+        setCustomerHits([]);
+        setCustomerSearchError("La búsqueda tardó demasiado. Reintentá.");
+        return;
+      }
+      if (!signal?.aborted) {
+        setCustomerHits([]);
+        setCustomerSearchError("No se pudo buscar. Reintentá.");
+      }
     } finally {
+      cleanup();
       if (!signal?.aborted) setCustomerLoading(false);
     }
   }, []);
@@ -529,9 +566,13 @@ export function NewInvoiceForm({
       return;
     }
     const ac = new AbortController();
+    const { signal: timed, cleanup } = abortSignalWithTimeout(
+      ADMIN_SEARCH_TIMEOUT_MS,
+      ac.signal,
+    );
     setProductLoading(true);
     void fetch(`/api/admin/products-search?q=${encodeURIComponent(q)}`, {
-      signal: ac.signal,
+      signal: timed,
     })
       .then(async (r) => {
         if (!r.ok) return { products: [] as ProductHit[] };
@@ -545,9 +586,13 @@ export function NewInvoiceForm({
         if (!ac.signal.aborted) setProductHits([]);
       })
       .finally(() => {
+        cleanup();
         if (!ac.signal.aborted) setProductLoading(false);
       });
-    return () => ac.abort();
+    return () => {
+      ac.abort();
+      cleanup();
+    };
   }, [debouncedProductQ]);
 
   useEffect(() => {
@@ -557,9 +602,13 @@ export function NewInvoiceForm({
       return;
     }
     const ac = new AbortController();
+    const { signal: timed, cleanup } = abortSignalWithTimeout(
+      ADMIN_SEARCH_TIMEOUT_MS,
+      ac.signal,
+    );
     setKitLoading(true);
     void fetch(`/api/admin/kits-search?q=${encodeURIComponent(q)}`, {
-      signal: ac.signal,
+      signal: timed,
     })
       .then(async (r) => {
         if (!r.ok) return { kits: [] as KitHit[] };
@@ -573,9 +622,13 @@ export function NewInvoiceForm({
         if (!ac.signal.aborted) setKitHits([]);
       })
       .finally(() => {
+        cleanup();
         if (!ac.signal.aborted) setKitLoading(false);
       });
-    return () => ac.abort();
+    return () => {
+      ac.abort();
+      cleanup();
+    };
   }, [debouncedKitQ]);
 
   useEffect(() => {
@@ -1267,6 +1320,16 @@ export function NewInvoiceForm({
                         <p className="px-3 py-2 text-sm text-zinc-500 dark:text-zinc-400">
                           Buscando…
                         </p>
+                      ) : customerSearchError ? (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            void searchCustomers(customerQuery.trim())
+                          }
+                          className="w-full px-3 py-2 text-left text-sm text-amber-800 hover:bg-amber-50 dark:text-amber-200 dark:hover:bg-amber-950/40"
+                        >
+                          {customerSearchError}
+                        </button>
                       ) : customerHits.length === 0 ? (
                         <p className="px-3 py-2 text-sm text-zinc-500 dark:text-zinc-400">
                           Sin resultados.

@@ -1,9 +1,12 @@
+import { withTimeout } from "@/lib/async-timeout";
 import { NextResponse } from "next/server";
 import { requireAdminApiSession } from "@/lib/admin-api";
 
 function sanitizeIlikeQuery(q: string) {
   return q.replace(/[%_\\,]/g, "").slice(0, 80);
 }
+
+const SEARCH_DB_TIMEOUT_MS = 6_000;
 
 export async function GET(request: Request) {
   const gate = await requireAdminApiSession();
@@ -23,14 +26,26 @@ export async function GET(request: Request) {
   const pattern = `%${q}%`;
   const { supabase } = gate;
 
-  const { data, error } = await supabase
-    .from("customers")
-    .select("id,name,email,phone,document_id")
-    .or(
-      `name.ilike.${pattern},email.ilike.${pattern},phone.ilike.${pattern},document_id.ilike.${pattern}`,
-    )
-    .order("name")
-    .limit(20);
+  const queryResult = await withTimeout(
+    supabase
+      .from("customers")
+      .select("id,name,email,phone,document_id")
+      .or(
+        `name.ilike.${pattern},email.ilike.${pattern},phone.ilike.${pattern},document_id.ilike.${pattern}`,
+      )
+      .order("name")
+      .limit(20),
+    SEARCH_DB_TIMEOUT_MS,
+  );
+
+  if (!queryResult) {
+    return NextResponse.json(
+      { error: "La búsqueda tardó demasiado." },
+      { status: 504 },
+    );
+  }
+
+  const { data, error } = queryResult;
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
