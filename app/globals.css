@@ -305,6 +305,11 @@ body {
     margin: 3mm;
   }
 
+  @page letterhead {
+    size: letter;
+    margin: 12mm 14mm;
+  }
+
   .invoice-ticket-print {
     page: ticket;
     max-width: 72mm !important;
@@ -333,9 +338,64 @@ body {
     page-break-after: auto;
   }
 
-  .invoice-ticket-print * {
+  .invoice-ticket-print *,
+  .quotation-letterhead-print * {
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
+  }
+
+  /* Cotización: hoja membretada Aleya Shop SAS (carta / block). */
+  .quotation-letterhead-print {
+    page: letterhead;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    font-family:
+      "Segoe UI",
+      system-ui,
+      -apple-system,
+      Roboto,
+      "Helvetica Neue",
+      Arial,
+      sans-serif !important;
+    font-size: 11pt !important;
+    line-height: 1.45 !important;
+    color: #18181b !important;
+    background: #ffffff !important;
+  }
+
+  .quotation-letterhead-print .ql-accent-bar {
+    background: #ff76a1 !important;
+  }
+
+  .quotation-letterhead-print .ql-badge {
+    background: #fff5f8 !important;
+    color: #be185d !important;
+    border-color: #ffc2d6 !important;
+  }
+
+  .quotation-letterhead-print .ql-rule {
+    border-color: #ff76a1 !important;
+  }
+
+  .quotation-letterhead-print .ql-table thead th {
+    background: #fff5f8 !important;
+    color: #881337 !important;
+    border-bottom-color: #ff76a1 !important;
+  }
+
+  .quotation-letterhead-print .ql-table tbody td {
+    border-bottom-color: #f4f4f5 !important;
+  }
+
+  .quotation-letterhead-print .ql-total-box {
+    background: #fff5f8 !important;
+    border-color: #ff76a1 !important;
+  }
+
+  .quotation-letterhead-print .ql-footer {
+    border-top-color: #ff76a1 !important;
+    color: #52525b !important;
   }
 }
 
