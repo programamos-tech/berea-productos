@@ -545,15 +545,14 @@ export function CashDiscrepancyBanner({
   notes?: string | null;
 }) {
   const ok = diff === 0;
-  const Icon = ok ? CheckCircle2 : AlertTriangle;
+  const surplus = diff > 0;
+  const Icon = ok || surplus ? CheckCircle2 : AlertTriangle;
   return (
     <div
       className={`flex gap-3 rounded-xl border px-4 py-3 text-sm ${
-        ok
+        ok || surplus
           ? "border-emerald-200 bg-emerald-50 text-emerald-900 dark:border-emerald-900/50 dark:bg-emerald-950/30 dark:text-emerald-100"
-          : diff > 0
-            ? "border-amber-200 bg-amber-50 text-amber-950 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-100"
-            : "border-red-200 bg-red-50 text-red-900 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-100"
+          : "border-red-200 bg-red-50 text-red-900 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-100"
       }`}
     >
       <Icon className="mt-0.5 h-5 w-5 shrink-0" aria-hidden />
@@ -561,7 +560,7 @@ export function CashDiscrepancyBanner({
         <p className="font-medium">
           {ok
             ? "La caja cuadró."
-            : diff > 0
+            : surplus
               ? `Discrepancia: sobrante ${formatCop(diff)}`
               : `Discrepancia: faltante ${formatCop(Math.abs(diff))}`}
           {unitsSold != null ? (
