@@ -71,6 +71,9 @@ export function SupplierAbonoForm({
                 <option value="cheque">Cheque</option>
                 <option value="otro">Otro</option>
               </select>
+              <p className={`mt-1.5 text-[11px] leading-snug ${mutedClass}`}>
+                Efectivo: sale de la caja del día. Transferencia: no afecta billetes.
+              </p>
             </div>
             <div>
               <label className={labelClass}>Notas (opcional)</label>

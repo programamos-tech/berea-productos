@@ -5,7 +5,15 @@ import {
   verifyInsertedRowInDev,
   verifyRowCountAtLeastInDev,
 } from "@/lib/admin-insert-verify";
-import { assertActionPermission } from "@/lib/require-admin-permission";
+import { todayYmdInReportStore } from "@/lib/admin-report-range";
+import {
+  EXPENSE_CONCEPT_SUPPLIER_PAYMENT,
+  mapSupplierPaymentMethodToExpense,
+} from "@/lib/expense-concepts";
+import {
+  assertActionPermission,
+  assertCashRegisterOpenForStaff,
+} from "@/lib/require-admin-permission";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
   DEFAULT_SUPPLIER_VAT_BPS,
@@ -19,6 +27,7 @@ import { redirect } from "next/navigation";
 function revalidateSupplierPaths(supplierId: string, invoiceId?: string) {
   revalidatePath("/admin/proveedores");
   revalidatePath(`/admin/proveedores/${supplierId}`);
+  revalidatePath("/admin/egresos");
   if (invoiceId) {
     revalidatePath(`/admin/proveedores/${supplierId}/facturas/${invoiceId}`);
   }
@@ -197,19 +206,28 @@ export async function registerSupplierInvoicePaymentAction(formData: FormData) {
   const amount = Math.max(0, Math.floor(Number.parseInt(String(formData.get("amount_cents") ?? "0"), 10) || 0));
   const paymentMethod = String(formData.get("payment_method") ?? "transferencia").trim() || "transferencia";
   const notes = String(formData.get("notes") ?? "").trim() || null;
+  const expenseMethod = mapSupplierPaymentMethodToExpense(paymentMethod);
 
   if (!invoiceId || !supplierId || amount <= 0) {
     redirect(`/admin/proveedores/${supplierId}?error=abono`);
   }
 
-  const { data: inv } = await supabase
-    .from("supplier_invoices")
-    .select("id,total_cents,is_cancelled")
-    .eq("id", invoiceId)
-    .eq("supplier_id", supplierId)
-    .maybeSingle();
+  // Efectivo sale de la caja del día: misma regla que egresos manuales.
+  if (expenseMethod === "efectivo") {
+    await assertCashRegisterOpenForStaff();
+  }
 
-  if (!inv || inv.is_cancelled) {
+  const [{ data: inv }, { data: supplier }] = await Promise.all([
+    supabase
+      .from("supplier_invoices")
+      .select("id,folio,total_cents,is_cancelled")
+      .eq("id", invoiceId)
+      .eq("supplier_id", supplierId)
+      .maybeSingle(),
+    supabase.from("suppliers").select("id,name").eq("id", supplierId).maybeSingle(),
+  ]);
+
+  if (!inv || inv.is_cancelled || !supplier) {
     redirect(`/admin/proveedores/${supplierId}/facturas/${invoiceId}?error=abono`);
   }
 
@@ -224,14 +242,43 @@ export async function registerSupplierInvoicePaymentAction(formData: FormData) {
     redirect(`/admin/proveedores/${supplierId}/facturas/${invoiceId}?error=monto`);
   }
 
-  const { error } = await supabase.from("supplier_invoice_payments").insert({
-    invoice_id: invoiceId,
+  const { data: payRow, error } = await supabase
+    .from("supplier_invoice_payments")
+    .insert({
+      invoice_id: invoiceId,
+      amount_cents: amount,
+      payment_method: paymentMethod,
+      notes,
+    })
+    .select("id")
+    .single();
+
+  if (error || !payRow?.id) {
+    redirect(`/admin/proveedores/${supplierId}/facturas/${invoiceId}?error=db`);
+  }
+
+  const paymentId = String(payRow.id);
+  const supplierName = String(supplier.name ?? "Proveedor").trim() || "Proveedor";
+  const folio = String(inv.folio ?? "").trim() || invoiceId.slice(0, 8);
+  const noteParts = [`Proveedor ${supplierName}`, `Factura ${folio}`];
+  if (notes) noteParts.push(notes);
+
+  const { error: expenseErr } = await supabase.from("store_expenses").insert({
+    concept: EXPENSE_CONCEPT_SUPPLIER_PAYMENT,
+    category: "insumos",
     amount_cents: amount,
-    payment_method: paymentMethod,
-    notes,
+    payment_method: expenseMethod,
+    notes: noteParts.join(" · "),
+    expense_date: todayYmdInReportStore(),
+    supplier_invoice_payment_id: paymentId,
   });
 
-  if (error) redirect(`/admin/proveedores/${supplierId}/facturas/${invoiceId}?error=db`);
+  if (expenseErr) {
+    await supabase.from("supplier_invoice_payments").delete().eq("id", paymentId);
+    console.error("registerSupplierInvoicePaymentAction expense", expenseErr);
+    redirect(`/admin/proveedores/${supplierId}/facturas/${invoiceId}?error=egreso`);
+  }
+
   revalidateSupplierPaths(supplierId, invoiceId);
   redirect(`/admin/proveedores/${supplierId}/facturas/${invoiceId}`);
 }
@@ -250,6 +297,27 @@ export async function cancelSupplierInvoiceAction(formData: FormData) {
     .eq("supplier_id", supplierId);
 
   if (error) redirect(`/admin/proveedores/${supplierId}/facturas/${invoiceId}?error=db`);
+
+  const { data: pays } = await supabase
+    .from("supplier_invoice_payments")
+    .select("id")
+    .eq("invoice_id", invoiceId);
+  const paymentIds = (pays ?? []).map((p) => String(p.id)).filter(Boolean);
+  if (paymentIds.length > 0) {
+    const { error: cancelExpErr } = await supabase
+      .from("store_expenses")
+      .update({
+        is_cancelled: true,
+        cancelled_at: new Date().toISOString(),
+        cancellation_reason: "Factura de proveedor anulada",
+      })
+      .in("supplier_invoice_payment_id", paymentIds)
+      .eq("is_cancelled", false);
+    if (cancelExpErr) {
+      console.error("cancelSupplierInvoiceAction expenses", cancelExpErr);
+    }
+  }
+
   revalidateSupplierPaths(supplierId, invoiceId);
   redirect(`/admin/proveedores/${supplierId}/facturas/${invoiceId}`);
 }

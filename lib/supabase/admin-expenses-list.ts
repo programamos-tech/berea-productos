@@ -14,10 +14,17 @@ export type ExpenseRow = {
   created_at: string | null;
   is_cancelled: boolean | null;
   cancellation_reason: string | null;
+  supplier_invoice_payment_id: string | null;
+  /** Presente cuando el egreso viene de un abono a proveedor. */
+  supplierLink: {
+    supplierId: string;
+    invoiceId: string;
+    folio: string;
+  } | null;
 };
 
 const EXPENSES_DETAIL_SELECT =
-  "id,concept,amount_cents,payment_method,notes,expense_date,created_at,is_cancelled,cancellation_reason";
+  "id,concept,amount_cents,payment_method,notes,expense_date,created_at,is_cancelled,cancellation_reason,supplier_invoice_payment_id";
 
 /** Columnas mínimas para el fallback Node (sin RPC). */
 const EXPENSES_AGG_SELECT = "amount_cents,is_cancelled,expense_date,created_at";
@@ -226,8 +233,72 @@ export async function fetchAdminExpensesPage(
     return { rows: [], stats, error: listRes.error.message };
   }
 
+  const rawRows = (listRes.data ?? []) as Array<
+    Omit<ExpenseRow, "supplierLink"> & {
+      supplier_invoice_payment_id?: string | null;
+    }
+  >;
+
+  const paymentIds = [
+    ...new Set(
+      rawRows
+        .map((r) =>
+          r.supplier_invoice_payment_id
+            ? String(r.supplier_invoice_payment_id)
+            : "",
+        )
+        .filter(Boolean),
+    ),
+  ];
+
+  const linkByPaymentId = new Map<
+    string,
+    { supplierId: string; invoiceId: string; folio: string }
+  >();
+
+  if (paymentIds.length > 0) {
+    const { data: pays } = await supabase
+      .from("supplier_invoice_payments")
+      .select("id,invoice_id,supplier_invoices(supplier_id,folio)")
+      .in("id", paymentIds);
+
+    for (const p of pays ?? []) {
+      const inv = p.supplier_invoices as
+        | { supplier_id?: string; folio?: string }
+        | { supplier_id?: string; folio?: string }[]
+        | null;
+      const invRow = Array.isArray(inv) ? inv[0] : inv;
+      const supplierId = invRow?.supplier_id ? String(invRow.supplier_id) : "";
+      const invoiceId = p.invoice_id ? String(p.invoice_id) : "";
+      const folio = invRow?.folio ? String(invRow.folio) : "";
+      if (p.id && supplierId && invoiceId) {
+        linkByPaymentId.set(String(p.id), { supplierId, invoiceId, folio });
+      }
+    }
+  }
+
+  const rows: ExpenseRow[] = rawRows.map((r) => {
+    const payId = r.supplier_invoice_payment_id
+      ? String(r.supplier_invoice_payment_id)
+      : null;
+    return {
+      id: String(r.id),
+      concept: String(r.concept ?? ""),
+      amount_cents: Number(r.amount_cents ?? 0),
+      payment_method: r.payment_method == null ? null : String(r.payment_method),
+      notes: r.notes == null ? null : String(r.notes),
+      expense_date: r.expense_date == null ? null : String(r.expense_date),
+      created_at: r.created_at == null ? null : String(r.created_at),
+      is_cancelled: r.is_cancelled ?? null,
+      cancellation_reason:
+        r.cancellation_reason == null ? null : String(r.cancellation_reason),
+      supplier_invoice_payment_id: payId,
+      supplierLink: payId ? (linkByPaymentId.get(payId) ?? null) : null,
+    };
+  });
+
   return {
-    rows: (listRes.data ?? []) as ExpenseRow[],
+    rows,
     stats,
     error: null,
   };

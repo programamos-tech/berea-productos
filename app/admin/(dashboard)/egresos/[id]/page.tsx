@@ -74,7 +74,7 @@ export default async function AdminEgresoDetailPage({ params }: Props) {
     supabase
       .from("store_expenses")
       .select(
-        "id,concept,category,amount_cents,payment_method,notes,expense_date,created_at,is_cancelled,cancelled_at,cancellation_reason",
+        "id,concept,category,amount_cents,payment_method,notes,expense_date,created_at,is_cancelled,cancelled_at,cancellation_reason,supplier_invoice_payment_id",
       )
       .eq("id", id)
       .maybeSingle(),
@@ -82,6 +82,48 @@ export default async function AdminEgresoDetailPage({ params }: Props) {
 
   const row = expenseRes.data;
   if (!row) notFound();
+
+  let supplierLink: {
+    supplierId: string;
+    invoiceId: string;
+    folio: string;
+    supplierName: string;
+  } | null = null;
+  const payId = row.supplier_invoice_payment_id
+    ? String(row.supplier_invoice_payment_id)
+    : null;
+  if (payId) {
+    const { data: pay } = await supabase
+      .from("supplier_invoice_payments")
+      .select("id,invoice_id,supplier_invoices(supplier_id,folio,suppliers(name))")
+      .eq("id", payId)
+      .maybeSingle();
+    const inv = pay?.supplier_invoices as
+      | {
+          supplier_id?: string;
+          folio?: string;
+          suppliers?: { name?: string } | { name?: string }[] | null;
+        }
+      | {
+          supplier_id?: string;
+          folio?: string;
+          suppliers?: { name?: string } | { name?: string }[] | null;
+        }[]
+      | null;
+    const invRow = Array.isArray(inv) ? inv[0] : inv;
+    const suppliersRaw = invRow?.suppliers;
+    const supplierRow = Array.isArray(suppliersRaw)
+      ? suppliersRaw[0]
+      : suppliersRaw;
+    if (invRow?.supplier_id && pay?.invoice_id) {
+      supplierLink = {
+        supplierId: String(invRow.supplier_id),
+        invoiceId: String(pay.invoice_id),
+        folio: invRow.folio ? String(invRow.folio) : "",
+        supplierName: supplierRow?.name ? String(supplierRow.name) : "Proveedor",
+      };
+    }
+  }
 
   const canEdit = Boolean(perm?.permissions.egresos_crear);
   const isCancelled = row.is_cancelled === true;
@@ -140,6 +182,15 @@ export default async function AdminEgresoDetailPage({ params }: Props) {
                   <span className="inline-flex rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-red-800 dark:bg-red-950/50 dark:text-red-200">
                     Anulado
                   </span>
+                ) : null}
+                {supplierLink ? (
+                  <Link
+                    href={`/admin/proveedores/${supplierLink.supplierId}/facturas/${supplierLink.invoiceId}`}
+                    className="inline-flex rounded-full bg-violet-100 px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-violet-900 hover:bg-violet-200 dark:bg-violet-950/50 dark:text-violet-200 dark:hover:bg-violet-900/60"
+                  >
+                    Proveedor
+                    {supplierLink.folio ? ` · ${supplierLink.folio}` : ""}
+                  </Link>
                 ) : null}
               </div>
               <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">{metaLine}</p>
@@ -274,13 +325,33 @@ export default async function AdminEgresoDetailPage({ params }: Props) {
           </ul>
 
           <div className="mt-8 flex min-h-[140px] flex-col items-center justify-center rounded-xl border border-dashed border-zinc-200 bg-zinc-50/80 px-4 py-8 text-center dark:border-zinc-700 dark:bg-zinc-950/50">
-            <p className="text-sm font-medium text-zinc-600 dark:text-zinc-300">
-              Sin vínculo con pedidos
-            </p>
-            <p className="mt-2 max-w-xs text-xs text-zinc-500 dark:text-zinc-400">
-              No se asocian a una venta concreta. En Reportes, el monto se descuenta del total de
-              efectivo o de transferencia según el método de pago registrado aquí.
-            </p>
+            {supplierLink ? (
+              <>
+                <p className="text-sm font-medium text-zinc-600 dark:text-zinc-300">
+                  Vinculado a abono de proveedor
+                </p>
+                <p className="mt-2 max-w-xs text-xs text-zinc-500 dark:text-zinc-400">
+                  {supplierLink.supplierName}
+                  {supplierLink.folio ? ` · Folio ${supplierLink.folio}` : ""}.
+                </p>
+                <Link
+                  href={`/admin/proveedores/${supplierLink.supplierId}/facturas/${supplierLink.invoiceId}`}
+                  className="mt-3 text-sm font-semibold text-violet-700 hover:underline dark:text-violet-300"
+                >
+                  Ver factura
+                </Link>
+              </>
+            ) : (
+              <>
+                <p className="text-sm font-medium text-zinc-600 dark:text-zinc-300">
+                  Sin vínculo con pedidos
+                </p>
+                <p className="mt-2 max-w-xs text-xs text-zinc-500 dark:text-zinc-400">
+                  No se asocian a una venta concreta. En Reportes, el monto se descuenta del total de
+                  efectivo o de transferencia según el método de pago registrado aquí.
+                </p>
+              </>
+            )}
           </div>
         </section>
       </div>

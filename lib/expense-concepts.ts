@@ -57,9 +57,28 @@ export const EXPENSE_CONCEPT_OPTIONS: ExpenseConceptOption[] = [
   },
   { concept: "Bolsas Milagros", category: "insumos", paymentMethod: "efectivo" },
   {
+    concept: "Pago a proveedor",
+    category: "insumos",
+    paymentMethod: "transferencia",
+  },
+  {
     concept: "Seguro local y mercancía protegida",
     category: "seguros",
     paymentMethod: "transferencia",
   },
   { concept: EXPENSE_CONCEPT_OTHER, category: "operativo", paymentMethod: "transferencia" },
 ];
+
+/** Concepto espejo al registrar un abono en Proveedores. */
+export const EXPENSE_CONCEPT_SUPPLIER_PAYMENT = "Pago a proveedor";
+
+/** Mapea método del abono de proveedor al catálogo de egresos. */
+export function mapSupplierPaymentMethodToExpense(
+  raw: string,
+): ExpensePaymentMethod {
+  const m = raw.trim().toLowerCase();
+  if (m === "efectivo") return "efectivo";
+  if (m === "transferencia") return "transferencia";
+  if (m === "tarjeta") return "tarjeta";
+  return "otro";
+}

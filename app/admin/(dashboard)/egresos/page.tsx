@@ -264,6 +264,17 @@ export default async function AdminEgresosPage({
                                 Anulado
                               </span>
                             ) : null}
+                            {e.supplierLink ? (
+                              <Link
+                                href={`/admin/proveedores/${e.supplierLink.supplierId}/facturas/${e.supplierLink.invoiceId}`}
+                                className="inline-flex rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-violet-900 hover:bg-violet-200 dark:bg-violet-950/50 dark:text-violet-200 dark:hover:bg-violet-900/60"
+                              >
+                                Proveedor
+                                {e.supplierLink.folio
+                                  ? ` · ${e.supplierLink.folio}`
+                                  : ""}
+                              </Link>
+                            ) : null}
                           </div>
                           {e.notes ? (
                             <p className="mt-0.5 line-clamp-2 text-xs leading-snug text-zinc-500 dark:text-zinc-400">

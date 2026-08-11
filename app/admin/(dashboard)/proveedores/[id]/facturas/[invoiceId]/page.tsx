@@ -61,6 +61,29 @@ export default async function AdminProveedorFacturaDetailPage({ params, searchPa
   const payments = pays ?? [];
   const attachments = atts ?? [];
   const lines = lineRows ?? [];
+
+  const paymentIds = payments.map((p) => String(p.id)).filter(Boolean);
+  const expenseByPaymentId = new Map<
+    string,
+    { id: string; is_cancelled: boolean | null }
+  >();
+  if (paymentIds.length > 0) {
+    const { data: linkedExpenses } = await supabase
+      .from("store_expenses")
+      .select("id,supplier_invoice_payment_id,is_cancelled")
+      .in("supplier_invoice_payment_id", paymentIds);
+    for (const e of linkedExpenses ?? []) {
+      const payId = e.supplier_invoice_payment_id
+        ? String(e.supplier_invoice_payment_id)
+        : "";
+      if (payId) {
+        expenseByPaymentId.set(payId, {
+          id: String(e.id),
+          is_cancelled: e.is_cancelled ?? null,
+        });
+      }
+    }
+  }
   const lineFigures = lines.map((row) => {
     const q = Number(row.quantity ?? 0);
     const u = Number(row.unit_price_cents ?? 0);
@@ -91,13 +114,15 @@ export default async function AdminProveedorFacturaDetailPage({ params, searchPa
       ? "El abono supera el saldo pendiente."
       : err === "abono"
         ? "No se pudo registrar el abono."
-        : err === "limite"
-          ? "Máximo 5 archivos adjuntos."
-          : err === "subida" || err === "archivo"
-            ? "Error al subir el archivo."
-            : err === "db"
-              ? "Error al guardar."
-              : null;
+        : err === "egreso"
+          ? "No se pudo crear el egreso de caja vinculado. Reintentá el abono."
+          : err === "limite"
+            ? "Máximo 5 archivos adjuntos."
+            : err === "subida" || err === "archivo"
+              ? "Error al subir el archivo."
+              : err === "db"
+                ? "Error al guardar."
+                : null;
 
   return (
     <div className="mx-auto max-w-6xl space-y-6">
@@ -312,7 +337,9 @@ export default async function AdminProveedorFacturaDetailPage({ params, searchPa
               <p className="mt-4 text-sm text-zinc-500 dark:text-zinc-400">Todavía no hay abonos.</p>
             ) : (
               <ul className="mt-4 divide-y divide-zinc-100 dark:divide-zinc-800">
-                {payments.map((p) => (
+                {payments.map((p) => {
+                  const linked = expenseByPaymentId.get(String(p.id));
+                  return (
                   <li key={p.id} className="flex flex-wrap items-center justify-between gap-2 py-3 text-sm">
                     <div>
                       <p className="font-semibold tabular-nums text-zinc-900 dark:text-zinc-100">
@@ -330,9 +357,22 @@ export default async function AdminProveedorFacturaDetailPage({ params, searchPa
                       {p.notes ? (
                         <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-300">{String(p.notes)}</p>
                       ) : null}
+                      {linked ? (
+                        <p className="mt-1.5 text-xs">
+                          <Link
+                            href={`/admin/egresos/${linked.id}`}
+                            className="font-medium text-violet-700 hover:underline dark:text-violet-300"
+                          >
+                            {linked.is_cancelled
+                              ? "Egreso anulado (ver)"
+                              : "Egreso de caja generado"}
+                          </Link>
+                        </p>
+                      ) : null}
                     </div>
                   </li>
-                ))}
+                  );
+                })}
               </ul>
             )}
           </section>
