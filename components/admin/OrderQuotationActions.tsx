@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { convertQuotationToSaleAction } from "@/app/actions/admin/quotation";
 import { productInputClass as inputClass } from "@/components/admin/product-form-primitives";
 import { adminButtonCancelClass } from "@/lib/admin-ui";
 
-/** Acciones de cotización: facturar y descargar hoja membretada. */
+/** Acciones de cotización: facturar y descargar PDF membretado. */
 export function OrderQuotationActions({
   orderId,
   invoiceRef,
@@ -21,10 +21,41 @@ export function OrderQuotationActions({
   const [payment, setPayment] = useState<"cash" | "transfer" | "mixed">("cash");
   const [mixedCash, setMixedCash] = useState("");
   const [mixedTransfer, setMixedTransfer] = useState("");
+  const [downloadError, setDownloadError] = useState<string | null>(null);
+  const [downloading, startDownload] = useTransition();
 
-  function downloadQuotation() {
-    document.title = `Cotización ${invoiceRef} · Aleya Shop SAS`;
-    window.print();
+  function downloadQuotationPdf() {
+    setDownloadError(null);
+    startDownload(async () => {
+      try {
+        const res = await fetch(`/admin/orders/${orderId}/cotizacion`, {
+          method: "GET",
+          credentials: "same-origin",
+        });
+        if (!res.ok) {
+          const text = await res.text().catch(() => "");
+          setDownloadError(
+            text.trim() || "No se pudo generar el PDF de la cotización.",
+          );
+          return;
+        }
+        const blob = await res.blob();
+        const cd = res.headers.get("Content-Disposition") ?? "";
+        const match = /filename="([^"]+)"/i.exec(cd);
+        const filename =
+          match?.[1] ?? `Cotizacion_${invoiceRef}_AleyaShop.pdf`;
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      } catch {
+        setDownloadError("No se pudo descargar el PDF. Intentá de nuevo.");
+      }
+    });
   }
 
   return (
@@ -38,11 +69,15 @@ export function OrderQuotationActions({
       </button>
       <button
         type="button"
-        onClick={downloadQuotation}
-        className="inline-flex w-full items-center justify-center rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-800 transition hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-zinc-800"
+        disabled={downloading}
+        onClick={downloadQuotationPdf}
+        className="inline-flex w-full items-center justify-center rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-800 transition hover:bg-zinc-50 disabled:opacity-60 dark:border-zinc-600 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-zinc-800"
       >
-        Descargar cotización
+        {downloading ? "Generando PDF…" : "Descargar PDF"}
       </button>
+      {downloadError ? (
+        <p className="text-xs text-red-700 dark:text-red-300">{downloadError}</p>
+      ) : null}
 
       {facturarOpen ? (
         <div
