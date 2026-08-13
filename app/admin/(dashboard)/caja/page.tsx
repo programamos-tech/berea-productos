@@ -89,8 +89,8 @@ export default async function AdminCajaPage({
         </h1>
         <p className="mt-2 max-w-3xl text-sm text-zinc-500 dark:text-zinc-400">
           Cierre a ciegas: abrís con un fondo, durante el día se venden productos y se cargan
-          egresos. Al cerrar contás el efectivo sin ver el esperado; el sistema compara y, si no
-          cuadra, pide una nota con el motivo.
+          egresos. Al cerrar contás el efectivo sin ver el esperado. El resultado (esperado,
+          diferencia y totales) aparece después, en el registro ya cerrado.
         </p>
       </div>
 
@@ -128,14 +128,12 @@ export default async function AdminCajaPage({
         </p>
       ) : null}
 
-      {open && blind && live ? (
+      {open && blind ? (
         canManage ? (
           <CashRegisterClosePanel
             sessionId={open.id}
             businessDayLabel={dayLabel}
             blind={blind}
-            live={live}
-            openingFloatCents={open.opening_float_cents}
           />
         ) : (
           <div className="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-700 dark:bg-zinc-900">
@@ -144,7 +142,8 @@ export default async function AdminCajaPage({
             </p>
             <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-300">
               {blind.salesCount} facturas · {blind.unitsSold} ud vendidas ·{" "}
-              {blind.expenseLines.length} egresos. Al cerrar se revela el resumen completo.
+              {blind.expenseLines.length} egresos. El resumen completo se ve al
+              cerrar, en el registro del día.
             </p>
           </div>
         )
