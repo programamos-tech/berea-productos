@@ -219,7 +219,8 @@ export function NewInvoiceHeader() {
           Nueva factura
         </h1>
         <p className="mt-2 max-w-2xl text-sm text-zinc-500 dark:text-zinc-400">
-          Seleccioná el cliente, agregá productos y elegí si es venta o cotización.
+          Cliente Final viene por defecto. Podés buscar otro, agregar productos y
+          elegir si es venta o cotización.
         </p>
       </div>
       <Link
@@ -289,6 +290,7 @@ export function NewInvoiceForm({
   initialCustomerId?: string;
 }) {
   const quickNameInputRef = useRef<HTMLInputElement>(null);
+  const customerSearchInputRef = useRef<HTMLInputElement>(null);
   const [quickModalOpen, setQuickModalOpen] = useState(false);
   const [quickName, setQuickName] = useState("");
   const [quickDocument, setQuickDocument] = useState("");
@@ -647,7 +649,6 @@ export function NewInvoiceForm({
   useEffect(() => {
     function refreshCustomerSearch() {
       if (document.visibilityState !== "visible") return;
-      if (customer) return;
       const q = debouncedCustomerQ.trim();
       if (q.length < 1) return;
       void searchCustomers(q);
@@ -658,7 +659,7 @@ export function NewInvoiceForm({
       window.removeEventListener("focus", refreshCustomerSearch);
       document.removeEventListener("visibilitychange", refreshCustomerSearch);
     };
-  }, [debouncedCustomerQ, customer, searchCustomers]);
+  }, [debouncedCustomerQ, searchCustomers]);
 
   const kitSubtotalCents = useMemo(() => {
     let s = 0;
@@ -789,7 +790,7 @@ export function NewInvoiceForm({
   function onCustomerSearchKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key !== "Enter") return;
     e.preventDefault();
-    if (customer || customerLoading) return;
+    if (customerLoading) return;
     const first = customerHits[0];
     if (first) selectCustomer(first);
   }
@@ -1318,15 +1319,19 @@ export function NewInvoiceForm({
               <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-stretch">
                 <div className="relative min-w-0 flex-1">
                   <input
+                    ref={customerSearchInputRef}
                     value={customerQuery}
                     onChange={(e) => setCustomerQuery(e.target.value)}
                     onKeyDown={onCustomerSearchKeyDown}
-                    placeholder="Buscar por nombre, cédula, email o teléfono"
+                    placeholder={
+                      customer
+                        ? "Buscar otro cliente por nombre, cédula, email o teléfono"
+                        : "Buscar por nombre, cédula, email o teléfono"
+                    }
                     className={inputClass}
-                    disabled={!!customer}
                     autoComplete="off"
                   />
-                  {!customer && customerQuery.trim().length > 0 ? (
+                  {customerQuery.trim().length > 0 ? (
                     <div className="absolute z-20 mt-1 max-h-52 w-full overflow-auto rounded-lg border border-zinc-200 bg-white py-1 shadow-md shadow-zinc-900/10 dark:border-zinc-700 dark:bg-zinc-900 dark:shadow-lg dark:shadow-black/30">
                       {customerLoading ? (
                         <p className="px-3 py-2 text-sm text-zinc-500 dark:text-zinc-400">
@@ -1397,6 +1402,12 @@ export function NewInvoiceForm({
                       setPosCustomerKind("retail");
                       setShipChoice(null);
                       setShipOptions([]);
+                      setCustomerQuery("");
+                      setCustomerHits([]);
+                      window.setTimeout(
+                        () => customerSearchInputRef.current?.focus(),
+                        0,
+                      );
                     }}
                   >
                     Cambiar
