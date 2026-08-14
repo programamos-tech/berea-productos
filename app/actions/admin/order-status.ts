@@ -8,7 +8,7 @@ import { logAdminActivity } from "@/lib/admin-activity-log";
 import { ORDER_CANCELLATION_REASON_MIN_LENGTH } from "@/lib/orders-constants";
 import { loadAdminPermissions } from "@/lib/load-admin-permissions";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { isVentaFisica } from "@/lib/ventas-sales";
+import { isPosPaidSale, isPosQuotation } from "@/lib/ventas-sales";
 import { revalidatePath } from "next/cache";
 
 const ALLOWED = new Set(["pending", "paid", "failed", "cancelled"]);
@@ -63,6 +63,18 @@ async function restoreOrderStockOnCancel(
     return true;
   }
 
+  const wompi =
+    order.wompi_reference != null ? String(order.wompi_reference) : null;
+  // Cotización: no hubo descuento; no reponer.
+  if (String(order.status) === "quotation" || isPosQuotation(wompi)) {
+    const { error: markOnlyErr } = await supabase
+      .from("orders")
+      .update({ stock_restored_at: new Date().toISOString() })
+      .eq("id", orderId)
+      .is("stock_restored_at", null);
+    return !markOnlyErr;
+  }
+
   const { data: items } = await supabase
     .from("order_items")
     .select(
@@ -70,9 +82,7 @@ async function restoreOrderStockOnCancel(
     )
     .eq("order_id", orderId);
 
-  const pos = isVentaFisica(
-    order.wompi_reference != null ? String(order.wompi_reference) : null,
-  );
+  const posPaid = isPosPaidSale(wompi);
 
   for (const it of items ?? []) {
     const kitId = it.kit_id != null ? String(it.kit_id) : "";
@@ -99,7 +109,7 @@ async function restoreOrderStockOnCancel(
     let loc = Math.max(0, Math.floor(Number(it.stock_deducted_local ?? 0)));
     let wh = Math.max(0, Math.floor(Number(it.stock_deducted_warehouse ?? 0)));
     if (loc === 0 && wh === 0) {
-      if (!pos) continue;
+      if (!posPaid) continue;
       loc = Math.max(0, Math.floor(Number(it.quantity ?? 0)));
     }
     if (loc === 0 && wh === 0) continue;
@@ -189,16 +199,27 @@ export async function updateAdminOrderStatus(
     }
     payload = { status: next, cancellation_reason: reason };
 
-    const stockTrace = await buildOrderCancelStockTrace(supabase, id, {
-      inventoryIsPreRestore: !stockWasRestored,
-    });
+    const wasQuotation = String(orderBefore.status) === "quotation";
+
+    const stockTrace = wasQuotation
+      ? {
+          stock_direction: "none" as const,
+          stock_restored: false,
+          stock_already_restored: false,
+          stock_movements: [],
+        }
+      : await buildOrderCancelStockTrace(supabase, id, {
+          inventoryIsPreRestore: !stockWasRestored,
+        });
 
     if (orderBefore.stock_restored_at == null) {
       const restored = await restoreOrderStockOnCancel(supabase, id);
       if (!restored) {
         return { ok: false as const, error: "stock_restore" as const };
       }
-      stockWasRestored = await orderStockWasRestored(supabase, id);
+      stockWasRestored = wasQuotation
+        ? false
+        : await orderStockWasRestored(supabase, id);
     }
 
     const { error } = await supabase.from("orders").update(payload).eq("id", id);

@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { KitComponentDeduction } from "@/lib/product-kits";
-import { isVentaFisica } from "@/lib/ventas-sales";
+import { isPosPaidSale } from "@/lib/ventas-sales";
 
 export type ActivityStockMovement = {
   product_id: string;
@@ -179,7 +179,7 @@ export async function buildOrderCancelStockTrace(
       .eq("order_id", orderId),
   ]);
 
-  const pos = isVentaFisica(
+  const posPaid = isPosPaidSale(
     order?.wompi_reference != null ? String(order.wompi_reference) : null,
   );
 
@@ -246,7 +246,7 @@ export async function buildOrderCancelStockTrace(
     let loc = floorQty(it.stock_deducted_local);
     let wh = floorQty(it.stock_deducted_warehouse);
     if (loc === 0 && wh === 0) {
-      if (!pos) continue;
+      if (!posPaid) continue;
       loc = floorQty(it.quantity);
     }
     if (loc === 0 && wh === 0) continue;

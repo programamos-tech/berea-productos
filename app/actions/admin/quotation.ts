@@ -160,13 +160,48 @@ export async function convertQuotationToSaleAction(formData: FormData) {
     }
   }
 
+  async function undoStockDecrement() {
+    for (const [pid, quantity] of qtyByProduct) {
+      const { data: cur } = await supabase
+        .from("products")
+        .select("stock_local")
+        .eq("id", pid)
+        .maybeSingle();
+      if (!cur) continue;
+      await supabase
+        .from("products")
+        .update({
+          stock_local: Math.max(0, Number(cur.stock_local ?? 0) + quantity),
+        })
+        .eq("id", pid);
+    }
+    for (const row of items ?? []) {
+      if (!row.product_id && !row.kit_id) continue;
+      await supabase
+        .from("order_items")
+        .update({
+          stock_deducted_local: 0,
+          stock_deducted_warehouse: 0,
+          kit_component_deductions: null,
+        })
+        .eq("id", row.id);
+    }
+  }
+
   for (const row of items ?? []) {
     if (!row.product_id) continue;
     const qty = Math.max(0, Math.floor(Number(row.quantity ?? 0)));
-    await supabase
+    const { data: marked, error: markErr } = await supabase
       .from("order_items")
-      .update({ stock_deducted_local: qty })
-      .eq("id", row.id);
+      .update({ stock_deducted_local: qty, stock_deducted_warehouse: 0 })
+      .eq("id", row.id)
+      .select("id")
+      .maybeSingle();
+    if (markErr || !marked?.id) {
+      console.error("convertQuotationToSaleAction mark product stock", markErr);
+      await undoStockDecrement();
+      redirectOrder(orderId, "db");
+    }
   }
 
   for (const kl of kitLines) {
@@ -175,14 +210,21 @@ export async function convertQuotationToSaleAction(formData: FormData) {
     const deductions = buildKitPosComponentDeductions(kit, kl.quantity);
     const item = (items ?? []).find((r) => String(r.kit_id) === kl.kitId);
     if (item) {
-      await supabase
+      const { data: kitMarked, error: kitMarkErr } = await supabase
         .from("order_items")
         .update({ kit_component_deductions: deductions })
-        .eq("id", item.id);
+        .eq("id", item.id)
+        .select("id")
+        .maybeSingle();
+      if (kitMarkErr || !kitMarked?.id) {
+        console.error("convertQuotationToSaleAction mark kit stock", kitMarkErr);
+        await undoStockDecrement();
+        redirectOrder(orderId, "db");
+      }
     }
   }
 
-  const { error: updErr } = await supabase
+  const { data: paidRow, error: updErr } = await supabase
     .from("orders")
     .update({
       status: "paid",
@@ -198,10 +240,13 @@ export async function convertQuotationToSaleAction(formData: FormData) {
           }),
     })
     .eq("id", orderId)
-    .eq("status", "quotation");
+    .eq("status", "quotation")
+    .select("id")
+    .maybeSingle();
 
-  if (updErr) {
+  if (updErr || !paidRow?.id) {
     console.error("convertQuotationToSaleAction update", updErr);
+    await undoStockDecrement();
     redirectOrder(orderId, "db");
   }
 

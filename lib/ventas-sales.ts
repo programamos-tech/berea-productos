@@ -6,6 +6,17 @@ export function isVentaFisica(wompiReference: string | null | undefined): boolea
   return r.startsWith("POS:");
 }
 
+/** Cotización POS: no descuenta ni debe reponer stock al anular. */
+export function isPosQuotation(wompiReference: string | null | undefined): boolean {
+  return (wompiReference?.trim() ?? "") === "POS:quotation";
+}
+
+/** Venta de mostrador ya cobrada (no cotización). */
+export function isPosPaidSale(wompiReference: string | null | undefined): boolean {
+  const r = wompiReference?.trim() ?? "";
+  return r.startsWith("POS:") && r !== "POS:quotation";
+}
+
 export type VentaFormaPagoOpts = {
   checkoutPaymentMethod?: string | null;
 };
