@@ -5,7 +5,9 @@ import { redirect } from "next/navigation";
 import { todayYmdInReportStore } from "@/lib/admin-report-range";
 import {
   EXPENSE_CANCELLATION_REASON_MIN_LENGTH,
+  isMensualPaymentMethod,
   parseExpenseKind,
+  parseExpenseScope,
 } from "@/lib/expenses-constants";
 import { isValidEgresoTaxConcept } from "@/lib/expense-concepts";
 import { loadAdminPermissions } from "@/lib/load-admin-permissions";
@@ -26,7 +28,6 @@ function revalidateEgresosList() {
 
 export async function createStoreExpense(formData: FormData) {
   await requireAdminPermission("egresos_crear");
-  await assertCashRegisterOpenForStaff();
   const supabase = await createSupabaseServerClient();
 
   const concept = String(formData.get("concept") ?? "").trim();
@@ -47,10 +48,34 @@ export async function createStoreExpense(formData: FormData) {
     redirect("/admin/egresos/nuevo?expense_error=concept");
   }
 
+  const expenseScopeRaw = String(formData.get("expense_scope") ?? "").trim();
+  if (expenseScopeRaw !== "diario" && expenseScopeRaw !== "mensual") {
+    redirect("/admin/egresos/nuevo?expense_error=scope");
+  }
+  const expenseScope = parseExpenseScope(expenseScopeRaw);
+
+  // Solo los diarios salen de la gaveta / afectan cierre → requieren caja abierta.
+  if (expenseScope === "diario") {
+    await assertCashRegisterOpenForStaff();
+  }
+
   const categoryRaw = String(formData.get("category") ?? "").trim();
-  const category = categoryRaw || "operativo";
+  const category = categoryRaw || (expenseKind === "egreso" ? "impuestos" : "operativo");
   const paymentMethodRaw = String(formData.get("payment_method") ?? "").trim();
-  const paymentMethod = paymentMethodRaw || "transferencia";
+  let paymentMethod = paymentMethodRaw || "transferencia";
+  if (expenseScope === "mensual") {
+    if (!isMensualPaymentMethod(paymentMethod)) {
+      redirect("/admin/egresos/nuevo?expense_error=payment");
+    }
+  } else if (
+    paymentMethod !== "efectivo" &&
+    paymentMethod !== "transferencia" &&
+    paymentMethod !== "tarjeta" &&
+    paymentMethod !== "otro"
+  ) {
+    paymentMethod = "transferencia";
+  }
+
   const notesRaw = String(formData.get("notes") ?? "").trim();
   const notes = notesRaw.length > 0 ? notesRaw : null;
   const expenseDateRaw = String(formData.get("expense_date") ?? "").trim();
@@ -69,6 +94,7 @@ export async function createStoreExpense(formData: FormData) {
       notes,
       expense_date: expenseDate,
       expense_kind: expenseKind,
+      expense_scope: expenseScope,
     })
     .select("id")
     .single();

@@ -6,7 +6,9 @@ import { ExpenseDetailHeaderActions } from "@/components/admin/ExpenseDetailHead
 import { customerAvatarSeed } from "@/lib/customer-avatar-seed";
 import {
   expenseKindLabel,
+  expenseScopeLabel,
   parseExpenseKind,
+  parseExpenseScope,
 } from "@/lib/expenses-constants";
 import { loadAdminPermissions } from "@/lib/load-admin-permissions";
 import { formatStoreDateTime } from "@/lib/store-datetime-format";
@@ -78,7 +80,7 @@ export default async function AdminEgresoDetailPage({ params }: Props) {
     supabase
       .from("store_expenses")
       .select(
-        "id,concept,category,amount_cents,payment_method,notes,expense_date,created_at,is_cancelled,cancelled_at,cancellation_reason,supplier_invoice_payment_id,expense_kind",
+        "id,concept,category,amount_cents,payment_method,notes,expense_date,created_at,is_cancelled,cancelled_at,cancellation_reason,supplier_invoice_payment_id,expense_kind,expense_scope",
       )
       .eq("id", id)
       .maybeSingle(),
@@ -134,7 +136,11 @@ export default async function AdminEgresoDetailPage({ params }: Props) {
   const expenseKind = parseExpenseKind(
     (row as { expense_kind?: unknown }).expense_kind,
   );
+  const expenseScope = parseExpenseScope(
+    (row as { expense_scope?: unknown }).expense_scope,
+  );
   const kindLabel = expenseKindLabel(expenseKind);
+  const scopeLabel = expenseScopeLabel(expenseScope);
 
   const concept = String(row.concept ?? kindLabel).trim() || kindLabel;
   const expenseDate =
@@ -150,6 +156,7 @@ export default async function AdminEgresoDetailPage({ params }: Props) {
 
   const metaParts = [
     kindLabel,
+    scopeLabel,
     paymentPretty,
     expenseDate,
     category !== "operativo" ? category : null,
@@ -200,6 +207,15 @@ export default async function AdminEgresoDetailPage({ params }: Props) {
                   }`}
                 >
                   {kindLabel}
+                </span>
+                <span
+                  className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide ${
+                    expenseScope === "mensual"
+                      ? "bg-violet-100 text-violet-900 dark:bg-violet-950/50 dark:text-violet-200"
+                      : "bg-emerald-100 text-emerald-900 dark:bg-emerald-950/50 dark:text-emerald-200"
+                  }`}
+                >
+                  {scopeLabel}
                 </span>
                 {isCancelled ? (
                   <span className="inline-flex rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-red-800 dark:bg-red-950/50 dark:text-red-200">

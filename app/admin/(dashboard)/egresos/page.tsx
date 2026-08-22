@@ -11,7 +11,7 @@ import {
   reportCalendarDayKeyFromIso,
 } from "@/lib/admin-report-range";
 import { loadAdminPermissions } from "@/lib/load-admin-permissions";
-import { expenseKindLabel } from "@/lib/expenses-constants";
+import { expenseKindLabel, expenseScopeLabel } from "@/lib/expenses-constants";
 import { fetchAdminExpensesPage } from "@/lib/supabase/admin-expenses-list";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -268,6 +268,15 @@ export default async function AdminEgresosPage({
                               }`}
                             >
                               {expenseKindLabel(e.expense_kind)}
+                            </span>
+                            <span
+                              className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
+                                e.expense_scope === "mensual"
+                                  ? "bg-violet-100 text-violet-900 dark:bg-violet-950/50 dark:text-violet-200"
+                                  : "bg-emerald-100 text-emerald-900 dark:bg-emerald-950/50 dark:text-emerald-200"
+                              }`}
+                            >
+                              {expenseScopeLabel(e.expense_scope)}
                             </span>
                             {isCancelled ? (
                               <span className="inline-flex rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-red-800 dark:bg-red-950/50 dark:text-red-200">

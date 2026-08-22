@@ -245,8 +245,9 @@ export async function fetchCashDayLiveTotals(
       .lt("created_at", bounds.lt),
     supabase
       .from("store_expenses")
-      .select("id,concept,amount_cents,payment_method,expense_date,is_cancelled")
+      .select("id,concept,amount_cents,payment_method,expense_date,is_cancelled,expense_scope")
       .eq("expense_date", businessDayYmd)
+      .eq("expense_scope", "diario")
       .order("created_at", { ascending: true }),
   ]);
 

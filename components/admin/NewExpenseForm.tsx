@@ -15,7 +15,9 @@ import {
 import { todayYmdInReportStore } from "@/lib/admin-report-range";
 import {
   EXPENSE_KIND_OPTIONS,
+  EXPENSE_SCOPE_OPTIONS,
   type ExpenseKind,
+  type ExpenseScope,
 } from "@/lib/expenses-constants";
 import {
   EXPENSE_CONCEPT_OPTIONS,
@@ -46,8 +48,8 @@ export function NewExpenseHeader() {
           Nuevo gasto o egreso
         </h1>
         <p className="mt-2 max-w-2xl text-sm text-zinc-500 dark:text-zinc-400">
-          Elegí si es un gasto operativo o un egreso de impuestos de la SAS. El método de pago
-          define en Reportes si el monto se descuenta del efectivo o de la transferencia.
+          Elegí gasto o egreso, y si es de caja del turno (afecta el cierre) o cuenta mensual
+          (solo totales del mes).
         </p>
       </div>
       <Link
@@ -71,6 +73,10 @@ function errorMessage(code: string | undefined) {
       return "Monto inválido.";
     case "kind":
       return "Elegí si es gasto o egreso.";
+    case "scope":
+      return "Elegí si es caja del turno o cuenta mensual.";
+    case "payment":
+      return "En cuenta mensual usá transferencia, tarjeta u otro (sin efectivo).";
     case "db":
       return adminCreateFailedMessage("expense");
     default:
@@ -96,6 +102,7 @@ export function NewExpenseForm({
   );
 
   const [expenseKind, setExpenseKind] = useState<ExpenseKind>("gasto");
+  const [expenseScope, setExpenseScope] = useState<ExpenseScope>("diario");
 
   const conceptOptionsForSelect = useMemo(
     () =>
@@ -207,6 +214,51 @@ export function NewExpenseForm({
       </section>
 
       <section className={cardSectionClass}>
+        <h2 className={sectionTitle}>Alcance</h2>
+        <fieldset className="mt-4">
+          <legend className="sr-only">Elegí caja del turno o cuenta mensual</legend>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {EXPENSE_SCOPE_OPTIONS.map((opt) => {
+              const selected = expenseScope === opt.value;
+              return (
+                <label
+                  key={opt.value}
+                  className={`flex cursor-pointer flex-col gap-1 rounded-xl border px-4 py-3 transition ${
+                    selected
+                      ? "border-rose-900/40 bg-rose-50/80 ring-1 ring-rose-900/20 dark:border-rose-400/40 dark:bg-rose-950/30 dark:ring-rose-400/20"
+                      : "border-zinc-200 bg-white hover:border-zinc-300 dark:border-zinc-700 dark:bg-zinc-950 dark:hover:border-zinc-600"
+                  }`}
+                >
+                  <span className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      name="expense_scope"
+                      value={opt.value}
+                      checked={selected}
+                      onChange={() => {
+                        setExpenseScope(opt.value);
+                        if (opt.value === "mensual" && paymentMethod === "efectivo") {
+                          setPaymentMethod("transferencia");
+                        }
+                      }}
+                      className="size-4 border-zinc-300 text-rose-950 focus:ring-rose-900 dark:border-zinc-600 dark:text-rose-400"
+                      required
+                    />
+                    <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                      {opt.label}
+                    </span>
+                  </span>
+                  <span className="pl-6 text-xs leading-snug text-zinc-500 dark:text-zinc-400">
+                    {opt.hint}
+                  </span>
+                </label>
+              );
+            })}
+          </div>
+        </fieldset>
+      </section>
+
+      <section className={cardSectionClass}>
         <h2 className={sectionTitle}>Información del registro</h2>
         <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="sm:col-span-2">
@@ -220,7 +272,11 @@ export function NewExpenseForm({
                 const hit = conceptOptionsForSelect.find((c) => c.concept === next);
                 if (hit) {
                   setCategory(hit.category);
-                  setPaymentMethod(hit.paymentMethod);
+                  const nextPm =
+                    expenseScope === "mensual" && hit.paymentMethod === "efectivo"
+                      ? "transferencia"
+                      : hit.paymentMethod;
+                  setPaymentMethod(nextPm);
                 }
               }}
               className={inputClass}
@@ -313,10 +369,17 @@ export function NewExpenseForm({
               className={inputClass}
             >
               <option value="transferencia">Transferencia</option>
-              <option value="efectivo">Efectivo</option>
+              {expenseScope === "diario" ? (
+                <option value="efectivo">Efectivo</option>
+              ) : null}
               <option value="tarjeta">Tarjeta</option>
               <option value="otro">Otro</option>
             </select>
+            {expenseScope === "mensual" ? (
+              <p className="mt-1.5 text-xs text-zinc-500 dark:text-zinc-400">
+                Cuenta mensual no usa efectivo: no afecta el cierre de caja.
+              </p>
+            ) : null}
           </div>
           <div className="sm:col-span-2">
             <label className={labelClass}>Nota (opcional)</label>

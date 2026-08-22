@@ -5,7 +5,9 @@ import {
 } from "@/lib/admin-report-range";
 import {
   parseExpenseKind,
+  parseExpenseScope,
   type ExpenseKind,
+  type ExpenseScope,
 } from "@/lib/expenses-constants";
 
 export type ExpenseRow = {
@@ -20,6 +22,7 @@ export type ExpenseRow = {
   cancellation_reason: string | null;
   supplier_invoice_payment_id: string | null;
   expense_kind: ExpenseKind;
+  expense_scope: ExpenseScope;
   /** Presente cuando el egreso viene de un abono a proveedor. */
   supplierLink: {
     supplierId: string;
@@ -29,7 +32,7 @@ export type ExpenseRow = {
 };
 
 const EXPENSES_DETAIL_SELECT =
-  "id,concept,amount_cents,payment_method,notes,expense_date,created_at,is_cancelled,cancellation_reason,supplier_invoice_payment_id,expense_kind";
+  "id,concept,amount_cents,payment_method,notes,expense_date,created_at,is_cancelled,cancellation_reason,supplier_invoice_payment_id,expense_kind,expense_scope";
 
 /** Columnas mínimas para el fallback Node (sin RPC). */
 const EXPENSES_AGG_SELECT = "amount_cents,is_cancelled,expense_date,created_at";
@@ -300,6 +303,9 @@ export async function fetchAdminExpensesPage(
       supplier_invoice_payment_id: payId,
       expense_kind: parseExpenseKind(
         (r as { expense_kind?: unknown }).expense_kind,
+      ),
+      expense_scope: parseExpenseScope(
+        (r as { expense_scope?: unknown }).expense_scope,
       ),
       supplierLink: payId ? (linkByPaymentId.get(payId) ?? null) : null,
     };
