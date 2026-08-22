@@ -343,7 +343,7 @@ export default async function AdminEgresosPage({
                           ) : null}
                         </td>
                         <td className="whitespace-nowrap px-4 py-3.5 text-zinc-600 dark:text-zinc-300">
-                          {String(e.payment_method ?? "—")}
+                          {expensePaymentMethodLabel(e.payment_method)}
                         </td>
                         <td className="min-w-[9.5rem] whitespace-nowrap px-4 py-3.5 tabular-nums text-zinc-600 dark:text-zinc-300">
                           {dateStr}
