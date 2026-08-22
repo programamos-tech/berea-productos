@@ -145,7 +145,7 @@ export function CashRegisterOpenForm({
   return (
     <form
       action={openCashRegisterSession}
-      className={`${cardClass} grid gap-4 md:grid-cols-[1fr_minmax(240px,320px)_auto] md:items-end`}
+      className={`${cardClass} grid gap-4`}
       onSubmit={(e) => {
         if (floatCents !== 0) return;
         const ok = window.confirm(
@@ -155,7 +155,7 @@ export function CashRegisterOpenForm({
       }}
     >
       <input type="hidden" name="submission_id" value={submissionId} />
-      <div className="min-w-0 md:col-span-1">
+      <div className="min-w-0">
         <div className="flex items-center gap-2">
           <PiggyBank className={`h-5 w-5 ${accentIcon.brand}`} aria-hidden />
           <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
@@ -180,7 +180,7 @@ export function CashRegisterOpenForm({
       </div>
       <AdminFormSubmitButton
         pendingLabel="Abriendo…"
-        className={`${adminPrimarySubmitButtonClass} w-full px-6 md:w-auto`}
+        className={`${adminPrimarySubmitButtonClass} w-full px-6`}
       >
         Abrir caja del día
       </AdminFormSubmitButton>

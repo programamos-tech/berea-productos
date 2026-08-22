@@ -1,8 +1,5 @@
 import Link from "next/link";
-import {
-  CashRegisterClosePanel,
-  CashRegisterOpenForm,
-} from "@/components/admin/CashRegisterForms";
+import { CashRegisterSessionModal } from "@/components/admin/CashRegisterSessionModal";
 import { StaticCopCents } from "@/components/admin/ReportsAnimatedFigures";
 import {
   prettyReportDayShortLabel,
@@ -77,31 +74,45 @@ export default async function AdminCajaPage({
   const blind = live ? toBlindCashSummary(live) : null;
 
   const dayLabel = prettyReportDayShortLabel(open?.business_day ?? today);
-  const todayAlreadyClosed =
-    !open && todaySession?.status === "closed";
+  const todayAlreadyClosed = !open && todaySession?.status === "closed";
   const canOpenToday = canManage && !open && !todayAlreadyClosed;
+
+  const modalMode =
+    open && canManage && blind
+      ? ("close" as const)
+      : canOpenToday
+        ? ("open" as const)
+        : null;
 
   return (
     <div className="w-full max-w-none space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 sm:text-3xl">
-          Cierre de caja
-        </h1>
-        <p className="mt-2 max-w-3xl text-sm text-zinc-500 dark:text-zinc-400">
-          Cierre a ciegas: abrís con un fondo, durante el día se venden productos y se cargan
-          egresos. Al cerrar contás el efectivo sin ver el esperado. El resultado (esperado,
-          diferencia y totales) aparece después, en el registro ya cerrado.
-        </p>
+      {modalMode ? (
+        <CashRegisterSessionModal
+          mode={modalMode}
+          businessDayLabel={dayLabel}
+          sessionId={open?.id}
+          blind={blind}
+          errorBanner={banner}
+          defaultOpen
+        />
+      ) : null}
+
+      <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 sm:text-3xl">
+            Cierre de caja
+          </h1>
+          <p className="mt-2 max-w-3xl text-sm text-zinc-500 dark:text-zinc-400">
+            Historial de cierres. Abrí o cerrá la caja del día desde el modal; el
+            resultado completo queda en cada registro.
+          </p>
+        </div>
       </div>
 
-      {banner ? (
+      {!modalMode && banner ? (
         <p className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-900 dark:border-red-900/50 dark:bg-red-950/35 dark:text-red-100">
           {banner}
         </p>
-      ) : null}
-
-      {canOpenToday ? (
-        <CashRegisterOpenForm businessDayLabel={dayLabel} />
       ) : null}
 
       {todayAlreadyClosed && todaySession ? (
@@ -128,30 +139,22 @@ export default async function AdminCajaPage({
         </p>
       ) : null}
 
-      {open && blind ? (
-        canManage ? (
-          <CashRegisterClosePanel
-            sessionId={open.id}
-            businessDayLabel={dayLabel}
-            blind={blind}
-          />
-        ) : (
-          <div className="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-700 dark:bg-zinc-900">
-            <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
-              Caja abierta · {dayLabel}
-            </p>
-            <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-300">
-              {blind.salesCount} facturas · {blind.unitsSold} ud vendidas ·{" "}
-              {blind.expenseLines.length} egresos. El resumen completo se ve al
-              cerrar, en el registro del día.
-            </p>
-          </div>
-        )
+      {open && !canManage && blind ? (
+        <div className="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-700 dark:bg-zinc-900">
+          <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+            Caja abierta · {dayLabel}
+          </p>
+          <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-300">
+            {blind.salesCount} facturas · {blind.unitsSold} ud vendidas ·{" "}
+            {blind.expenseLines.length} egresos. El resumen completo se ve al
+            cerrar, en el registro del día.
+          </p>
+        </div>
       ) : null}
 
       <section className="space-y-3">
         <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
-          Historial reciente
+          Historial de cierres
         </h2>
         {recent.length === 0 ? (
           <p className="text-sm text-zinc-500 dark:text-zinc-400">
