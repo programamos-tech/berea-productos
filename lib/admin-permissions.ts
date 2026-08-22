@@ -81,10 +81,10 @@ export const PERMISSION_MODULES: PermissionModule[] = [
   },
   {
     id: "egresos",
-    label: "Egresos",
+    label: "Gastos y egresos",
     items: [
-      { key: "egresos_ver", label: "Ver egresos" },
-      { key: "egresos_crear", label: "Crear egresos" },
+      { key: "egresos_ver", label: "Ver gastos y egresos" },
+      { key: "egresos_crear", label: "Crear gastos y egresos" },
     ],
   },
   {

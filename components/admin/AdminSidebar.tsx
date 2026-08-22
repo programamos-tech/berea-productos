@@ -85,7 +85,7 @@ const navSections: {
       },
       {
         href: "/admin/egresos",
-        label: "Egresos",
+        label: "Gastos y egresos",
         icon: (
           <Icon>
             <path d="M4 6h16v12H4z" />

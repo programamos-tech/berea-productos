@@ -11,6 +11,7 @@ import {
   reportCalendarDayKeyFromIso,
 } from "@/lib/admin-report-range";
 import { loadAdminPermissions } from "@/lib/load-admin-permissions";
+import { expenseKindLabel } from "@/lib/expenses-constants";
 import { fetchAdminExpensesPage } from "@/lib/supabase/admin-expenses-list";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -126,15 +127,15 @@ export default async function AdminEgresosPage({
               Reportes
             </Link>
             <span className="mx-1.5 text-zinc-300 dark:text-zinc-600">/</span>
-            <span className="text-zinc-700 dark:text-zinc-300">Tabla de egresos</span>
+            <span className="text-zinc-700 dark:text-zinc-300">Tabla de gastos y egresos</span>
           </p>
           <h1 className="mt-2 text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 sm:text-2xl md:text-3xl">
-            Egresos
+            Gastos y egresos
           </h1>
           <p className="mt-2 max-w-2xl text-sm text-zinc-500 dark:text-zinc-400">
             {defaultMonthApplied && periodLabel
               ? `Mostrando ${periodLabel}. Usá los filtros de fecha para ver otro periodo.`
-              : "Vista de tabla con filtros por texto y rango de fechas del gasto."}
+              : "Vista de tabla con filtros por texto y rango de fechas."}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -162,7 +163,7 @@ export default async function AdminEgresosPage({
             href="/admin/egresos/nuevo"
             className="inline-flex items-center justify-center rounded-lg border border-rose-950 bg-rose-950 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-rose-900 hover:border-rose-900 dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-white"
           >
-            + Nuevo egreso
+            + Nuevo
           </Link>
           <Link
             href="/admin"
@@ -198,7 +199,7 @@ export default async function AdminEgresosPage({
         <div className="border-b border-zinc-100 px-4 py-4 dark:border-zinc-800 sm:px-5">
           <div className="flex flex-wrap items-end justify-between gap-2">
             <h2 className="text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-400 dark:text-zinc-500">
-              Historial de egresos
+              Historial
             </h2>
             <p className="text-xs text-zinc-500 dark:text-zinc-400">
               <StaticInteger value={total} className="font-semibold tabular-nums text-zinc-600 dark:text-zinc-300" />{" "}
@@ -213,8 +214,8 @@ export default async function AdminEgresosPage({
         ) : rows.length === 0 ? (
           <p className="px-4 py-6 text-sm text-zinc-500 dark:text-zinc-400 sm:px-5">
             {hasExplicitFilters
-              ? "No hay egresos que coincidan con la búsqueda o las fechas."
-              : "Aún no hay egresos registrados en este periodo."}
+              ? "No hay registros que coincidan con la búsqueda o las fechas."
+              : "Aún no hay gastos ni egresos registrados en este periodo."}
           </p>
         ) : (
           <>
@@ -257,8 +258,17 @@ export default async function AdminEgresosPage({
                             <p
                               className={`font-semibold text-zinc-900 dark:text-zinc-100 ${isCancelled ? "line-through decoration-zinc-400" : ""}`}
                             >
-                              {String(e.concept ?? "Egreso")}
+                              {String(e.concept ?? "Gasto")}
                             </p>
+                            <span
+                              className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
+                                e.expense_kind === "egreso"
+                                  ? "bg-amber-100 text-amber-900 dark:bg-amber-950/50 dark:text-amber-200"
+                                  : "bg-sky-100 text-sky-900 dark:bg-sky-950/50 dark:text-sky-200"
+                              }`}
+                            >
+                              {expenseKindLabel(e.expense_kind)}
+                            </span>
                             {isCancelled ? (
                               <span className="inline-flex rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-red-800 dark:bg-red-950/50 dark:text-red-200">
                                 Anulado
@@ -296,7 +306,7 @@ export default async function AdminEgresosPage({
                         <td className="px-4 py-3.5">
                           <ExpenseRowActions
                             expenseId={String(e.id)}
-                            conceptLabel={String(e.concept ?? "Egreso")}
+                            conceptLabel={String(e.concept ?? "Gasto")}
                             isCancelled={isCancelled}
                             canCancel={canCancel}
                           />

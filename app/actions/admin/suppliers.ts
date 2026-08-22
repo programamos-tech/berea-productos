@@ -271,6 +271,7 @@ export async function registerSupplierInvoicePaymentAction(formData: FormData) {
     notes: noteParts.join(" · "),
     expense_date: todayYmdInReportStore(),
     supplier_invoice_payment_id: paymentId,
+    expense_kind: "egreso",
   });
 
   if (expenseErr) {

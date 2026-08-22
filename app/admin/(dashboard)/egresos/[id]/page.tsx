@@ -4,6 +4,10 @@ import { CustomerAvatar } from "@/components/admin/CustomerAvatar";
 import { ExpenseDateEditForm } from "@/components/admin/ExpenseDateEditForm";
 import { ExpenseDetailHeaderActions } from "@/components/admin/ExpenseDetailHeaderActions";
 import { customerAvatarSeed } from "@/lib/customer-avatar-seed";
+import {
+  expenseKindLabel,
+  parseExpenseKind,
+} from "@/lib/expenses-constants";
 import { loadAdminPermissions } from "@/lib/load-admin-permissions";
 import { formatStoreDateTime } from "@/lib/store-datetime-format";
 import { formatCop } from "@/lib/money";
@@ -74,7 +78,7 @@ export default async function AdminEgresoDetailPage({ params }: Props) {
     supabase
       .from("store_expenses")
       .select(
-        "id,concept,category,amount_cents,payment_method,notes,expense_date,created_at,is_cancelled,cancelled_at,cancellation_reason,supplier_invoice_payment_id",
+        "id,concept,category,amount_cents,payment_method,notes,expense_date,created_at,is_cancelled,cancelled_at,cancellation_reason,supplier_invoice_payment_id,expense_kind",
       )
       .eq("id", id)
       .maybeSingle(),
@@ -127,8 +131,12 @@ export default async function AdminEgresoDetailPage({ params }: Props) {
 
   const canEdit = Boolean(perm?.permissions.egresos_crear);
   const isCancelled = row.is_cancelled === true;
+  const expenseKind = parseExpenseKind(
+    (row as { expense_kind?: unknown }).expense_kind,
+  );
+  const kindLabel = expenseKindLabel(expenseKind);
 
-  const concept = String(row.concept ?? "Egreso").trim() || "Egreso";
+  const concept = String(row.concept ?? kindLabel).trim() || kindLabel;
   const expenseDate =
     typeof row.expense_date === "string" && row.expense_date.length > 0
       ? row.expense_date
@@ -141,11 +149,17 @@ export default async function AdminEgresoDetailPage({ params }: Props) {
   const avatarSeed = customerAvatarSeed(row.id, concept);
 
   const metaParts = [
+    kindLabel,
     paymentPretty,
     expenseDate,
     category !== "operativo" ? category : null,
   ].filter(Boolean);
-  const metaLine = metaParts.length > 0 ? metaParts.join(" · ") : "Egreso operativo";
+  const metaLine =
+    metaParts.length > 0
+      ? metaParts.join(" · ")
+      : expenseKind === "egreso"
+        ? "Egreso"
+        : "Gasto operativo";
 
   const categoryIsLegacy = category.toLowerCase() === "legacy";
 
@@ -156,7 +170,7 @@ export default async function AdminEgresoDetailPage({ params }: Props) {
           href="/admin/egresos"
           className="font-medium hover:text-zinc-800 dark:hover:text-zinc-200"
         >
-          Egresos
+          Gastos y egresos
         </Link>
         <span className="mx-2 text-zinc-300 dark:text-zinc-600">/</span>
         <span className="text-zinc-700 dark:text-zinc-300">{concept}</span>
@@ -169,7 +183,7 @@ export default async function AdminEgresoDetailPage({ params }: Props) {
               seed={avatarSeed}
               size={120}
               className="shadow-md ring-2 ring-zinc-200/90 dark:ring-zinc-600"
-              label={`Identidad visual del egreso: ${concept}`}
+              label={`Identidad visual del ${kindLabel.toLowerCase()}: ${concept}`}
             />
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
@@ -178,6 +192,15 @@ export default async function AdminEgresoDetailPage({ params }: Props) {
                 >
                   {concept}
                 </h1>
+                <span
+                  className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide ${
+                    expenseKind === "egreso"
+                      ? "bg-amber-100 text-amber-900 dark:bg-amber-950/50 dark:text-amber-200"
+                      : "bg-sky-100 text-sky-900 dark:bg-sky-950/50 dark:text-sky-200"
+                  }`}
+                >
+                  {kindLabel}
+                </span>
                 {isCancelled ? (
                   <span className="inline-flex rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-red-800 dark:bg-red-950/50 dark:text-red-200">
                     Anulado
@@ -224,13 +247,13 @@ export default async function AdminEgresoDetailPage({ params }: Props) {
           <div className="grid divide-y divide-zinc-100 dark:divide-zinc-800 sm:grid-cols-4 sm:divide-x sm:divide-y-0">
             <StatCol
               label="Monto"
-              sub={isCancelled ? "No cuenta en reportes" : "Valor contable del egreso"}
+              sub={isCancelled ? "No cuenta en reportes" : "Valor contable del gasto"}
             >
               <span className={isCancelled ? "line-through decoration-zinc-400" : ""}>
                 {formatCop(Number(row.amount_cents ?? 0))}
               </span>
             </StatCol>
-            <StatCol label="Fecha del egreso" sub="Día asignado al gasto">
+            <StatCol label="Fecha del gasto" sub="Día asignado al gasto">
               {isCancelled || !canEdit ? (
                 expenseDate
               ) : (
@@ -289,7 +312,7 @@ export default async function AdminEgresoDetailPage({ params }: Props) {
                 Sin notas adicionales
               </p>
               <p className="mt-2 max-w-sm text-xs text-zinc-500 dark:text-zinc-400">
-                Este egreso solo tiene concepto y monto. Podés ampliar la información al crear
+                Este gasto solo tiene concepto y monto. Podés ampliar la información al crear
                 nuevos registros desde el formulario.
               </p>
             </div>

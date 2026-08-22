@@ -81,7 +81,7 @@ export function ExpensesFiltersBar({ initialQ, initialFrom, initialTo }: Props) 
             placeholder="Buscar…"
             className={inputClass}
             autoComplete="off"
-            aria-label="Buscar egresos por concepto o notas"
+            aria-label="Buscar por concepto o notas"
           />
         </div>
         <div className="min-w-0 lg:col-span-3">

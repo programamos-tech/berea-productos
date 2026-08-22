@@ -23,7 +23,7 @@ export function ExpenseRowActions({
         href={`/admin/egresos/${expenseId}`}
         className={iconBtnClass}
         title="Ver detalle"
-        aria-label="Ver detalle del egreso"
+        aria-label="Ver detalle del gasto"
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"

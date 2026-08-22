@@ -13,7 +13,7 @@ export const EXPENSE_CONCEPT_PERSONAL_TURNOS = "Personal Turnos";
 export const EXPENSE_CONCEPT_OTHER = "Otro";
 
 /**
- * Catálogo oficial de conceptos de egreso (hoja CONCEPTOS DE GASTOS).
+ * Catálogo oficial de conceptos (hoja CONCEPTOS DE GASTOS).
  * Orden fijo para el selector en admin.
  */
 export const EXPENSE_CONCEPT_OPTIONS: ExpenseConceptOption[] = [

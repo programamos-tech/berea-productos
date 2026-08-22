@@ -44,7 +44,7 @@ export function ExpenseDetailHeaderActions({
         href="/admin/egresos"
         className="inline-flex size-10 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-600 shadow-sm transition hover:bg-zinc-50 hover:text-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300 dark:shadow-none dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
         title="Volver"
-        aria-label="Volver al listado de egresos"
+        aria-label="Volver al listado de gastos y egresos"
       >
         <IconBack />
       </Link>

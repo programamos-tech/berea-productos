@@ -14,6 +14,10 @@ import {
 } from "@/components/admin/product-form-primitives";
 import { todayYmdInReportStore } from "@/lib/admin-report-range";
 import {
+  EXPENSE_KIND_OPTIONS,
+  type ExpenseKind,
+} from "@/lib/expenses-constants";
+import {
   EXPENSE_CONCEPT_OPTIONS,
   EXPENSE_CONCEPT_OTHER,
   EXPENSE_CONCEPT_PERSONAL_TURNOS,
@@ -31,24 +35,23 @@ export function NewExpenseHeader() {
       <div className="min-w-0">
         <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
           <Link href="/admin/egresos" className="hover:text-zinc-800 dark:hover:text-zinc-200">
-            Egresos
+            Gastos y egresos
           </Link>
           <span className="mx-1.5 text-zinc-300 dark:text-zinc-600">/</span>
-          <span className="text-zinc-700 dark:text-zinc-300">Nuevo egreso</span>
+          <span className="text-zinc-700 dark:text-zinc-300">Nuevo registro</span>
         </p>
         <h1 className="mt-2 text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 sm:text-2xl md:text-3xl">
-          Nuevo egreso
+          Nuevo gasto o egreso
         </h1>
         <p className="mt-2 max-w-2xl text-sm text-zinc-500 dark:text-zinc-400">
-          Registra un gasto operativo con el mismo patrón visual de los demás módulos. El método de
-          pago define en Reportes si el monto se descuenta del total de efectivo o del de
-          transferencia (incluye tarjeta u otro).
+          Elegí si es un gasto operativo o un egreso (proveedores / impuestos). El método de pago
+          define en Reportes si el monto se descuenta del efectivo o de la transferencia.
         </p>
       </div>
       <Link
         href="/admin/egresos"
         className="inline-flex size-10 shrink-0 items-center justify-center self-start rounded-lg border border-zinc-200/90 bg-white text-zinc-600 transition hover:bg-zinc-50 hover:text-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100 sm:self-auto"
-        aria-label="Volver a egresos"
+        aria-label="Volver a gastos y egresos"
       >
         <span className="text-lg leading-none" aria-hidden>
           ←
@@ -61,9 +64,11 @@ export function NewExpenseHeader() {
 function errorMessage(code: string | undefined) {
   switch (code) {
     case "concept":
-      return "Ingresa un concepto para el egreso.";
+      return "Ingresa un concepto.";
     case "amount":
-      return "Monto inválido en el egreso.";
+      return "Monto inválido.";
+    case "kind":
+      return "Elegí si es gasto o egreso.";
     case "db":
       return adminCreateFailedMessage("expense");
     default:
@@ -88,6 +93,7 @@ export function NewExpenseForm({
     [turnWorkers.length],
   );
 
+  const [expenseKind, setExpenseKind] = useState<ExpenseKind>("gasto");
   const [conceptSelection, setConceptSelection] = useState(
     () => conceptOptionsForSelect[0]?.concept ?? "",
   );
@@ -139,7 +145,47 @@ export function NewExpenseForm({
       ) : null}
 
       <section className={cardSectionClass}>
-        <h2 className={sectionTitle}>Información del egreso</h2>
+        <h2 className={sectionTitle}>Tipo de registro</h2>
+        <fieldset className="mt-4">
+          <legend className="sr-only">Elegí gasto o egreso</legend>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {EXPENSE_KIND_OPTIONS.map((opt) => {
+              const selected = expenseKind === opt.value;
+              return (
+                <label
+                  key={opt.value}
+                  className={`flex cursor-pointer flex-col gap-1 rounded-xl border px-4 py-3 transition ${
+                    selected
+                      ? "border-rose-900/40 bg-rose-50/80 ring-1 ring-rose-900/20 dark:border-rose-400/40 dark:bg-rose-950/30 dark:ring-rose-400/20"
+                      : "border-zinc-200 bg-white hover:border-zinc-300 dark:border-zinc-700 dark:bg-zinc-950 dark:hover:border-zinc-600"
+                  }`}
+                >
+                  <span className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      name="expense_kind"
+                      value={opt.value}
+                      checked={selected}
+                      onChange={() => setExpenseKind(opt.value)}
+                      className="size-4 border-zinc-300 text-rose-950 focus:ring-rose-900 dark:border-zinc-600 dark:text-rose-400"
+                      required
+                    />
+                    <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                      {opt.label}
+                    </span>
+                  </span>
+                  <span className="pl-6 text-xs leading-snug text-zinc-500 dark:text-zinc-400">
+                    {opt.hint}
+                  </span>
+                </label>
+              );
+            })}
+          </div>
+        </fieldset>
+      </section>
+
+      <section className={cardSectionClass}>
+        <h2 className={sectionTitle}>Información del registro</h2>
         <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="sm:col-span-2">
             <label className={labelClass}>Concepto</label>
@@ -205,9 +251,9 @@ export function NewExpenseForm({
           </div>
           <div>
             <div>
-              <label className={labelClass}>Fecha del egreso</label>
+              <label className={labelClass}>Fecha</label>
               <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-                Elegí el día del gasto con el calendario.
+                Elegí el día contable con el calendario.
               </p>
               <div className="mt-1.5">
                 <AdminDateInput
@@ -251,7 +297,7 @@ export function NewExpenseForm({
               name="notes"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Detalle adicional del egreso"
+              placeholder="Detalle adicional"
               className={inputClass}
             />
           </div>
@@ -261,10 +307,9 @@ export function NewExpenseForm({
           disabled={submitBlocked}
           className={`mt-5 px-4 py-2.5 ${adminPrimarySubmitButtonClass}`}
         >
-          Registrar egreso
+          {expenseKind === "egreso" ? "Registrar egreso" : "Registrar gasto"}
         </AdminFormSubmitButton>
       </section>
     </form>
   );
 }
-

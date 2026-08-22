@@ -40,9 +40,9 @@ export function ExpenseDateEditForm({ expenseId, initialDate, canEdit }: Props) 
         setPending(false);
         if (!res.ok) {
           if (res.error === "cancelled") {
-            setError("No se puede cambiar la fecha de un egreso anulado.");
+            setError("No se puede cambiar la fecha de un gasto anulado.");
           } else if (res.error === "forbidden") {
-            setError("No tenés permiso para editar egresos.");
+            setError("No tenés permiso para editar gastos.");
           } else {
             setError("No se pudo guardar la fecha. Intenta de nuevo.");
           }
@@ -52,7 +52,7 @@ export function ExpenseDateEditForm({ expenseId, initialDate, canEdit }: Props) 
         router.refresh();
       }}
     >
-      <label className={labelClass}>Fecha del egreso</label>
+      <label className={labelClass}>Fecha del gasto</label>
       <p className="text-xs text-zinc-500 dark:text-zinc-400">
         Elegí el día del gasto con el calendario.
       </p>

@@ -3,7 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { todayYmdInReportStore } from "@/lib/admin-report-range";
-import { EXPENSE_CANCELLATION_REASON_MIN_LENGTH } from "@/lib/expenses-constants";
+import {
+  EXPENSE_CANCELLATION_REASON_MIN_LENGTH,
+  parseExpenseKind,
+} from "@/lib/expenses-constants";
 import { loadAdminPermissions } from "@/lib/load-admin-permissions";
 import {
   assertCashRegisterOpenForStaff,
@@ -33,6 +36,12 @@ export async function createStoreExpense(formData: FormData) {
     redirect("/admin/egresos/nuevo?expense_error=amount");
   }
 
+  const expenseKindRaw = String(formData.get("expense_kind") ?? "").trim();
+  if (expenseKindRaw !== "gasto" && expenseKindRaw !== "egreso") {
+    redirect("/admin/egresos/nuevo?expense_error=kind");
+  }
+  const expenseKind = parseExpenseKind(expenseKindRaw);
+
   const categoryRaw = String(formData.get("category") ?? "").trim();
   const category = categoryRaw || "operativo";
   const paymentMethodRaw = String(formData.get("payment_method") ?? "").trim();
@@ -54,6 +63,7 @@ export async function createStoreExpense(formData: FormData) {
       payment_method: paymentMethod,
       notes,
       expense_date: expenseDate,
+      expense_kind: expenseKind,
     })
     .select("id")
     .single();

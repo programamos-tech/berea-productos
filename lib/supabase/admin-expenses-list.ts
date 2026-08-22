@@ -3,6 +3,10 @@ import {
   reportCalendarDayKeyFromIso,
   todayYmdInReportStore,
 } from "@/lib/admin-report-range";
+import {
+  parseExpenseKind,
+  type ExpenseKind,
+} from "@/lib/expenses-constants";
 
 export type ExpenseRow = {
   id: string;
@@ -15,6 +19,7 @@ export type ExpenseRow = {
   is_cancelled: boolean | null;
   cancellation_reason: string | null;
   supplier_invoice_payment_id: string | null;
+  expense_kind: ExpenseKind;
   /** Presente cuando el egreso viene de un abono a proveedor. */
   supplierLink: {
     supplierId: string;
@@ -24,7 +29,7 @@ export type ExpenseRow = {
 };
 
 const EXPENSES_DETAIL_SELECT =
-  "id,concept,amount_cents,payment_method,notes,expense_date,created_at,is_cancelled,cancellation_reason,supplier_invoice_payment_id";
+  "id,concept,amount_cents,payment_method,notes,expense_date,created_at,is_cancelled,cancellation_reason,supplier_invoice_payment_id,expense_kind";
 
 /** Columnas mínimas para el fallback Node (sin RPC). */
 const EXPENSES_AGG_SELECT = "amount_cents,is_cancelled,expense_date,created_at";
@@ -293,6 +298,9 @@ export async function fetchAdminExpensesPage(
       cancellation_reason:
         r.cancellation_reason == null ? null : String(r.cancellation_reason),
       supplier_invoice_payment_id: payId,
+      expense_kind: parseExpenseKind(
+        (r as { expense_kind?: unknown }).expense_kind,
+      ),
       supplierLink: payId ? (linkByPaymentId.get(payId) ?? null) : null,
     };
   });
