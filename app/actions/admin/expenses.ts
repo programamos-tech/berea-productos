@@ -31,26 +31,26 @@ export async function createStoreExpense(formData: FormData) {
   const supabase = await createSupabaseServerClient();
 
   const concept = String(formData.get("concept") ?? "").trim();
-  if (!concept) redirect("/admin/egresos/nuevo?expense_error=concept");
+  if (!concept) redirect("/admin/egresos?nuevo=1&expense_error=concept");
 
   const amountRaw = Math.floor(Number(formData.get("amount_cents") ?? 0));
   if (!Number.isFinite(amountRaw) || amountRaw < 0) {
-    redirect("/admin/egresos/nuevo?expense_error=amount");
+    redirect("/admin/egresos?nuevo=1&expense_error=amount");
   }
 
   const expenseKindRaw = String(formData.get("expense_kind") ?? "").trim();
   if (expenseKindRaw !== "gasto" && expenseKindRaw !== "egreso") {
-    redirect("/admin/egresos/nuevo?expense_error=kind");
+    redirect("/admin/egresos?nuevo=1&expense_error=kind");
   }
   const expenseKind = parseExpenseKind(expenseKindRaw);
 
   if (expenseKind === "egreso" && !isValidEgresoTaxConcept(concept)) {
-    redirect("/admin/egresos/nuevo?expense_error=concept");
+    redirect("/admin/egresos?nuevo=1&expense_error=concept");
   }
 
   const expenseScopeRaw = String(formData.get("expense_scope") ?? "").trim();
   if (expenseScopeRaw !== "diario" && expenseScopeRaw !== "mensual") {
-    redirect("/admin/egresos/nuevo?expense_error=scope");
+    redirect("/admin/egresos?nuevo=1&expense_error=scope");
   }
   const expenseScope = parseExpenseScope(expenseScopeRaw);
 
@@ -65,7 +65,7 @@ export async function createStoreExpense(formData: FormData) {
   let paymentMethod = paymentMethodRaw || "transferencia";
   if (expenseScope === "mensual") {
     if (!isMensualPaymentMethod(paymentMethod)) {
-      redirect("/admin/egresos/nuevo?expense_error=payment");
+      redirect("/admin/egresos?nuevo=1&expense_error=payment");
     }
   } else if (
     paymentMethod !== "efectivo" &&
@@ -99,7 +99,7 @@ export async function createStoreExpense(formData: FormData) {
     .select("id")
     .single();
 
-  if (error || !row?.id) redirect("/admin/egresos/nuevo?expense_error=db");
+  if (error || !row?.id) redirect("/admin/egresos?nuevo=1&expense_error=db");
 
   revalidateEgresosList();
   redirect("/admin/egresos");

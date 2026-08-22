@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { ExpenseRowActions } from "@/components/admin/ExpenseRowActions";
 import { ExpensesFiltersBar } from "@/components/admin/ExpensesFiltersBar";
+import { NewExpenseModalHost } from "@/components/admin/NewExpenseForm";
 import { VentasPagination } from "@/components/admin/VentasPagination";
 import { StaticCopCents, StaticInteger } from "@/components/admin/ReportsAnimatedFigures";
 import {
@@ -87,17 +88,38 @@ export default async function AdminEgresosPage({
   const supabase = await createSupabaseServerClient();
   const perm = await loadAdminPermissions();
   const canCancel = Boolean(perm?.permissions.egresos_crear);
+  const canCreate = Boolean(perm?.permissions.egresos_crear);
 
-  const { rows, stats, error: expensesError } = await fetchAdminExpensesPage(
-    supabase,
-    {
+  const openNuevo =
+    searchParamFirst(sp.nuevo) === "1" ||
+    Boolean(searchParamFirst(sp.expense_error));
+  const expenseErrorCode = searchParamFirst(sp.expense_error);
+
+  const [{ rows, stats, error: expensesError }, profilesRes] = await Promise.all([
+    fetchAdminExpensesPage(supabase, {
       q: qRaw,
       dateFrom,
       dateTo,
       page,
       pageSize: EGRESOS_PAGE_SIZE,
-    },
-  );
+    }),
+    canCreate
+      ? supabase
+          .from("profiles")
+          .select("id,display_name,login_username")
+          .eq("is_active", true)
+          .order("display_name", { ascending: true })
+      : Promise.resolve({ data: null }),
+  ]);
+
+  const turnWorkers = (profilesRes.data ?? []).map((p) => {
+    const display = String(p.display_name ?? "").trim();
+    const login = String(p.login_username ?? "").trim();
+    return {
+      id: String(p.id),
+      label: display || login || "Colaborador",
+    };
+  });
 
   const { totalActivoCents, todayTotalCents, cancelledCount, total } = stats;
 
@@ -118,8 +140,25 @@ export default async function AdminEgresosPage({
     return qs ? `/admin/egresos?${qs}` : "/admin/egresos";
   };
 
+  const nuevoHref = (() => {
+    const p = new URLSearchParams();
+    if (qRaw) p.set("q", qRaw);
+    if (urlFrom) p.set("from", urlFrom);
+    if (urlTo) p.set("to", urlTo);
+    if (page > 1) p.set("page", String(page));
+    p.set("nuevo", "1");
+    return `/admin/egresos?${p.toString()}`;
+  })();
+
   return (
     <div className="w-full min-w-0 space-y-8">
+      {canCreate ? (
+        <NewExpenseModalHost
+          open={openNuevo}
+          initialError={expenseErrorCode}
+          turnWorkers={turnWorkers}
+        />
+      ) : null}
       <div className="mb-2 flex min-w-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
@@ -159,12 +198,14 @@ export default async function AdminEgresosPage({
               </p>
             </div>
           </div>
-          <Link
-            href="/admin/egresos/nuevo"
-            className="inline-flex items-center justify-center rounded-lg border border-rose-950 bg-rose-950 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-rose-900 hover:border-rose-900 dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-white"
-          >
-            + Nuevo
-          </Link>
+          {canCreate ? (
+            <Link
+              href={nuevoHref}
+              className="inline-flex items-center justify-center rounded-lg border border-rose-950 bg-rose-950 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-rose-900 hover:border-rose-900 dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-white"
+            >
+              + Nuevo
+            </Link>
+          ) : null}
           <Link
             href="/admin"
             className="inline-flex size-10 items-center justify-center rounded-lg border border-zinc-200/90 bg-white text-zinc-600 transition hover:bg-zinc-50 hover:text-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"

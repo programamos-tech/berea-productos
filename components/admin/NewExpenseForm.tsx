@@ -1,18 +1,21 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { createStoreExpense } from "@/app/actions/admin/expenses";
-import { AdminFormSubmitButton, adminPrimarySubmitButtonClass } from "@/components/admin/AdminFormSubmitButton";
+import {
+  AdminFormSubmitButton,
+  adminPrimarySubmitButtonClass,
+} from "@/components/admin/AdminFormSubmitButton";
 import { adminCreateFailedMessage } from "@/lib/admin-create-failed-messages";
 import {
   AdminDateInput,
   ProductMoneyInput,
   productInputClass as inputClass,
   productLabelClass as labelClass,
-  productSectionTitle as sectionTitle,
 } from "@/components/admin/product-form-primitives";
 import { todayYmdInReportStore } from "@/lib/admin-report-range";
+import { adminButtonCancelClass } from "@/lib/admin-ui";
 import {
   EXPENSE_KIND_OPTIONS,
   EXPENSE_SCOPE_OPTIONS,
@@ -28,42 +31,25 @@ import {
   type ExpensePaymentMethod,
 } from "@/lib/expense-concepts";
 
-const cardSectionClass =
-  "rounded-xl border border-zinc-200/90 bg-white p-4 shadow-sm ring-1 ring-zinc-950/5 sm:p-6 dark:border-zinc-700/90 dark:bg-zinc-900 dark:shadow-none dark:ring-white/[0.06]";
-
 export type TurnWorkerOption = { id: string; label: string };
 
-export function NewExpenseHeader() {
-  return (
-    <div className="mb-6 flex min-w-0 flex-col gap-4 sm:mb-8 sm:flex-row sm:items-start sm:justify-between">
-      <div className="min-w-0">
-        <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
-          <Link href="/admin/egresos" className="hover:text-zinc-800 dark:hover:text-zinc-200">
-            Gastos y egresos
-          </Link>
-          <span className="mx-1.5 text-zinc-300 dark:text-zinc-600">/</span>
-          <span className="text-zinc-700 dark:text-zinc-300">Nuevo registro</span>
-        </p>
-        <h1 className="mt-2 text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 sm:text-2xl md:text-3xl">
-          Nuevo gasto o egreso
-        </h1>
-        <p className="mt-2 max-w-2xl text-sm text-zinc-500 dark:text-zinc-400">
-          Elegí gasto o egreso, y si es de caja del turno (afecta el cierre) o cuenta mensual
-          (solo totales del mes).
-        </p>
-      </div>
-      <Link
-        href="/admin/egresos"
-        className="inline-flex size-10 shrink-0 items-center justify-center self-start rounded-lg border border-zinc-200/90 bg-white text-zinc-600 transition hover:bg-zinc-50 hover:text-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100 sm:self-auto"
-        aria-label="Volver a gastos y egresos"
-      >
-        <span className="text-lg leading-none" aria-hidden>
-          ←
-        </span>
-      </Link>
-    </div>
-  );
-}
+const choiceSelected =
+  "border-rose-900/35 bg-rose-50 ring-1 ring-rose-900/15 dark:border-rose-400/40 dark:bg-rose-950/35 dark:ring-rose-400/20";
+const choiceIdle =
+  "border-zinc-200 bg-white hover:border-zinc-300 dark:border-zinc-700 dark:bg-zinc-950 dark:hover:border-zinc-600";
+
+const payMethodsDiario: { value: ExpensePaymentMethod; label: string }[] = [
+  { value: "efectivo", label: "Efectivo" },
+  { value: "transferencia", label: "Transferencia" },
+  { value: "tarjeta", label: "Tarjeta" },
+  { value: "otro", label: "Otro" },
+];
+
+const payMethodsMensual: { value: ExpensePaymentMethod; label: string }[] = [
+  { value: "transferencia", label: "Transferencia" },
+  { value: "tarjeta", label: "Tarjeta" },
+  { value: "otro", label: "Otro" },
+];
 
 function errorMessage(code: string | undefined) {
   switch (code) {
@@ -84,10 +70,14 @@ function errorMessage(code: string | undefined) {
   }
 }
 
-export function NewExpenseForm({
+export function NewExpenseModal({
+  open,
+  onClose,
   initialError,
   turnWorkers = [],
 }: {
+  open: boolean;
+  onClose: () => void;
   initialError?: string;
   turnWorkers?: TurnWorkerOption[];
 }) {
@@ -126,16 +116,38 @@ export function NewExpenseForm({
   const [expenseDate, setExpenseDate] = useState(() => todayYmdInReportStore());
 
   useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
+
+  useEffect(() => {
     if (conceptOptionsForSelect.some((o) => o.concept === conceptSelection)) return;
     const first = conceptOptionsForSelect[0];
     if (first) {
       setConceptSelection(first.concept);
       setCategory(first.category);
-      setPaymentMethod(first.paymentMethod);
+      setPaymentMethod(
+        expenseScope === "mensual" && first.paymentMethod === "efectivo"
+          ? "transferencia"
+          : first.paymentMethod,
+      );
       setTurnWorkerId("");
       setConceptOther("");
     }
-  }, [conceptOptionsForSelect, conceptSelection]);
+  }, [conceptOptionsForSelect, conceptSelection, expenseScope]);
 
   const err = useMemo(() => errorMessage(initialError), [initialError]);
   const conceptValue = useMemo(() => {
@@ -159,144 +171,193 @@ export function NewExpenseForm({
   const turnoIncomplete =
     conceptSelection === EXPENSE_CONCEPT_PERSONAL_TURNOS &&
     (!turnWorkerId || !turnWorkers.some((t) => t.id === turnWorkerId));
-  const submitBlocked = otroIncomplete || turnoIncomplete;
+  const amountIncomplete = amountCents <= 0;
+  const submitBlocked = otroIncomplete || turnoIncomplete || amountIncomplete;
+
+  const payOptions =
+    expenseScope === "mensual" ? payMethodsMensual : payMethodsDiario;
+
+  if (!open) return null;
 
   return (
-    <form action={createStoreExpense} className="space-y-6">
-      {err ? (
-        <p className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-900 dark:border-red-900/50 dark:bg-red-950/35 dark:text-red-100">
-          {err}
-        </p>
-      ) : null}
-
-      <section className={cardSectionClass}>
-        <h2 className={sectionTitle}>Tipo de registro</h2>
-        <fieldset className="mt-4">
-          <legend className="sr-only">Elegí gasto o egreso</legend>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {EXPENSE_KIND_OPTIONS.map((opt) => {
-              const selected = expenseKind === opt.value;
-              return (
-                <label
-                  key={opt.value}
-                  className={`flex cursor-pointer flex-col gap-1 rounded-xl border px-4 py-3 transition ${
-                    selected
-                      ? "border-rose-900/40 bg-rose-50/80 ring-1 ring-rose-900/20 dark:border-rose-400/40 dark:bg-rose-950/30 dark:ring-rose-400/20"
-                      : "border-zinc-200 bg-white hover:border-zinc-300 dark:border-zinc-700 dark:bg-zinc-950 dark:hover:border-zinc-600"
-                  }`}
-                >
-                  <span className="flex items-center gap-2">
-                    <input
-                      type="radio"
-                      name="expense_kind"
-                      value={opt.value}
-                      checked={selected}
-                      onChange={() => {
-                        setExpenseKind(opt.value);
-                        setConceptOther("");
-                        setTurnWorkerId("");
-                      }}
-                      className="size-4 border-zinc-300 text-rose-950 focus:ring-rose-900 dark:border-zinc-600 dark:text-rose-400"
-                      required
-                    />
-                    <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-                      {opt.label}
-                    </span>
-                  </span>
-                  <span className="pl-6 text-xs leading-snug text-zinc-500 dark:text-zinc-400">
-                    {opt.hint}
-                  </span>
-                </label>
-              );
-            })}
-          </div>
-        </fieldset>
-      </section>
-
-      <section className={cardSectionClass}>
-        <h2 className={sectionTitle}>Alcance</h2>
-        <fieldset className="mt-4">
-          <legend className="sr-only">Elegí caja del turno o cuenta mensual</legend>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {EXPENSE_SCOPE_OPTIONS.map((opt) => {
-              const selected = expenseScope === opt.value;
-              return (
-                <label
-                  key={opt.value}
-                  className={`flex cursor-pointer flex-col gap-1 rounded-xl border px-4 py-3 transition ${
-                    selected
-                      ? "border-rose-900/40 bg-rose-50/80 ring-1 ring-rose-900/20 dark:border-rose-400/40 dark:bg-rose-950/30 dark:ring-rose-400/20"
-                      : "border-zinc-200 bg-white hover:border-zinc-300 dark:border-zinc-700 dark:bg-zinc-950 dark:hover:border-zinc-600"
-                  }`}
-                >
-                  <span className="flex items-center gap-2">
-                    <input
-                      type="radio"
-                      name="expense_scope"
-                      value={opt.value}
-                      checked={selected}
-                      onChange={() => {
-                        setExpenseScope(opt.value);
-                        if (opt.value === "mensual" && paymentMethod === "efectivo") {
-                          setPaymentMethod("transferencia");
-                        }
-                      }}
-                      className="size-4 border-zinc-300 text-rose-950 focus:ring-rose-900 dark:border-zinc-600 dark:text-rose-400"
-                      required
-                    />
-                    <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-                      {opt.label}
-                    </span>
-                  </span>
-                  <span className="pl-6 text-xs leading-snug text-zinc-500 dark:text-zinc-400">
-                    {opt.hint}
-                  </span>
-                </label>
-              );
-            })}
-          </div>
-        </fieldset>
-      </section>
-
-      <section className={cardSectionClass}>
-        <h2 className={sectionTitle}>Información del registro</h2>
-        <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div className="sm:col-span-2">
-            <label className={labelClass}>Concepto</label>
-            <select
-              value={conceptSelection}
-              onChange={(e) => {
-                const next = e.target.value;
-                setConceptSelection(next);
-                setTurnWorkerId("");
-                const hit = conceptOptionsForSelect.find((c) => c.concept === next);
-                if (hit) {
-                  setCategory(hit.category);
-                  const nextPm =
-                    expenseScope === "mensual" && hit.paymentMethod === "efectivo"
-                      ? "transferencia"
-                      : hit.paymentMethod;
-                  setPaymentMethod(nextPm);
-                }
-              }}
-              className={inputClass}
+    <div className="fixed inset-0 z-[100] flex items-end justify-center p-3 sm:items-center sm:p-6">
+      <button
+        type="button"
+        className="absolute inset-0 bg-zinc-950/45 backdrop-blur-[2px] dark:bg-black/60"
+        aria-label="Cerrar"
+        onClick={onClose}
+      />
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="new-expense-title"
+        className="relative z-10 flex max-h-[min(92vh,880px)] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-zinc-200/90 bg-white shadow-2xl dark:border-zinc-700 dark:bg-zinc-900"
+      >
+        <div className="flex shrink-0 items-start justify-between gap-3 border-b border-zinc-100 px-5 py-4 dark:border-zinc-800 sm:px-6">
+          <div className="min-w-0">
+            <h2
+              id="new-expense-title"
+              className="text-lg font-semibold tracking-tight text-zinc-900 dark:text-zinc-100"
             >
-              {conceptOptionsForSelect.map((opt) => (
-                <option key={opt.concept} value={opt.concept}>
-                  {opt.concept}
-                </option>
-              ))}
-            </select>
-            {conceptSelection === EXPENSE_CONCEPT_PERSONAL_TURNOS ? (
-              <div className="mt-3">
-                <label className={`${labelClass} text-zinc-600 dark:text-zinc-400`}>
-                  Trabajador
-                </label>
+              Nuevo gasto o egreso
+            </h2>
+            <p className="mt-0.5 text-sm text-zinc-500 dark:text-zinc-400">
+              Caja del turno o cuenta mensual · gasto u impuesto
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="inline-flex size-9 shrink-0 items-center justify-center rounded-lg text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+            aria-label="Cerrar"
+          >
+            <span className="text-xl leading-none" aria-hidden>
+              ×
+            </span>
+          </button>
+        </div>
+
+        <form
+          action={createStoreExpense}
+          className="flex min-h-0 flex-1 flex-col"
+        >
+          <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-5 py-4 sm:px-6">
+            {err ? (
+              <p className="rounded-xl border border-red-100 bg-red-50 px-3 py-2.5 text-sm text-red-900 dark:border-red-900/50 dark:bg-red-950/35 dark:text-red-100">
+                {err}
+              </p>
+            ) : null}
+
+            <fieldset>
+              <legend className={labelClass}>Tipo</legend>
+              <div className="mt-2 grid grid-cols-2 gap-2">
+                {EXPENSE_KIND_OPTIONS.map((opt) => {
+                  const selected = expenseKind === opt.value;
+                  return (
+                    <label
+                      key={opt.value}
+                      className={`cursor-pointer rounded-xl border px-3 py-2.5 transition ${
+                        selected ? choiceSelected : choiceIdle
+                      }`}
+                    >
+                      <span className="flex items-center gap-2">
+                        <input
+                          type="radio"
+                          name="expense_kind"
+                          value={opt.value}
+                          checked={selected}
+                          onChange={() => {
+                            setExpenseKind(opt.value);
+                            setConceptOther("");
+                            setTurnWorkerId("");
+                          }}
+                          className="size-3.5 border-zinc-300 text-rose-950 focus:ring-rose-900 dark:border-zinc-600"
+                          required
+                        />
+                        <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                          {opt.label}
+                        </span>
+                      </span>
+                      <span className="mt-1 block pl-5 text-[11px] leading-snug text-zinc-500 dark:text-zinc-400">
+                        {opt.value === "gasto"
+                          ? "Operativo del negocio"
+                          : "Impuestos SAS"}
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+            </fieldset>
+
+            <fieldset>
+              <legend className={labelClass}>Alcance</legend>
+              <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                {EXPENSE_SCOPE_OPTIONS.map((opt) => {
+                  const selected = expenseScope === opt.value;
+                  return (
+                    <label
+                      key={opt.value}
+                      className={`cursor-pointer rounded-xl border px-3 py-2.5 transition ${
+                        selected ? choiceSelected : choiceIdle
+                      }`}
+                    >
+                      <span className="flex items-center gap-2">
+                        <input
+                          type="radio"
+                          name="expense_scope"
+                          value={opt.value}
+                          checked={selected}
+                          onChange={() => {
+                            setExpenseScope(opt.value);
+                            if (opt.value === "mensual" && paymentMethod === "efectivo") {
+                              setPaymentMethod("transferencia");
+                            }
+                          }}
+                          className="size-3.5 border-zinc-300 text-rose-950 focus:ring-rose-900 dark:border-zinc-600"
+                          required
+                        />
+                        <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                          {opt.label}
+                        </span>
+                      </span>
+                      <span className="mt-1 block pl-5 text-[11px] leading-snug text-zinc-500 dark:text-zinc-400">
+                        {opt.value === "diario"
+                          ? "Si es efectivo, baja el cierre"
+                          : "No toca el cierre de caja"}
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+            </fieldset>
+
+            <div>
+              <label className={labelClass}>Monto</label>
+              <div className="mt-1.5">
+                <ProductMoneyInput
+                  name="amount_cents"
+                  required
+                  value={amountCents}
+                  onChange={setAmountCents}
+                />
+              </div>
+              <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                Escribí solo números; se formatea solo.
+              </p>
+            </div>
+
+            <div>
+              <label className={labelClass}>Concepto</label>
+              <select
+                value={conceptSelection}
+                onChange={(e) => {
+                  const next = e.target.value;
+                  setConceptSelection(next);
+                  setTurnWorkerId("");
+                  const hit = conceptOptionsForSelect.find((c) => c.concept === next);
+                  if (hit) {
+                    setCategory(hit.category);
+                    const nextPm =
+                      expenseScope === "mensual" && hit.paymentMethod === "efectivo"
+                        ? "transferencia"
+                        : hit.paymentMethod;
+                    setPaymentMethod(nextPm);
+                  }
+                }}
+                className={`${inputClass} mt-1.5`}
+              >
+                {conceptOptionsForSelect.map((opt) => (
+                  <option key={opt.concept} value={opt.concept}>
+                    {opt.concept}
+                  </option>
+                ))}
+              </select>
+              {conceptSelection === EXPENSE_CONCEPT_PERSONAL_TURNOS ? (
                 <select
                   value={turnWorkerId}
                   onChange={(e) => setTurnWorkerId(e.target.value)}
                   required
-                  className={`${inputClass} mt-1.5`}
+                  className={`${inputClass} mt-2`}
                   aria-label="Seleccionar a quién se le pagó el turno"
                 >
                   <option value="">Elegí a quién se le pagó el turno…</option>
@@ -306,38 +367,48 @@ export function NewExpenseForm({
                     </option>
                   ))}
                 </select>
+              ) : null}
+              {conceptSelection === EXPENSE_CONCEPT_OTHER ||
+              conceptSelection === EXPENSE_CONCEPT_OTHER_TAX ? (
+                <input
+                  value={conceptOther}
+                  onChange={(e) => setConceptOther(e.target.value)}
+                  placeholder={
+                    conceptSelection === EXPENSE_CONCEPT_OTHER_TAX
+                      ? "Escribe el impuesto"
+                      : "Escribe el concepto"
+                  }
+                  className={`${inputClass} mt-2`}
+                />
+              ) : null}
+              <input type="hidden" name="concept" value={conceptValue} required />
+              <input type="hidden" name="category" value={category} />
+            </div>
+
+            <fieldset>
+              <legend className={labelClass}>Medio de pago</legend>
+              <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                {payOptions.map((opt) => {
+                  const selected = paymentMethod === opt.value;
+                  return (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setPaymentMethod(opt.value)}
+                      className={`rounded-xl border px-2 py-2.5 text-center text-xs font-semibold transition sm:text-sm ${
+                        selected ? choiceSelected : choiceIdle
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  );
+                })}
               </div>
-            ) : null}
-            {conceptSelection === EXPENSE_CONCEPT_OTHER ||
-            conceptSelection === EXPENSE_CONCEPT_OTHER_TAX ? (
-              <input
-                value={conceptOther}
-                onChange={(e) => setConceptOther(e.target.value)}
-                placeholder={
-                  conceptSelection === EXPENSE_CONCEPT_OTHER_TAX
-                    ? "Escribe el impuesto"
-                    : "Escribe el concepto"
-                }
-                className={`${inputClass} mt-3`}
-              />
-            ) : null}
-            <input type="hidden" name="concept" value={conceptValue} required />
-          </div>
-          <div>
-            <label className={labelClass}>Monto (COP)</label>
-            <ProductMoneyInput
-              name="amount_cents"
-              required
-              value={amountCents}
-              onChange={setAmountCents}
-            />
-          </div>
-          <div>
+              <input type="hidden" name="payment_method" value={paymentMethod} />
+            </fieldset>
+
             <div>
-              <label className={labelClass}>Fecha</label>
-              <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-                Elegí el día contable con el calendario.
-              </p>
+              <label className={labelClass}>Fecha de registro</label>
               <div className="mt-1.5">
                 <AdminDateInput
                   name="expense_date"
@@ -347,59 +418,68 @@ export function NewExpenseForm({
                 />
               </div>
             </div>
+
+            <div>
+              <label className={labelClass}>Nota (opcional)</label>
+              <textarea
+                name="notes"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                rows={2}
+                placeholder="Detalle adicional…"
+                className={`${inputClass} mt-1.5 min-h-[72px] resize-y`}
+              />
+            </div>
           </div>
-          <div>
-            <label className={labelClass}>Categoría</label>
-            <input
-              name="category"
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              placeholder="operativo"
-              className={inputClass}
-            />
-          </div>
-          <div>
-            <label className={labelClass}>Método de pago</label>
-            <select
-              name="payment_method"
-              value={paymentMethod}
-              onChange={(e) =>
-                setPaymentMethod(e.target.value as ExpensePaymentMethod)
-              }
-              className={inputClass}
+
+          <div className="flex shrink-0 flex-col-reverse gap-2 border-t border-zinc-100 bg-zinc-50/80 px-5 py-4 dark:border-zinc-800 dark:bg-zinc-950/50 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+            <button
+              type="button"
+              onClick={onClose}
+              className={`${adminButtonCancelClass} w-full sm:w-auto`}
             >
-              <option value="transferencia">Transferencia</option>
-              {expenseScope === "diario" ? (
-                <option value="efectivo">Efectivo</option>
-              ) : null}
-              <option value="tarjeta">Tarjeta</option>
-              <option value="otro">Otro</option>
-            </select>
-            {expenseScope === "mensual" ? (
-              <p className="mt-1.5 text-xs text-zinc-500 dark:text-zinc-400">
-                Cuenta mensual no usa efectivo: no afecta el cierre de caja.
-              </p>
-            ) : null}
+              Cancelar
+            </button>
+            <AdminFormSubmitButton
+              pendingLabel="Registrando…"
+              disabled={submitBlocked}
+              className={`w-full px-5 py-2.5 sm:w-auto ${adminPrimarySubmitButtonClass}`}
+            >
+              {expenseKind === "egreso" ? "Registrar egreso" : "Registrar gasto"}
+            </AdminFormSubmitButton>
           </div>
-          <div className="sm:col-span-2">
-            <label className={labelClass}>Nota (opcional)</label>
-            <input
-              name="notes"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Detalle adicional"
-              className={inputClass}
-            />
-          </div>
-        </div>
-        <AdminFormSubmitButton
-          pendingLabel="Registrando…"
-          disabled={submitBlocked}
-          className={`mt-5 px-4 py-2.5 ${adminPrimarySubmitButtonClass}`}
-        >
-          {expenseKind === "egreso" ? "Registrar egreso" : "Registrar gasto"}
-        </AdminFormSubmitButton>
-      </section>
-    </form>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+/** Abre/cierra el modal según `?nuevo=1` en la URL del listado. */
+export function NewExpenseModalHost({
+  open,
+  initialError,
+  turnWorkers = [],
+}: {
+  open: boolean;
+  initialError?: string;
+  turnWorkers?: TurnWorkerOption[];
+}) {
+  const router = useRouter();
+
+  const close = () => {
+    const url = new URL(window.location.href);
+    url.searchParams.delete("nuevo");
+    url.searchParams.delete("expense_error");
+    const qs = url.searchParams.toString();
+    router.replace(qs ? `${url.pathname}?${qs}` : url.pathname, { scroll: false });
+  };
+
+  return (
+    <NewExpenseModal
+      open={open}
+      onClose={close}
+      initialError={initialError}
+      turnWorkers={turnWorkers}
+    />
   );
 }
