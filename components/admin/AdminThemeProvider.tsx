@@ -66,7 +66,7 @@ export function AdminThemeProvider({ children }: { children: React.ReactNode }) 
     <AdminThemeContext.Provider value={value}>
       <div
         data-admin-theme={theme}
-        className="min-h-full bg-stone-50 text-stone-900 antialiased dark:bg-zinc-950 dark:text-zinc-100"
+        className="min-h-full bg-white text-stone-900 antialiased dark:bg-zinc-950 dark:text-zinc-100"
         style={{ colorScheme: theme === "dark" ? "dark" : "light" }}
       >
         {children}

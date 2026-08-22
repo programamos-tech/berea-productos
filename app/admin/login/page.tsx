@@ -17,7 +17,7 @@ const serif = "[font-family:ui-serif,Georgia,Cambria,'Times_New_Roman',serif]";
 
 export default function AdminLoginPage() {
   return (
-    <div className="relative min-h-screen bg-stone-50 text-stone-900 antialiased dark:bg-zinc-950 dark:text-zinc-100">
+    <div className="relative min-h-screen bg-white text-stone-900 antialiased dark:bg-zinc-950 dark:text-zinc-100">
       <div className="pointer-events-none absolute right-3 top-3 z-20 sm:right-5 sm:top-5">
         <div className="pointer-events-auto rounded-lg border border-rose-200/70 bg-white/90 shadow-sm backdrop-blur-sm dark:border-rose-400/25 dark:bg-zinc-900/90">
           <AdminThemeToggle className="rounded-lg" />
@@ -76,7 +76,7 @@ export default function AdminLoginPage() {
         </aside>
 
         {/* Formulario */}
-        <main className="relative flex flex-1 flex-col justify-center bg-stone-50 px-6 py-12 sm:px-10 lg:px-16 xl:px-24 dark:bg-zinc-950">
+        <main className="relative flex flex-1 flex-col justify-center bg-white px-6 py-12 sm:px-10 lg:px-16 xl:px-24 dark:bg-zinc-950">
           <div className="relative mx-auto w-full max-w-[420px]">
             <div className="border border-rose-200/60 bg-white px-8 py-10 shadow-[0_24px_64px_-32px_rgba(190,24,93,0.2)] dark:border-zinc-700 dark:bg-zinc-900 dark:shadow-[0_24px_64px_-32px_rgba(0,0,0,0.45)] sm:px-10 sm:py-12">
               <h1 className="text-[11px] font-semibold uppercase tracking-[0.32em] text-rose-950 dark:text-zinc-100">
