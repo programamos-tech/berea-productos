@@ -191,7 +191,7 @@ export function NewExpenseModal({
       {/* Backdrop a pantalla completa (cubre hasta abajo, fuera del layout admin). */}
       <button
         type="button"
-        className="fixed inset-0 z-[100] bg-zinc-950/50 backdrop-blur-[2px] dark:bg-black/65"
+        className="fixed inset-0 z-[100] bg-zinc-950/70 backdrop-blur-sm dark:bg-black/80"
         aria-label="Cerrar"
         onClick={onClose}
       />
