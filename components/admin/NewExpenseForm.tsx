@@ -48,6 +48,7 @@ const payMethodsDiario: { value: ExpensePaymentMethod; label: string }[] = [
 const payMethodsMensual: { value: ExpensePaymentMethod; label: string }[] = [
   { value: "transferencia", label: "Transferencia" },
   { value: "tarjeta", label: "Tarjeta" },
+  { value: "efectivo_acumulado", label: "Efectivo acumulado" },
   { value: "otro", label: "Otro" },
 ];
 
@@ -62,7 +63,7 @@ function errorMessage(code: string | undefined) {
     case "scope":
       return "Elegí si es caja del turno o cuenta mensual.";
     case "payment":
-      return "En cuenta mensual usá transferencia, tarjeta u otro (sin efectivo).";
+      return "En cuenta mensual usá transferencia, tarjeta, efectivo acumulado u otro.";
     case "db":
       return adminCreateFailedMessage("expense");
     default:
@@ -387,7 +388,7 @@ export function NewExpenseModal({
 
             <fieldset>
               <legend className={labelClass}>Medio de pago</legend>
-              <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
+              <div className="mt-2 grid grid-cols-2 gap-2">
                 {payOptions.map((opt) => {
                   const selected = paymentMethod === opt.value;
                   return (
@@ -404,6 +405,11 @@ export function NewExpenseModal({
                   );
                 })}
               </div>
+              {expenseScope === "mensual" && paymentMethod === "efectivo_acumulado" ? (
+                <p className="mt-1.5 text-xs text-zinc-500 dark:text-zinc-400">
+                  Sale del efectivo juntado de cajas anteriores. No baja el cierre de hoy.
+                </p>
+              ) : null}
               <input type="hidden" name="payment_method" value={paymentMethod} />
             </fieldset>
 

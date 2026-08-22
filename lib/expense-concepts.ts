@@ -1,4 +1,9 @@
-export type ExpensePaymentMethod = "transferencia" | "efectivo" | "tarjeta" | "otro";
+export type ExpensePaymentMethod =
+  | "transferencia"
+  | "efectivo"
+  | "efectivo_acumulado"
+  | "tarjeta"
+  | "otro";
 
 export type ExpenseConceptOption = {
   concept: string;

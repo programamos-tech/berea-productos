@@ -37,7 +37,7 @@ export const EXPENSE_SCOPE_OPTIONS: ReadonlyArray<{
   {
     value: "mensual",
     label: "Cuenta (mensual)",
-    hint: "Arriendo, nómina, servicios o impuestos. Transferencia u otro. No toca el cierre.",
+    hint: "Arriendo, nómina, servicios o impuestos. No toca el cierre.",
   },
 ];
 
@@ -61,6 +61,7 @@ export function expenseScopeLabel(scope: ExpenseScope): string {
 export const MENSUAL_PAYMENT_METHODS = [
   "transferencia",
   "tarjeta",
+  "efectivo_acumulado",
   "otro",
 ] as const;
 
@@ -68,4 +69,21 @@ export function isMensualPaymentMethod(raw: string): boolean {
   return (MENSUAL_PAYMENT_METHODS as readonly string[]).includes(
     raw.trim().toLowerCase(),
   );
+}
+
+export function expensePaymentMethodLabel(raw: string | null | undefined): string {
+  switch (String(raw ?? "").trim().toLowerCase()) {
+    case "efectivo":
+      return "Efectivo (gaveta)";
+    case "efectivo_acumulado":
+      return "Efectivo acumulado";
+    case "transferencia":
+      return "Transferencia";
+    case "tarjeta":
+      return "Tarjeta";
+    case "otro":
+      return "Otro";
+    default:
+      return raw?.trim() || "—";
+  }
 }

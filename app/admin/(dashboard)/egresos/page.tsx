@@ -12,7 +12,7 @@ import {
   reportCalendarDayKeyFromIso,
 } from "@/lib/admin-report-range";
 import { loadAdminPermissions } from "@/lib/load-admin-permissions";
-import { expenseKindLabel, expenseScopeLabel } from "@/lib/expenses-constants";
+import { expenseKindLabel, expensePaymentMethodLabel, expenseScopeLabel } from "@/lib/expenses-constants";
 import { fetchAdminExpensesPage } from "@/lib/supabase/admin-expenses-list";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 

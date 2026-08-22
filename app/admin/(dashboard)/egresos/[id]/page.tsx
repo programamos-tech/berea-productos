@@ -6,6 +6,7 @@ import { ExpenseDetailHeaderActions } from "@/components/admin/ExpenseDetailHead
 import { customerAvatarSeed } from "@/lib/customer-avatar-seed";
 import {
   expenseKindLabel,
+  expensePaymentMethodLabel,
   expenseScopeLabel,
   parseExpenseKind,
   parseExpenseScope,
@@ -25,21 +26,6 @@ const labelClass =
 
 const shellCard =
   "rounded-2xl border border-zinc-200/90 bg-white shadow-sm ring-1 ring-zinc-950/5 dark:border-zinc-700/90 dark:bg-zinc-900 dark:shadow-none dark:ring-white/[0.06]";
-
-function paymentMethodLabel(raw: string) {
-  switch (raw) {
-    case "efectivo":
-      return "Efectivo";
-    case "transferencia":
-      return "Transferencia";
-    case "tarjeta":
-      return "Tarjeta";
-    case "otro":
-      return "Otro";
-    default:
-      return raw || "—";
-  }
-}
 
 function prettyDateTime(iso: string | null | undefined) {
   return formatStoreDateTime(iso, {
@@ -149,7 +135,7 @@ export default async function AdminEgresoDetailPage({ params }: Props) {
       : String(row.created_at ?? "").slice(0, 10);
   const createdAt = typeof row.created_at === "string" ? row.created_at : null;
   const paymentRaw = String(row.payment_method ?? "");
-  const paymentPretty = paymentMethodLabel(paymentRaw);
+  const paymentPretty = expensePaymentMethodLabel(paymentRaw);
   const category = String(row.category ?? "operativo");
   const notes = row.notes ? String(row.notes).trim() : "";
   const avatarSeed = customerAvatarSeed(row.id, concept);
