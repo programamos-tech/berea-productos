@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { createStoreExpense } from "@/app/actions/admin/expenses";
 import {
@@ -115,6 +116,11 @@ export function NewExpenseModal({
   const [notes, setNotes] = useState("");
   const [amountCents, setAmountCents] = useState(0);
   const [expenseDate, setExpenseDate] = useState(() => todayYmdInReportStore());
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -178,22 +184,25 @@ export function NewExpenseModal({
   const payOptions =
     expenseScope === "mensual" ? payMethodsMensual : payMethodsDiario;
 
-  if (!open) return null;
+  if (!open || !mounted) return null;
 
-  return (
-    <div className="fixed inset-0 z-[100] flex items-end justify-center p-3 sm:items-center sm:p-6">
+  return createPortal(
+    <>
+      {/* Backdrop a pantalla completa (cubre hasta abajo, fuera del layout admin). */}
       <button
         type="button"
-        className="absolute inset-0 bg-zinc-950/45 backdrop-blur-[2px] dark:bg-black/60"
+        className="fixed inset-0 z-[100] bg-zinc-950/50 backdrop-blur-[2px] dark:bg-black/65"
         aria-label="Cerrar"
         onClick={onClose}
       />
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="new-expense-title"
-        className="relative z-10 flex max-h-[min(92vh,880px)] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-zinc-200/90 bg-white shadow-2xl dark:border-zinc-700 dark:bg-zinc-900"
-      >
+      {/* Centrado en el workspace (derecha del sidebar en desktop). */}
+      <div className="pointer-events-none fixed inset-0 z-[101] flex items-center justify-center p-3 sm:p-6 lg:left-64">
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="new-expense-title"
+          className="pointer-events-auto flex max-h-[min(92dvh,880px)] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-zinc-200/90 bg-white shadow-2xl dark:border-zinc-700 dark:bg-zinc-900"
+        >
         <div className="flex shrink-0 items-start justify-between gap-3 border-b border-zinc-100 px-5 py-4 dark:border-zinc-800 sm:px-6">
           <div className="min-w-0">
             <h2
@@ -455,8 +464,10 @@ export function NewExpenseModal({
             </AdminFormSubmitButton>
           </div>
         </form>
+        </div>
       </div>
-    </div>
+    </>,
+    document.body,
   );
 }
 
