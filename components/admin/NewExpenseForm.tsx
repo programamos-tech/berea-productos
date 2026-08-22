@@ -20,7 +20,9 @@ import {
 import {
   EXPENSE_CONCEPT_OPTIONS,
   EXPENSE_CONCEPT_OTHER,
+  EXPENSE_CONCEPT_OTHER_TAX,
   EXPENSE_CONCEPT_PERSONAL_TURNOS,
+  EXPENSE_EGRESO_TAX_OPTIONS,
   type ExpensePaymentMethod,
 } from "@/lib/expense-concepts";
 
@@ -44,7 +46,7 @@ export function NewExpenseHeader() {
           Nuevo gasto o egreso
         </h1>
         <p className="mt-2 max-w-2xl text-sm text-zinc-500 dark:text-zinc-400">
-          Elegí si es un gasto operativo o un egreso (proveedores / impuestos). El método de pago
+          Elegí si es un gasto operativo o un egreso de impuestos de la SAS. El método de pago
           define en Reportes si el monto se descuenta del efectivo o de la transferencia.
         </p>
       </div>
@@ -83,7 +85,7 @@ export function NewExpenseForm({
   initialError?: string;
   turnWorkers?: TurnWorkerOption[];
 }) {
-  const conceptOptionsForSelect = useMemo(
+  const gastoConceptOptions = useMemo(
     () =>
       turnWorkers.length > 0
         ? EXPENSE_CONCEPT_OPTIONS
@@ -94,16 +96,23 @@ export function NewExpenseForm({
   );
 
   const [expenseKind, setExpenseKind] = useState<ExpenseKind>("gasto");
+
+  const conceptOptionsForSelect = useMemo(
+    () =>
+      expenseKind === "egreso" ? EXPENSE_EGRESO_TAX_OPTIONS : gastoConceptOptions,
+    [expenseKind, gastoConceptOptions],
+  );
+
   const [conceptSelection, setConceptSelection] = useState(
-    () => conceptOptionsForSelect[0]?.concept ?? "",
+    () => gastoConceptOptions[0]?.concept ?? "",
   );
   const [conceptOther, setConceptOther] = useState("");
   const [turnWorkerId, setTurnWorkerId] = useState("");
   const [category, setCategory] = useState(
-    () => conceptOptionsForSelect[0]?.category ?? "operativo",
+    () => gastoConceptOptions[0]?.category ?? "operativo",
   );
   const [paymentMethod, setPaymentMethod] = useState<ExpensePaymentMethod>(
-    () => conceptOptionsForSelect[0]?.paymentMethod ?? "transferencia",
+    () => gastoConceptOptions[0]?.paymentMethod ?? "transferencia",
   );
   const [notes, setNotes] = useState("");
   const [amountCents, setAmountCents] = useState(0);
@@ -117,12 +126,18 @@ export function NewExpenseForm({
       setCategory(first.category);
       setPaymentMethod(first.paymentMethod);
       setTurnWorkerId("");
+      setConceptOther("");
     }
   }, [conceptOptionsForSelect, conceptSelection]);
 
   const err = useMemo(() => errorMessage(initialError), [initialError]);
   const conceptValue = useMemo(() => {
-    if (conceptSelection === EXPENSE_CONCEPT_OTHER) return conceptOther.trim();
+    if (
+      conceptSelection === EXPENSE_CONCEPT_OTHER ||
+      conceptSelection === EXPENSE_CONCEPT_OTHER_TAX
+    ) {
+      return conceptOther.trim();
+    }
     if (conceptSelection === EXPENSE_CONCEPT_PERSONAL_TURNOS) {
       const w = turnWorkers.find((t) => t.id === turnWorkerId);
       return w ? `${EXPENSE_CONCEPT_PERSONAL_TURNOS} — ${w.label}` : "";
@@ -130,7 +145,10 @@ export function NewExpenseForm({
     return conceptSelection;
   }, [conceptSelection, conceptOther, turnWorkerId, turnWorkers]);
 
-  const otroIncomplete = conceptSelection === EXPENSE_CONCEPT_OTHER && !conceptOther.trim();
+  const otroIncomplete =
+    (conceptSelection === EXPENSE_CONCEPT_OTHER ||
+      conceptSelection === EXPENSE_CONCEPT_OTHER_TAX) &&
+    !conceptOther.trim();
   const turnoIncomplete =
     conceptSelection === EXPENSE_CONCEPT_PERSONAL_TURNOS &&
     (!turnWorkerId || !turnWorkers.some((t) => t.id === turnWorkerId));
@@ -166,7 +184,11 @@ export function NewExpenseForm({
                       name="expense_kind"
                       value={opt.value}
                       checked={selected}
-                      onChange={() => setExpenseKind(opt.value)}
+                      onChange={() => {
+                        setExpenseKind(opt.value);
+                        setConceptOther("");
+                        setTurnWorkerId("");
+                      }}
                       className="size-4 border-zinc-300 text-rose-950 focus:ring-rose-900 dark:border-zinc-600 dark:text-rose-400"
                       required
                     />
@@ -230,11 +252,16 @@ export function NewExpenseForm({
                 </select>
               </div>
             ) : null}
-            {conceptSelection === EXPENSE_CONCEPT_OTHER ? (
+            {conceptSelection === EXPENSE_CONCEPT_OTHER ||
+            conceptSelection === EXPENSE_CONCEPT_OTHER_TAX ? (
               <input
                 value={conceptOther}
                 onChange={(e) => setConceptOther(e.target.value)}
-                placeholder="Escribe el concepto"
+                placeholder={
+                  conceptSelection === EXPENSE_CONCEPT_OTHER_TAX
+                    ? "Escribe el impuesto"
+                    : "Escribe el concepto"
+                }
                 className={`${inputClass} mt-3`}
               />
             ) : null}

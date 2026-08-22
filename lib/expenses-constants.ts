@@ -17,7 +17,7 @@ export const EXPENSE_KIND_OPTIONS: ReadonlyArray<{
   {
     value: "egreso",
     label: "Egreso",
-    hint: "Pagos a proveedores o impuestos.",
+    hint: "Impuestos de una SAS en Colombia (renta, IVA, ICA, retenciones, etc.).",
   },
 ];
 

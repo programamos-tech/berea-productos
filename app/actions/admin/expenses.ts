@@ -7,6 +7,7 @@ import {
   EXPENSE_CANCELLATION_REASON_MIN_LENGTH,
   parseExpenseKind,
 } from "@/lib/expenses-constants";
+import { isValidEgresoTaxConcept } from "@/lib/expense-concepts";
 import { loadAdminPermissions } from "@/lib/load-admin-permissions";
 import {
   assertCashRegisterOpenForStaff,
@@ -41,6 +42,10 @@ export async function createStoreExpense(formData: FormData) {
     redirect("/admin/egresos/nuevo?expense_error=kind");
   }
   const expenseKind = parseExpenseKind(expenseKindRaw);
+
+  if (expenseKind === "egreso" && !isValidEgresoTaxConcept(concept)) {
+    redirect("/admin/egresos/nuevo?expense_error=concept");
+  }
 
   const categoryRaw = String(formData.get("category") ?? "").trim();
   const category = categoryRaw || "operativo";

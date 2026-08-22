@@ -12,9 +12,12 @@ export const EXPENSE_CONCEPT_PERSONAL_TURNOS = "Personal Turnos";
 /** Concepto libre cuando no aplica la lista fija. */
 export const EXPENSE_CONCEPT_OTHER = "Otro";
 
+/** Concepto libre dentro de egresos (impuestos). */
+export const EXPENSE_CONCEPT_OTHER_TAX = "Otro impuesto";
+
 /**
  * Catálogo oficial de conceptos (hoja CONCEPTOS DE GASTOS).
- * Orden fijo para el selector en admin.
+ * Orden fijo para el selector en admin (tipo gasto).
  */
 export const EXPENSE_CONCEPT_OPTIONS: ExpenseConceptOption[] = [
   { concept: "Sueldo/Nómina", category: "nomina", paymentMethod: "transferencia" },
@@ -68,6 +71,66 @@ export const EXPENSE_CONCEPT_OPTIONS: ExpenseConceptOption[] = [
   },
   { concept: EXPENSE_CONCEPT_OTHER, category: "operativo", paymentMethod: "transferencia" },
 ];
+
+/**
+ * Impuestos / obligaciones tributarias típicas de una SAS en Colombia.
+ * Solo para registros tipo egreso (los pagos a proveedor salen del módulo Proveedores).
+ */
+export const EXPENSE_EGRESO_TAX_OPTIONS: ExpenseConceptOption[] = [
+  { concept: "Impuesto de renta", category: "impuestos", paymentMethod: "transferencia" },
+  { concept: "IVA", category: "impuestos", paymentMethod: "transferencia" },
+  {
+    concept: "Retención en la fuente",
+    category: "impuestos",
+    paymentMethod: "transferencia",
+  },
+  {
+    concept: "Autorretención de renta",
+    category: "impuestos",
+    paymentMethod: "transferencia",
+  },
+  {
+    concept: "ICA (industria y comercio)",
+    category: "impuestos",
+    paymentMethod: "transferencia",
+  },
+  { concept: "GMF 4x1000", category: "impuestos", paymentMethod: "transferencia" },
+  {
+    concept: "Impuesto al patrimonio",
+    category: "impuestos",
+    paymentMethod: "transferencia",
+  },
+  { concept: "Predial", category: "impuestos", paymentMethod: "transferencia" },
+  { concept: "Cámara de comercio", category: "impuestos", paymentMethod: "transferencia" },
+  {
+    concept: "Régimen Simple de Tributación",
+    category: "impuestos",
+    paymentMethod: "transferencia",
+  },
+  {
+    concept: EXPENSE_CONCEPT_OTHER_TAX,
+    category: "impuestos",
+    paymentMethod: "transferencia",
+  },
+];
+
+const EGRESO_FIXED_TAX_CONCEPTS = new Set(
+  EXPENSE_EGRESO_TAX_OPTIONS.map((o) => o.concept).filter(
+    (c) => c !== EXPENSE_CONCEPT_OTHER_TAX,
+  ),
+);
+
+/**
+ * Valida concepto de egreso manual: catálogo de impuestos SAS,
+ * o texto libre cuando eligieron "Otro impuesto".
+ */
+export function isValidEgresoTaxConcept(concept: string): boolean {
+  const c = concept.trim();
+  if (!c) return false;
+  if (EGRESO_FIXED_TAX_CONCEPTS.has(c)) return true;
+  // Texto libre (no debe ser solo la etiqueta del selector).
+  return c !== EXPENSE_CONCEPT_OTHER_TAX && c.length >= 3;
+}
 
 /** Concepto espejo al registrar un abono en Proveedores. */
 export const EXPENSE_CONCEPT_SUPPLIER_PAYMENT = "Pago a proveedor";
