@@ -35,6 +35,7 @@ import type {
   CashExpenseLine,
   CashStockOutLine,
 } from "@/lib/cash-register";
+import { adminButtonCancelClass } from "@/lib/admin-ui";
 import { formatCop } from "@/lib/money";
 
 function newSubmissionId() {
@@ -134,18 +135,14 @@ function SectionTitle({
   );
 }
 
-export function CashRegisterOpenForm({
-  businessDayLabel,
-}: {
-  businessDayLabel: string;
-}) {
+export function CashRegisterOpenForm() {
   const [floatCents, setFloatCents] = useState(0);
   const [submissionId] = useState(newSubmissionId);
 
   return (
     <form
       action={openCashRegisterSession}
-      className={`${cardClass} grid gap-4`}
+      className="grid gap-5"
       onSubmit={(e) => {
         if (floatCents !== 0) return;
         const ok = window.confirm(
@@ -155,18 +152,10 @@ export function CashRegisterOpenForm({
       }}
     >
       <input type="hidden" name="submission_id" value={submissionId} />
-      <div className="min-w-0">
-        <div className="flex items-center gap-2">
-          <PiggyBank className={`h-5 w-5 ${accentIcon.brand}`} aria-hidden />
-          <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
-            Abrir caja · {businessDayLabel}
-          </h2>
-        </div>
-        <p className="mt-1 text-sm leading-relaxed text-zinc-600 dark:text-zinc-300">
-          Ingresá el fondo inicial. Al cerrar, la vendedora cuenta el efectivo a ciegas; el sistema
-          compara solo después de confirmar.
-        </p>
-      </div>
+      <p className="text-sm leading-relaxed text-zinc-600 dark:text-zinc-300">
+        Ingresá el fondo inicial. Al cerrar, la vendedora cuenta el efectivo a
+        ciegas; el sistema compara solo después de confirmar.
+      </p>
       <div>
         <span className={labelClass}>Fondo inicial (efectivo)</span>
         <div className="mt-2">
@@ -278,24 +267,50 @@ function ExpensesTable({
   );
 }
 
-/** Cierre a ciegas: se cuenta y se confirma; esperado y diferencia solo en el registro cerrado. */
+/** Cierre a ciegas: resumen del turno + conteo; esperado solo tras cerrar. */
 export function CashRegisterClosePanel({
   sessionId,
   businessDayLabel,
+  openedAtLabel,
+  openedByLabel,
   blind,
+  errorBanner,
+  onDismiss,
 }: {
   sessionId: string;
   businessDayLabel: string;
+  openedAtLabel?: string | null;
+  openedByLabel?: string | null;
   blind: CashDayBlindSummary;
+  errorBanner?: string | null;
+  onDismiss?: () => void;
 }) {
   const [countedCents, setCountedCents] = useState(0);
   const [notes, setNotes] = useState("");
   const [submissionId] = useState(newSubmissionId);
 
+  const subtitleParts = [
+    "Turno abierto",
+    openedAtLabel || businessDayLabel,
+    openedByLabel || null,
+  ].filter(Boolean);
+
+  const moneyInRows: { label: string; cents: number }[] = [
+    { label: "Efectivo", cents: blind.salesCashCents },
+    { label: "Transferencia", cents: blind.salesTransferCents },
+    { label: "Mixto", cents: blind.salesMixedCents },
+    { label: "Otros / web", cents: blind.salesOtherCents },
+  ].filter((r) => r.cents > 0);
+
+  const moneyOutRows: { label: string; cents: number }[] = [
+    { label: "En efectivo", cents: blind.expensesCashCents },
+    { label: "Otros medios", cents: blind.expensesOtherCents },
+  ].filter((r) => r.cents > 0);
+
   return (
     <form
       action={closeCashRegisterSession}
-      className="space-y-5"
+      className="flex min-h-0 flex-1 flex-col"
       onSubmit={(e) => {
         if (countedCents !== 0) return;
         const ok = window.confirm(
@@ -307,129 +322,170 @@ export function CashRegisterClosePanel({
       <input type="hidden" name="session_id" value={sessionId} />
       <input type="hidden" name="submission_id" value={submissionId} />
 
-      <section className={cardClass}>
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
-              Actividad del día · {businessDayLabel}
-            </h2>
-            <p className="mt-1 max-w-2xl text-sm text-zinc-600 dark:text-zinc-300">
-              Contá el efectivo{" "}
-              <span className="font-medium text-zinc-800 dark:text-zinc-100">
-                sin ver el esperado
-              </span>
-              . Esperado, diferencia y totales aparecen al cerrar, en el registro
-              del día.
+      <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-5 py-4 sm:px-6">
+        {errorBanner ? (
+          <p className="rounded-xl border border-red-100 bg-red-50 px-3 py-2.5 text-sm text-red-900 dark:border-red-900/50 dark:bg-red-950/35 dark:text-red-100">
+            {errorBanner}
+          </p>
+        ) : null}
+
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="inline-flex items-center rounded-full bg-emerald-600 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-white">
+            Caja abierta
+          </span>
+          <span className="text-xs text-zinc-500 dark:text-zinc-400">
+            {subtitleParts.join(" · ")}
+          </span>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <div className="rounded-xl border border-zinc-200/90 bg-zinc-50/80 px-3 py-2.5 dark:border-zinc-700 dark:bg-zinc-950/50">
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+              Fondo inicial
+            </p>
+            <p className="mt-1 text-sm font-semibold tabular-nums text-zinc-900 dark:text-zinc-100">
+              {formatCop(blind.openingFloatCents)}
+            </p>
+          </div>
+          <div className="rounded-xl border border-emerald-200/70 bg-emerald-50/70 px-3 py-2.5 dark:border-emerald-900/40 dark:bg-emerald-950/30">
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-emerald-800 dark:text-emerald-200">
+              Ingresos del turno
+            </p>
+            <p className="mt-1 text-sm font-semibold tabular-nums text-emerald-900 dark:text-emerald-100">
+              {formatCop(blind.salesTotalCents)}
+            </p>
+          </div>
+          <div className="rounded-xl border border-rose-200/70 bg-rose-50/70 px-3 py-2.5 dark:border-rose-900/40 dark:bg-rose-950/30">
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-rose-800 dark:text-rose-200">
+              Egresos del turno
+            </p>
+            <p className="mt-1 text-sm font-semibold tabular-nums text-rose-900 dark:text-rose-100">
+              {formatCop(blind.expensesTotalCents)}
+            </p>
+          </div>
+          <div className="rounded-xl border border-zinc-200/90 bg-white px-3 py-2.5 dark:border-zinc-700 dark:bg-zinc-900">
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+              Efectivo esperado
+            </p>
+            <p className="mt-1 text-xs font-medium leading-snug text-zinc-600 dark:text-zinc-300">
+              Conteo ciego al cerrar
             </p>
           </div>
         </div>
-        <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <MetricCard
-            label="Facturas"
-            value={String(blind.salesCount)}
-            icon={Receipt}
-            accent="info"
-          />
-          <MetricCard
-            label="Unidades vendidas"
-            value={String(blind.unitsSold)}
-            icon={Package}
-            accent="brand"
-            emphasize
-          />
-          <MetricCard
-            label="Productos distintos"
-            value={String(blind.stockOutLines.length)}
-            icon={ShoppingBag}
-          />
-          <MetricCard
-            label="Egresos"
-            value={String(blind.expenseLines.length)}
-            icon={ArrowDownLeft}
-            accent="warn"
-          />
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          <section className="rounded-xl border border-emerald-200/60 bg-emerald-50/40 p-3.5 dark:border-emerald-900/40 dark:bg-emerald-950/20">
+            <div className="flex items-baseline justify-between gap-2">
+              <h3 className="text-[11px] font-semibold uppercase tracking-wide text-emerald-800 dark:text-emerald-200">
+                Entra dinero
+              </h3>
+              <p className="text-sm font-semibold tabular-nums text-emerald-900 dark:text-emerald-100">
+                {formatCop(blind.salesTotalCents)}
+              </p>
+            </div>
+            <ul className="mt-2.5 space-y-1.5">
+              {moneyInRows.length === 0 ? (
+                <li className="text-xs text-emerald-800/70 dark:text-emerald-200/70">
+                  Sin cobros registrados hoy.
+                </li>
+              ) : (
+                moneyInRows.map((r) => (
+                  <li
+                    key={r.label}
+                    className="flex items-center justify-between gap-2 text-xs text-emerald-950 dark:text-emerald-100"
+                  >
+                    <span>{r.label}</span>
+                    <span className="font-medium tabular-nums">
+                      {formatCop(r.cents)}
+                    </span>
+                  </li>
+                ))
+              )}
+            </ul>
+            <p className="mt-3 border-t border-emerald-200/60 pt-2 text-[11px] text-emerald-800/80 dark:border-emerald-900/40 dark:text-emerald-200/80">
+              Ventas cobradas: {blind.salesCount}
+            </p>
+          </section>
+
+          <section className="rounded-xl border border-rose-200/60 bg-rose-50/40 p-3.5 dark:border-rose-900/40 dark:bg-rose-950/20">
+            <div className="flex items-baseline justify-between gap-2">
+              <h3 className="text-[11px] font-semibold uppercase tracking-wide text-rose-800 dark:text-rose-200">
+                Sale dinero
+              </h3>
+              <p className="text-sm font-semibold tabular-nums text-rose-900 dark:text-rose-100">
+                {formatCop(blind.expensesTotalCents)}
+              </p>
+            </div>
+            <ul className="mt-2.5 space-y-1.5">
+              {moneyOutRows.length === 0 ? (
+                <li className="text-xs text-rose-800/70 dark:text-rose-200/70">
+                  Sin egresos de caja del turno.
+                </li>
+              ) : (
+                moneyOutRows.map((r) => (
+                  <li
+                    key={r.label}
+                    className="flex items-center justify-between gap-2 text-xs text-rose-950 dark:text-rose-100"
+                  >
+                    <span>{r.label}</span>
+                    <span className="font-medium tabular-nums">
+                      {formatCop(r.cents)}
+                    </span>
+                  </li>
+                ))
+              )}
+            </ul>
+            <p className="mt-3 border-t border-rose-200/60 pt-2 text-[11px] text-rose-800/80 dark:border-rose-900/40 dark:text-rose-200/80">
+              Movimientos: {blind.expenseLines.length}
+            </p>
+          </section>
         </div>
-      </section>
 
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,1.35fr)_minmax(0,0.85fr)_minmax(300px,380px)] xl:items-start">
-        <section className={cardClass}>
-          <SectionTitle
-            icon={Package}
-            accent="brand"
-            hint="Listado de lo que salió por ventas hoy — revisalo antes de cerrar."
-          >
-            Lo vendido hoy · {blind.unitsSold} ud
-          </SectionTitle>
-          <div className="mt-4">
-            <StockOutTable lines={blind.stockOutLines} />
-          </div>
-        </section>
-
-        <section className={cardClass}>
-          <SectionTitle
-            icon={ArrowDownLeft}
-            accent="warn"
-            hint="Conceptos del día. Los montos se ven al cerrar."
-          >
-            Egresos · {blind.expenseLines.length}
-          </SectionTitle>
-          <div className="mt-4">
-            <ExpensesTable lines={blind.expenseLines} hideAmounts />
-          </div>
-        </section>
-
-        <section className={cardClass}>
-          <SectionTitle
-            icon={Wallet}
-            accent="ok"
-            hint="Contá billetes y monedas. El sistema compara después de cerrar."
-          >
+        <section className="rounded-xl border border-zinc-200/90 bg-zinc-50/50 p-3.5 dark:border-zinc-700 dark:bg-zinc-950/40">
+          <h3 className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
             Contar efectivo
-          </SectionTitle>
-          <div className="mt-4 space-y-4">
-            <div>
-              <span className={labelClass}>Efectivo contado en caja</span>
-              <div className="mt-2">
-                <ProductMoneyInput
-                  name="counted_cash_cents"
-                  value={countedCents}
-                  onChange={setCountedCents}
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="flex gap-2 rounded-lg border border-zinc-200 bg-zinc-50/80 px-3 py-2.5 text-sm text-zinc-600 dark:border-zinc-700 dark:bg-zinc-950/40 dark:text-zinc-300">
-              <Scale className={`mt-0.5 h-4 w-4 shrink-0 ${accentIcon.neutral}`} aria-hidden />
-              <span>
-                Al cerrar vas al registro del día: ahí se revela esperado, diferencia y
-                todos los totales. Si no cuadra, hace falta una nota.
-              </span>
-            </div>
-
-            <div>
-              <label htmlFor="caja-notes" className={labelClass}>
-                Nota / motivo (obligatoria si no cuadra)
-              </label>
-              <textarea
-                id="caja-notes"
-                name="notes"
-                rows={3}
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="Si ya sabés un motivo, anotalo ahora. Si no cuadra y no hay nota, el sistema te pide una."
-                className={`${productInputClass} mt-2 resize-none`}
-              />
-            </div>
-
-            <AdminFormSubmitButton
-              pendingLabel="Cerrando caja…"
-              className={adminPrimarySubmitButtonFullWidthClass}
-            >
-              Cerrar caja
-            </AdminFormSubmitButton>
+          </h3>
+          <div className="mt-2">
+            <ProductMoneyInput
+              name="counted_cash_cents"
+              value={countedCents}
+              onChange={setCountedCents}
+              required
+            />
           </div>
+          <p className="mt-2 text-[11px] leading-snug text-zinc-500 dark:text-zinc-400">
+            Contá billetes y monedas sin mirar el esperado. Al cerrar se revela
+            la diferencia.
+          </p>
+          <label htmlFor="caja-notes" className={`${labelClass} mt-3 block`}>
+            Nota / motivo (obligatoria si no cuadra)
+          </label>
+          <textarea
+            id="caja-notes"
+            name="notes"
+            rows={2}
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="Si ya sabés un motivo, anotalo ahora…"
+            className={`${productInputClass} mt-1.5 resize-none`}
+          />
         </section>
+      </div>
+
+      <div className="flex shrink-0 flex-col-reverse gap-2 border-t border-zinc-100 bg-zinc-50/80 px-5 py-4 dark:border-zinc-800 dark:bg-zinc-950/50 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+        <button
+          type="button"
+          onClick={onDismiss}
+          className={`${adminButtonCancelClass} w-full sm:w-auto`}
+        >
+          Cerrar
+        </button>
+        <AdminFormSubmitButton
+          pendingLabel="Cerrando…"
+          className={`w-full px-5 py-2.5 sm:w-auto ${adminPrimarySubmitButtonClass}`}
+        >
+          Cerrar caja
+        </AdminFormSubmitButton>
       </div>
     </form>
   );

@@ -67,11 +67,20 @@ export type CashDayLiveTotals = {
   expectedCashCents: number;
 };
 
-/** Payload seguro para el cierre a ciegas (sin montos de caja). */
+/** Payload para el modal de cierre a ciegas: muestra movimiento, oculta efectivo esperado. */
 export type CashDayBlindSummary = {
   businessDay: string;
   salesCount: number;
   unitsSold: number;
+  openingFloatCents: number;
+  salesCashCents: number;
+  salesTransferCents: number;
+  salesMixedCents: number;
+  salesOtherCents: number;
+  salesTotalCents: number;
+  expensesCashCents: number;
+  expensesOtherCents: number;
+  expensesTotalCents: number;
   stockOutLines: CashStockOutLine[];
   expenseLines: Array<{
     id: string;
@@ -80,11 +89,24 @@ export type CashDayBlindSummary = {
   }>;
 };
 
-export function toBlindCashSummary(live: CashDayLiveTotals): CashDayBlindSummary {
+export function toBlindCashSummary(
+  live: CashDayLiveTotals,
+  openingFloatCents: number,
+): CashDayBlindSummary {
+  const expensesTotalCents = live.expensesCashCents + live.expensesOtherCents;
   return {
     businessDay: live.businessDay,
     salesCount: live.salesCount,
     unitsSold: live.unitsSold,
+    openingFloatCents: Math.max(0, Math.floor(openingFloatCents)),
+    salesCashCents: live.salesCashCents,
+    salesTransferCents: live.salesTransferCents,
+    salesMixedCents: live.salesMixedCents,
+    salesOtherCents: live.salesOtherCents,
+    salesTotalCents: live.salesTotalCents,
+    expensesCashCents: live.expensesCashCents,
+    expensesOtherCents: live.expensesOtherCents,
+    expensesTotalCents,
     stockOutLines: live.stockOutLines,
     expenseLines: live.expenseLines.map((e) => ({
       id: e.id,

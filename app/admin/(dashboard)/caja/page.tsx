@@ -14,6 +14,7 @@ import {
 } from "@/lib/cash-register";
 import { formatCop } from "@/lib/money";
 import { requireAdminAnyPermission } from "@/lib/require-admin-permission";
+import { formatStoreDateTime } from "@/lib/store-datetime-format";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -71,7 +72,25 @@ export default async function AdminCajaPage({
         open.opening_float_cents,
       )
     : null;
-  const blind = live ? toBlindCashSummary(live) : null;
+  const blind = live
+    ? toBlindCashSummary(live, open!.opening_float_cents)
+    : null;
+
+  let openedByLabel: string | null = null;
+  if (open?.opened_by) {
+    const { data: opener } = await supabase
+      .from("profiles")
+      .select("display_name,login_username")
+      .eq("id", open.opened_by)
+      .maybeSingle();
+    const display = String(opener?.display_name ?? "").trim();
+    const login = String(opener?.login_username ?? "").trim();
+    openedByLabel = display || login || null;
+  }
+
+  const openedAtLabel = open?.opened_at
+    ? formatStoreDateTime(open.opened_at, { dateStyle: "short", timeStyle: "short" })
+    : null;
 
   const dayLabel = prettyReportDayShortLabel(open?.business_day ?? today);
   const todayAlreadyClosed = !open && todaySession?.status === "closed";
@@ -91,6 +110,8 @@ export default async function AdminCajaPage({
           mode={modalMode}
           businessDayLabel={dayLabel}
           sessionId={open?.id}
+          openedAtLabel={openedAtLabel}
+          openedByLabel={openedByLabel}
           blind={blind}
           errorBanner={banner}
           defaultOpen

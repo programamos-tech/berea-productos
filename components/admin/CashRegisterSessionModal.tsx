@@ -7,19 +7,17 @@ import {
   CashRegisterOpenForm,
 } from "@/components/admin/CashRegisterForms";
 import type { CashDayBlindSummary } from "@/lib/cash-register";
-import { adminButtonCancelClass } from "@/lib/admin-ui";
 
 export type CashRegisterModalMode = "open" | "close";
 
 type Props = {
   mode: CashRegisterModalMode | null;
   businessDayLabel: string;
-  /** Solo en modo close */
   sessionId?: string;
+  openedAtLabel?: string | null;
+  openedByLabel?: string | null;
   blind?: CashDayBlindSummary | null;
-  /** Banner de error del cierre/apertura */
   errorBanner?: string | null;
-  /** Si true, abre el modal al montar cuando hay mode */
   defaultOpen?: boolean;
 };
 
@@ -27,6 +25,8 @@ export function CashRegisterSessionModal({
   mode,
   businessDayLabel,
   sessionId,
+  openedAtLabel,
+  openedByLabel,
   blind,
   errorBanner,
   defaultOpen = true,
@@ -39,7 +39,6 @@ export function CashRegisterSessionModal({
   }, []);
 
   useEffect(() => {
-    // Nueva sesión / cambio de modo: volver a mostrar el modal.
     setDismissed(!defaultOpen);
   }, [mode, sessionId, defaultOpen]);
 
@@ -64,6 +63,13 @@ export function CashRegisterSessionModal({
   }, [open]);
 
   const reopen = () => setDismissed(false);
+
+  const subtitle =
+    mode === "close"
+      ? ["Turno abierto", openedAtLabel, openedByLabel]
+          .filter(Boolean)
+          .join(" · ") || businessDayLabel
+      : `Fondo inicial · ${businessDayLabel}`;
 
   return (
     <>
@@ -91,16 +97,16 @@ export function CashRegisterSessionModal({
             <>
               <button
                 type="button"
-                className="fixed inset-0 z-[100] bg-zinc-950/70 backdrop-blur-sm dark:bg-black/80"
+                className="fixed inset-x-0 bottom-0 top-14 z-[100] bg-zinc-950/25 backdrop-blur-[1px] dark:bg-black/35 sm:top-16 lg:left-64"
                 aria-label="Cerrar"
                 onClick={() => setDismissed(true)}
               />
-              <div className="pointer-events-none fixed inset-0 z-[101] flex items-center justify-center p-3 sm:p-5 lg:left-64">
+              <div className="pointer-events-none fixed inset-x-0 bottom-0 top-14 z-[101] flex items-center justify-center p-3 sm:top-16 sm:p-6 lg:left-64">
                 <div
                   role="dialog"
                   aria-modal="true"
                   aria-labelledby="caja-session-modal-title"
-                  className="pointer-events-auto flex max-h-[min(92dvh,920px)] w-full max-w-6xl flex-col overflow-hidden rounded-2xl border border-zinc-200/90 bg-white shadow-2xl dark:border-zinc-700 dark:bg-zinc-900"
+                  className="pointer-events-auto flex max-h-[min(92dvh,880px)] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-zinc-200/90 bg-white shadow-2xl dark:border-zinc-700 dark:bg-zinc-900"
                 >
                   <div className="flex shrink-0 items-start justify-between gap-3 border-b border-zinc-100 px-5 py-4 dark:border-zinc-800 sm:px-6">
                     <div className="min-w-0">
@@ -108,12 +114,10 @@ export function CashRegisterSessionModal({
                         id="caja-session-modal-title"
                         className="text-lg font-semibold tracking-tight text-zinc-900 dark:text-zinc-100"
                       >
-                        {mode === "close" ? "Cierre de caja" : "Abrir caja"}
+                        {mode === "close" ? "Caja del día" : "Abrir caja"}
                       </h2>
                       <p className="mt-0.5 text-sm text-zinc-500 dark:text-zinc-400">
-                        {mode === "close"
-                          ? `Contá a ciegas · ${businessDayLabel}`
-                          : `Fondo inicial · ${businessDayLabel}`}
+                        {subtitle}
                       </p>
                     </div>
                     <button
@@ -128,33 +132,26 @@ export function CashRegisterSessionModal({
                     </button>
                   </div>
 
-                  <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4 sm:px-6">
-                    {errorBanner ? (
-                      <p className="mb-4 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-900 dark:border-red-900/50 dark:bg-red-950/35 dark:text-red-100">
-                        {errorBanner}
-                      </p>
-                    ) : null}
-
-                    {mode === "open" ? (
-                      <CashRegisterOpenForm businessDayLabel={businessDayLabel} />
-                    ) : sessionId && blind ? (
-                      <CashRegisterClosePanel
-                        sessionId={sessionId}
-                        businessDayLabel={businessDayLabel}
-                        blind={blind}
-                      />
-                    ) : null}
-                  </div>
-
-                  <div className="flex shrink-0 justify-end border-t border-zinc-100 bg-zinc-50/80 px-5 py-3 dark:border-zinc-800 dark:bg-zinc-950/50 sm:px-6">
-                    <button
-                      type="button"
-                      onClick={() => setDismissed(true)}
-                      className={adminButtonCancelClass}
-                    >
-                      Ver historial
-                    </button>
-                  </div>
+                  {mode === "open" ? (
+                    <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4 sm:px-6">
+                      {errorBanner ? (
+                        <p className="mb-4 rounded-xl border border-red-100 bg-red-50 px-3 py-2.5 text-sm text-red-900 dark:border-red-900/50 dark:bg-red-950/35 dark:text-red-100">
+                          {errorBanner}
+                        </p>
+                      ) : null}
+                      <CashRegisterOpenForm />
+                    </div>
+                  ) : sessionId && blind ? (
+                    <CashRegisterClosePanel
+                      sessionId={sessionId}
+                      businessDayLabel={businessDayLabel}
+                      openedAtLabel={openedAtLabel}
+                      openedByLabel={openedByLabel}
+                      blind={blind}
+                      errorBanner={errorBanner}
+                      onDismiss={() => setDismissed(true)}
+                    />
+                  ) : null}
                 </div>
               </div>
             </>,

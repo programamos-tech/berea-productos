@@ -188,15 +188,15 @@ export function NewExpenseModal({
 
   return createPortal(
     <>
-      {/* Backdrop a pantalla completa (cubre hasta abajo, fuera del layout admin). */}
+      {/* Backdrop solo sobre el contenido (sidebar + navbar quedan nítidos). */}
       <button
         type="button"
-        className="fixed inset-0 z-[100] bg-zinc-950/70 backdrop-blur-sm dark:bg-black/80"
+        className="fixed inset-x-0 bottom-0 top-14 z-[100] bg-zinc-950/25 backdrop-blur-[1px] dark:bg-black/35 sm:top-16 lg:left-64"
         aria-label="Cerrar"
         onClick={onClose}
       />
       {/* Centrado en el workspace (derecha del sidebar en desktop). */}
-      <div className="pointer-events-none fixed inset-0 z-[101] flex items-center justify-center p-3 sm:p-6 lg:left-64">
+      <div className="pointer-events-none fixed inset-x-0 bottom-0 top-14 z-[101] flex items-center justify-center p-3 sm:top-16 sm:p-6 lg:left-64">
         <div
           role="dialog"
           aria-modal="true"
