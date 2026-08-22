@@ -338,12 +338,12 @@ export function CashRegisterClosePanel({
           </span>
         </div>
 
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
           <div className="rounded-xl border border-zinc-200/90 bg-zinc-50/80 px-3 py-2.5 dark:border-zinc-700 dark:bg-zinc-950/50">
             <p className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
               Fondo inicial
             </p>
-            <p className="mt-1 text-sm font-semibold tabular-nums text-zinc-900 dark:text-zinc-100">
+            <p className="mt-1 text-base font-semibold tabular-nums text-zinc-900 dark:text-zinc-100">
               {formatCop(blind.openingFloatCents)}
             </p>
           </div>
@@ -351,7 +351,7 @@ export function CashRegisterClosePanel({
             <p className="text-[10px] font-semibold uppercase tracking-wide text-emerald-800 dark:text-emerald-200">
               Ingresos del turno
             </p>
-            <p className="mt-1 text-sm font-semibold tabular-nums text-emerald-900 dark:text-emerald-100">
+            <p className="mt-1 text-base font-semibold tabular-nums text-emerald-900 dark:text-emerald-100">
               {formatCop(blind.salesTotalCents)}
             </p>
           </div>
@@ -359,7 +359,7 @@ export function CashRegisterClosePanel({
             <p className="text-[10px] font-semibold uppercase tracking-wide text-rose-800 dark:text-rose-200">
               Egresos del turno
             </p>
-            <p className="mt-1 text-sm font-semibold tabular-nums text-rose-900 dark:text-rose-100">
+            <p className="mt-1 text-base font-semibold tabular-nums text-rose-900 dark:text-rose-100">
               {formatCop(blind.expensesTotalCents)}
             </p>
           </div>
@@ -367,13 +367,13 @@ export function CashRegisterClosePanel({
             <p className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
               Efectivo esperado
             </p>
-            <p className="mt-1 text-xs font-medium leading-snug text-zinc-600 dark:text-zinc-300">
+            <p className="mt-1 text-sm font-medium leading-snug text-zinc-600 dark:text-zinc-300">
               Conteo ciego al cerrar
             </p>
           </div>
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-3 md:grid-cols-3">
           <section className="rounded-xl border border-emerald-200/60 bg-emerald-50/40 p-3.5 dark:border-emerald-900/40 dark:bg-emerald-950/20">
             <div className="flex items-baseline justify-between gap-2">
               <h3 className="text-[11px] font-semibold uppercase tracking-wide text-emerald-800 dark:text-emerald-200">
@@ -439,37 +439,37 @@ export function CashRegisterClosePanel({
               Movimientos: {blind.expenseLines.length}
             </p>
           </section>
-        </div>
 
-        <section className="rounded-xl border border-zinc-200/90 bg-zinc-50/50 p-3.5 dark:border-zinc-700 dark:bg-zinc-950/40">
-          <h3 className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
-            Contar efectivo
-          </h3>
-          <div className="mt-2">
-            <ProductMoneyInput
-              name="counted_cash_cents"
-              value={countedCents}
-              onChange={setCountedCents}
-              required
+          <section className="rounded-xl border border-zinc-200/90 bg-zinc-50/50 p-3.5 dark:border-zinc-700 dark:bg-zinc-950/40">
+            <h3 className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+              Contar efectivo
+            </h3>
+            <div className="mt-2">
+              <ProductMoneyInput
+                name="counted_cash_cents"
+                value={countedCents}
+                onChange={setCountedCents}
+                required
+              />
+            </div>
+            <p className="mt-2 text-[11px] leading-snug text-zinc-500 dark:text-zinc-400">
+              Contá billetes y monedas sin mirar el esperado. Al cerrar se
+              revela la diferencia.
+            </p>
+            <label htmlFor="caja-notes" className={`${labelClass} mt-3 block`}>
+              Nota / motivo (obligatoria si no cuadra)
+            </label>
+            <textarea
+              id="caja-notes"
+              name="notes"
+              rows={2}
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Si ya sabés un motivo, anotalo ahora…"
+              className={`${productInputClass} mt-1.5 resize-none`}
             />
-          </div>
-          <p className="mt-2 text-[11px] leading-snug text-zinc-500 dark:text-zinc-400">
-            Contá billetes y monedas sin mirar el esperado. Al cerrar se revela
-            la diferencia.
-          </p>
-          <label htmlFor="caja-notes" className={`${labelClass} mt-3 block`}>
-            Nota / motivo (obligatoria si no cuadra)
-          </label>
-          <textarea
-            id="caja-notes"
-            name="notes"
-            rows={2}
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            placeholder="Si ya sabés un motivo, anotalo ahora…"
-            className={`${productInputClass} mt-1.5 resize-none`}
-          />
-        </section>
+          </section>
+        </div>
       </div>
 
       <div className="flex shrink-0 flex-col-reverse gap-2 border-t border-zinc-100 bg-zinc-50/80 px-5 py-4 dark:border-zinc-800 dark:bg-zinc-950/50 sm:flex-row sm:items-center sm:justify-between sm:px-6">

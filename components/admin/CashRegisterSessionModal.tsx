@@ -106,7 +106,9 @@ export function CashRegisterSessionModal({
                   role="dialog"
                   aria-modal="true"
                   aria-labelledby="caja-session-modal-title"
-                  className="pointer-events-auto flex max-h-[min(92dvh,880px)] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-zinc-200/90 bg-white shadow-2xl dark:border-zinc-700 dark:bg-zinc-900"
+                  className={`pointer-events-auto flex max-h-[min(92dvh,880px)] w-full flex-col overflow-hidden rounded-2xl border border-zinc-200/90 bg-white shadow-2xl dark:border-zinc-700 dark:bg-zinc-900 ${
+                    mode === "close" ? "max-w-3xl" : "max-w-lg"
+                  }`}
                 >
                   <div className="flex shrink-0 items-start justify-between gap-3 border-b border-zinc-100 px-5 py-4 dark:border-zinc-800 sm:px-6">
                     <div className="min-w-0">
