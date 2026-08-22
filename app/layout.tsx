@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import type { CSSProperties } from "react";
 import { Geist_Mono, Poppins } from "next/font/google";
+import Script from "next/script";
 import { storeBrand, storeShortDescription } from "@/lib/brand";
 import { ADMIN_SIDEBAR_BG, STORE_CHROME_BG } from "@/lib/admin-theme";
+import { storeCheckoutBootScriptSource } from "@/lib/store-checkout-nav";
 import {
   STORE_ACCENT,
   STORE_ACCENT_HOVER,
@@ -28,7 +30,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: storeBrand,
   description: storeShortDescription,
-  /** Favicon: `app/icon.svg` + `app/apple-icon.png` (marca Aleya Shop). */
+  /** Favicon: `app/icon.svg` + `app/apple-icon.png` (marca Milagros). */
 };
 
 export default function RootLayout({
@@ -65,6 +67,13 @@ export default function RootLayout({
           } as CSSProperties
         }
       >
+        <Script
+          id="store-checkout-boot"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{
+            __html: storeCheckoutBootScriptSource(storeBrand),
+          }}
+        />
         {children}
       </body>
     </html>
