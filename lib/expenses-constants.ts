@@ -87,3 +87,38 @@ export function expensePaymentMethodLabel(raw: string | null | undefined): strin
       return raw?.trim() || "—";
   }
 }
+
+/** Medios que salen de la gaveta del turno y restan en el cierre de caja. */
+export function expensePaymentAffectsDailyCashDrawer(
+  raw: string | null | undefined,
+): boolean {
+  switch (String(raw ?? "").trim().toLowerCase()) {
+    case "efectivo":
+    case "cash":
+      return true;
+    default:
+      return false;
+  }
+}
+
+export function splitExpenseAmountsForCashClose(
+  lines: ReadonlyArray<{
+    amount_cents?: number | null;
+    payment_method?: string | null;
+    is_cancelled?: boolean | null;
+  }>,
+): { cashCents: number; otherCents: number } {
+  let cashCents = 0;
+  let otherCents = 0;
+  for (const line of lines) {
+    if (line.is_cancelled) continue;
+    const amount = Math.max(0, Math.floor(Number(line.amount_cents ?? 0)));
+    if (amount <= 0) continue;
+    if (expensePaymentAffectsDailyCashDrawer(line.payment_method)) {
+      cashCents += amount;
+    } else {
+      otherCents += amount;
+    }
+  }
+  return { cashCents, otherCents };
+}

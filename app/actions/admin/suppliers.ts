@@ -28,6 +28,7 @@ function revalidateSupplierPaths(supplierId: string, invoiceId?: string) {
   revalidatePath("/admin/proveedores");
   revalidatePath(`/admin/proveedores/${supplierId}`);
   revalidatePath("/admin/egresos");
+  revalidatePath("/admin/caja");
   if (invoiceId) {
     revalidatePath(`/admin/proveedores/${supplierId}/facturas/${invoiceId}`);
   }

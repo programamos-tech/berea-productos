@@ -102,6 +102,9 @@ export async function createStoreExpense(formData: FormData) {
   if (error || !row?.id) redirect("/admin/egresos?nuevo=1&expense_error=db");
 
   revalidateEgresosList();
+  if (expenseScope === "diario") {
+    revalidatePath("/admin/caja");
+  }
   redirect("/admin/egresos");
 }
 
@@ -162,6 +165,7 @@ export async function cancelStoreExpense(
 
   revalidateEgresosList();
   revalidatePath(`/admin/egresos/${id}`);
+  revalidatePath("/admin/caja");
   return { ok: true };
 }
 

@@ -349,26 +349,26 @@ export function CashRegisterClosePanel({
           </div>
           <div className="rounded-xl border border-emerald-200/70 bg-emerald-50/70 px-3 py-2.5 dark:border-emerald-900/40 dark:bg-emerald-950/30">
             <p className="text-[10px] font-semibold uppercase tracking-wide text-emerald-800 dark:text-emerald-200">
-              Ingresos del turno
+              Cobros en efectivo
             </p>
             <p className="mt-1 text-base font-semibold tabular-nums text-emerald-900 dark:text-emerald-100">
-              {formatCop(blind.salesTotalCents)}
+              {formatCop(blind.salesCashCents)}
             </p>
           </div>
           <div className="rounded-xl border border-rose-200/70 bg-rose-50/70 px-3 py-2.5 dark:border-rose-900/40 dark:bg-rose-950/30">
             <p className="text-[10px] font-semibold uppercase tracking-wide text-rose-800 dark:text-rose-200">
-              Egresos del turno
+              Egresos en efectivo
             </p>
             <p className="mt-1 text-base font-semibold tabular-nums text-rose-900 dark:text-rose-100">
-              {formatCop(blind.expensesTotalCents)}
+              {formatCop(blind.expensesCashCents)}
             </p>
           </div>
           <div className="rounded-xl border border-zinc-200/90 bg-white px-3 py-2.5 dark:border-zinc-700 dark:bg-zinc-900">
             <p className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
               Efectivo esperado
             </p>
-            <p className="mt-1 text-sm font-medium leading-snug text-zinc-600 dark:text-zinc-300">
-              Conteo ciego al cerrar
+            <p className="mt-1 text-xs font-medium leading-snug text-zinc-600 dark:text-zinc-300">
+              Fondo + cobros efectivo − egresos efectivo
             </p>
           </div>
         </div>
@@ -435,9 +435,12 @@ export function CashRegisterClosePanel({
                 ))
               )}
             </ul>
-            <p className="mt-3 border-t border-rose-200/60 pt-2 text-[11px] text-rose-800/80 dark:border-rose-900/40 dark:text-rose-200/80">
-              Movimientos: {blind.expenseLines.length}
-            </p>
+          <p className="mt-3 border-t border-rose-200/60 pt-2 text-[11px] text-rose-800/80 dark:border-rose-900/40 dark:text-rose-200/80">
+            Movimientos: {blind.expenseLines.length}
+            {blind.expensesOtherCents > 0
+              ? " · otros medios no restan del efectivo"
+              : null}
+          </p>
           </section>
 
           <section className="rounded-xl border border-zinc-200/90 bg-zinc-50/50 p-3.5 dark:border-zinc-700 dark:bg-zinc-950/40">

@@ -2,6 +2,7 @@ import {
   createdAtBoundsForReportYmdRange,
   todayYmdInReportStore,
 } from "@/lib/admin-report-range";
+import { expensePaymentAffectsDailyCashDrawer } from "@/lib/expenses-constants";
 import {
   posPaymentBreakdownForOrder,
   type PosPaymentBreakdownRow,
@@ -270,8 +271,16 @@ export async function fetchCashDayLiveTotals(
       .select("id,concept,amount_cents,payment_method,expense_date,is_cancelled,expense_scope")
       .eq("expense_date", businessDayYmd)
       .eq("expense_scope", "diario")
+      .eq("is_cancelled", false)
       .order("created_at", { ascending: true }),
   ]);
+
+  if (ordersRes.error) {
+    console.error("fetchCashDayLiveTotals orders", ordersRes.error);
+  }
+  if (expensesRes.error) {
+    console.error("fetchCashDayLiveTotals expenses", expensesRes.error);
+  }
 
   const orders = (ordersRes.data ?? []) as Array<
     PosPaymentBreakdownRow & { id?: string }
@@ -297,11 +306,10 @@ export async function fetchCashDayLiveTotals(
   let expensesOther = 0;
   const expenseLines: CashExpenseLine[] = [];
   for (const e of expensesRes.data ?? []) {
-    if ((e as { is_cancelled?: boolean }).is_cancelled) continue;
     const amount = Math.max(0, Math.floor(Number(e.amount_cents ?? 0)));
     if (amount <= 0) continue;
     const pm = String(e.payment_method ?? "").trim().toLowerCase() || "otro";
-    if (pm === "efectivo") expensesCash += amount;
+    if (expensePaymentAffectsDailyCashDrawer(pm)) expensesCash += amount;
     else expensesOther += amount;
     expenseLines.push({
       id: String(e.id),
