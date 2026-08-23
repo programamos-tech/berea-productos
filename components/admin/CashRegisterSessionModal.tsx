@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import { useRouter } from "next/navigation";
+import { loadCashCloseBlindSummary } from "@/app/actions/admin/cash-register";
 import { AdminPortalRoot } from "@/components/admin/AdminPortalRoot";
 import {
   CashRegisterClosePanel,
@@ -32,8 +34,12 @@ export function CashRegisterSessionModal({
   errorBanner,
   defaultOpen = true,
 }: Props) {
+  const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const [dismissed, setDismissed] = useState(!defaultOpen);
+  const [liveBlind, setLiveBlind] = useState<CashDayBlindSummary | null>(
+    blind ?? null,
+  );
 
   useEffect(() => {
     setMounted(true);
@@ -43,7 +49,24 @@ export function CashRegisterSessionModal({
     setDismissed(!defaultOpen);
   }, [mode, sessionId, defaultOpen]);
 
+  useEffect(() => {
+    setLiveBlind(blind ?? null);
+  }, [blind]);
+
   const open = Boolean(mode) && !dismissed && mounted;
+
+  useEffect(() => {
+    if (!open || mode !== "close" || !sessionId) return;
+    let cancelled = false;
+    void (async () => {
+      const fresh = await loadCashCloseBlindSummary(sessionId);
+      if (!cancelled && fresh) setLiveBlind(fresh);
+    })();
+    router.refresh();
+    return () => {
+      cancelled = true;
+    };
+  }, [open, mode, sessionId, router]);
 
   useEffect(() => {
     if (!open) return;
@@ -145,13 +168,13 @@ export function CashRegisterSessionModal({
                       ) : null}
                       <CashRegisterOpenForm />
                     </div>
-                  ) : sessionId && blind ? (
+                  ) : sessionId && liveBlind ? (
                     <CashRegisterClosePanel
                       sessionId={sessionId}
                       businessDayLabel={businessDayLabel}
                       openedAtLabel={openedAtLabel}
                       openedByLabel={openedByLabel}
-                      blind={blind}
+                      blind={liveBlind}
                       errorBanner={errorBanner}
                       onDismiss={() => setDismissed(true)}
                     />

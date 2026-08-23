@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { unstable_noStore as noStore } from "next/cache";
 import { CashRegisterSessionModal } from "@/components/admin/CashRegisterSessionModal";
 import { StaticCopCents } from "@/components/admin/ReportsAnimatedFigures";
 import {
@@ -51,6 +52,7 @@ export default async function AdminCajaPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  noStore();
   const perm = await requireAdminAnyPermission(["caja_ver", "caja_gestionar"]);
   const canManage = Boolean(perm.permissions.caja_gestionar);
   const sp = await searchParams;

@@ -65,8 +65,10 @@ const accentIcon: Record<Accent, string> = {
 function paymentLabel(pm: string) {
   switch (pm) {
     case "efectivo":
+    case "cash":
       return "Efectivo";
     case "transferencia":
+    case "transfer":
       return "Transferencia";
     case "tarjeta":
       return "Tarjeta";
@@ -307,6 +309,8 @@ export function CashRegisterClosePanel({
     { label: "Otros medios", cents: blind.expensesOtherCents },
   ].filter((r) => r.cents > 0);
 
+  const cashDrawerExpenses = blind.expenseLines.filter((l) => l.affects_cash_drawer);
+
   return (
     <form
       action={closeCashRegisterSession}
@@ -367,8 +371,12 @@ export function CashRegisterClosePanel({
             <p className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
               Efectivo esperado
             </p>
-            <p className="mt-1 text-xs font-medium leading-snug text-zinc-600 dark:text-zinc-300">
-              Fondo + cobros efectivo − egresos efectivo
+            <p className="mt-1 text-base font-semibold tabular-nums text-zinc-900 dark:text-zinc-100">
+              {formatCop(blind.expectedCashCents)}
+            </p>
+            <p className="mt-1 text-[11px] font-medium leading-snug text-zinc-600 dark:text-zinc-300">
+              {formatCop(blind.openingFloatCents)} + {formatCop(blind.salesCashCents)} −{" "}
+              {formatCop(blind.expensesCashCents)}
             </p>
           </div>
         </div>
@@ -435,6 +443,21 @@ export function CashRegisterClosePanel({
                 ))
               )}
             </ul>
+            {cashDrawerExpenses.length > 0 ? (
+              <ul className="mt-2 space-y-1 border-t border-rose-200/60 pt-2 dark:border-rose-900/40">
+                {cashDrawerExpenses.map((line) => (
+                  <li
+                    key={line.id}
+                    className="flex items-start justify-between gap-2 text-[11px] text-rose-950/90 dark:text-rose-100/90"
+                  >
+                    <span className="min-w-0 truncate">{line.concept}</span>
+                    <span className="shrink-0 font-medium tabular-nums">
+                      −{formatCop(line.amount_cents)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
           <p className="mt-3 border-t border-rose-200/60 pt-2 text-[11px] text-rose-800/80 dark:border-rose-900/40 dark:text-rose-200/80">
             Movimientos: {blind.expenseLines.length}
             {blind.expensesOtherCents > 0
@@ -456,8 +479,8 @@ export function CashRegisterClosePanel({
               />
             </div>
             <p className="mt-2 text-[11px] leading-snug text-zinc-500 dark:text-zinc-400">
-              Contá billetes y monedas sin mirar el esperado. Al cerrar se
-              revela la diferencia.
+              Contá billetes y monedas. El esperado ya resta egresos en efectivo del
+              turno.
             </p>
             <label htmlFor="caja-notes" className={`${labelClass} mt-3 block`}>
               Nota / motivo (obligatoria si no cuadra)

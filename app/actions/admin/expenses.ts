@@ -218,5 +218,6 @@ export async function updateStoreExpenseDate(
 
   revalidateEgresosList();
   revalidatePath(`/admin/egresos/${id}`);
+  revalidatePath("/admin/caja");
   return { ok: true };
 }

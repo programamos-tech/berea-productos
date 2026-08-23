@@ -14,6 +14,8 @@ import {
   fetchCashSessionById,
   fetchOpenCashSession,
   todayBusinessDayYmd,
+  toBlindCashSummary,
+  type CashDayBlindSummary,
 } from "@/lib/cash-register";
 import { formatCop } from "@/lib/money";
 import { assertActionPermission } from "@/lib/require-admin-permission";
@@ -306,4 +308,32 @@ export async function resendCashCloseReport(formData: FormData) {
       ? `/admin/caja/${sessionId}?report=sent`
       : `/admin/caja/${sessionId}?report=error`,
   );
+}
+
+/** Totales vivos para el modal de cierre (evita datos stale tras registrar egresos). */
+export async function loadCashCloseBlindSummary(
+  sessionId: string,
+): Promise<CashDayBlindSummary | null> {
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const id = String(sessionId ?? "").trim();
+  if (!id) return null;
+
+  const session = await fetchCashSessionById(supabase, id);
+  if (!session || session.status !== "open") return null;
+
+  const openingFloat = Math.max(
+    0,
+    Math.floor(Number(session.opening_float_cents ?? 0)),
+  );
+  const live = await fetchCashDayLiveTotals(
+    supabase,
+    session.business_day,
+    openingFloat,
+  );
+  return toBlindCashSummary(live, openingFloat);
 }

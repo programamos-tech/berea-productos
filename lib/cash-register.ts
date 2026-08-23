@@ -68,7 +68,7 @@ export type CashDayLiveTotals = {
   expectedCashCents: number;
 };
 
-/** Payload para el modal de cierre a ciegas: muestra movimiento, oculta efectivo esperado. */
+/** Resumen del turno para el modal de cierre (conteo a ciegas del billete contado). */
 export type CashDayBlindSummary = {
   businessDay: string;
   salesCount: number;
@@ -82,11 +82,15 @@ export type CashDayBlindSummary = {
   expensesCashCents: number;
   expensesOtherCents: number;
   expensesTotalCents: number;
+  /** Fondo + cobros efectivo − egresos efectivo (referencia antes de contar). */
+  expectedCashCents: number;
   stockOutLines: CashStockOutLine[];
   expenseLines: Array<{
     id: string;
     concept: string;
     payment_method: string;
+    amount_cents: number;
+    affects_cash_drawer: boolean;
   }>;
 };
 
@@ -108,11 +112,14 @@ export function toBlindCashSummary(
     expensesCashCents: live.expensesCashCents,
     expensesOtherCents: live.expensesOtherCents,
     expensesTotalCents,
+    expectedCashCents: live.expectedCashCents,
     stockOutLines: live.stockOutLines,
     expenseLines: live.expenseLines.map((e) => ({
       id: e.id,
       concept: e.concept,
       payment_method: e.payment_method,
+      amount_cents: e.amount_cents,
+      affects_cash_drawer: expensePaymentAffectsDailyCashDrawer(e.payment_method),
     })),
   };
 }
