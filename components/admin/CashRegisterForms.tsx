@@ -368,7 +368,7 @@ export function CashRegisterClosePanel({
               Egresos en efectivo
             </p>
             <p className="mt-1 text-base font-semibold tabular-nums text-rose-900 dark:text-rose-100">
-              −{formatCop(blind.expensesCashCents)}
+              {formatCop(blind.expensesCashCents)}
             </p>
           </div>
         </div>
@@ -469,7 +469,7 @@ export function CashRegisterClosePanel({
                   >
                     <span className="min-w-0 truncate">{line.concept}</span>
                     <span className="shrink-0 font-medium tabular-nums">
-                      −{formatCop(line.amount_cents)}
+                      {formatCop(line.amount_cents)}
                     </span>
                   </li>
                 ))}
