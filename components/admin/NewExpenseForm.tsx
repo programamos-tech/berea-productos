@@ -16,6 +16,7 @@ import {
   productLabelClass as labelClass,
 } from "@/components/admin/product-form-primitives";
 import { todayYmdInReportStore } from "@/lib/admin-report-range";
+import { AdminPortalRoot } from "@/components/admin/AdminPortalRoot";
 import { adminButtonCancelClass } from "@/lib/admin-ui";
 import {
   EXPENSE_KIND_OPTIONS,
@@ -187,7 +188,8 @@ export function NewExpenseModal({
   if (!open || !mounted) return null;
 
   return createPortal(
-    <>
+    <AdminPortalRoot>
+      <>
       {/* Backdrop solo sobre el contenido (sidebar + navbar quedan nítidos). */}
       <button
         type="button"
@@ -466,7 +468,8 @@ export function NewExpenseModal({
         </form>
         </div>
       </div>
-    </>,
+      </>
+    </AdminPortalRoot>,
     document.body,
   );
 }

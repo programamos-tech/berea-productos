@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import { AdminPortalRoot } from "@/components/admin/AdminPortalRoot";
 import {
   CashRegisterClosePanel,
   CashRegisterOpenForm,
@@ -94,6 +95,7 @@ export function CashRegisterSessionModal({
 
       {open && mode
         ? createPortal(
+            <AdminPortalRoot>
             <>
               <button
                 type="button"
@@ -156,7 +158,8 @@ export function CashRegisterSessionModal({
                   ) : null}
                 </div>
               </div>
-            </>,
+            </>
+            </AdminPortalRoot>,
             document.body,
           )
         : null}

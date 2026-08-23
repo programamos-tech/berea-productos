@@ -2,6 +2,7 @@
 
 import { createPortal } from "react-dom";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { AdminPortalRoot } from "@/components/admin/AdminPortalRoot";
 import {
   formatCopInputGrouping,
   parseCopInputDigitsToInt,
@@ -267,6 +268,7 @@ export function AdminDateInput({
 
       {open && popupFixed && typeof document !== "undefined"
         ? createPortal(
+            <AdminPortalRoot>
             <div
               ref={popupRef}
               data-admin-date-portal=""
@@ -365,7 +367,8 @@ export function AdminDateInput({
                   Cerrar
                 </button>
               </div>
-            </div>,
+            </div>
+            </AdminPortalRoot>,
             document.body,
           )
         : null}
