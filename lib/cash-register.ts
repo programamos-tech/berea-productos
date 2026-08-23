@@ -82,8 +82,10 @@ export type CashDayBlindSummary = {
   expensesCashCents: number;
   expensesOtherCents: number;
   expensesTotalCents: number;
-  /** Fondo + cobros efectivo − egresos efectivo (referencia antes de contar). */
+  /** Fondo + cobros efectivo − egresos efectivo (total físico en gaveta). */
   expectedCashCents: number;
+  /** Cobros en efectivo − egresos en efectivo (solo movimiento del turno). */
+  turnCashNetCents: number;
   stockOutLines: CashStockOutLine[];
   expenseLines: Array<{
     id: string;
@@ -113,6 +115,7 @@ export function toBlindCashSummary(
     expensesOtherCents: live.expensesOtherCents,
     expensesTotalCents,
     expectedCashCents: live.expectedCashCents,
+    turnCashNetCents: live.salesCashCents - live.expensesCashCents,
     stockOutLines: live.stockOutLines,
     expenseLines: live.expenseLines.map((e) => ({
       id: e.id,
