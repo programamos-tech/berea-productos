@@ -131,7 +131,8 @@ export async function closeCashRegisterSession(formData: FormData) {
   const businessDay = String(session.business_day).slice(0, 10);
   const live = await fetchCashDayLiveTotals(supabase, businessDay, openingFloat);
   const expected = live.expectedCashCents;
-  const difference = countedCash - openingFloat - expected;
+  // Esperado = neto del turno (cobros − egresos). El contado debe ser ese neto, sin restar la base otra vez.
+  const difference = countedCash - expected;
 
   // Validar antes del token: si falla, pueden reintentar con el mismo formulario.
   if (difference !== 0 && !notes) {

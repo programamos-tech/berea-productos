@@ -483,8 +483,8 @@ export function CashRegisterClosePanel({
               />
             </div>
             <p className="mt-2 text-[11px] leading-snug text-zinc-500 dark:text-zinc-400">
-              Contá todo el efectivo en la gaveta (base + movimiento del día). Al cerrar
-              comparamos el conteo con la base y el neto del turno.
+              Contá el efectivo del movimiento del día (ventas en efectivo menos lo que
+              salió en egresos). La base de ayer no se vuelve a sumar ni a restar acá.
             </p>
             <label htmlFor="caja-notes" className={`${labelClass} mt-3 block`}>
               Nota / motivo (obligatoria si no cuadra)
