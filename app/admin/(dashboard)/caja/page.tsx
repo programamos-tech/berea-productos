@@ -190,7 +190,7 @@ export default async function AdminCajaPage({
                 <tr className="border-b border-zinc-200 bg-zinc-50/80 text-xs uppercase tracking-wide text-zinc-500 dark:border-zinc-700 dark:bg-zinc-950/50 dark:text-zinc-400">
                   <th className="px-4 py-3 font-medium">Día</th>
                   <th className="px-4 py-3 font-medium">Estado</th>
-                  <th className="px-4 py-3 text-right font-medium">Esperado</th>
+                  <th className="px-4 py-3 text-right font-medium">Neto turno</th>
                   <th className="px-4 py-3 text-right font-medium">Contado</th>
                   <th className="px-4 py-3 text-right font-medium">Dif.</th>
                   <th className="px-4 py-3 text-right font-medium">Ud</th>

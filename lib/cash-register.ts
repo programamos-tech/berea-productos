@@ -82,10 +82,8 @@ export type CashDayBlindSummary = {
   expensesCashCents: number;
   expensesOtherCents: number;
   expensesTotalCents: number;
-  /** Fondo + cobros efectivo − egresos efectivo (total físico en gaveta). */
+  /** Cobros en efectivo − egresos en efectivo (sin fondo inicial). */
   expectedCashCents: number;
-  /** Cobros en efectivo − egresos en efectivo (solo movimiento del turno). */
-  turnCashNetCents: number;
   stockOutLines: CashStockOutLine[];
   expenseLines: Array<{
     id: string;
@@ -115,7 +113,6 @@ export function toBlindCashSummary(
     expensesOtherCents: live.expensesOtherCents,
     expensesTotalCents,
     expectedCashCents: live.expectedCashCents,
-    turnCashNetCents: live.salesCashCents - live.expensesCashCents,
     stockOutLines: live.stockOutLines,
     expenseLines: live.expenseLines.map((e) => ({
       id: e.id,
@@ -230,15 +227,26 @@ export function mapCashSessionRow(raw: Record<string, unknown>): CashRegisterSes
   };
 }
 
+/** Neto del turno en efectivo (cobros − egresos). El fondo inicial no se suma. */
 export function expectedCashFromParts(
+  salesCashCents: number,
+  expensesCashCents: number,
+): number {
+  return (
+    Math.max(0, Math.floor(salesCashCents)) -
+    Math.max(0, Math.floor(expensesCashCents))
+  );
+}
+
+/** Total físico en gaveta al cierre: fondo + neto del turno. */
+export function drawerCashFromParts(
   openingFloatCents: number,
   salesCashCents: number,
   expensesCashCents: number,
 ): number {
   return (
     Math.max(0, Math.floor(openingFloatCents)) +
-    Math.max(0, Math.floor(salesCashCents)) -
-    Math.max(0, Math.floor(expensesCashCents))
+    expectedCashFromParts(salesCashCents, expensesCashCents)
   );
 }
 
@@ -263,7 +271,7 @@ export async function fetchCashDayLiveTotals(
       unitsSold: 0,
       stockOutLines: [],
       expenseLines: [],
-      expectedCashCents: expectedCashFromParts(openingFloatCents, 0, 0),
+      expectedCashCents: expectedCashFromParts(0, 0),
     };
   }
 
@@ -406,11 +414,7 @@ export async function fetchCashDayLiveTotals(
     unitsSold,
     stockOutLines,
     expenseLines,
-    expectedCashCents: expectedCashFromParts(
-      openingFloatCents,
-      salesCash,
-      expensesCash,
-    ),
+    expectedCashCents: expectedCashFromParts(salesCash, expensesCash),
   };
 }
 

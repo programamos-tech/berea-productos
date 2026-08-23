@@ -71,7 +71,7 @@ export default async function AdminCajaDetailPage({
       kind: "egreso" as const,
     },
     {
-      label: "Efectivo esperado",
+      label: "Neto del turno (efectivo)",
       value: session.expected_cash_cents,
       kind: "esperado" as const,
     },

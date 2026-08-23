@@ -131,7 +131,7 @@ export async function closeCashRegisterSession(formData: FormData) {
   const businessDay = String(session.business_day).slice(0, 10);
   const live = await fetchCashDayLiveTotals(supabase, businessDay, openingFloat);
   const expected = live.expectedCashCents;
-  const difference = countedCash - expected;
+  const difference = countedCash - openingFloat - expected;
 
   // Validar antes del token: si falla, pueden reintentar con el mismo formulario.
   if (difference !== 0 && !notes) {

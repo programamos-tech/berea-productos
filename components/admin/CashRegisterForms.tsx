@@ -310,7 +310,6 @@ export function CashRegisterClosePanel({
   ].filter((r) => r.cents > 0);
 
   const cashDrawerExpenses = blind.expenseLines.filter((l) => l.affects_cash_drawer);
-  const turnNet = blind.turnCashNetCents;
 
   return (
     <form
@@ -352,7 +351,7 @@ export function CashRegisterClosePanel({
               {formatCop(blind.openingFloatCents)}
             </p>
             <p className="mt-1 text-[10px] leading-snug text-zinc-500 dark:text-zinc-400">
-              Ya estaba al abrir
+              Misma plata de ayer · no es ingreso del día
             </p>
           </div>
           <div className="rounded-xl border border-emerald-200/70 bg-emerald-50/70 px-3 py-2.5 dark:border-emerald-900/40 dark:bg-emerald-950/30">
@@ -373,29 +372,17 @@ export function CashRegisterClosePanel({
           </div>
         </div>
 
-        <div className="grid gap-2 sm:grid-cols-2">
-          <div className="rounded-xl border border-sky-200/70 bg-sky-50/70 px-3 py-2.5 dark:border-sky-900/40 dark:bg-sky-950/30">
-            <p className="text-[10px] font-semibold uppercase tracking-wide text-sky-800 dark:text-sky-200">
-              Neto del turno en efectivo
-            </p>
-            <p className="mt-1 text-lg font-semibold tabular-nums text-sky-950 dark:text-sky-100">
-              {formatCop(turnNet)}
-            </p>
-            <p className="mt-1 text-[11px] font-medium leading-snug text-sky-900/80 dark:text-sky-100/80">
-              {formatCop(blind.salesCashCents)} − {formatCop(blind.expensesCashCents)}
-            </p>
-          </div>
-          <div className="rounded-xl border border-zinc-200/90 bg-white px-3 py-2.5 dark:border-zinc-700 dark:bg-zinc-900">
-            <p className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
-              Total en gaveta (al contar)
-            </p>
-            <p className="mt-1 text-lg font-semibold tabular-nums text-zinc-900 dark:text-zinc-100">
-              {formatCop(blind.expectedCashCents)}
-            </p>
-            <p className="mt-1 text-[11px] font-medium leading-snug text-zinc-600 dark:text-zinc-300">
-              {formatCop(blind.openingFloatCents)} + {formatCop(turnNet)}
-            </p>
-          </div>
+        <div className="rounded-xl border border-sky-200/70 bg-sky-50/70 px-3 py-2.5 dark:border-sky-900/40 dark:bg-sky-950/30">
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-sky-800 dark:text-sky-200">
+            Efectivo neto del turno
+          </p>
+          <p className="mt-1 text-lg font-semibold tabular-nums text-sky-950 dark:text-sky-100">
+            {formatCop(blind.expectedCashCents)}
+          </p>
+          <p className="mt-1 text-[11px] font-medium leading-snug text-sky-900/80 dark:text-sky-100/80">
+            {formatCop(blind.salesCashCents)} − {formatCop(blind.expensesCashCents)} · sin
+            sumar la base
+          </p>
         </div>
 
         <div className="grid gap-3 md:grid-cols-3">
@@ -496,8 +483,8 @@ export function CashRegisterClosePanel({
               />
             </div>
             <p className="mt-2 text-[11px] leading-snug text-zinc-500 dark:text-zinc-400">
-              Contá todo el efectivo en la gaveta (fondo + neto del turno ≈{" "}
-              {formatCop(blind.expectedCashCents)}).
+              Contá todo el efectivo en la gaveta (base + movimiento del día). Al cerrar
+              comparamos el conteo con la base y el neto del turno.
             </p>
             <label htmlFor="caja-notes" className={`${labelClass} mt-3 block`}>
               Nota / motivo (obligatoria si no cuadra)
