@@ -58,10 +58,10 @@ export function CheckoutKitLineControls({ kitId, quantity, maxStock }: Props) {
         </button>
       </div>
       <Link
-        href="/kits"
+        href={`/kits/${kitId}`}
         className="text-[12px] font-medium text-[var(--store-accent)] underline-offset-2 hover:underline"
       >
-        Ver kits
+        Ver detalle
       </Link>
     </div>
   );

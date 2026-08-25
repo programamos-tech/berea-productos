@@ -692,7 +692,7 @@ export default async function CheckoutPage({
                       >
                         <div className="flex min-w-0 flex-1 gap-5 sm:gap-8">
                           <Link
-                            href="/kits"
+                            href={`/kits/${kit.id}`}
                             className="relative aspect-[3/4] w-[6.75rem] shrink-0 overflow-hidden bg-[#f0eeeb] sm:w-28"
                           >
                             {img ? (
@@ -712,7 +712,7 @@ export default async function CheckoutPage({
                           </Link>
                           <div className="min-w-0 flex-1">
                             <Link
-                              href="/kits"
+                              href={`/kits/${kit.id}`}
                               className="text-[15px] font-semibold leading-snug text-[var(--store-brand)] transition hover:text-[var(--store-brand-hover)]"
                             >
                               {kit.name}

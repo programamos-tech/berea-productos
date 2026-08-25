@@ -95,7 +95,7 @@ function revalidateKits() {
   revalidateStoreKitsTag();
   revalidatePath("/");
   revalidatePath("/admin/kits");
-  revalidatePath("/kits");
+  revalidatePath("/kits", "layout");
   revalidatePath("/products");
   revalidatePath("/admin/ventas/nueva");
 }

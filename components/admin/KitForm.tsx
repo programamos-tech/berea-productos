@@ -324,7 +324,7 @@ export function KitForm({
                 ) : null}
                 <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
                   JPG, PNG o WebP. Máx. {MAX_PRODUCT_IMAGE_BYTES / (1024 * 1024)} MB. Se muestra en{" "}
-                  <strong>/kits</strong> y en la bolsa de compras.
+                  <strong>/kits</strong>, en la ficha del kit y en la bolsa de compras.
                 </p>
                 {canEdit && existingImageUrl && !newImagePreview ? (
                   <label className="mt-3 inline-flex cursor-pointer items-center gap-2 text-xs font-medium text-zinc-700 dark:text-zinc-300">

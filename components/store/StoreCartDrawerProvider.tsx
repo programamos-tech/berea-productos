@@ -74,7 +74,9 @@ function DrawerLine({
   onAdjustQty: (nextQty: number) => void;
 }) {
   const img = storagePublicObjectUrl(item.imagePath);
-  const href = item.kitId ? "/kits" : `/products/${item.productId ?? ""}`;
+  const href = item.kitId
+    ? `/kits/${item.kitId}`
+    : `/products/${item.productId ?? ""}`;
   return (
     <li className="border-b border-stone-200/90 py-6">
       <div className="flex gap-4">

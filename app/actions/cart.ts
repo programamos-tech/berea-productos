@@ -23,7 +23,7 @@ import { productHasStorefrontImage } from "@/lib/storefront-product-image";
 
 function revalidateStoreCart() {
   revalidatePath("/products");
-  revalidatePath("/kits");
+  revalidatePath("/kits", "layout");
   revalidatePath("/checkout");
   revalidatePath("/", "layout");
 }
@@ -274,6 +274,29 @@ export async function addKitToCartFromForm(formData: FormData) {
   const qty = Number(formData.get("quantity") ?? 1);
   if (!kitId) return;
   await addKitToCart(kitId, Number.isFinite(qty) ? qty : 1);
+}
+
+/** Deja solo este kit en la bolsa y va al checkout (flujo “Comprar ahora”). */
+export async function buyNowKitFromDetail(formData: FormData) {
+  const kitId = String(formData.get("kitId") ?? "").trim();
+  if (!kitId) redirect("/kits");
+
+  const requested = Math.max(
+    1,
+    Math.floor(Number(formData.get("quantity") ?? 1)),
+  );
+
+  const supabase = await createSupabaseServerClient();
+  const kit = await fetchKitWithItems(supabase, kitId);
+  if (!kit?.is_published) redirect("/kits");
+
+  const maxK = maxKitsAvailableFromItems(kit.items ?? [], "storefront");
+  if (maxK < 1) redirect(`/kits/${kitId}`);
+
+  const qty = Math.min(requested, maxK);
+  await setCart([{ kitId, quantity: qty }]);
+  revalidateStoreCart();
+  redirect("/checkout");
 }
 
 export async function updateKitLineFromForm(formData: FormData) {

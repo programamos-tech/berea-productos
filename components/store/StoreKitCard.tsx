@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Minus, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
@@ -36,22 +37,35 @@ export function StoreKitCard({
 
   const description = kit.description.trim();
 
+  const detailHref = `/kits/${kit.id}`;
+
   return (
     <article className="flex h-full w-full flex-col">
-      <div className="relative shrink-0">
+      <div className="group/kit relative shrink-0">
         <StoreProductImageFrame
           src={img}
           alt={kit.name}
           bgClass="bg-[#f0eeeb]"
           sizes={STORE_PRODUCT_CARD_IMAGE_SIZES}
+          imageClassName="transition duration-300 group-hover/kit:scale-[1.02]"
         />
-        <span className="absolute left-2 top-2 bg-white/95 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-violet-800">
+        <Link
+          href={detailHref}
+          className="absolute inset-0 block outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--store-accent)]/40"
+          aria-label={kit.name}
+        />
+        <span className="pointer-events-none absolute left-2 top-2 bg-white/95 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-violet-800">
           Kit
         </span>
       </div>
       <div className="mt-4 flex min-h-0 flex-1 flex-col">
-        <h2 className="line-clamp-2 min-h-[2.6em] text-[13px] font-semibold uppercase leading-snug tracking-wide text-[var(--store-brand)]">
-          {kit.name}
+        <h2 className="min-h-[2.6em] text-[13px] font-semibold uppercase leading-snug tracking-wide">
+          <Link
+            href={detailHref}
+            className="line-clamp-2 text-[var(--store-brand)] transition hover:text-[var(--store-brand-hover)]"
+          >
+            {kit.name}
+          </Link>
         </h2>
         <p
           className={`mt-2 line-clamp-2 min-h-[2.75em] text-[12px] leading-relaxed ${
@@ -59,7 +73,13 @@ export function StoreKitCard({
           }`}
           aria-hidden={!description}
         >
-          {description || "—"}
+          {description ? (
+            <Link href={detailHref} className="transition hover:text-stone-800">
+              {description}
+            </Link>
+          ) : (
+            "—"
+          )}
         </p>
         <p className="mt-2 text-[12px] text-stone-500">
           {kit.item_count} producto{kit.item_count === 1 ? "" : "s"} incluido

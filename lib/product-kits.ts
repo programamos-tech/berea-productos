@@ -20,6 +20,7 @@ export type KitComponentRow = {
     has_vat: boolean | null;
     vat_percent: number | null;
     reference: string | null;
+    image_path?: string | null;
   } | null;
 };
 
@@ -231,6 +232,7 @@ export const KIT_ITEMS_SELECT = `
     is_published,
     has_vat,
     vat_percent,
-    reference
+    reference,
+    image_path
   )
 `;
