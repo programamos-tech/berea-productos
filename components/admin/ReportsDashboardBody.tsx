@@ -1,5 +1,8 @@
 import { ReportLiquidityMetricCards } from "@/components/admin/ReportLiquidityMetricCards";
-import { ReportMonthlyPulse } from "@/components/admin/ReportMonthlyPulse";
+import {
+  ReportMonthlyPulseSection,
+  ReportMonthlyPulseSkeleton,
+} from "@/components/admin/ReportMonthlyPulseSection";
 import { ReportStockTrendLine } from "@/components/admin/ReportStockTrendLine";
 import { ReportSalesWeekTrendChart } from "@/components/admin/ReportSalesWeekTrendChart";
 import {
@@ -7,14 +10,11 @@ import {
   StaticInteger,
 } from "@/components/admin/ReportsAnimatedFigures";
 import { prettyReportDayShortLabel } from "@/lib/admin-report-range";
-import {
-  fetchAdminReportMonthlyPulse,
-  pulseHighlightYearMonth,
-} from "@/lib/admin-report-monthly-pulse";
 import { fetchAdminReportDashboardData } from "@/lib/admin-reports-data";
 import { adminPanelLgClass } from "@/lib/admin-ui";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import Link from "next/link";
+import { Suspense } from "react";
 import { formatCop } from "@/lib/money";
 
 const cardLabelClass =
@@ -51,30 +51,21 @@ export async function ReportsDashboardBody({
   todayKey: string;
 }) {
   let report;
-  let monthlyPulse: Awaited<ReturnType<typeof fetchAdminReportMonthlyPulse>> = {
-    months: [],
-    insight: "",
-  };
   try {
     const supabase = await createSupabaseServerClient();
-    const [dashboard, pulse] = await Promise.all([
-      fetchAdminReportDashboardData(supabase, {
-        rangeFrom,
-        rangeTo,
-        chartFrom,
-        chartTo,
-        salesTrendCurrentFrom,
-        salesTrendCurrentTo,
-        salesTrendPriorFrom,
-        salesTrendPriorTo,
-        fetchFrom,
-        fetchTo,
-        periodLabel,
-      }),
-      fetchAdminReportMonthlyPulse(supabase, { todayYmd: todayKey }),
-    ]);
-    report = dashboard;
-    monthlyPulse = pulse;
+    report = await fetchAdminReportDashboardData(supabase, {
+      rangeFrom,
+      rangeTo,
+      chartFrom,
+      chartTo,
+      salesTrendCurrentFrom,
+      salesTrendCurrentTo,
+      salesTrendPriorFrom,
+      salesTrendPriorTo,
+      fetchFrom,
+      fetchTo,
+      periodLabel,
+    });
   } catch (err) {
     console.error("[admin reportes] body:", err);
     return (
@@ -308,11 +299,13 @@ export async function ReportsDashboardBody({
         </dl>
       </div>
 
-      <ReportMonthlyPulse
-        months={monthlyPulse.months}
-        insight={monthlyPulse.insight}
-        highlightYearMonth={pulseHighlightYearMonth(rangeFrom, rangeTo, todayKey)}
-      />
+      <Suspense fallback={<ReportMonthlyPulseSkeleton />}>
+        <ReportMonthlyPulseSection
+          todayKey={todayKey}
+          rangeFrom={rangeFrom}
+          rangeTo={rangeTo}
+        />
+      </Suspense>
 
       <section
         key={`reports-chart-${todayKey}`}
