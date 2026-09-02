@@ -82,7 +82,7 @@ export type CashDayBlindSummary = {
   expensesCashCents: number;
   expensesOtherCents: number;
   expensesTotalCents: number;
-  /** Cobros en efectivo − egresos en efectivo (sin fondo inicial). */
+  /** Arrastre del día anterior + cobros en efectivo − egresos en efectivo. */
   expectedCashCents: number;
   stockOutLines: CashStockOutLine[];
   expenseLines: Array<{
@@ -227,26 +227,33 @@ export function mapCashSessionRow(raw: Record<string, unknown>): CashRegisterSes
   };
 }
 
-/** Neto del turno en efectivo (cobros − egresos). El fondo inicial no se suma. */
+/**
+ * Efectivo esperado en gaveta al cierre.
+ * Incluye el arrastre del cierre anterior (contado) + cobros − egresos del día.
+ * Los $100.000 de cambio físico quedan fuera del sistema y no se suman acá.
+ */
 export function expectedCashFromParts(
-  salesCashCents: number,
-  expensesCashCents: number,
-): number {
-  return (
-    Math.max(0, Math.floor(salesCashCents)) -
-    Math.max(0, Math.floor(expensesCashCents))
-  );
-}
-
-/** Total físico en gaveta al cierre: fondo + neto del turno. */
-export function drawerCashFromParts(
   openingFloatCents: number,
   salesCashCents: number,
   expensesCashCents: number,
 ): number {
   return (
     Math.max(0, Math.floor(openingFloatCents)) +
-    expectedCashFromParts(salesCashCents, expensesCashCents)
+    Math.max(0, Math.floor(salesCashCents)) -
+    Math.max(0, Math.floor(expensesCashCents))
+  );
+}
+
+/** Alias histórico: mismo cálculo que expectedCashFromParts. */
+export function drawerCashFromParts(
+  openingFloatCents: number,
+  salesCashCents: number,
+  expensesCashCents: number,
+): number {
+  return expectedCashFromParts(
+    openingFloatCents,
+    salesCashCents,
+    expensesCashCents,
   );
 }
 
@@ -271,7 +278,7 @@ export async function fetchCashDayLiveTotals(
       unitsSold: 0,
       stockOutLines: [],
       expenseLines: [],
-      expectedCashCents: expectedCashFromParts(0, 0),
+      expectedCashCents: expectedCashFromParts(openingFloatCents, 0, 0),
     };
   }
 
@@ -414,8 +421,30 @@ export async function fetchCashDayLiveTotals(
     unitsSold,
     stockOutLines,
     expenseLines,
-    expectedCashCents: expectedCashFromParts(salesCash, expensesCash),
+    expectedCashCents: expectedCashFromParts(
+      openingFloatCents,
+      salesCash,
+      expensesCash,
+    ),
   };
+}
+
+/** Contado del último cierre: arrastre sugerido al abrir la caja del día. */
+export async function fetchSuggestedOpeningFloatCents(
+  supabase: SupabaseClient,
+): Promise<number> {
+  const { data, error } = await supabase
+    .from("cash_register_sessions")
+    .select("counted_cash_cents,business_day")
+    .eq("status", "closed")
+    .order("business_day", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) {
+    console.error("fetchSuggestedOpeningFloatCents", error);
+    return 0;
+  }
+  return Math.max(0, Math.floor(Number(data?.counted_cash_cents ?? 0)));
 }
 
 export async function fetchCashSessionForBusinessDay(

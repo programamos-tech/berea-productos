@@ -44,7 +44,11 @@ export default async function AdminCajaDetailPage({
   const diff = session.cash_difference_cents;
 
   const moneyRows = [
-    { label: "Fondo inicial", value: session.opening_float_cents, kind: "fondo" as const },
+    {
+      label: "Efectivo día anterior",
+      value: session.opening_float_cents,
+      kind: "fondo" as const,
+    },
     { label: "Ventas total", value: session.sales_total_cents, kind: "ventas" as const },
     { label: "Ventas efectivo", value: session.sales_cash_cents, kind: "efectivo" as const },
     {
@@ -71,7 +75,7 @@ export default async function AdminCajaDetailPage({
       kind: "egreso" as const,
     },
     {
-      label: "Neto del turno (efectivo)",
+      label: "Efectivo esperado",
       value: session.expected_cash_cents,
       kind: "esperado" as const,
     },

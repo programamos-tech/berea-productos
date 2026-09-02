@@ -14,7 +14,7 @@ import {
   ShoppingBag,
   Wallet,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   closeCashRegisterSession,
   openCashRegisterSession,
@@ -137,9 +137,19 @@ function SectionTitle({
   );
 }
 
-export function CashRegisterOpenForm() {
-  const [floatCents, setFloatCents] = useState(0);
+export function CashRegisterOpenForm({
+  suggestedOpeningFloatCents = 0,
+}: {
+  suggestedOpeningFloatCents?: number;
+}) {
+  const [floatCents, setFloatCents] = useState(
+    Math.max(0, Math.floor(suggestedOpeningFloatCents)),
+  );
   const [submissionId] = useState(newSubmissionId);
+
+  useEffect(() => {
+    setFloatCents(Math.max(0, Math.floor(suggestedOpeningFloatCents)));
+  }, [suggestedOpeningFloatCents]);
 
   return (
     <form
@@ -148,18 +158,19 @@ export function CashRegisterOpenForm() {
       onSubmit={(e) => {
         if (floatCents !== 0) return;
         const ok = window.confirm(
-          "El fondo inicial está en $0.\n\n¿Estás segura de que la caja va a comenzar en 0?",
+          "El efectivo del día anterior está en $0.\n\n¿Estás segura de que la caja va a comenzar en 0? (Los $100.000 de cambio no se cargan acá.)",
         );
         if (!ok) e.preventDefault();
       }}
     >
       <input type="hidden" name="submission_id" value={submissionId} />
       <p className="text-sm leading-relaxed text-zinc-600 dark:text-zinc-300">
-        Ingresá el fondo inicial. Al cerrar, la vendedora cuenta el efectivo a
-        ciegas; el sistema compara solo después de confirmar.
+        Confirmá el efectivo que quedó del cierre anterior (arrastre). Ese monto
+        suma en el esperado del día junto con cobros y egresos. Los $100.000 de
+        cambio físico quedan fuera del sistema.
       </p>
       <div>
-        <span className={labelClass}>Fondo inicial (efectivo)</span>
+        <span className={labelClass}>Efectivo del día anterior</span>
         <div className="mt-2">
           <ProductMoneyInput
             name="opening_float_cents"
@@ -168,6 +179,11 @@ export function CashRegisterOpenForm() {
             required
           />
         </div>
+        {suggestedOpeningFloatCents > 0 ? (
+          <p className="mt-1.5 text-xs text-zinc-500 dark:text-zinc-400">
+            Sugerido del último cierre: {formatCop(suggestedOpeningFloatCents)}
+          </p>
+        ) : null}
       </div>
       <AdminFormSubmitButton
         pendingLabel="Abriendo…"
@@ -345,13 +361,13 @@ export function CashRegisterClosePanel({
         <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
           <div className="rounded-xl border border-zinc-200/90 bg-zinc-50/80 px-3 py-2.5 dark:border-zinc-700 dark:bg-zinc-950/50">
             <p className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
-              Fondo inicial
+              Efectivo día anterior
             </p>
             <p className="mt-1 text-base font-semibold tabular-nums text-zinc-900 dark:text-zinc-100">
               {formatCop(blind.openingFloatCents)}
             </p>
             <p className="mt-1 text-[10px] leading-snug text-zinc-500 dark:text-zinc-400">
-              Misma plata de ayer · no es ingreso del día
+              Arrastre del último cierre · sin los $100k de cambio
             </p>
           </div>
           <div className="rounded-xl border border-emerald-200/70 bg-emerald-50/70 px-3 py-2.5 dark:border-emerald-900/40 dark:bg-emerald-950/30">
@@ -374,14 +390,14 @@ export function CashRegisterClosePanel({
 
         <div className="rounded-xl border border-sky-200/70 bg-sky-50/70 px-3 py-2.5 dark:border-sky-900/40 dark:bg-sky-950/30">
           <p className="text-[10px] font-semibold uppercase tracking-wide text-sky-800 dark:text-sky-200">
-            Efectivo neto del turno
+            Efectivo esperado en gaveta
           </p>
           <p className="mt-1 text-lg font-semibold tabular-nums text-sky-950 dark:text-sky-100">
             {formatCop(blind.expectedCashCents)}
           </p>
           <p className="mt-1 text-[11px] font-medium leading-snug text-sky-900/80 dark:text-sky-100/80">
-            {formatCop(blind.salesCashCents)} − {formatCop(blind.expensesCashCents)} · sin
-            sumar la base
+            {formatCop(blind.openingFloatCents)} + {formatCop(blind.salesCashCents)} −{" "}
+            {formatCop(blind.expensesCashCents)}
           </p>
         </div>
 
@@ -483,8 +499,8 @@ export function CashRegisterClosePanel({
               />
             </div>
             <p className="mt-2 text-[11px] leading-snug text-zinc-500 dark:text-zinc-400">
-              Contá el efectivo del movimiento del día (ventas en efectivo menos lo que
-              salió en egresos). La base de ayer no se vuelve a sumar ni a restar acá.
+              Contá toda la plata de negocio en la gaveta (arrastre + cobros − egresos).
+              Dejá los $100.000 de cambio aparte: no entran al sistema.
             </p>
             <label htmlFor="caja-notes" className={`${labelClass} mt-3 block`}>
               Nota / motivo (obligatoria si no cuadra)

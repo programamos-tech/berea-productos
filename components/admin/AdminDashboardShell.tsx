@@ -22,6 +22,7 @@ export function AdminDashboardShell({
     mustOpen: boolean;
     businessDayLabel: string;
     displayName: string | null;
+    suggestedOpeningFloatCents?: number;
   } | null;
 }) {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -88,6 +89,7 @@ export function AdminDashboardShell({
           <CashRegisterMorningGateModal
             businessDayLabel={cashGate.businessDayLabel}
             displayName={cashGate.displayName}
+            suggestedOpeningFloatCents={cashGate.suggestedOpeningFloatCents ?? 0}
           />
         ) : null}
       </div>

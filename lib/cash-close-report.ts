@@ -458,7 +458,7 @@ export function buildCashCloseReportHtml(
           ${metricCard(
             partial ? "Efectivo ahora" : "Efectivo contado",
             formatCop(partial ? input.expectedCashCents : input.countedCashCents),
-            `Neto turno ${formatCop(input.expectedCashCents)}`,
+            `Esperado ${formatCop(input.expectedCashCents)}`,
           )}
         </tr></table>
       </div>
@@ -474,12 +474,12 @@ export function buildCashCloseReportHtml(
         <div style="border:1px solid ${CARD_BORDER};border-radius:12px;padding:14px 16px;background:#fff;">
           <div style="font-size:12px;font-weight:600;color:${MUTED};text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px;">Movimiento de efectivo</div>
           <table width="100%" cellpadding="0" cellspacing="0" style="font-size:13px;color:#3f3f46;">
-            <tr><td style="padding:4px 0;">Fondo inicial (base, no es venta)</td><td style="text-align:right;font-weight:600;color:${INK};">${esc(formatCop(input.openingFloatCents))}</td></tr>
+            <tr><td style="padding:4px 0;">Efectivo del día anterior (arrastre)</td><td style="text-align:right;font-weight:600;color:${INK};">${esc(formatCop(input.openingFloatCents))}</td></tr>
             <tr><td style="padding:4px 0;">+ Ventas en efectivo</td><td style="text-align:right;font-weight:600;color:${INK};">${esc(formatCop(input.salesCashCents))}</td></tr>
             <tr><td style="padding:4px 0;">+ Ventas transferencia</td><td style="text-align:right;font-weight:600;color:${INK};">${esc(formatCop(input.salesTransferCents))}</td></tr>
             <tr><td style="padding:4px 0;">− Egresos efectivo</td><td style="text-align:right;font-weight:600;color:${INK};">${esc(formatCop(input.expensesCashCents))}</td></tr>
             <tr><td style="padding:4px 0;">− Egresos otros</td><td style="text-align:right;font-weight:600;color:${INK};">${esc(formatCop(input.expensesOtherCents))}</td></tr>
-            <tr><td style="padding:10px 0 4px;border-top:1px solid ${RULE};font-weight:700;color:${INK};">Neto del turno en efectivo</td><td style="padding:10px 0 4px;border-top:1px solid ${RULE};text-align:right;font-weight:700;color:${INK};">${esc(formatCop(input.expectedCashCents))}</td></tr>
+            <tr><td style="padding:10px 0 4px;border-top:1px solid ${RULE};font-weight:700;color:${INK};">Efectivo esperado en gaveta</td><td style="padding:10px 0 4px;border-top:1px solid ${RULE};text-align:right;font-weight:700;color:${INK};">${esc(formatCop(input.expectedCashCents))}</td></tr>
             <tr><td style="padding:4px 0;">Efectivo contado (gaveta)</td><td style="text-align:right;font-weight:600;color:${INK};">${esc(formatCop(input.countedCashCents))}</td></tr>
             <tr><td style="padding:4px 0;">Diferencia</td><td style="text-align:right;font-weight:700;color:${diffColor};">${esc(diffLabel)}</td></tr>
           </table>
@@ -552,7 +552,7 @@ export function buildCashCloseReportHtml(
   const text = [
     `${subjectPrefix}Cierre de caja · ${dayLabel}`,
     `Ver en admin: ${sessionUrl}`,
-    `Inicio — fondo ${formatCop(input.openingFloatCents)} · ${input.openedByName ?? "—"} · ${formatBogota(input.openedAt)}`,
+    `Inicio — arrastre ${formatCop(input.openingFloatCents)} · ${input.openedByName ?? "—"} · ${formatBogota(input.openedAt)}`,
     `Cierre — esperado ${formatCop(input.expectedCashCents)} · contado ${formatCop(input.countedCashCents)} · ${diffLabel}`,
     `Ventas: ${formatCop(input.salesTotalCents)} (${input.salesCount} facturas)`,
     `Unidades: ${input.unitsSold}`,

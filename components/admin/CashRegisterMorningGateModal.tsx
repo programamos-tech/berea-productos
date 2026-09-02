@@ -11,6 +11,7 @@ import {
   ProductMoneyInput,
   productLabelClass as labelClass,
 } from "@/components/admin/product-form-primitives";
+import { formatCop } from "@/lib/money";
 
 function newSubmissionId() {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
@@ -28,14 +29,19 @@ function greetingForHour(hour: number): string {
 export function CashRegisterMorningGateModal({
   businessDayLabel,
   displayName,
+  suggestedOpeningFloatCents = 0,
   demoMode = false,
 }: {
   businessDayLabel: string;
   displayName: string | null;
+  /** Contado del último cierre (arrastre). */
+  suggestedOpeningFloatCents?: number;
   /** Solo preview: no abre caja de verdad. */
   demoMode?: boolean;
 }) {
-  const [floatCents, setFloatCents] = useState(0);
+  const [floatCents, setFloatCents] = useState(
+    Math.max(0, Math.floor(suggestedOpeningFloatCents)),
+  );
   const [submissionId] = useState(newSubmissionId);
   const [hello, setHello] = useState("buenos días");
   const [demoDone, setDemoDone] = useState(false);
@@ -44,6 +50,10 @@ export function CashRegisterMorningGateModal({
   useEffect(() => {
     setHello(greetingForHour(new Date().getHours()));
   }, []);
+
+  useEffect(() => {
+    setFloatCents(Math.max(0, Math.floor(suggestedOpeningFloatCents)));
+  }, [suggestedOpeningFloatCents]);
 
   return (
     <div
@@ -76,8 +86,9 @@ export function CashRegisterMorningGateModal({
               {name}
             </p>
             <p className="mt-1.5 text-sm leading-relaxed text-zinc-600 dark:text-zinc-300">
-              Iniciamos el día · {businessDayLabel}. ¿Cuánto de dinero de base tenés en caja?
-              Sin abrirla no podés facturar ni usar el resto del panel.
+              Iniciamos el día · {businessDayLabel}. Confirmá el efectivo que quedó
+              del cierre anterior. Los $100.000 de cambio no se cargan acá. Sin
+              abrir la caja no podés facturar ni usar el resto del panel.
             </p>
           </div>
         </div>
@@ -97,7 +108,7 @@ export function CashRegisterMorningGateModal({
             onSubmit={(e) => {
               if (floatCents === 0) {
                 const ok = window.confirm(
-                  "El fondo inicial está en $0.\n\n¿Estás segura de que la caja va a comenzar en 0?",
+                  "El efectivo del día anterior está en $0.\n\n¿Estás segura de que la caja va a comenzar en 0? (Los $100.000 de cambio no se cargan acá.)",
                 );
                 if (!ok) {
                   e.preventDefault();
@@ -114,7 +125,7 @@ export function CashRegisterMorningGateModal({
               <input type="hidden" name="submission_id" value={submissionId} />
             ) : null}
             <div>
-              <span className={labelClass}>Dinero base en caja</span>
+              <span className={labelClass}>Efectivo del día anterior</span>
               <div className="mt-2">
                 <ProductMoneyInput
                   name="opening_float_cents"
@@ -123,6 +134,11 @@ export function CashRegisterMorningGateModal({
                   required
                 />
               </div>
+              {suggestedOpeningFloatCents > 0 ? (
+                <p className="mt-1.5 text-xs text-zinc-500 dark:text-zinc-400">
+                  Sugerido del último cierre: {formatCop(suggestedOpeningFloatCents)}
+                </p>
+              ) : null}
             </div>
             <AdminFormSubmitButton
               pendingLabel="Abriendo caja…"

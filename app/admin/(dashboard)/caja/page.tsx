@@ -11,6 +11,7 @@ import {
   fetchCashSessionForBusinessDay,
   fetchOpenCashSession,
   fetchRecentCashSessions,
+  fetchSuggestedOpeningFloatCents,
   toBlindCashSummary,
 } from "@/lib/cash-register";
 import { formatCop } from "@/lib/money";
@@ -23,7 +24,7 @@ export const dynamic = "force-dynamic";
 function errorMessage(code: string | undefined): string | null {
   switch (code) {
     case "float":
-      return "El fondo inicial no es válido.";
+      return "El efectivo del día anterior no es válido.";
     case "counted":
       return "El efectivo contado no es válido.";
     case "already_open":
@@ -61,11 +62,13 @@ export default async function AdminCajaPage({
 
   const supabase = await createSupabaseServerClient();
   const today = todayYmdInReportStore();
-  const [open, todaySession, recent] = await Promise.all([
-    fetchOpenCashSession(supabase),
-    fetchCashSessionForBusinessDay(supabase, today),
-    fetchRecentCashSessions(supabase, 21),
-  ]);
+  const [open, todaySession, recent, suggestedOpeningFloatCents] =
+    await Promise.all([
+      fetchOpenCashSession(supabase),
+      fetchCashSessionForBusinessDay(supabase, today),
+      fetchRecentCashSessions(supabase, 21),
+      fetchSuggestedOpeningFloatCents(supabase),
+    ]);
 
   const live = open
     ? await fetchCashDayLiveTotals(
@@ -117,6 +120,7 @@ export default async function AdminCajaPage({
           blind={blind}
           errorBanner={banner}
           defaultOpen
+          suggestedOpeningFloatCents={suggestedOpeningFloatCents}
         />
       ) : null}
 
@@ -190,7 +194,7 @@ export default async function AdminCajaPage({
                 <tr className="border-b border-zinc-200 bg-zinc-50/80 text-xs uppercase tracking-wide text-zinc-500 dark:border-zinc-700 dark:bg-zinc-950/50 dark:text-zinc-400">
                   <th className="px-4 py-3 font-medium">Día</th>
                   <th className="px-4 py-3 font-medium">Estado</th>
-                  <th className="px-4 py-3 text-right font-medium">Neto turno</th>
+                  <th className="px-4 py-3 text-right font-medium">Esperado</th>
                   <th className="px-4 py-3 text-right font-medium">Contado</th>
                   <th className="px-4 py-3 text-right font-medium">Dif.</th>
                   <th className="px-4 py-3 text-right font-medium">Ud</th>

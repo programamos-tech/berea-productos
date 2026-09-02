@@ -87,7 +87,7 @@ export async function openCashRegisterSession(formData: FormData) {
     actionType: "cash_session_opened",
     entityType: "cash_session",
     entityId: String(inserted.id),
-    summary: `Caja abierta · fondo ${formatCop(openingFloat)}`,
+    summary: `Caja abierta · arrastre ${formatCop(openingFloat)}`,
     metadata: {
       business_day: businessDay,
       opening_float_cents: openingFloat,
@@ -131,7 +131,7 @@ export async function closeCashRegisterSession(formData: FormData) {
   const businessDay = String(session.business_day).slice(0, 10);
   const live = await fetchCashDayLiveTotals(supabase, businessDay, openingFloat);
   const expected = live.expectedCashCents;
-  // Esperado = neto del turno (cobros − egresos). El contado debe ser ese neto, sin restar la base otra vez.
+  // Esperado = arrastre (día anterior) + cobros − egresos. Contar toda la plata de negocio en gaveta (sin los 100k de cambio).
   const difference = countedCash - expected;
 
   // Validar antes del token: si falla, pueden reintentar con el mismo formulario.

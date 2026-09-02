@@ -3,6 +3,7 @@ import { adminNavAllowedHrefList } from "@/lib/admin-nav-allowed";
 import { prettyReportDayShortLabel } from "@/lib/admin-report-range";
 import {
   fetchCashSessionForBusinessDay,
+  fetchSuggestedOpeningFloatCents,
   todayBusinessDayYmd,
 } from "@/lib/cash-register";
 import {
@@ -26,6 +27,7 @@ export default async function AdminDashboardLayout({
     mustOpen: boolean;
     businessDayLabel: string;
     displayName: string | null;
+    suggestedOpeningFloatCents: number;
   } | null = null;
 
   const supabase = await createSupabaseServerClient();
@@ -39,11 +41,14 @@ export default async function AdminDashboardLayout({
 
   if (mustOpen) {
     allowedNavHrefs = navHrefsForCashGate(allowedNavHrefs);
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("display_name")
-      .eq("id", perm.userId)
-      .maybeSingle();
+    const [{ data: profile }, suggestedOpeningFloatCents] = await Promise.all([
+      supabase
+        .from("profiles")
+        .select("display_name")
+        .eq("id", perm.userId)
+        .maybeSingle(),
+      fetchSuggestedOpeningFloatCents(supabase),
+    ]);
     cashGate = {
       mustOpen: true,
       businessDayLabel: prettyReportDayShortLabel(today),
@@ -51,6 +56,7 @@ export default async function AdminDashboardLayout({
         profile?.display_name != null
           ? String(profile.display_name)
           : null,
+      suggestedOpeningFloatCents,
     };
   }
 

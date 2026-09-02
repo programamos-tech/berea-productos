@@ -178,7 +178,7 @@ export function getActivityDetailRows(
     const day = str(m.business_day);
     if (day) rows.push({ label: "Día", value: day });
     const float = num(m.opening_float_cents);
-    if (float != null) rows.push({ label: "Fondo inicial", value: formatMoneyCOP(float) });
+    if (float != null) rows.push({ label: "Efectivo día anterior", value: formatMoneyCOP(float) });
     if (action === "cash_session_closed") {
       const expected = num(m.expected_cash_cents);
       const counted = num(m.counted_cash_cents);

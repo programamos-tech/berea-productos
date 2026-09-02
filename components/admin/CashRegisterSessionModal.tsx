@@ -22,6 +22,7 @@ type Props = {
   blind?: CashDayBlindSummary | null;
   errorBanner?: string | null;
   defaultOpen?: boolean;
+  suggestedOpeningFloatCents?: number;
 };
 
 export function CashRegisterSessionModal({
@@ -33,6 +34,7 @@ export function CashRegisterSessionModal({
   blind,
   errorBanner,
   defaultOpen = true,
+  suggestedOpeningFloatCents = 0,
 }: Props) {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
@@ -93,7 +95,7 @@ export function CashRegisterSessionModal({
       ? ["Turno abierto", openedAtLabel, openedByLabel]
           .filter(Boolean)
           .join(" · ") || businessDayLabel
-      : `Fondo inicial · ${businessDayLabel}`;
+      : `Efectivo del día anterior · ${businessDayLabel}`;
 
   return (
     <>
@@ -166,7 +168,9 @@ export function CashRegisterSessionModal({
                           {errorBanner}
                         </p>
                       ) : null}
-                      <CashRegisterOpenForm />
+                      <CashRegisterOpenForm
+                        suggestedOpeningFloatCents={suggestedOpeningFloatCents}
+                      />
                     </div>
                   ) : sessionId && liveBlind ? (
                     <CashRegisterClosePanel

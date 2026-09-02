@@ -49,6 +49,7 @@ async function main() {
   );
   const live = await fetchCashDayLiveTotals(sb, DAY, opening);
   const expected = expectedCashFromParts(
+    opening,
     live.salesCashCents,
     live.expensesCashCents,
   );
