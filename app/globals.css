@@ -444,6 +444,19 @@ body {
   }
 }
 
+.reports-month-playlist {
+  scroll-snap-type: x mandatory;
+  scrollbar-color: color-mix(in oklab, var(--color-rose-400, #fb7185) 45%, transparent) transparent;
+}
+
+.reports-month-playlist::-webkit-scrollbar {
+  height: 5px;
+}
+
+.reports-month-playlist::-webkit-scrollbar-thumb {
+  background: color-mix(in oklab, var(--color-rose-400, #fb7185) 45%, transparent);
+}
+
 /*
  * Backoffice (tema claro): un tono más oscuro en grises de apoyo
  * (tablas, hints, cabeceras) para legibilidad con mucha luz.

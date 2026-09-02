@@ -1,12 +1,15 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import {
+  addCalendarDaysReport,
   addYearMonths,
   currentYearMonthInReportStore,
   dayInRange,
   monthYmdBounds,
   prettyYearMonthLabel,
   reportCalendarDayKeyFromIso,
+  reportRangeDayCountInclusive,
   reportYearMonthFromIso,
+  yearMonthsInclusive,
 } from "@/lib/admin-report-range";
 import {
   fetchOrderItemsInChunks,
@@ -19,27 +22,29 @@ import {
   type OrderRowRef,
   type ProductVatRow,
 } from "@/lib/order-revenue-vat";
-import { formatCop } from "@/lib/money";
 
 export type MonthlyPulsePoint = {
   yearMonth: string;
-  /** «julio de 2026» */
   label: string;
-  /** Etiqueta corta: «Julio» */
   shortLabel: string;
+  year: string;
   from: string;
   to: string;
   isPartial: boolean;
+  isCurrent: boolean;
   ventas: number;
   ingresosConIva: number;
   gananciaBruta: number;
   egresos: number;
   gananciaNeta: number;
+  /** Mismo tramo de días del mes anterior (solo mes actual). */
+  priorMtdNeta: number | null;
 };
 
 export type MonthlyPulseResult = {
+  /** Cronológico: más viejo → más nuevo. */
   months: MonthlyPulsePoint[];
-  /** Frase tipo: «Julio cerró en verde… Agosto en rojo…» */
+  /** Una línea sobre el mes en curso. */
   insight: string;
 };
 
@@ -76,7 +81,7 @@ async function fetchExpensesWindow(
     .select("amount_cents,expense_date,created_at,is_cancelled")
     .gte("expense_date", from)
     .lte("expense_date", to)
-    .limit(3000);
+    .limit(8000);
   if (!withCancelled.error) return (withCancelled.data ?? []) as Record<string, unknown>[];
 
   const fallback = await supabase
@@ -84,7 +89,7 @@ async function fetchExpensesWindow(
     .select("amount_cents,expense_date,created_at")
     .gte("expense_date", from)
     .lte("expense_date", to)
-    .limit(3000);
+    .limit(8000);
   return (fallback.data ?? []) as Record<string, unknown>[];
 }
 
@@ -111,59 +116,94 @@ async function loadProductsById(
   return productsById;
 }
 
-function buildInsight(months: MonthlyPulsePoint[]): string {
-  if (months.length === 0) return "";
-  const parts = months.map((m) => {
-    const tone = m.gananciaNeta >= 0 ? "en verde" : "en rojo";
-    const amount = formatCop(m.gananciaNeta);
-    if (m.isPartial) {
-      return `${m.shortLabel} (parcial) va ${tone} (${amount})`;
-    }
-    return `${m.shortLabel} cerró ${tone} (${amount})`;
+async function firstPaidYearMonth(supabase: SupabaseClient): Promise<string | null> {
+  const { data, error } = await supabase
+    .from("orders")
+    .select("created_at")
+    .eq("status", "paid")
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  if (error || !data?.created_at) return null;
+  return reportYearMonthFromIso(String(data.created_at)) || null;
+}
+
+function summarizeWindow(
+  from: string,
+  to: string,
+  paidAll: OrderRowRef[],
+  orderItems: OrderItemRow[],
+  productsById: Map<string, ProductVatRow>,
+  expenseRows: Record<string, unknown>[],
+): {
+  ventas: number;
+  ingresosConIva: number;
+  gananciaBruta: number;
+  egresos: number;
+  gananciaNeta: number;
+} {
+  const paid = paidAll.filter((o) => {
+    if (typeof o.created_at !== "string") return false;
+    return dayInRange(reportCalendarDayKeyFromIso(o.created_at), from, to);
   });
-  if (parts.length === 1) return parts[0] + ".";
-  if (parts.length === 2) return `${parts[0]}. ${parts[1]}.`;
-  const last = parts[parts.length - 1];
-  const head = parts.slice(0, -1).join(". ");
-  return `${head}. ${last}.`;
+  const rev = sumRevenueNetGrossForOrders(paid, orderItems, productsById);
+  const bruta = sumGrossProfitNetOnLinesForPaidOrders(paid, orderItems, productsById);
+  let egresos = 0;
+  for (const e of expenseRows) {
+    if (isExpenseCancelled(e)) continue;
+    const dk = expenseDayKey(e);
+    if (!dayInRange(dk, from, to)) continue;
+    egresos += Math.max(0, Math.round(Number(e.amount_cents ?? 0)));
+  }
+  return {
+    ventas: paid.length,
+    ingresosConIva: rev.gross,
+    gananciaBruta: bruta,
+    egresos,
+    gananciaNeta: bruta - egresos,
+  };
+}
+
+function nowPlayingInsight(current: MonthlyPulsePoint | undefined): string {
+  if (!current) return "";
+  if (current.gananciaNeta > 0) {
+    if (current.priorMtdNeta != null && current.gananciaNeta < current.priorMtdNeta) {
+      return "En verde, más lento que el mes pasado";
+    }
+    return "Va bien";
+  }
+  if (current.gananciaNeta < 0) return "Va en rojo";
+  return "En cero por ahora";
 }
 
 /**
- * Últimos `monthCount` meses calendario (tienda), anclados al mes actual.
- * Misma definición de ganancia que Reportes: margen por línea − egresos activos.
- * Independiente del filtro del resumen.
+ * Historial mensual desde la primera venta hasta el mes actual.
+ * Misma ganancia neta que Reportes (margen por línea − egresos activos).
  */
 export async function fetchAdminReportMonthlyPulse(
   supabase: SupabaseClient,
-  opts?: { monthCount?: number; todayYmd?: string; now?: Date },
+  opts?: { todayYmd?: string; now?: Date; maxMonths?: number },
 ): Promise<MonthlyPulseResult> {
-  const monthCount = Math.min(6, Math.max(2, Math.trunc(opts?.monthCount ?? 3)));
+  const maxMonths = Math.min(24, Math.max(2, Math.trunc(opts?.maxMonths ?? 24)));
   const todayYmd =
     opts?.todayYmd ??
     reportCalendarDayKeyFromIso((opts?.now ?? new Date()).toISOString());
   const anchorYm = currentYearMonthInReportStore(opts?.now);
-
-  const yearMonths: string[] = [];
-  for (let i = monthCount - 1; i >= 0; i -= 1) {
-    const ym = addYearMonths(anchorYm, -i);
-    if (ym) yearMonths.push(ym);
-  }
+  const firstYm = (await firstPaidYearMonth(supabase)) ?? anchorYm;
+  const yearMonths = yearMonthsInclusive(firstYm, anchorYm, maxMonths) ?? [anchorYm];
   if (yearMonths.length === 0) return { months: [], insight: "" };
 
   const monthSpecs = yearMonths.map((ym) => {
-    const bounds = monthYmdBounds(ym);
-    if (!bounds) {
-      return {
-        yearMonth: ym,
-        from: `${ym}-01`,
-        to: `${ym}-01`,
-        isPartial: false,
-      };
-    }
+    const bounds = monthYmdBounds(ym) ?? { from: `${ym}-01`, to: `${ym}-01` };
     const fullTo = bounds.to;
     const to = fullTo > todayYmd ? todayYmd : fullTo;
-    const isPartial = to < fullTo;
-    return { yearMonth: ym, from: bounds.from, to, isPartial };
+    return {
+      yearMonth: ym,
+      from: bounds.from,
+      to,
+      isPartial: to < fullTo,
+      isCurrent: ym === anchorYm,
+    };
   });
 
   const fetchFrom = monthSpecs[0].from;
@@ -181,7 +221,6 @@ export async function fetchAdminReportMonthlyPulse(
 
   const allOrders = (ordersResult.rows ?? []) as OrderRowRef[];
   const paidAll = allOrders.filter((o) => o.status === "paid");
-
   const paidIds = paidAll.map((o) => o.id).filter(Boolean);
   const { rows: itemRows } = await fetchOrderItemsInChunks(
     supabase,
@@ -191,48 +230,57 @@ export async function fetchAdminReportMonthlyPulse(
   const orderItems = itemRows as OrderItemRow[];
   const productsById = await loadProductsById(supabase, orderItems);
 
-  const months: MonthlyPulsePoint[] = monthSpecs.map((spec) => {
-    const paid = paidAll.filter((o) => {
-      if (typeof o.created_at !== "string") return false;
-      const dk = reportCalendarDayKeyFromIso(o.created_at);
-      return dayInRange(dk, spec.from, spec.to);
-    });
-
-    const rev = sumRevenueNetGrossForOrders(paid, orderItems, productsById);
-    const bruta = sumGrossProfitNetOnLinesForPaidOrders(
-      paid,
+  const months: MonthlyPulsePoint[] = [];
+  for (const spec of monthSpecs) {
+    const stats = summarizeWindow(
+      spec.from,
+      spec.to,
+      paidAll,
       orderItems,
       productsById,
+      expenseRows,
     );
+    const keep =
+      spec.isCurrent || stats.ventas > 0 || stats.egresos > 0 || stats.ingresosConIva > 0;
+    if (!keep) continue;
 
-    let egresos = 0;
-    for (const e of expenseRows) {
-      if (isExpenseCancelled(e)) continue;
-      const dk = expenseDayKey(e);
-      if (!dayInRange(dk, spec.from, spec.to)) continue;
-      egresos += Math.max(0, Math.round(Number(e.amount_cents ?? 0)));
+    let priorMtdNeta: number | null = null;
+    if (spec.isCurrent) {
+      const priorYm = addYearMonths(spec.yearMonth, -1);
+      const priorBounds = priorYm ? monthYmdBounds(priorYm) : null;
+      if (priorYm && priorBounds) {
+        const dayCount = reportRangeDayCountInclusive(spec.from, spec.to);
+        const priorToRaw = addCalendarDaysReport(priorBounds.from, dayCount - 1);
+        const priorTo = priorToRaw > priorBounds.to ? priorBounds.to : priorToRaw;
+        priorMtdNeta = summarizeWindow(
+          priorBounds.from,
+          priorTo,
+          paidAll,
+          orderItems,
+          productsById,
+          expenseRows,
+        ).gananciaNeta;
+      }
     }
 
-    const neta = bruta - egresos;
-    return {
+    months.push({
       yearMonth: spec.yearMonth,
       label: prettyYearMonthLabel(spec.yearMonth),
       shortLabel: shortMonthLabel(spec.yearMonth),
+      year: spec.yearMonth.slice(0, 4),
       from: spec.from,
       to: spec.to,
       isPartial: spec.isPartial,
-      ventas: paid.length,
-      ingresosConIva: rev.gross,
-      gananciaBruta: bruta,
-      egresos,
-      gananciaNeta: neta,
-    };
-  });
+      isCurrent: spec.isCurrent,
+      ...stats,
+      priorMtdNeta,
+    });
+  }
 
-  return { months, insight: buildInsight(months) };
+  const current = months.find((m) => m.isCurrent);
+  return { months, insight: nowPlayingInsight(current) };
 }
 
-/** Mes `YYYY-MM` del día ancla (filtro), por si se quiere resaltar. */
 export function pulseHighlightYearMonth(
   rangeFrom: string,
   rangeTo: string,

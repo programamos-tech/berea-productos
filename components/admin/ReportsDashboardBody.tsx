@@ -71,7 +71,7 @@ export async function ReportsDashboardBody({
         fetchTo,
         periodLabel,
       }),
-      fetchAdminReportMonthlyPulse(supabase, { todayYmd: todayKey, monthCount: 3 }),
+      fetchAdminReportMonthlyPulse(supabase, { todayYmd: todayKey }),
     ]);
     report = dashboard;
     monthlyPulse = pulse;
