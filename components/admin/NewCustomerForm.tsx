@@ -100,14 +100,16 @@ export function NewCustomerForm({ returnTo }: { returnTo?: string }) {
         ? "1 dirección"
         : `${filledCount} direcciones`;
 
-  const wholesaleFieldsOk =
-    customerKind !== "wholesale" ||
-    (documentId.trim().length > 0 &&
-      email.trim().length > 0 &&
-      /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) &&
-      phone.trim().length > 0);
+  const wholesaleMissing: string[] = [];
+  if (customerKind === "wholesale") {
+    if (!documentId.trim()) wholesaleMissing.push("NIT");
+    if (!phone.trim()) wholesaleMissing.push("teléfono");
+    if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      wholesaleMissing.push("correo electrónico válido");
+    }
+  }
 
-  const canSubmit = name.trim().length > 0 && wholesaleFieldsOk;
+  const canSubmit = name.trim().length > 0 && wholesaleMissing.length === 0;
 
   function updateAddr(i: number, patch: Partial<Addr>) {
     setAddresses((prev) =>
@@ -126,6 +128,13 @@ export function NewCustomerForm({ returnTo }: { returnTo?: string }) {
   return (
     <form action={createStoreCustomer} className="space-y-6">
       {returnTo ? <input type="hidden" name="return_to" value={returnTo} /> : null}
+      <input type="hidden" name="customer_kind" value={customerKind} readOnly />
+      <input
+        type="hidden"
+        name="wholesale_discount_percent"
+        value={customerKind === "wholesale" ? wholesalePct : 0}
+        readOnly
+      />
       <div className="grid gap-6 lg:grid-cols-3 lg:gap-8">
         <div className="space-y-6 lg:col-span-2">
           <section className={`${shellCard} p-6 sm:p-8`}>
@@ -214,7 +223,6 @@ export function NewCustomerForm({ returnTo }: { returnTo?: string }) {
                   <label className="flex cursor-pointer items-center gap-2 text-sm text-zinc-800 dark:text-zinc-200">
                     <input
                       type="radio"
-                      name="customer_kind"
                       value="retail"
                       checked={customerKind === "retail"}
                       onChange={() => setCustomerKind("retail")}
@@ -225,7 +233,6 @@ export function NewCustomerForm({ returnTo }: { returnTo?: string }) {
                   <label className="flex cursor-pointer items-center gap-2 text-sm text-zinc-800 dark:text-zinc-200">
                     <input
                       type="radio"
-                      name="customer_kind"
                       value="wholesale"
                       checked={customerKind === "wholesale"}
                       onChange={() => setCustomerKind("wholesale")}
@@ -241,7 +248,6 @@ export function NewCustomerForm({ returnTo }: { returnTo?: string }) {
                     </label>
                     <input
                       id="nc-wholesale-pct"
-                      name="wholesale_discount_percent"
                       type="number"
                       min={0}
                       max={100}
@@ -262,11 +268,17 @@ export function NewCustomerForm({ returnTo }: { returnTo?: string }) {
                       corresponde).
                     </p>
                   </div>
-                ) : (
-                  <input type="hidden" name="wholesale_discount_percent" value={0} />
-                )}
+                ) : null}
               </div>
             </div>
+            {wholesaleMissing.length > 0 ? (
+              <p
+                className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950 dark:border-amber-800/60 dark:bg-amber-950/40 dark:text-amber-100"
+                role="status"
+              >
+                Para crear un mayorista completá: {wholesaleMissing.join(", ")}.
+              </p>
+            ) : null}
           </section>
 
           <section className={`${shellCard} p-6 sm:p-8`}>
@@ -377,9 +389,11 @@ export function NewCustomerForm({ returnTo }: { returnTo?: string }) {
                 </div>
               </dl>
                 <p className="mt-3 text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
-                  {customerKind === "wholesale"
-                    ? "Mayorista: NIT, correo y teléfono son obligatorios. Las direcciones siguen siendo opcionales."
-                    : "Completa al menos el nombre. Las direcciones son opcionales."}
+                  {wholesaleMissing.length > 0
+                    ? `Falta ${wholesaleMissing.join(", ")} para crear el mayorista.`
+                    : customerKind === "wholesale"
+                      ? "Mayorista listo para guardar. Las direcciones son opcionales."
+                      : "Completa al menos el nombre. Las direcciones son opcionales."}
                 </p>
             </div>
 

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useTransition } from "react";
 import { convertQuotationToSaleAction } from "@/app/actions/admin/quotation";
 import { productInputClass as inputClass } from "@/components/admin/product-form-primitives";
@@ -60,6 +61,12 @@ export function OrderQuotationActions({
 
   return (
     <div className="space-y-2 print:hidden">
+      <Link
+        href={`/admin/ventas/nueva?quotation=${encodeURIComponent(orderId)}`}
+        className={`${adminButtonCancelClass} inline-flex w-full items-center justify-center px-4 py-2`}
+      >
+        Editar cotización
+      </Link>
       <button
         type="button"
         onClick={() => setFacturarOpen(true)}

@@ -31,6 +31,7 @@ import {
   ADMIN_SEARCH_TIMEOUT_MS,
   abortSignalWithTimeout,
 } from "@/lib/abort-signal-timeout";
+import type { QuotationEditDraft } from "@/lib/load-quotation-edit-draft";
 import { saleVatPercentLabel, unitPriceGrossCents } from "@/lib/product-vat-price";
 
 const cardSectionClass =
@@ -201,7 +202,12 @@ function useDebounced<T>(value: T, ms: number): T {
   return v;
 }
 
-export function NewInvoiceHeader() {
+export function NewInvoiceHeader({
+  editQuotation,
+}: {
+  editQuotation?: QuotationEditDraft;
+}) {
+  const editing = Boolean(editQuotation);
   return (
     <div className="mb-6 flex min-w-0 flex-col gap-4 sm:mb-8 sm:flex-row sm:items-start sm:justify-between">
       <div className="min-w-0">
@@ -213,20 +219,40 @@ export function NewInvoiceHeader() {
             Ventas
           </Link>
           <span className="mx-1.5 text-zinc-300 dark:text-zinc-600">/</span>
-          <span className="text-zinc-700 dark:text-zinc-300">Nueva factura</span>
+          {editing && editQuotation ? (
+            <>
+              <Link
+                href={`/admin/orders/${editQuotation.orderId}`}
+                className="hover:text-zinc-800 dark:hover:text-zinc-200"
+              >
+                Cotización #{editQuotation.invoiceRef}
+              </Link>
+              <span className="mx-1.5 text-zinc-300 dark:text-zinc-600">/</span>
+              <span className="text-zinc-700 dark:text-zinc-300">Editar</span>
+            </>
+          ) : (
+            <span className="text-zinc-700 dark:text-zinc-300">Nueva factura</span>
+          )}
         </p>
         <h1 className="mt-2 text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 sm:text-2xl md:text-3xl">
-          Nueva factura
+          {editing && editQuotation
+            ? `Editar cotización #${editQuotation.invoiceRef}`
+            : "Nueva factura"}
         </h1>
         <p className="mt-2 max-w-2xl text-sm text-zinc-500 dark:text-zinc-400">
-          Cliente Final viene por defecto. Podés buscar otro, agregar productos y
-          elegir si es venta o cotización.
+          {editing
+            ? "Modificá cliente, productos o cantidades y guardá. Después podés facturarla desde el detalle."
+            : "Cliente Final viene por defecto. Podés buscar otro, agregar productos y elegir si es venta o cotización."}
         </p>
       </div>
       <Link
-        href="/admin/ventas"
+        href={
+          editing && editQuotation
+            ? `/admin/orders/${editQuotation.orderId}`
+            : "/admin/ventas"
+        }
         className="inline-flex size-10 shrink-0 items-center justify-center self-start rounded-lg border border-zinc-200/90 bg-white text-zinc-600 transition hover:bg-zinc-50 hover:text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100 sm:self-auto"
-        aria-label="Volver a ventas"
+        aria-label={editing ? "Volver a la cotización" : "Volver a ventas"}
       >
         <span className="text-lg leading-none" aria-hidden>
           ←
@@ -247,6 +273,10 @@ function errorMessage(code: string | undefined): string | null {
       return "Algún producto no es válido o ya no existe.";
     case "stock":
       return "Stock insuficiente en tienda para uno o más productos.";
+    case "not_quotation":
+      return "Esa cotización ya no se puede editar (fue facturada o anulada).";
+    case "missing":
+      return "No se encontró la cotización.";
     case "db":
       return adminCreateFailedMessage("sale");
     default:
@@ -257,9 +287,11 @@ function errorMessage(code: string | undefined): string | null {
 function ConfirmInvoiceButton({
   disabled,
   documentKind,
+  editingQuotation,
 }: {
   disabled: boolean;
   documentKind: "sale" | "quotation";
+  editingQuotation?: boolean;
 }) {
   return (
     <AdminFormSubmitButton
@@ -267,7 +299,11 @@ function ConfirmInvoiceButton({
       disabled={disabled}
       data-invoice-confirm="true"
     >
-      {documentKind === "quotation" ? "Guardar cotización" : "Confirmar factura"}
+      {editingQuotation
+        ? "Guardar cambios"
+        : documentKind === "quotation"
+          ? "Guardar cotización"
+          : "Confirmar factura"}
     </AdminFormSubmitButton>
   );
 }
@@ -285,10 +321,13 @@ function onInvoiceFormSubmit(e: React.FormEvent<HTMLFormElement>) {
 export function NewInvoiceForm({
   initialError,
   initialCustomerId,
+  editQuotation,
 }: {
   initialError?: string;
   initialCustomerId?: string;
+  editQuotation?: QuotationEditDraft;
 }) {
+  const editingQuotation = Boolean(editQuotation);
   const quickNameInputRef = useRef<HTMLInputElement>(null);
   const customerSearchInputRef = useRef<HTMLInputElement>(null);
   const [quickModalOpen, setQuickModalOpen] = useState(false);
@@ -315,7 +354,17 @@ export function NewInvoiceForm({
     null,
   );
 
-  const [customer, setCustomer] = useState<CustomerHit | null>(null);
+  const [customer, setCustomer] = useState<CustomerHit | null>(() =>
+    editQuotation
+      ? {
+          id: editQuotation.customer.id,
+          name: editQuotation.customer.name,
+          email: editQuotation.customer.email,
+          phone: editQuotation.customer.phone,
+          document_id: editQuotation.customer.document_id,
+        }
+      : null,
+  );
   const [customerWholesalePct, setCustomerWholesalePct] = useState(0);
   const [posCustomerKind, setPosCustomerKind] = useState<"retail" | "wholesale">("retail");
   const [shipOptions, setShipOptions] = useState<ShipOption[]>([]);
@@ -329,11 +378,50 @@ export function NewInvoiceForm({
   /** Evita un segundo fetch de pos-profile cuando ya aplicamos el perfil (p. ej. ?customer=). */
   const profileAppliedForIdRef = useRef<string | null>(null);
   const shipLoadGenRef = useRef(0);
+  const editShipHydratedRef = useRef(false);
 
-  const [lines, setLines] = useState<CartLine[]>([]);
-  const [kitLines, setKitLines] = useState<KitCartLine[]>([]);
+  const [lines, setLines] = useState<CartLine[]>(() =>
+    (editQuotation?.lines ?? []).map((l) => {
+      const hasPct = l.discountPercent != null && l.discountPercent > 0;
+      const hasAmt = !hasPct && l.discountAmountCents > 0;
+      return {
+        key: crypto.randomUUID(),
+        product: {
+          id: l.productId,
+          name: l.name,
+          reference: l.reference,
+          price_cents: l.price_cents,
+          stock_local: l.stock_local,
+          stock_quantity: l.stock_local,
+          has_vat: l.has_vat,
+          vat_percent: l.vat_percent,
+        },
+        quantity: l.quantity,
+        discountMode: hasPct ? "percent" : hasAmt ? "amount" : "none",
+        discountPercent: hasPct ? l.discountPercent! : 0,
+        discountAmountRaw: hasAmt ? String(l.discountAmountCents) : "",
+      };
+    }),
+  );
+  const [kitLines, setKitLines] = useState<KitCartLine[]>(() =>
+    (editQuotation?.kitLines ?? []).map((k) => ({
+      key: crypto.randomUUID(),
+      kit: {
+        id: k.kitId,
+        name: k.name,
+        price_cents: k.price_cents,
+        max_stock: k.max_stock,
+        available: k.available,
+        is_published: k.is_published,
+        item_count: k.item_count,
+      },
+      quantity: k.quantity,
+    })),
+  );
   const [payment, setPayment] = useState<PaymentTab>("cash");
-  const [documentKind, setDocumentKind] = useState<"sale" | "quotation">("sale");
+  const [documentKind, setDocumentKind] = useState<"sale" | "quotation">(
+    editingQuotation ? "quotation" : "sale",
+  );
   const [cashGivenRaw, setCashGivenRaw] = useState("");
   const [transferRef, setTransferRef] = useState("");
   const [mixedCashRaw, setMixedCashRaw] = useState("");
@@ -359,15 +447,37 @@ export function NewInvoiceForm({
           ? json.shipOptions
           : [PICKUP_SHIP_OPTION];
       setShipOptions(options);
-      setShipChoice((cur) =>
-        cur && options.some((o) => o.id === cur) ? cur : options[0]!.id,
-      );
+
+      const savedShip = editQuotation?.shippingAddress?.trim() ?? "";
+      if (!editShipHydratedRef.current && savedShip) {
+        editShipHydratedRef.current = true;
+        const isPickup =
+          /retiro\s+en\s+tienda/i.test(savedShip) ||
+          savedShip.toLowerCase() === "pickup";
+        if (isPickup) {
+          setShipChoice("pickup");
+        } else {
+          const match = options.find(
+            (o) =>
+              o.kind === "address" &&
+              (savedShip.includes(o.detail) ||
+                savedShip.includes(o.label) ||
+                `${o.label} — ${o.detail}` === savedShip ||
+                `${o.label} - ${o.detail}` === savedShip),
+          );
+          setShipChoice(match?.id ?? options[0]!.id);
+        }
+      } else {
+        setShipChoice((cur) =>
+          cur && options.some((o) => o.id === cur) ? cur : options[0]!.id,
+        );
+      }
       setPosCustomerKind(parseStoreCustomerKind(json.customer?.customer_kind));
       setCustomerWholesalePct(
         wholesaleDiscountPercentFromRow(json.customer ?? {}),
       );
     },
-    [],
+    [editQuotation?.shippingAddress],
   );
 
   const loadCustomerProfile = useCallback(
@@ -457,6 +567,7 @@ export function NewInvoiceForm({
   }, []);
 
   useEffect(() => {
+    if (editQuotation) return;
     if (!initialCustomerId) return;
     let cancelled = false;
     profileAppliedForIdRef.current = null;
@@ -926,6 +1037,7 @@ export function NewInvoiceForm({
     const phone = customer.phone?.trim() || null;
     return JSON.stringify({
       customerId: customer.id,
+      quotationOrderId: editQuotation?.orderId ?? null,
       lines: lines.map((l) => {
         const pct = effectiveLineDiscountPercent(l);
         const amt =
@@ -942,7 +1054,7 @@ export function NewInvoiceForm({
         quantity: l.quantity,
       })),
       paymentMethod: payment,
-      documentKind,
+      documentKind: editingQuotation ? "quotation" : documentKind,
       ...(payment === "mixed"
         ? {
             mixedCashCents: mixedCashCents,
@@ -959,6 +1071,8 @@ export function NewInvoiceForm({
     kitLines,
     payment,
     documentKind,
+    editingQuotation,
+    editQuotation?.orderId,
     mixedCashCents,
     mixedTransferCents,
     shipChoice,
@@ -1486,6 +1600,13 @@ export function NewInvoiceForm({
 
             <section className={`${cardSectionClass} order-5 xl:order-none`}>
               <h2 className={sectionTitle}>Tipo de documento</h2>
+              {editingQuotation ? (
+                <p className="mt-4 rounded-lg border border-amber-200/90 bg-amber-50/70 px-3 py-2.5 text-sm text-amber-950 dark:border-amber-800/60 dark:bg-amber-950/30 dark:text-amber-100">
+                  Estás editando una cotización. Al guardar se actualiza la misma
+                  pre-factura (sin cobro ni descuento de stock).
+                </p>
+              ) : (
+                <>
               <div className="mt-4 flex rounded-xl border border-zinc-200/90 bg-zinc-100 p-1 dark:border-zinc-700 dark:bg-zinc-800/80">
                 {(
                   [
@@ -1525,9 +1646,11 @@ export function NewInvoiceForm({
               {documentKind === "quotation" ? (
                 <p className="mt-3 text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
                   La cotización queda como pre-factura: sin descontar stock ni registrar cobro.
-                  Desde el detalle podés descargarla, enviarla por correo y facturarla después.
+                  Desde el detalle podés editarla, descargarla y facturarla después.
                 </p>
               ) : null}
+                </>
+              )}
             </section>
 
             {documentKind === "sale" ? (
@@ -1695,11 +1818,17 @@ export function NewInvoiceForm({
                 </p>
               </div>
               <p className="mt-5 text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
-                {documentKind === "quotation"
-                  ? "Verificá cliente y productos. Se guarda como cotización (pre-factura) sin cobro ni descuento de stock."
-                  : "Verifica cliente, productos y pago antes de confirmar. La factura quedará registrada como venta en mostrador."}
+                {editingQuotation
+                  ? "Los cambios reemplazan la cotización actual. Después podés facturarla desde el detalle."
+                  : documentKind === "quotation"
+                    ? "Verificá cliente y productos. Se guarda como cotización (pre-factura) sin cobro ni descuento de stock."
+                    : "Verifica cliente, productos y pago antes de confirmar. La factura quedará registrada como venta en mostrador."}
               </p>
-              <ConfirmInvoiceButton disabled={!canSubmit} documentKind={documentKind} />
+              <ConfirmInvoiceButton
+                disabled={!canSubmit}
+                documentKind={documentKind}
+                editingQuotation={editingQuotation}
+              />
             </section>
           </div>
         </div>

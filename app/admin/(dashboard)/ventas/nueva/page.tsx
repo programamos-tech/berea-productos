@@ -1,25 +1,59 @@
 import { AdminNewPageShell } from "@/components/admin/AdminNewPageShell";
 import { NuevaFacturaPageClient } from "@/components/admin/NuevaFacturaPageClient";
+import { loadQuotationEditDraft } from "@/lib/load-quotation-edit-draft";
 import { findDefaultPosCustomerId } from "@/lib/pos-default-customer";
 import { requireAdminPermission } from "@/lib/require-admin-permission";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
 type Props = {
-  searchParams: Promise<{ error?: string; customer?: string }>;
+  searchParams: Promise<{
+    error?: string;
+    customer?: string;
+    quotation?: string;
+  }>;
 };
 
 export default async function AdminNuevaFacturaPage({ searchParams }: Props) {
   await requireAdminPermission("ventas_crear");
   const sp = await searchParams;
   const initialError = typeof sp.error === "string" ? sp.error : undefined;
+  const quotationId =
+    typeof sp.quotation === "string" && sp.quotation.trim().length > 0
+      ? sp.quotation.trim()
+      : undefined;
+
+  const supabase = await createSupabaseServerClient();
+
+  if (quotationId) {
+    const loaded = await loadQuotationEditDraft(supabase, quotationId);
+    if (!loaded.ok) {
+      if (loaded.code === "missing") redirect("/admin/ventas?error=missing");
+      if (loaded.code === "not_quotation") {
+        redirect(`/admin/orders/${quotationId}?error=not_quotation`);
+      }
+      redirect(
+        `/admin/orders/${quotationId}?error=${encodeURIComponent(loaded.code)}`,
+      );
+    }
+
+    return (
+      <AdminNewPageShell>
+        <NuevaFacturaPageClient
+          initialError={initialError}
+          editQuotation={loaded.draft}
+        />
+      </AdminNewPageShell>
+    );
+  }
+
   const fromQuery =
     typeof sp.customer === "string" && sp.customer.trim().length > 0
       ? sp.customer.trim()
       : undefined;
 
-  const supabase = await createSupabaseServerClient();
   const initialCustomerId =
     fromQuery ?? (await findDefaultPosCustomerId(supabase));
 

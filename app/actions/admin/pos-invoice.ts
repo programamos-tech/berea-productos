@@ -53,6 +53,8 @@ export type PosInvoicePayload = {
   kitLines?: PosInvoiceKitLinePayload[];
   /** venta = factura cobrada; quotation = cotización / pre-factura. */
   documentKind?: "sale" | "quotation";
+  /** Editar cotización existente (solo con documentKind quotation). */
+  quotationOrderId?: string | null;
   paymentMethod: "cash" | "transfer" | "mixed";
   /** Solo si paymentMethod === "mixed": centavos en efectivo. */
   mixedCashCents?: number;
@@ -64,7 +66,12 @@ export type PosInvoicePayload = {
   submissionId?: string | null;
 };
 
-function redirectError(code: string): never {
+function redirectError(code: string, quotationOrderId?: string): never {
+  if (quotationOrderId) {
+    redirect(
+      `/admin/ventas/nueva?quotation=${encodeURIComponent(quotationOrderId)}&error=${encodeURIComponent(code)}`,
+    );
+  }
   redirect(`/admin/ventas/nueva?error=${encodeURIComponent(code)}`);
 }
 
@@ -137,17 +144,25 @@ export async function createPosInvoiceAction(formData: FormData) {
     redirectError("validation");
   }
 
+  const quotationOrderId = String(payload.quotationOrderId ?? "").trim();
+  const isEditingQuotation = quotationOrderId.length > 0;
   const documentKind =
-    payload.documentKind === "quotation" ? "quotation" : "sale";
+    isEditingQuotation || payload.documentKind === "quotation"
+      ? "quotation"
+      : "sale";
   const isQuotation = documentKind === "quotation";
+  const redirectFail = (code: string): never =>
+    redirectError(code, isEditingQuotation ? quotationOrderId : undefined);
 
   // Cotización no exige caja abierta; la venta sí.
   if (!isQuotation) {
     await assertCashRegisterOpenForStaff();
   }
 
+  if (isEditingQuotation && !isQuotation) redirectFail("validation");
+
   const customerId = String(payload.customerId ?? "").trim();
-  if (!customerId) redirectError("validation");
+  if (!customerId) redirectFail("validation");
 
   const linesRaw = Array.isArray(payload.lines) ? payload.lines : [];
   const lines = linesRaw
@@ -174,13 +189,13 @@ export async function createPosInvoiceAction(formData: FormData) {
     })
     .filter((r) => r.kitId && r.quantity > 0);
 
-  if (lines.length === 0 && kitLines.length === 0) redirectError("validation");
+  if (lines.length === 0 && kitLines.length === 0) redirectFail("validation");
 
   for (const l of lines) {
     if (l.discountPercent != null) {
-      if (l.discountPercent < 0 || l.discountPercent > 100) redirectError("validation");
+      if (l.discountPercent < 0 || l.discountPercent > 100) redirectFail("validation");
     }
-    if (l.discountAmountCents < 0) redirectError("validation");
+    if (l.discountAmountCents < 0) redirectFail("validation");
   }
 
   const paymentMethod = payload.paymentMethod;
@@ -190,7 +205,17 @@ export async function createPosInvoiceAction(formData: FormData) {
     paymentMethod !== "transfer" &&
     paymentMethod !== "mixed"
   ) {
-    redirectError("validation");
+    redirectFail("validation");
+  }
+
+  if (isEditingQuotation) {
+    const { data: existingQ, error: existingErr } = await supabase
+      .from("orders")
+      .select("id,status")
+      .eq("id", quotationOrderId)
+      .maybeSingle();
+    if (existingErr || !existingQ) redirectFail("missing");
+    if (String(existingQ!.status) !== "quotation") redirectFail("not_quotation");
   }
 
   const kitIds = [...new Set(kitLines.map((k) => k.kitId))];
@@ -209,7 +234,7 @@ export async function createPosInvoiceAction(formData: FormData) {
   ]);
 
   const { data: customer, error: cErr } = customerRes;
-  if (cErr || !customer) redirectError("customer");
+  if (cErr || !customer) redirectFail("customer");
   const customerRow = customer;
   const wholesalePct = wholesaleDiscountPercentFromRow(
     customerRow as {
@@ -223,13 +248,13 @@ export async function createPosInvoiceAction(formData: FormData) {
     kitsById.set(kit.id, kit);
   }
   if (kitIds.length > 0) {
-    if (kitsById.size !== kitIds.length) redirectError("products");
+    if (kitsById.size !== kitIds.length) redirectFail("products");
     for (const kl of kitLines) {
       const kit = kitsById.get(kl.kitId)!;
       if (!isQuotation) {
-        if (!kitIsAvailable(kit, "pos")) redirectError("stock");
+        if (!kitIsAvailable(kit, "pos")) redirectFail("stock");
         const maxK = maxKitsAvailableFromItems(kit.items ?? [], "pos");
-        if (maxK < kl.quantity) redirectError("stock");
+        if (maxK < kl.quantity) redirectFail("stock");
       }
     }
   }
@@ -266,20 +291,20 @@ export async function createPosInvoiceAction(formData: FormData) {
       )
       .in("id", stockProductIds);
 
-    if (pErr || !products) redirectError("products");
+    if (pErr || !products) redirectFail("products");
     for (const p of products) {
       productById.set(p.id as string, p);
     }
     for (const [pid, qty] of qtyByProduct) {
       const p = productById.get(pid);
-      if (!p) redirectError("products");
+      if (!p) redirectFail("products");
       if (!isQuotation) {
         const stock = Number(p.stock_local ?? 0);
-        if (stock < qty) redirectError("stock");
+        if (stock < qty) redirectFail("stock");
       }
     }
     for (const pid of lineProductIds) {
-      if (!productById.has(pid)) redirectError("products");
+      if (!productById.has(pid)) redirectFail("products");
     }
   }
 
@@ -288,7 +313,7 @@ export async function createPosInvoiceAction(formData: FormData) {
   let totalCents = 0;
   for (const l of lines) {
     const p = productById.get(l.productId);
-    if (!p) redirectError("products");
+    if (!p) redirectFail("products");
     const priceCatalog = Math.max(0, Math.floor(Number(p.price_cents ?? 0)));
     const netUnit = unitPriceAfterWholesaleCents(priceCatalog, wholesalePct);
     const lineNetBefore = netUnit * l.quantity;
@@ -297,7 +322,7 @@ export async function createPosInvoiceAction(formData: FormData) {
         ? l.discountPercent
         : null;
     const amtForCalc = pctForCalc != null ? 0 : l.discountAmountCents;
-    if (amtForCalc > lineNetBefore) redirectError("validation");
+    if (amtForCalc > lineNetBefore) redirectFail("validation");
     const lineNetAfter = applyPosLineNetDiscountCents(
       lineNetBefore,
       pctForCalc,
@@ -320,20 +345,25 @@ export async function createPosInvoiceAction(formData: FormData) {
   }
   vatCents = Math.max(0, totalCents - subtotalCents);
 
-  if (!Number.isFinite(totalCents) || totalCents < 0) redirectError("validation");
+  if (!Number.isFinite(totalCents) || totalCents < 0) redirectFail("validation");
 
   const submissionId = String(payload.submissionId ?? "").trim();
   const claim = await claimAdminFormToken(
     supabase,
     submissionId,
-    `pos_invoice:${documentKind}:${customerId}`,
+    isEditingQuotation
+      ? `pos_quotation_edit:${quotationOrderId}`
+      : `pos_invoice:${documentKind}:${customerId}`,
   );
   if (claim === "duplicate") {
     revalidatePath("/admin/ventas");
+    if (isEditingQuotation) {
+      redirect(`/admin/orders/${quotationOrderId}`);
+    }
     redirect("/admin/ventas");
   }
   if (claim === "error") {
-    redirectError("validation");
+    redirectFail("validation");
   }
 
   const emailRaw =
@@ -367,39 +397,72 @@ export async function createPosInvoiceAction(formData: FormData) {
       !Number.isFinite(transfer) ||
       cash + transfer !== totalCents
     ) {
-      redirectError("validation");
+      redirectFail("validation");
     }
     posMixedCashCents = cash;
     posMixedTransferCents = transfer;
   }
 
-  const { data: orderRow, error: oErr } = await supabase
-    .from("orders")
-    .insert({
-      status: isQuotation ? "quotation" : "paid",
-      customer_name: String(customerRow.name ?? "Cliente"),
-      customer_email: customerEmail,
-      customer_id: customerId,
-      total_cents: totalCents,
-      currency: "COP",
-      wompi_reference: wompiRef,
-      shipping_address: shippingAddress,
-      shipping_phone: shippingPhone,
-      ...(!isQuotation && paymentMethod === "mixed"
-        ? {
-            pos_mixed_cash_cents: posMixedCashCents,
-            pos_mixed_transfer_cents: posMixedTransferCents,
-          }
-        : {}),
-    })
-    .select("id")
-    .single();
+  let orderId: string;
 
-  if (oErr || !orderRow?.id) {
-    redirectError("db");
+  if (isEditingQuotation) {
+    const { data: updatedOrder, error: updErr } = await supabase
+      .from("orders")
+      .update({
+        customer_name: String(customerRow.name ?? "Cliente"),
+        customer_email: customerEmail,
+        customer_id: customerId,
+        total_cents: totalCents,
+        currency: "COP",
+        wompi_reference: "POS:quotation",
+        shipping_address: shippingAddress,
+        shipping_phone: shippingPhone,
+        pos_mixed_cash_cents: null,
+        pos_mixed_transfer_cents: null,
+        status: "quotation",
+      })
+      .eq("id", quotationOrderId)
+      .eq("status", "quotation")
+      .select("id")
+      .maybeSingle();
+
+    if (updErr || !updatedOrder?.id) redirectFail("db");
+    orderId = String(updatedOrder!.id);
+
+    const { error: delItemsErr } = await supabase
+      .from("order_items")
+      .delete()
+      .eq("order_id", orderId);
+    if (delItemsErr) redirectFail("db");
+  } else {
+    const { data: orderRow, error: oErr } = await supabase
+      .from("orders")
+      .insert({
+        status: isQuotation ? "quotation" : "paid",
+        customer_name: String(customerRow.name ?? "Cliente"),
+        customer_email: customerEmail,
+        customer_id: customerId,
+        total_cents: totalCents,
+        currency: "COP",
+        wompi_reference: wompiRef,
+        shipping_address: shippingAddress,
+        shipping_phone: shippingPhone,
+        ...(!isQuotation && paymentMethod === "mixed"
+          ? {
+              pos_mixed_cash_cents: posMixedCashCents,
+              pos_mixed_transfer_cents: posMixedTransferCents,
+            }
+          : {}),
+      })
+      .select("id")
+      .single();
+
+    if (oErr || !orderRow?.id) {
+      redirectFail("db");
+    }
+
+    orderId = String(orderRow.id);
   }
-
-  const orderId = String(orderRow.id);
 
   const productItemRows = lines.map((l) => {
     const p = productById.get(l.productId)!;
@@ -460,28 +523,40 @@ export async function createPosInvoiceAction(formData: FormData) {
   const { error: iErr } = await supabase.from("order_items").insert(itemRows);
 
   if (iErr) {
-    await supabase.from("orders").delete().eq("id", orderId);
-    redirectError("db");
+    if (!isEditingQuotation) {
+      await supabase.from("orders").delete().eq("id", orderId);
+    }
+    redirectFail("db");
   }
 
-  const [orderVerified, itemsVerified] = await Promise.all([
-    verifyInsertedRowInDev(supabase, "orders", orderId),
-    verifyRowCountAtLeastInDev(
+  if (!isEditingQuotation) {
+    const [orderVerified, itemsVerified] = await Promise.all([
+      verifyInsertedRowInDev(supabase, "orders", orderId),
+      verifyRowCountAtLeastInDev(
+        supabase,
+        "order_items",
+        { column: "order_id", value: orderId },
+        itemRows.length,
+      ),
+    ]);
+
+    if (!orderVerified) {
+      await supabase.from("orders").delete().eq("id", orderId);
+      redirectFail("db");
+    }
+    if (!itemsVerified) {
+      await supabase.from("order_items").delete().eq("order_id", orderId);
+      await supabase.from("orders").delete().eq("id", orderId);
+      redirectFail("db");
+    }
+  } else {
+    const itemsVerified = await verifyRowCountAtLeastInDev(
       supabase,
       "order_items",
       { column: "order_id", value: orderId },
       itemRows.length,
-    ),
-  ]);
-
-  if (!orderVerified) {
-    await supabase.from("orders").delete().eq("id", orderId);
-    redirectError("db");
-  }
-  if (!itemsVerified) {
-    await supabase.from("order_items").delete().eq("order_id", orderId);
-    await supabase.from("orders").delete().eq("id", orderId);
-    redirectError("db");
+    );
+    if (!itemsVerified) redirectFail("db");
   }
 
   const stockProductById = new Map(
@@ -533,7 +608,7 @@ export async function createPosInvoiceAction(formData: FormData) {
     );
     if (stockResult !== "ok") {
       await supabase.from("orders").delete().eq("id", orderId);
-      redirectError(stockResult === "stock" ? "stock" : "db");
+      redirectFail(stockResult === "stock" ? "stock" : "db");
     }
   }
 
@@ -548,12 +623,15 @@ export async function createPosInvoiceAction(formData: FormData) {
     actionType: "sale_created",
     entityType: "order",
     entityId: orderId,
-    summary: isQuotation
-      ? `Cotización a ${String(customerRow.name ?? "Cliente")} · ${totalFormatted}`
-      : `Venta a ${String(customerRow.name ?? "Cliente")} · ${totalFormatted}`,
+    summary: isEditingQuotation
+      ? `Cotización actualizada · ${String(customerRow.name ?? "Cliente")} · ${totalFormatted}`
+      : isQuotation
+        ? `Cotización a ${String(customerRow.name ?? "Cliente")} · ${totalFormatted}`
+        : `Venta a ${String(customerRow.name ?? "Cliente")} · ${totalFormatted}`,
     metadata: {
       customer_id: customerId,
       document_kind: documentKind,
+      edited_quotation: isEditingQuotation,
       subtotal_cents: subtotalCents,
       vat_cents: vatCents,
       total_cents: totalCents,
@@ -572,5 +650,5 @@ export async function createPosInvoiceAction(formData: FormData) {
   });
   revalidatePath("/admin/ventas");
   revalidatePath(`/admin/orders/${orderId}`);
-  redirect(`/admin/orders/${orderId}`);
+  redirect(`/admin/orders/${orderId}${isEditingQuotation ? "?updated=1" : ""}`);
 }

@@ -381,7 +381,7 @@ export async function updateStoreCustomer(formData: FormData) {
     ? [primary.address_line, primary.reference].filter(Boolean).join("\n\n") || null
     : null;
 
-  const { error: upErr } = await supabase
+  const { data: updatedRows, error: upErr } = await supabase
     .from("customers")
     .update({
       name,
@@ -392,9 +392,10 @@ export async function updateStoreCustomer(formData: FormData) {
       customer_kind,
       wholesale_discount_percent,
     })
-    .eq("id", customerId);
+    .eq("id", customerId)
+    .select("id");
 
-  if (upErr) {
+  if (upErr || !updatedRows?.length) {
     redirect(`/admin/customers/${customerId}/edit?error=db`);
   }
 

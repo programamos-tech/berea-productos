@@ -196,14 +196,16 @@ export function EditCustomerForm(props: EditCustomerFormProps) {
     [addresses],
   );
 
-  const wholesaleFieldsOk =
-    customerKind !== "wholesale" ||
-    (documentId.trim().length > 0 &&
-      email.trim().length > 0 &&
-      /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) &&
-      phone.trim().length > 0);
+  const wholesaleMissing: string[] = [];
+  if (customerKind === "wholesale") {
+    if (!documentId.trim()) wholesaleMissing.push("NIT");
+    if (!phone.trim()) wholesaleMissing.push("teléfono");
+    if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      wholesaleMissing.push("correo electrónico válido");
+    }
+  }
 
-  const canSubmit = name.trim().length > 0 && wholesaleFieldsOk;
+  const canSubmit = name.trim().length > 0 && wholesaleMissing.length === 0;
 
   function updateAddr(i: number, patch: Partial<Addr>) {
     setAddresses((prev) =>
@@ -222,6 +224,14 @@ export function EditCustomerForm(props: EditCustomerFormProps) {
   return (
     <form action={updateStoreCustomer} className="space-y-6">
       <input type="hidden" name="customer_id" value={customerId} readOnly />
+      {/* Estado controlado → FormData fiable (radios controlados a veces no llegan al action). */}
+      <input type="hidden" name="customer_kind" value={customerKind} readOnly />
+      <input
+        type="hidden"
+        name="wholesale_discount_percent"
+        value={customerKind === "wholesale" ? wholesalePct : 0}
+        readOnly
+      />
 
       <div className="grid gap-6 lg:grid-cols-3 lg:gap-8">
         <div className="space-y-6 lg:col-span-2">
@@ -309,7 +319,6 @@ export function EditCustomerForm(props: EditCustomerFormProps) {
                   <label className="flex cursor-pointer items-center gap-2 text-sm text-zinc-800 dark:text-zinc-200">
                     <input
                       type="radio"
-                      name="customer_kind"
                       value="retail"
                       checked={customerKind === "retail"}
                       onChange={() => setCustomerKind("retail")}
@@ -320,7 +329,6 @@ export function EditCustomerForm(props: EditCustomerFormProps) {
                   <label className="flex cursor-pointer items-center gap-2 text-sm text-zinc-800 dark:text-zinc-200">
                     <input
                       type="radio"
-                      name="customer_kind"
                       value="wholesale"
                       checked={customerKind === "wholesale"}
                       onChange={() => setCustomerKind("wholesale")}
@@ -336,7 +344,6 @@ export function EditCustomerForm(props: EditCustomerFormProps) {
                     </label>
                     <input
                       id="ec-wholesale-pct"
-                      name="wholesale_discount_percent"
                       type="number"
                       min={0}
                       max={100}
@@ -356,14 +363,19 @@ export function EditCustomerForm(props: EditCustomerFormProps) {
                       Aplica en tienda en línea (cuenta vinculada) y en factura POS.
                     </p>
                   </div>
-                ) : (
-                  <input type="hidden" name="wholesale_discount_percent" value={0} />
-                )}
+                ) : null}
               </div>
             </div>
-            {customerKind === "wholesale" ? (
+            {wholesaleMissing.length > 0 ? (
+              <p
+                className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950 dark:border-amber-800/60 dark:bg-amber-950/40 dark:text-amber-100"
+                role="status"
+              >
+                Para guardar un mayorista completá: {wholesaleMissing.join(", ")}.
+              </p>
+            ) : customerKind === "wholesale" ? (
               <p className="mt-4 text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
-                Mayorista: NIT, correo y teléfono son obligatorios.
+                Mayorista: podés editar NIT, correo, teléfono, descuento y direcciones.
               </p>
             ) : null}
           </section>
@@ -482,9 +494,21 @@ export function EditCustomerForm(props: EditCustomerFormProps) {
           <section className={`${shellCard} p-6 sm:p-8`}>
             <h2 className={sectionTitle}>Guardar</h2>
             <div className="mt-5 flex flex-col gap-3">
+              {wholesaleMissing.length > 0 ? (
+                <p className="text-xs leading-relaxed text-amber-800 dark:text-amber-200">
+                  Falta {wholesaleMissing.join(", ")} para poder guardar este mayorista.
+                </p>
+              ) : null}
               <button
                 type="submit"
                 disabled={!canSubmit}
+                title={
+                  !canSubmit
+                    ? wholesaleMissing.length > 0
+                      ? `Completá: ${wholesaleMissing.join(", ")}`
+                      : "El nombre es obligatorio"
+                    : undefined
+                }
                 className="w-full rounded-lg border border-rose-950 bg-rose-950 py-3.5 text-sm font-semibold text-white shadow-sm transition hover:bg-rose-900 hover:border-rose-900 disabled:cursor-not-allowed disabled:border-zinc-200 disabled:bg-zinc-200 disabled:text-zinc-500 dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-white dark:disabled:bg-zinc-800 dark:disabled:text-zinc-500"
               >
                 Guardar cambios

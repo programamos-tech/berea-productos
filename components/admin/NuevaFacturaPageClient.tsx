@@ -2,6 +2,7 @@
 
 import nextDynamic from "next/dynamic";
 import { NuevaFacturaLoading } from "@/components/admin/NuevaFacturaLoading";
+import type { QuotationEditDraft } from "@/lib/load-quotation-edit-draft";
 
 const NuevaFacturaClient = nextDynamic(
   () =>
@@ -19,14 +20,17 @@ const NuevaFacturaClient = nextDynamic(
 export function NuevaFacturaPageClient({
   initialError,
   initialCustomerId,
+  editQuotation,
 }: {
   initialError?: string;
   initialCustomerId?: string;
+  editQuotation?: QuotationEditDraft;
 }) {
   return (
     <NuevaFacturaClient
       initialError={initialError}
       initialCustomerId={initialCustomerId}
+      editQuotation={editQuotation}
     />
   );
 }
