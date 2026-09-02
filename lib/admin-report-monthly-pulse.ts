@@ -168,7 +168,7 @@ function nowPlayingInsight(current: MonthlyPulsePoint | undefined): string {
   if (!current) return "";
   if (current.gananciaNeta > 0) {
     if (current.priorMtdNeta != null && current.gananciaNeta < current.priorMtdNeta) {
-      return "En verde, más lento que el mes pasado";
+      return "Más lento que el mes pasado";
     }
     return "Va bien";
   }
