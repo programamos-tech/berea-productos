@@ -1,4 +1,5 @@
 import { ReportLiquidityMetricCards } from "@/components/admin/ReportLiquidityMetricCards";
+import { ReportMonthlyPulse } from "@/components/admin/ReportMonthlyPulse";
 import { ReportStockTrendLine } from "@/components/admin/ReportStockTrendLine";
 import { ReportSalesWeekTrendChart } from "@/components/admin/ReportSalesWeekTrendChart";
 import {
@@ -6,6 +7,10 @@ import {
   StaticInteger,
 } from "@/components/admin/ReportsAnimatedFigures";
 import { prettyReportDayShortLabel } from "@/lib/admin-report-range";
+import {
+  fetchAdminReportMonthlyPulse,
+  pulseHighlightYearMonth,
+} from "@/lib/admin-report-monthly-pulse";
 import { fetchAdminReportDashboardData } from "@/lib/admin-reports-data";
 import { adminPanelLgClass } from "@/lib/admin-ui";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -46,21 +51,30 @@ export async function ReportsDashboardBody({
   todayKey: string;
 }) {
   let report;
+  let monthlyPulse: Awaited<ReturnType<typeof fetchAdminReportMonthlyPulse>> = {
+    months: [],
+    insight: "",
+  };
   try {
     const supabase = await createSupabaseServerClient();
-    report = await fetchAdminReportDashboardData(supabase, {
-      rangeFrom,
-      rangeTo,
-      chartFrom,
-      chartTo,
-      salesTrendCurrentFrom,
-      salesTrendCurrentTo,
-      salesTrendPriorFrom,
-      salesTrendPriorTo,
-      fetchFrom,
-      fetchTo,
-      periodLabel,
-    });
+    const [dashboard, pulse] = await Promise.all([
+      fetchAdminReportDashboardData(supabase, {
+        rangeFrom,
+        rangeTo,
+        chartFrom,
+        chartTo,
+        salesTrendCurrentFrom,
+        salesTrendCurrentTo,
+        salesTrendPriorFrom,
+        salesTrendPriorTo,
+        fetchFrom,
+        fetchTo,
+        periodLabel,
+      }),
+      fetchAdminReportMonthlyPulse(supabase, { todayYmd: todayKey, monthCount: 3 }),
+    ]);
+    report = dashboard;
+    monthlyPulse = pulse;
   } catch (err) {
     console.error("[admin reportes] body:", err);
     return (
@@ -217,11 +231,22 @@ export async function ReportsDashboardBody({
                 <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wide text-rose-900/40 dark:text-zinc-500">
                   Neta
                 </span>
-                <span className="text-sm font-normal tabular-nums text-stone-500 dark:text-zinc-400">
+                <span
+                  className={`text-sm font-normal tabular-nums ${
+                    gananciaNeta > 0
+                      ? "text-emerald-700 dark:text-emerald-400"
+                      : gananciaNeta < 0
+                        ? "text-red-700 dark:text-red-400"
+                        : "text-stone-500 dark:text-zinc-400"
+                  }`}
+                >
                   <StaticCopCents cents={gananciaNeta} />
                 </span>
               </span>
             </dd>
+            <p className="mt-1 text-[11px] leading-snug text-stone-500 dark:text-zinc-400">
+              Margen de productos − egresos del periodo
+            </p>
           </div>
 
           <div
@@ -282,6 +307,12 @@ export async function ReportsDashboardBody({
           </div>
         </dl>
       </div>
+
+      <ReportMonthlyPulse
+        months={monthlyPulse.months}
+        insight={monthlyPulse.insight}
+        highlightYearMonth={pulseHighlightYearMonth(rangeFrom, rangeTo, todayKey)}
+      />
 
       <section
         key={`reports-chart-${todayKey}`}
