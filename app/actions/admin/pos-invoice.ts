@@ -151,8 +151,9 @@ export async function createPosInvoiceAction(formData: FormData) {
       ? "quotation"
       : "sale";
   const isQuotation = documentKind === "quotation";
-  const redirectFail = (code: string): never =>
+  function redirectFail(code: string): never {
     redirectError(code, isEditingQuotation ? quotationOrderId : undefined);
+  }
 
   // Cotización no exige caja abierta; la venta sí.
   if (!isQuotation) {
@@ -461,7 +462,7 @@ export async function createPosInvoiceAction(formData: FormData) {
       redirectFail("db");
     }
 
-    orderId = String(orderRow.id);
+    orderId = String(orderRow!.id);
   }
 
   const productItemRows = lines.map((l) => {
