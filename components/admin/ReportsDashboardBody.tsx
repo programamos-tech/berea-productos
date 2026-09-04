@@ -1,11 +1,11 @@
-import { ReportLiquidityMetricCards } from "@/components/admin/ReportLiquidityMetricCards";
+import { ReportKpiCard } from "@/components/admin/ReportKpiCard";
+import { ReportPaymentDonut } from "@/components/admin/ReportPaymentDonut";
+import { ReportEgresosPanel } from "@/components/admin/ReportEgresosPanel";
 import {
   ReportMonthlyPulseSection,
   ReportMonthlyPulseSkeleton,
 } from "@/components/admin/ReportMonthlyPulseSection";
-import { ReportStockTrendLine } from "@/components/admin/ReportStockTrendLine";
 import { ReportSalesWeekTrendChart } from "@/components/admin/ReportSalesWeekTrendChart";
-import { StaticCopCents } from "@/components/admin/ReportsAnimatedFigures";
 import {
   prettyReportDayShortLabel,
   type ReportVista,
@@ -16,26 +16,6 @@ import { adminPanelLgClass } from "@/lib/admin-ui";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Suspense } from "react";
 import { formatCop } from "@/lib/money";
-
-const labelClass =
-  "text-[9px] font-semibold uppercase tracking-[0.14em] text-rose-900/40 dark:text-zinc-500";
-
-function KpiShell({
-  children,
-  staggerMs,
-}: {
-  children: React.ReactNode;
-  staggerMs: number;
-}) {
-  return (
-    <div
-      className="reports-metric-card min-w-0 rounded-xl border border-rose-200/35 bg-white/80 px-3 py-2.5 dark:border-zinc-700/70 dark:bg-zinc-900/80"
-      style={{ ["--reports-stagger" as string]: `${staggerMs}ms` }}
-    >
-      {children}
-    </div>
-  );
-}
 
 export async function ReportsDashboardBody({
   rangeFrom,
@@ -100,17 +80,11 @@ export async function ReportsDashboardBody({
     );
   }
 
-  if (report.ordersRangeError) {
-    console.error("[admin reportes] orders:", report.ordersRangeError);
-  }
-
   const {
-    ingresosSinIvaPeriod,
     ingresosConIvaPeriod,
     ivaRecaudadoPeriod,
     gananciaBruta,
     gananciaNeta,
-    totalCobradoPedidos,
     efectivo,
     transferencia,
     ventasPagadasPeriod,
@@ -118,166 +92,119 @@ export async function ReportsDashboardBody({
     egresosEfectivoCents,
     egresosTransferenciaBucketCents,
     cantidadEgresosPeriod,
-    transferenciaNeta,
     reportExpensesEfectivoLines,
     reportExpensesOtrosLines,
     reportIncomeChartPoints,
     salesTrendComparison,
     stockInversionNet,
-    stockInversionGross,
     stockInvestmentTrend,
   } = report;
 
   const isTienda = vista === "tienda";
-  const efectivoNetoPosicion =
-    arrastreEfectivoCents + efectivo - egresosEfectivoCents;
+  const efectivoDisplay = isTienda
+    ? arrastreEfectivoCents + efectivo - egresosEfectivoCents
+    : efectivo;
+  const transferenciaDisplay = isTienda
+    ? transferencia - egresosTransferenciaBucketCents
+    : transferencia;
+
+  const sparkValues = reportIncomeChartPoints.map((p) => p.avgCents);
+  const weekDelta = salesTrendComparison.changePercent;
+  const stockDelta = stockInvestmentTrend?.changeNetPercent ?? null;
+
+  const allExpenseLines = [
+    ...reportExpensesEfectivoLines,
+    ...reportExpensesOtrosLines,
+  ].sort((a, b) => b.amount_cents - a.amount_cents);
+
+  const efectivoHint = isTienda
+    ? arrastreEfectivoCents > 0
+      ? `Incluye arrastre ${formatCop(arrastreEfectivoCents)}`
+      : `${ventasPagadasPeriod} ventas · cobros en billete`
+    : `${ventasPagadasPeriod} venta${ventasPagadasPeriod === 1 ? "" : "s"} en efectivo`;
 
   return (
     <div
       key={`reports-body-${vista}-${rangeFrom}-${rangeTo}`}
       className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden"
     >
-      <div className="shrink-0">
-        <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-          <p className={labelClass}>
-            {isTienda ? "Cómo va la tienda" : "Reporte del día"}
-            <span className="mx-1.5 text-stone-300 dark:text-zinc-600">·</span>
-            <span className="font-medium normal-case tracking-normal text-stone-500 dark:text-zinc-400">
-              {periodLabel}
-            </span>
-          </p>
-          <p className="text-[10px] text-stone-400 dark:text-zinc-500">
-            {isTienda
-              ? "Arrastre + cobros − egresos"
-              : "Solo ventas y cobros"}
-          </p>
-        </div>
-
-        <dl className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6">
-          <KpiShell staggerMs={0}>
-            <dt className={labelClass}>Ingresos</dt>
-            <dd className="mt-1 text-lg font-semibold tabular-nums tracking-tight text-stone-900 dark:text-zinc-50 sm:text-xl">
-              <StaticCopCents cents={ingresosConIvaPeriod} />
-            </dd>
-            <p className="mt-0.5 text-[10px] text-stone-400 dark:text-zinc-500">
-              {ventasPagadasPeriod} venta{ventasPagadasPeriod === 1 ? "" : "s"} · IVA{" "}
-              <span className="tabular-nums">{formatCop(ivaRecaudadoPeriod)}</span>
-            </p>
-            <p className="sr-only">Base sin IVA {formatCop(ingresosSinIvaPeriod)}</p>
-          </KpiShell>
-
-          <ReportLiquidityMetricCards
-            cardLabelClass={labelClass}
-            periodLabel={periodLabel}
-            mode={isTienda ? "position" : "inflow"}
-            totalCobradoPedidos={totalCobradoPedidos}
-            efectivo={efectivo}
-            efectivoNetoCaja={efectivoNetoPosicion}
-            egresosEfectivoCents={egresosEfectivoCents}
-            expensesEfectivo={reportExpensesEfectivoLines}
-            transferencia={transferencia}
-            transferenciaNeta={transferenciaNeta}
-            egresosTransferenciaBucketCents={egresosTransferenciaBucketCents}
-            expensesOtros={reportExpensesOtrosLines}
-            arrastreEfectivoCents={arrastreEfectivoCents}
-          />
-
-          {isTienda ? (
-            <KpiShell staggerMs={100}>
-              <dt className={labelClass}>Egresos</dt>
-              <dd className="mt-1 text-lg font-semibold tabular-nums tracking-tight text-stone-900 dark:text-zinc-50 sm:text-xl">
-                <StaticCopCents cents={egresosPeriod} />
-              </dd>
-              <p className="mt-0.5 text-[10px] text-stone-400 dark:text-zinc-500">
-                {cantidadEgresosPeriod} movimiento
-                {cantidadEgresosPeriod === 1 ? "" : "s"}
-              </p>
-            </KpiShell>
-          ) : null}
-
-          <KpiShell staggerMs={140}>
-            <dt className={labelClass}>Ganancia</dt>
-            <dd className="mt-1 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-              <span className="text-lg font-semibold tabular-nums tracking-tight text-stone-900 dark:text-zinc-50 sm:text-xl">
-                <StaticCopCents cents={gananciaBruta} />
-              </span>
-              {isTienda ? (
-                <span
-                  className={`text-xs font-medium tabular-nums ${
-                    gananciaNeta > 0
-                      ? "text-emerald-700 dark:text-emerald-400"
-                      : gananciaNeta < 0
-                        ? "text-red-600 dark:text-red-400"
-                        : "text-stone-400"
-                  }`}
-                >
-                  neta <StaticCopCents cents={gananciaNeta} />
-                </span>
-              ) : (
-                <span className="text-[10px] text-stone-400 dark:text-zinc-500">bruta</span>
-              )}
-            </dd>
-            <p className="mt-0.5 text-[10px] text-stone-400 dark:text-zinc-500">
-              {isTienda ? "Margen − egresos" : "Margen del periodo"}
-            </p>
-          </KpiShell>
-
-          <KpiShell staggerMs={180}>
-            <dt className={labelClass}>Stock</dt>
-            <dd className="mt-1 text-lg font-semibold tabular-nums tracking-tight text-stone-900 dark:text-zinc-50 sm:text-xl">
-              <StaticCopCents cents={stockInversionNet} />
-            </dd>
-            {stockInversionGross > 0 ? (
-              <p className="mt-0.5 text-[10px] tabular-nums text-stone-400 dark:text-zinc-500">
-                c/IVA {formatCop(stockInversionGross)}
-              </p>
-            ) : null}
-            <div className="[&_p]:mt-0.5 [&_p]:text-[10px]">
-              <ReportStockTrendLine trend={stockInvestmentTrend} />
-            </div>
-          </KpiShell>
-
-          {!isTienda ? (
-            <KpiShell staggerMs={100}>
-              <dt className={labelClass}>Base sin IVA</dt>
-              <dd className="mt-1 text-lg font-semibold tabular-nums tracking-tight text-stone-900 dark:text-zinc-50 sm:text-xl">
-                <StaticCopCents cents={ingresosSinIvaPeriod} />
-              </dd>
-              <p className="mt-0.5 text-[10px] text-stone-400 dark:text-zinc-500">
-                IVA recaudado {formatCop(ivaRecaudadoPeriod)}
-              </p>
-            </KpiShell>
-          ) : null}
-        </dl>
+      <div className="grid shrink-0 grid-cols-2 gap-2.5 lg:grid-cols-4">
+        <ReportKpiCard
+          label="Facturación"
+          cents={ingresosConIvaPeriod}
+          hint={`${ventasPagadasPeriod} ventas · IVA ${formatCop(ivaRecaudadoPeriod)}`}
+          sparkline={sparkValues}
+          sparkTone="rose"
+          deltaPercent={weekDelta}
+          staggerMs={0}
+        />
+        <ReportKpiCard
+          label="Caja efectivo"
+          cents={efectivoDisplay}
+          hint={efectivoHint}
+          staggerMs={40}
+          valueClassName={
+            efectivoDisplay < 0 ? "text-red-600 dark:text-red-400" : undefined
+          }
+        />
+        <ReportKpiCard
+          label="Caja transferencia"
+          cents={transferenciaDisplay}
+          hint={
+            ingresosConIvaPeriod > 0
+              ? `${Math.round((transferencia / Math.max(ingresosConIvaPeriod, 1)) * 100)}% del cobrado`
+              : "Sin transferencias"
+          }
+          staggerMs={80}
+        />
+        <ReportKpiCard
+          label={isTienda ? "Ganancia neta" : "Stock"}
+          cents={isTienda ? gananciaNeta : stockInversionNet}
+          hint={
+            isTienda
+              ? `Bruta ${formatCop(gananciaBruta)} · margen − egresos`
+              : stockInvestmentTrend
+                ? `Inversión en inventario`
+                : "Inversión en inventario"
+          }
+          deltaPercent={isTienda ? null : stockDelta}
+          staggerMs={120}
+          valueClassName={
+            isTienda && gananciaNeta < 0
+              ? "text-red-600 dark:text-red-400"
+              : undefined
+          }
+        />
       </div>
 
-      <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 lg:grid-cols-2">
-        <Suspense fallback={<ReportMonthlyPulseSkeleton compact />}>
-          <ReportMonthlyPulseSection
-            todayKey={todayKey}
-            rangeFrom={rangeFrom}
-            rangeTo={rangeTo}
-            compact
-          />
-        </Suspense>
-
+      <div className="grid min-h-0 flex-1 grid-cols-1 gap-2.5 lg:grid-cols-12">
         <section
-          className={`reports-chart-reveal flex min-h-0 flex-col overflow-hidden ${adminPanelLgClass}`}
-          style={{ ["--reports-chart-delay" as string]: "260ms" }}
+          className={`reports-chart-reveal flex min-h-0 flex-col overflow-hidden lg:col-span-6 ${adminPanelLgClass}`}
+          style={{ ["--reports-chart-delay" as string]: "160ms" }}
         >
-          <div className="flex shrink-0 items-end justify-between gap-2 px-4 pt-3 sm:px-5 sm:pt-4">
+          <div className="flex shrink-0 items-end justify-between gap-2 px-4 pt-3.5 sm:px-5">
             <div className="min-w-0">
-              <h2 className="text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-600 dark:text-zinc-400">
-                Tendencia de ventas
+              <h2 className="text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-500 dark:text-zinc-400">
+                Ventas del mostrador
               </h2>
-              <p className="mt-0.5 truncate text-xs text-zinc-500 dark:text-zinc-400">
-                7 días vs semana anterior ·{" "}
-                {prettyReportDayShortLabel(salesTrendCurrentFrom)}–
+              <p className="mt-0.5 truncate text-xs text-zinc-400 dark:text-zinc-500">
+                {prettyReportDayShortLabel(salesTrendCurrentFrom)} –{" "}
                 {prettyReportDayShortLabel(salesTrendCurrentTo)}
+                {salesTrendCurrentTo === todayKey ? " · hoy" : ""}
               </p>
             </div>
+            <div className="hidden items-center gap-3 text-[10px] font-medium text-zinc-500 sm:flex">
+              <span className="inline-flex items-center gap-1.5">
+                <span className="size-2 rounded-full bg-rose-800 dark:bg-rose-300" />
+                Este periodo
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <span className="size-2 rounded-sm bg-zinc-300 dark:bg-zinc-600" />
+                Anterior
+              </span>
+            </div>
           </div>
-          <div className="min-h-0 flex-1 pb-1">
+          <div className="min-h-0 flex-1">
             <ReportSalesWeekTrendChart
               points={reportIncomeChartPoints}
               comparison={salesTrendComparison}
@@ -286,6 +213,38 @@ export async function ReportsDashboardBody({
             />
           </div>
         </section>
+
+        <div className="flex min-h-0 flex-col gap-2.5 lg:col-span-3">
+          <div className={`min-h-0 ${isTienda ? "flex-[1.15]" : "flex-1"}`}>
+            <ReportPaymentDonut
+              efectivoCents={efectivo}
+              transferenciaCents={transferencia}
+            />
+          </div>
+          {isTienda ? (
+            <div className="min-h-0 flex-1">
+              <ReportEgresosPanel
+                periodLabel={periodLabel}
+                egresosPeriod={egresosPeriod}
+                cantidad={cantidadEgresosPeriod}
+                lines={allExpenseLines}
+                showSaldo
+                saldoNetoCaja={efectivoDisplay}
+              />
+            </div>
+          ) : null}
+        </div>
+
+        <div className="min-h-0 lg:col-span-3">
+          <Suspense fallback={<ReportMonthlyPulseSkeleton compact />}>
+            <ReportMonthlyPulseSection
+              todayKey={todayKey}
+              rangeFrom={rangeFrom}
+              rangeTo={rangeTo}
+              compact
+            />
+          </Suspense>
+        </div>
       </div>
     </div>
   );

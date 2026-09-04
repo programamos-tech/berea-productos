@@ -1,5 +1,4 @@
 import { ReportMonthlyPulse } from "@/components/admin/ReportMonthlyPulse";
-import { adminPanelLgClass } from "@/lib/admin-ui";
 import {
   fetchAdminReportMonthlyPulse,
   pulseHighlightYearMonth,
@@ -9,7 +8,9 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 export function ReportMonthlyPulseSkeleton({ compact = false }: { compact?: boolean }) {
   return (
     <div
-      className={`${adminPanelLgClass} ${compact ? "h-full min-h-0" : "mt-6 h-52"} animate-pulse dark:border-zinc-700/60`}
+      className={`animate-pulse rounded-2xl border border-rose-200/45 bg-white shadow-sm dark:border-zinc-700/80 dark:bg-zinc-900 ${
+        compact ? "h-full min-h-0" : "mt-6 h-52"
+      }`}
       role="status"
     >
       <span className="sr-only">Cargando pulso mensual…</span>

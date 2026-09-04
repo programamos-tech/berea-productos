@@ -3,9 +3,6 @@ import { formatCop, formatCopCompact } from "@/lib/money";
 import type { TicketTrendPoint } from "@/lib/customer-ticket-trend";
 import type { ReportSalesTrendComparison } from "@/lib/admin-reports-data";
 
-const chartPaletteClass =
-  "[--chart-line:#881337] [--chart-grid:#f4f4f5] [--chart-axis:#a1a1aa] [--chart-point-fill:#ffffff] [--chart-point-stroke:#881337] [--chart-prior-line:#b45309] [--chart-prior-point-fill:#fffbeb] [--chart-prior-point-stroke:#b45309] dark:[--chart-line:#fda4af] dark:[--chart-grid:#3f3f46] dark:[--chart-axis:#71717a] dark:[--chart-point-fill:#27272a] dark:[--chart-point-stroke:#fda4af] dark:[--chart-prior-line:#fbbf24] dark:[--chart-prior-point-fill:#422006] dark:[--chart-prior-point-stroke:#fbbf24]";
-
 function xLabelForPoint(p: TicketTrendPoint) {
   if (p.labelX) return p.labelX;
   if (/^\d{4}-\d{2}-\d{2}$/.test(p.monthKey)) {
@@ -15,6 +12,24 @@ function xLabelForPoint(p: TicketTrendPoint) {
     });
   }
   return p.monthKey.slice(0, 8);
+}
+
+function smoothLine(pts: Array<{ x: number; y: number }>): string {
+  if (pts.length === 0) return "";
+  if (pts.length === 1) return `M ${pts[0].x} ${pts[0].y}`;
+  let d = `M ${pts[0].x} ${pts[0].y}`;
+  for (let i = 0; i < pts.length - 1; i++) {
+    const p0 = pts[Math.max(0, i - 1)];
+    const p1 = pts[i];
+    const p2 = pts[i + 1];
+    const p3 = pts[Math.min(pts.length - 1, i + 2)];
+    const cp1x = p1.x + (p2.x - p0.x) / 6;
+    const cp1y = p1.y + (p2.y - p0.y) / 6;
+    const cp2x = p2.x - (p3.x - p1.x) / 6;
+    const cp2y = p2.y - (p3.y - p1.y) / 6;
+    d += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${p2.x} ${p2.y}`;
+  }
+  return d;
 }
 
 export function ReportSalesWeekTrendChart({
@@ -42,15 +57,14 @@ export function ReportSalesWeekTrendChart({
     ...trend.map((t) => t.priorValue),
     0,
   );
-  const maxTrend = maxIncome > 0 ? maxIncome : 1;
-  const yMax = maxTrend * 1.1;
+  const yMax = (maxIncome > 0 ? maxIncome : 1) * 1.08;
 
   const chartW = 1000;
-  const chartH = compact ? 200 : 280;
-  const padL = compact ? 44 : 54;
-  const padR = 10;
-  const padT = compact ? 10 : 16;
-  const padB = compact ? 32 : 44;
+  const chartH = compact ? 220 : 280;
+  const padL = compact ? 48 : 56;
+  const padR = 16;
+  const padT = compact ? 12 : 18;
+  const padB = compact ? 36 : 44;
   const plotW = chartW - padL - padR;
   const plotH = chartH - padT - padB;
 
@@ -60,26 +74,19 @@ export function ReportSalesWeekTrendChart({
   };
   const yAt = (v: number) => padT + plotH - (v / yMax) * plotH;
 
-  const currentPolyline = trend.map((t, i) => `${xAt(i)},${yAt(t.currentValue)}`).join(" ");
-  const priorPolyline = trend.map((t, i) => `${xAt(i)},${yAt(t.priorValue)}`).join(" ");
+  const currentPts = trend.map((t, i) => ({ x: xAt(i), y: yAt(t.currentValue) }));
+  const priorPts = trend.map((t, i) => ({ x: xAt(i), y: yAt(t.priorValue) }));
+  const currentPath = smoothLine(currentPts);
+  const priorPath = smoothLine(priorPts);
 
-  let areaPath: string;
-  if (trend.length === 1) {
-    const x = xAt(0);
-    const y = yAt(trend[0].currentValue);
-    const w = Math.min(48, plotW / 4);
-    areaPath = `M ${x - w} ${padT + plotH} L ${x} ${y} L ${x + w} ${padT + plotH} Z`;
-  } else {
-    areaPath = `M ${xAt(0)} ${padT + plotH} ${trend
-      .map((t, i) => `L ${xAt(i)} ${yAt(t.currentValue)}`)
-      .join(" ")} L ${xAt(trend.length - 1)} ${padT + plotH} Z`;
-  }
+  const areaPath =
+    currentPts.length > 0
+      ? `${currentPath} L ${currentPts[currentPts.length - 1].x} ${padT + plotH} L ${currentPts[0].x} ${padT + plotH} Z`
+      : "";
 
   const gridSteps = 4;
   const yTicks: number[] = [];
-  for (let s = 0; s <= gridSteps; s += 1) {
-    yTicks.push((yMax * s) / gridSteps);
-  }
+  for (let s = 0; s <= gridSteps; s += 1) yTicks.push((yMax * s) / gridSteps);
 
   const { changePercent, currentTotalCents, priorTotalCents } = comparison;
   const improving = changePercent != null && changePercent > 0;
@@ -87,34 +94,26 @@ export function ReportSalesWeekTrendChart({
   const flat = changePercent === 0;
 
   return (
-    <div className={`flex h-full min-h-0 w-full min-w-0 flex-col ${chartPaletteClass}`}>
+    <div className="flex h-full min-h-0 w-full min-w-0 flex-col">
       <div
-        className={`flex shrink-0 flex-wrap items-end justify-between gap-2 ${
-          compact ? "px-4 pb-2 pt-3 sm:px-5" : "px-6 pb-4 sm:px-8"
+        className={`flex shrink-0 flex-wrap items-end justify-between gap-3 ${
+          compact ? "px-4 pb-1 pt-1 sm:px-5" : "px-6 pb-2 sm:px-8"
         }`}
       >
-        <div className={`flex flex-wrap ${compact ? "gap-x-4 gap-y-1" : "gap-x-6 gap-y-3"}`}>
+        <div className="flex flex-wrap gap-x-5 gap-y-1">
           <div>
             <p className="text-[10px] font-medium uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
-              Esta semana
+              Este periodo
             </p>
-            <p
-              className={`mt-0.5 font-semibold tabular-nums text-zinc-900 dark:text-zinc-100 ${
-                compact ? "text-base sm:text-lg" : "text-xl font-normal"
-              }`}
-            >
+            <p className="mt-0.5 text-lg font-semibold tabular-nums text-zinc-900 dark:text-zinc-50 sm:text-xl">
               {formatCop(currentTotalCents)}
             </p>
           </div>
           <div>
             <p className="text-[10px] font-medium uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
-              Sem. ant.
+              Periodo anterior
             </p>
-            <p
-              className={`mt-0.5 tabular-nums text-zinc-500 dark:text-zinc-400 ${
-                compact ? "text-sm sm:text-base" : "text-xl font-normal"
-              }`}
-            >
+            <p className="mt-0.5 text-base tabular-nums text-zinc-400 dark:text-zinc-500 sm:text-lg">
               {formatCop(priorTotalCents)}
             </p>
           </div>
@@ -122,9 +121,7 @@ export function ReportSalesWeekTrendChart({
 
         {changePercent != null ? (
           <div
-            className={`inline-flex items-center gap-1 rounded-full font-medium tabular-nums ${
-              compact ? "px-2 py-1 text-xs" : "gap-1.5 px-3 py-1.5 text-sm"
-            } ${
+            className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold tabular-nums ${
               improving
                 ? "bg-emerald-50 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300"
                 : declining
@@ -133,74 +130,48 @@ export function ReportSalesWeekTrendChart({
             }`}
           >
             {improving ? (
-              <TrendingUp className="size-3.5 shrink-0" strokeWidth={2} aria-hidden />
+              <TrendingUp className="size-3.5" strokeWidth={2} aria-hidden />
             ) : declining ? (
-              <TrendingDown className="size-3.5 shrink-0" strokeWidth={2} aria-hidden />
+              <TrendingDown className="size-3.5" strokeWidth={2} aria-hidden />
             ) : null}
             {flat ? "0%" : `${changePercent > 0 ? "+" : ""}${changePercent}%`}
           </div>
-        ) : (
-          <span className="text-xs text-zinc-400 dark:text-zinc-500">Sin sem. ant.</span>
-        )}
+        ) : null}
       </div>
-
-      {!compact ? (
-        <div className="flex flex-wrap items-center gap-x-5 gap-y-2 px-6 pb-2 sm:px-8">
-          <span className="inline-flex items-center gap-2 text-[11px] font-medium text-zinc-600 dark:text-zinc-300">
-            <span
-              className="size-2.5 shrink-0 rounded-full ring-2 ring-rose-900/25 dark:ring-rose-300/30"
-              style={{ backgroundColor: "var(--chart-line)" }}
-              aria-hidden
-            />
-            Esta semana
-          </span>
-          <span className="inline-flex items-center gap-2 text-[11px] font-medium text-zinc-600 dark:text-zinc-300">
-            <span
-              className="size-2.5 shrink-0 rounded-sm ring-2 ring-amber-700/25 dark:ring-amber-300/35"
-              style={{ backgroundColor: "var(--chart-prior-line)" }}
-              aria-hidden
-            />
-            Semana anterior
-          </span>
-        </div>
-      ) : null}
 
       <svg
         viewBox={`0 0 ${chartW} ${chartH}`}
-        className={`block w-full min-w-0 ${compact ? "min-h-0 flex-1" : "h-auto"}`}
+        className="block min-h-0 w-full flex-1"
         preserveAspectRatio="xMidYMid meet"
         role="img"
-        aria-label="Ventas diarias: esta semana en rojo y semana anterior en ámbar"
+        aria-label="Ventas: este periodo vs anterior"
       >
-        <title>Ventas esta semana vs semana anterior</title>
         <defs>
           <linearGradient id={fillGradientId} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="var(--chart-line)" stopOpacity="0.14" />
-            <stop offset="100%" stopColor="var(--chart-line)" stopOpacity="0" />
+            <stop offset="0%" stopColor="#9f1239" stopOpacity="0.22" />
+            <stop offset="100%" stopColor="#9f1239" stopOpacity="0" />
           </linearGradient>
         </defs>
 
         {yTicks.map((tick, idx) => {
           const y = yAt(tick);
-          const isBottom = idx === 0;
           return (
-            <g key={`grid-${idx}`}>
-              {!isBottom ? (
+            <g key={`g-${idx}`}>
+              {idx > 0 ? (
                 <line
                   x1={padL}
                   y1={y}
                   x2={padL + plotW}
                   y2={y}
-                  stroke="var(--chart-grid)"
+                  className="stroke-zinc-100 dark:stroke-zinc-800"
                   strokeWidth={1}
-                  strokeDasharray="4 6"
                 />
               ) : null}
               <text
-                x={padL - 10}
-                y={y + 4}
+                x={padL - 8}
+                y={y + 3}
                 textAnchor="end"
-                className="fill-zinc-500 dark:fill-zinc-400"
+                className="fill-zinc-400 dark:fill-zinc-500"
                 style={{ fontSize: "11px" }}
               >
                 {formatCopCompact(Math.round(tick))}
@@ -209,67 +180,44 @@ export function ReportSalesWeekTrendChart({
           );
         })}
 
-        <line
-          x1={padL}
-          y1={padT + plotH}
-          x2={padL + plotW}
-          y2={padT + plotH}
-          stroke="var(--chart-axis)"
-          strokeWidth={1.25}
-        />
-        <line
-          x1={padL}
-          y1={padT}
-          x2={padL}
-          y2={padT + plotH}
-          stroke="var(--chart-axis)"
-          strokeWidth={1.25}
-        />
-
         <path d={areaPath} fill={`url(#${fillGradientId})`} />
-
-        {trend.length > 1 ? (
-          <>
-            <polyline
-              fill="none"
-              stroke="var(--chart-prior-line)"
-              strokeWidth={2}
-              strokeDasharray="7 5"
-              strokeLinejoin="round"
-              strokeLinecap="round"
-              points={priorPolyline}
-            />
-            <polyline
-              fill="none"
-              stroke="var(--chart-line)"
-              strokeWidth={2.25}
-              strokeLinejoin="round"
-              strokeLinecap="round"
-              points={currentPolyline}
-            />
-          </>
-        ) : null}
+        <path
+          d={priorPath}
+          fill="none"
+          stroke="#d6d3d1"
+          strokeWidth={2.25}
+          strokeDasharray="7 6"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="dark:stroke-zinc-600"
+        />
+        <path
+          d={currentPath}
+          fill="none"
+          stroke="#9f1239"
+          strokeWidth={2.75}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="dark:stroke-rose-300"
+        />
 
         {trend.map((t, i) => (
           <g key={t.key}>
             <title>
-              {t.detail ??
-                `${xLabelForPoint(t)}: ${formatCop(t.currentValue)} esta semana · ${formatCop(t.priorValue)} sem. ant.`}
+              {`${xLabelForPoint(t)}: ${formatCop(t.currentValue)} · ant. ${formatCop(t.priorValue)}`}
             </title>
             <circle
               cx={xAt(i)}
               cy={yAt(t.priorValue)}
-              r="3.5"
-              fill="var(--chart-prior-point-fill)"
-              stroke="var(--chart-prior-point-stroke)"
-              strokeWidth={2}
+              r={3}
+              className="fill-white stroke-zinc-300 dark:fill-zinc-900 dark:stroke-zinc-500"
+              strokeWidth={1.5}
             />
             <circle
               cx={xAt(i)}
               cy={yAt(t.currentValue)}
-              r={trend.length === 1 ? 5 : 4}
-              fill="var(--chart-point-fill)"
-              stroke="var(--chart-point-stroke)"
+              r={4}
+              className="fill-white stroke-rose-800 dark:fill-zinc-900 dark:stroke-rose-300"
               strokeWidth={2}
             />
           </g>
@@ -277,11 +225,11 @@ export function ReportSalesWeekTrendChart({
 
         {trend.map((t, i) => (
           <text
-            key={`xl-${t.key}`}
+            key={`x-${t.key}`}
             x={xAt(i)}
-            y={chartH - 8}
+            y={chartH - 10}
             textAnchor="middle"
-            className="fill-zinc-600 dark:fill-zinc-300"
+            className="fill-zinc-500 dark:fill-zinc-400"
             style={{ fontSize: "11px" }}
           >
             {xLabelForPoint(t)}

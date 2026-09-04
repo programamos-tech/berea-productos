@@ -30,17 +30,18 @@ function ReportsDashboardSkeleton() {
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3" role="status">
       <span className="sr-only">Cargando reportes…</span>
-      <div className="grid shrink-0 grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6">
-        {Array.from({ length: 6 }).map((_, i) => (
+      <div className="grid shrink-0 grid-cols-2 gap-2.5 lg:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, i) => (
           <div
             key={i}
-            className="h-[4.75rem] animate-pulse rounded-xl border border-zinc-200/50 bg-zinc-100/40 dark:border-zinc-700/50 dark:bg-zinc-900/40 motion-reduce:animate-none"
+            className="h-[5.5rem] animate-pulse rounded-2xl border border-zinc-200/50 bg-zinc-100/40 dark:border-zinc-700/50 dark:bg-zinc-900/40 motion-reduce:animate-none"
           />
         ))}
       </div>
-      <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 lg:grid-cols-2">
-        <div className="h-full min-h-[12rem] animate-pulse rounded-2xl border border-rose-200/35 bg-white/50 dark:border-zinc-700/60 dark:bg-zinc-900/50 motion-reduce:animate-none" />
-        <div className="h-full min-h-[12rem] animate-pulse rounded-2xl border border-rose-200/35 bg-white/50 dark:border-zinc-700/60 dark:bg-zinc-900/50 motion-reduce:animate-none" />
+      <div className="grid min-h-0 flex-1 grid-cols-1 gap-2.5 lg:grid-cols-12">
+        <div className="min-h-[12rem] animate-pulse rounded-2xl border border-rose-200/35 bg-white/50 dark:border-zinc-700/60 dark:bg-zinc-900/50 motion-reduce:animate-none lg:col-span-6" />
+        <div className="min-h-[12rem] animate-pulse rounded-2xl border border-rose-200/35 bg-white/50 dark:border-zinc-700/60 dark:bg-zinc-900/50 motion-reduce:animate-none lg:col-span-3" />
+        <div className="min-h-[12rem] animate-pulse rounded-2xl border border-rose-200/35 bg-white/50 dark:border-zinc-700/60 dark:bg-zinc-900/50 motion-reduce:animate-none lg:col-span-3" />
       </div>
     </div>
   );
@@ -90,8 +91,16 @@ export default async function AdminHomePage({ searchParams }: PageProps) {
       <header className="flex shrink-0 flex-wrap items-center justify-between gap-2 gap-y-2">
         <div className="min-w-0">
           <h1 className="text-lg font-semibold tracking-tight text-rose-950 dark:text-zinc-100 sm:text-xl">
-            Reportes
+            {vista === "tienda"
+              ? "Así va la tienda hoy"
+              : "Reporte del día"}
           </h1>
+          <p className="mt-0.5 text-xs text-rose-950/50 dark:text-zinc-500">
+            {periodLabel}
+            {vista === "tienda"
+              ? " · arrastre + cobros − egresos"
+              : " · solo ventas y cobros"}
+          </p>
         </div>
         <Suspense fallback={<ReportsFiltersSkeleton />}>
           <div className="flex flex-wrap items-center justify-end gap-2">
