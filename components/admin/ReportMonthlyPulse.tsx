@@ -22,10 +22,12 @@ export function ReportMonthlyPulse({
   months,
   insight,
   highlightYearMonth,
+  compact = false,
 }: {
   months: MonthlyPulsePoint[];
   insight: string;
   highlightYearMonth?: string | null;
+  compact?: boolean;
 }) {
   if (months.length === 0) return null;
 
@@ -34,31 +36,33 @@ export function ReportMonthlyPulse({
 
   return (
     <section
-      className={`reports-chart-reveal ${adminPanelLgClass} mt-6 overflow-hidden`}
-      style={{ ["--reports-chart-delay" as string]: "280ms" }}
+      className={`reports-chart-reveal flex h-full min-h-0 flex-col overflow-hidden ${adminPanelLgClass} ${
+        compact ? "" : "mt-6"
+      }`}
+      style={{ ["--reports-chart-delay" as string]: "180ms" }}
     >
-      <div className="flex flex-wrap items-end justify-between gap-4 px-6 pt-4 sm:px-8 sm:pt-5">
-        <div>
+      <div className="flex shrink-0 flex-wrap items-end justify-between gap-2 px-4 pt-3 sm:px-5 sm:pt-4">
+        <div className="min-w-0">
           <h2 className="text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-600 dark:text-zinc-400">
             Pulso mensual
           </h2>
-          <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+          <p className="mt-0.5 truncate text-xs text-zinc-500 dark:text-zinc-400">
             {current.shortLabel}
             {current.isPartial ? " · ahora" : ""}
             {insight ? ` · ${insight}` : ""}
           </p>
         </div>
-        <p className={`text-xl font-normal tabular-nums ${netaClass(current.gananciaNeta)}`}>
+        <p className={`text-base font-semibold tabular-nums sm:text-lg ${netaClass(current.gananciaNeta)}`}>
           {formatCop(current.gananciaNeta)}
         </p>
       </div>
 
-      <div className="relative mt-4 px-4 pb-5 sm:px-6">
+      <div className="relative min-h-0 flex-1 px-3 pb-3 sm:px-4 sm:pb-4">
         <div
-          className="pointer-events-none absolute inset-x-6 top-[3.5rem] h-px bg-zinc-100 dark:bg-zinc-800 sm:inset-x-8"
+          className="pointer-events-none absolute inset-x-4 top-1/2 h-px -translate-y-1/2 bg-zinc-100 dark:bg-zinc-800 sm:inset-x-5"
           aria-hidden
         />
-        <ul className="flex items-start gap-1 overflow-x-auto sm:gap-2">
+        <ul className="flex h-full items-stretch gap-0.5 sm:gap-1.5">
           {months.map((m) => {
             const up = m.gananciaNeta >= 0;
             const halfPct = (Math.abs(m.gananciaNeta) / maxAbs) * 50;
@@ -66,35 +70,35 @@ export function ReportMonthlyPulse({
             const href = `/admin?from=${encodeURIComponent(m.from)}&to=${encodeURIComponent(m.to)}`;
 
             return (
-              <li key={m.yearMonth} className="min-w-[3.15rem] flex-1">
+              <li key={m.yearMonth} className="min-w-0 flex-1">
                 <Link
                   href={href}
-                  className="group flex flex-col items-center outline-none"
+                  className="group flex h-full flex-col items-center outline-none"
                   aria-current={selected ? "page" : undefined}
                 >
-                  <div className="relative h-28 w-full">
+                  <div className="relative min-h-0 w-full flex-1">
                     {up ? (
                       <span
                         className={`absolute bottom-1/2 left-1/2 -translate-x-1/2 rounded-sm ${
-                          m.isCurrent ? "w-3 sm:w-3.5" : "w-2 sm:w-2.5"
+                          m.isCurrent ? "w-2.5 sm:w-3" : "w-1.5 sm:w-2"
                         } ${
                           m.gananciaNeta === 0
                             ? "bg-zinc-300 dark:bg-zinc-600"
-                            : "bg-emerald-600/50 dark:bg-emerald-500/45"
+                            : "bg-emerald-600/55 dark:bg-emerald-500/50"
                         }`}
                         style={{ height: `${Math.max(halfPct, m.gananciaNeta === 0 ? 0 : 4)}%` }}
                       />
                     ) : (
                       <span
-                        className={`absolute top-1/2 left-1/2 -translate-x-1/2 rounded-sm bg-red-500/65 dark:bg-red-400/60 ${
-                          m.isCurrent ? "w-3 sm:w-3.5" : "w-2 sm:w-2.5"
+                        className={`absolute top-1/2 left-1/2 -translate-x-1/2 rounded-sm bg-red-500/70 dark:bg-red-400/60 ${
+                          m.isCurrent ? "w-2.5 sm:w-3" : "w-1.5 sm:w-2"
                         }`}
                         style={{ height: `${Math.max(halfPct, 4)}%` }}
                       />
                     )}
                   </div>
                   <span
-                    className={`mt-2 text-[10px] font-semibold uppercase tracking-[0.12em] ${
+                    className={`mt-1.5 text-[9px] font-semibold uppercase tracking-[0.1em] sm:text-[10px] ${
                       selected || m.isCurrent
                         ? "text-zinc-800 dark:text-zinc-200"
                         : "text-zinc-400 dark:text-zinc-500"
@@ -102,7 +106,7 @@ export function ReportMonthlyPulse({
                   >
                     {monthAbbrev(m.shortLabel)}
                   </span>
-                  <span className={`mt-0.5 text-[11px] tabular-nums ${netaClass(m.gananciaNeta)}`}>
+                  <span className={`mt-0.5 text-[10px] tabular-nums sm:text-[11px] ${netaClass(m.gananciaNeta)}`}>
                     {formatNetaCompact(m.gananciaNeta)}
                   </span>
                 </Link>

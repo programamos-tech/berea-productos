@@ -5,10 +5,7 @@ import {
 } from "@/components/admin/ReportMonthlyPulseSection";
 import { ReportStockTrendLine } from "@/components/admin/ReportStockTrendLine";
 import { ReportSalesWeekTrendChart } from "@/components/admin/ReportSalesWeekTrendChart";
-import {
-  StaticCopCents,
-  StaticInteger,
-} from "@/components/admin/ReportsAnimatedFigures";
+import { StaticCopCents } from "@/components/admin/ReportsAnimatedFigures";
 import {
   prettyReportDayShortLabel,
   type ReportVista,
@@ -17,15 +14,28 @@ import { fetchAdminReportDashboardData } from "@/lib/admin-reports-data";
 import { fetchCashArrastreCentsForReportStart } from "@/lib/cash-register";
 import { adminPanelLgClass } from "@/lib/admin-ui";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import Link from "next/link";
 import { Suspense } from "react";
 import { formatCop } from "@/lib/money";
 
-const cardLabelClass =
-  "text-[10px] font-semibold uppercase tracking-[0.18em] text-rose-900/40 dark:text-zinc-500";
+const labelClass =
+  "text-[9px] font-semibold uppercase tracking-[0.14em] text-rose-900/40 dark:text-zinc-500";
 
-const sectionTitleClass =
-  "text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-600 dark:text-zinc-400";
+function KpiShell({
+  children,
+  staggerMs,
+}: {
+  children: React.ReactNode;
+  staggerMs: number;
+}) {
+  return (
+    <div
+      className="reports-metric-card min-w-0 rounded-xl border border-rose-200/35 bg-white/80 px-3 py-2.5 dark:border-zinc-700/70 dark:bg-zinc-900/80"
+      style={{ ["--reports-stagger" as string]: `${staggerMs}ms` }}
+    >
+      {children}
+    </div>
+  );
+}
 
 export async function ReportsDashboardBody({
   rangeFrom,
@@ -85,10 +95,7 @@ export async function ReportsDashboardBody({
     return (
       <div className="rounded-xl border border-amber-200 bg-amber-50/90 px-4 py-6 text-sm text-amber-950 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-100">
         <p className="font-semibold">No se pudieron cargar los reportes</p>
-        <p className="mt-2">
-          Ocurrió un error al consultar los datos. Recargá la página o probá de nuevo en unos
-          segundos.
-        </p>
+        <p className="mt-2">Recargá la página o probá de nuevo en unos segundos.</p>
       </div>
     );
   }
@@ -106,8 +113,6 @@ export async function ReportsDashboardBody({
     totalCobradoPedidos,
     efectivo,
     transferencia,
-    anuladas,
-    ventasVirtuales,
     ventasPagadasPeriod,
     egresosPeriod,
     egresosEfectivoCents,
@@ -118,96 +123,51 @@ export async function ReportsDashboardBody({
     reportExpensesOtrosLines,
     reportIncomeChartPoints,
     salesTrendComparison,
-    peakIncomeDayKey,
-    peakIncomeDayCents,
     stockInversionNet,
     stockInversionGross,
-    stockHasProducts,
     stockInvestmentTrend,
-    revenueApproxFromOrderTotals,
   } = report;
 
   const isTienda = vista === "tienda";
   const efectivoNetoPosicion =
     arrastreEfectivoCents + efectivo - egresosEfectivoCents;
-  const resumenTitle = isTienda ? "Cómo va la tienda" : "Reporte del día";
-  const resumenHint = isTienda
-    ? "Posición con arrastre de caja, cobros y egresos del periodo."
-    : "Ventas y cobros del periodo. Los egresos se ven en «Cómo va la tienda».";
-
-  const secondaryMetrics = isTienda
-    ? ([
-        {
-          label: "Facturas anuladas",
-          count: anuladas,
-          hint: "Facturas anuladas",
-          staggerMs: 80,
-        },
-        {
-          label: "Egresos",
-          cents: egresosPeriod,
-          hint: `${cantidadEgresosPeriod} registrados en el periodo`,
-          staggerMs: 120,
-        },
-      ] as const)
-    : ([
-        {
-          label: "Facturas anuladas",
-          count: anuladas,
-          hint: "Facturas anuladas",
-          staggerMs: 80,
-        },
-      ] as const);
 
   return (
-    <>
-      <div
-        key={`reports-body-${vista}-${rangeFrom}-${rangeTo}`}
-        className="border-t border-rose-200/55 pt-10 pb-4 dark:border-zinc-800"
-      >
-        <p className={cardLabelClass}>{resumenTitle}</p>
-        <p className="mt-1 text-sm text-stone-500 dark:text-zinc-400">
-          {periodLabel}
-          <span className="text-stone-300 dark:text-zinc-600"> · </span>
-          {resumenHint}
-        </p>
-        {report.ordersRangeError ? (
-          <p className="mt-3 rounded-lg border border-amber-200/90 bg-amber-50/80 px-3 py-2 text-xs leading-relaxed text-amber-950 dark:border-amber-900/50 dark:bg-amber-950/25 dark:text-amber-100">
-            Algunos datos no se pudieron agregar en el servidor ({report.ordersRangeError}). Se
-            muestra lo disponible; si persiste, recargá la página.
+    <div
+      key={`reports-body-${vista}-${rangeFrom}-${rangeTo}`}
+      className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden"
+    >
+      <div className="shrink-0">
+        <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+          <p className={labelClass}>
+            {isTienda ? "Cómo va la tienda" : "Reporte del día"}
+            <span className="mx-1.5 text-stone-300 dark:text-zinc-600">·</span>
+            <span className="font-medium normal-case tracking-normal text-stone-500 dark:text-zinc-400">
+              {periodLabel}
+            </span>
           </p>
-        ) : null}
-        {revenueApproxFromOrderTotals ? (
-          <p className="mt-2 max-w-3xl text-[11px] leading-snug text-amber-900/85 dark:text-amber-100/85">
-            Periodo largo: ingresos, IVA y ganancia se calculan desde el total del pedido (más
-            rápido). Para desglose línea a línea, elegí un rango de hasta 31 días.
+          <p className="text-[10px] text-stone-400 dark:text-zinc-500">
+            {isTienda
+              ? "Arrastre + cobros − egresos"
+              : "Solo ventas y cobros"}
           </p>
-        ) : null}
-        <dl className="mt-6 grid grid-cols-1 gap-x-8 gap-y-10 sm:grid-cols-2 lg:grid-cols-4">
-          <div
-            className="reports-metric-card min-w-0"
-            style={{ ["--reports-stagger" as string]: "0ms" }}
-          >
-            <dt className={cardLabelClass}>Total ingresos</dt>
-            <dd className="mt-1 text-2xl font-normal tabular-nums text-stone-900 dark:text-zinc-100">
+        </div>
+
+        <dl className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6">
+          <KpiShell staggerMs={0}>
+            <dt className={labelClass}>Ingresos</dt>
+            <dd className="mt-1 text-lg font-semibold tabular-nums tracking-tight text-stone-900 dark:text-zinc-50 sm:text-xl">
               <StaticCopCents cents={ingresosConIvaPeriod} />
             </dd>
-            <p className="mt-1 text-xs text-stone-500 dark:text-zinc-400">
-              {ventasPagadasPeriod} venta{ventasPagadasPeriod === 1 ? "" : "s"} · total con IVA
+            <p className="mt-0.5 text-[10px] text-stone-400 dark:text-zinc-500">
+              {ventasPagadasPeriod} venta{ventasPagadasPeriod === 1 ? "" : "s"} · IVA{" "}
+              <span className="tabular-nums">{formatCop(ivaRecaudadoPeriod)}</span>
             </p>
-            <div className="mt-3 space-y-1 border-t border-stone-100 pt-3 text-[11px] leading-snug text-stone-500 dark:border-zinc-800 dark:text-zinc-400">
-              <p className="tabular-nums">
-                <span className="text-stone-400 dark:text-zinc-500">Total sin IVA (base): </span>
-                <StaticCopCents cents={ingresosSinIvaPeriod} />
-              </p>
-              <p className="tabular-nums">
-                <span className="text-stone-400 dark:text-zinc-500">IVA recaudado: </span>
-                <StaticCopCents cents={ivaRecaudadoPeriod} />
-              </p>
-            </div>
-          </div>
+            <p className="sr-only">Base sin IVA {formatCop(ingresosSinIvaPeriod)}</p>
+          </KpiShell>
+
           <ReportLiquidityMetricCards
-            cardLabelClass={cardLabelClass}
+            cardLabelClass={labelClass}
             periodLabel={periodLabel}
             mode={isTienda ? "position" : "inflow"}
             totalCobradoPedidos={totalCobradoPedidos}
@@ -221,179 +181,112 @@ export async function ReportsDashboardBody({
             expensesOtros={reportExpensesOtrosLines}
             arrastreEfectivoCents={arrastreEfectivoCents}
           />
-          {secondaryMetrics.map((item) => (
-            <div
-              key={item.label}
-              className="reports-metric-card min-w-0"
-              style={{ ["--reports-stagger" as string]: `${item.staggerMs}ms` }}
-            >
-              <dt className={cardLabelClass}>{item.label}</dt>
-              <dd className="mt-1 text-2xl font-normal tabular-nums text-stone-900 dark:text-zinc-100">
-                {"cents" in item ? (
-                  <StaticCopCents cents={item.cents} />
-                ) : (
-                  <StaticInteger value={item.count} />
-                )}
-              </dd>
-              <p className="mt-1 text-xs text-stone-500 dark:text-zinc-400">{item.hint}</p>
-            </div>
-          ))}
 
-          <div
-            className="reports-metric-card min-w-0"
-            style={{ ["--reports-stagger" as string]: "160ms" }}
-          >
-            <dt className={cardLabelClass}>Ganancia</dt>
-            <dd className="mt-1 flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-1">
-              <span className="inline-flex min-w-0 items-baseline gap-1.5">
-                <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wide text-rose-900/40 dark:text-zinc-500">
-                  Bruta
-                </span>
-                <span className="text-2xl font-normal tabular-nums text-stone-900 dark:text-zinc-100">
-                  <StaticCopCents cents={gananciaBruta} />
-                </span>
+          {isTienda ? (
+            <KpiShell staggerMs={100}>
+              <dt className={labelClass}>Egresos</dt>
+              <dd className="mt-1 text-lg font-semibold tabular-nums tracking-tight text-stone-900 dark:text-zinc-50 sm:text-xl">
+                <StaticCopCents cents={egresosPeriod} />
+              </dd>
+              <p className="mt-0.5 text-[10px] text-stone-400 dark:text-zinc-500">
+                {cantidadEgresosPeriod} movimiento
+                {cantidadEgresosPeriod === 1 ? "" : "s"}
+              </p>
+            </KpiShell>
+          ) : null}
+
+          <KpiShell staggerMs={140}>
+            <dt className={labelClass}>Ganancia</dt>
+            <dd className="mt-1 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+              <span className="text-lg font-semibold tabular-nums tracking-tight text-stone-900 dark:text-zinc-50 sm:text-xl">
+                <StaticCopCents cents={gananciaBruta} />
               </span>
               {isTienda ? (
-                <span className="inline-flex min-w-0 items-baseline gap-1.5">
-                  <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wide text-rose-900/40 dark:text-zinc-500">
-                    Neta
-                  </span>
-                  <span
-                    className={`text-sm font-normal tabular-nums ${
-                      gananciaNeta > 0
-                        ? "text-emerald-700 dark:text-emerald-400"
-                        : gananciaNeta < 0
-                          ? "text-red-700 dark:text-red-400"
-                          : "text-stone-500 dark:text-zinc-400"
-                    }`}
-                  >
-                    <StaticCopCents cents={gananciaNeta} />
-                  </span>
+                <span
+                  className={`text-xs font-medium tabular-nums ${
+                    gananciaNeta > 0
+                      ? "text-emerald-700 dark:text-emerald-400"
+                      : gananciaNeta < 0
+                        ? "text-red-600 dark:text-red-400"
+                        : "text-stone-400"
+                  }`}
+                >
+                  neta <StaticCopCents cents={gananciaNeta} />
                 </span>
-              ) : null}
+              ) : (
+                <span className="text-[10px] text-stone-400 dark:text-zinc-500">bruta</span>
+              )}
             </dd>
-            <p className="mt-1 text-[11px] leading-snug text-stone-500 dark:text-zinc-400">
-              {isTienda
-                ? "Margen de productos − egresos del periodo"
-                : "Margen de productos del periodo (sin egresos)"}
+            <p className="mt-0.5 text-[10px] text-stone-400 dark:text-zinc-500">
+              {isTienda ? "Margen − egresos" : "Margen del periodo"}
             </p>
-          </div>
+          </KpiShell>
 
-          <div
-            className="reports-metric-card min-w-0"
-            style={{ ["--reports-stagger" as string]: "200ms" }}
-          >
-            <dt className={cardLabelClass}>Stock (inversión)</dt>
-            <dd className="mt-1 flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-1">
-              <span className="inline-flex min-w-0 items-baseline gap-1.5">
-                <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wide text-rose-900/40 dark:text-zinc-500">
-                  Sin IVA
-                </span>
-                <span className="text-2xl font-normal tabular-nums text-stone-900 dark:text-zinc-100">
-                  <StaticCopCents cents={stockInversionNet} />
-                </span>
-              </span>
-              {stockInversionGross > 0 ? (
-                <span className="inline-flex min-w-0 items-baseline gap-1.5">
-                  <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wide text-rose-900/40 dark:text-zinc-500">
-                    Con IVA
-                  </span>
-                  <span className="text-sm font-normal tabular-nums text-stone-500 dark:text-zinc-400">
-                    <StaticCopCents cents={stockInversionGross} />
-                  </span>
-                </span>
-              ) : null}
+          <KpiShell staggerMs={180}>
+            <dt className={labelClass}>Stock</dt>
+            <dd className="mt-1 text-lg font-semibold tabular-nums tracking-tight text-stone-900 dark:text-zinc-50 sm:text-xl">
+              <StaticCopCents cents={stockInversionNet} />
             </dd>
-            <ReportStockTrendLine trend={stockInvestmentTrend} />
-            {stockInversionGross === 0 && stockInversionNet > 0 ? (
-              <p className="mt-1 text-[11px] leading-snug text-amber-900/80 dark:text-amber-100/80">
-                Sin costo con IVA cargado. Completá el campo en cada producto o ejecutá{" "}
-                <code className="rounded bg-stone-100 px-1 py-0.5 text-[10px] dark:bg-zinc-800">
-                  npm run import:products
-                </code>{" "}
-                si venís del CSV.
+            {stockInversionGross > 0 ? (
+              <p className="mt-0.5 text-[10px] tabular-nums text-stone-400 dark:text-zinc-500">
+                c/IVA {formatCop(stockInversionGross)}
               </p>
-            ) : stockInversionGross === 0 && stockInversionNet === 0 && stockHasProducts ? (
-              <p className="mt-1 text-[11px] leading-snug text-stone-500 dark:text-zinc-400">
-                Con IVA sin monto hasta cargar costo bruto. Si el total sigue en $0, revisá costo
-                sin IVA e inventario (bodega + local).
-              </p>
-            ) : stockInversionGross === 0 && stockInversionNet === 0 && !stockHasProducts ? (
-              <p className="mt-1 text-[11px] text-stone-400 dark:text-zinc-500">—</p>
             ) : null}
-          </div>
+            <div className="[&_p]:mt-0.5 [&_p]:text-[10px]">
+              <ReportStockTrendLine trend={stockInvestmentTrend} />
+            </div>
+          </KpiShell>
 
-          <div
-            className="reports-metric-card min-w-0"
-            style={{ ["--reports-stagger" as string]: "240ms" }}
-          >
-            <dt className={cardLabelClass}>Ventas virtuales</dt>
-            <dd className="mt-1 text-2xl font-normal tabular-nums text-stone-900 dark:text-zinc-100">
-              <StaticCopCents cents={ventasVirtuales} />
-            </dd>
-            <p className="mt-1 text-xs text-stone-500 dark:text-zinc-400">
-              Checkout web (sin mostrador)
-            </p>
-          </div>
+          {!isTienda ? (
+            <KpiShell staggerMs={100}>
+              <dt className={labelClass}>Base sin IVA</dt>
+              <dd className="mt-1 text-lg font-semibold tabular-nums tracking-tight text-stone-900 dark:text-zinc-50 sm:text-xl">
+                <StaticCopCents cents={ingresosSinIvaPeriod} />
+              </dd>
+              <p className="mt-0.5 text-[10px] text-stone-400 dark:text-zinc-500">
+                IVA recaudado {formatCop(ivaRecaudadoPeriod)}
+              </p>
+            </KpiShell>
+          ) : null}
         </dl>
       </div>
 
-      <Suspense fallback={<ReportMonthlyPulseSkeleton />}>
-        <ReportMonthlyPulseSection
-          todayKey={todayKey}
-          rangeFrom={rangeFrom}
-          rangeTo={rangeTo}
-        />
-      </Suspense>
-
-      <section
-        key={`reports-chart-${todayKey}`}
-        className={`reports-chart-reveal ${adminPanelLgClass} mt-6 overflow-hidden`}
-        style={{ ["--reports-chart-delay" as string]: "520ms" }}
-      >
-        <div className="px-6 pt-4 pb-1 sm:px-8 sm:pt-5">
-          <h2 className={sectionTitleClass}>Tendencia de ventas</h2>
-          <p className="mt-1 w-full text-sm leading-relaxed text-zinc-500 dark:text-zinc-400">
-            Ingresos de los últimos{" "}
-            <span className="font-medium text-zinc-600 dark:text-zinc-300">7 días</span> (
-            {prettyReportDayShortLabel(salesTrendCurrentFrom)} –{" "}
-            {prettyReportDayShortLabel(salesTrendCurrentTo)}
-            {salesTrendCurrentTo === todayKey ? ", hoy" : ""}) comparados con la semana anterior.
-            Independiente del filtro del resumen ({periodLabel}).
-          </p>
-        </div>
-        <div className="w-full min-w-0 pb-2">
-          <ReportSalesWeekTrendChart
-            points={reportIncomeChartPoints}
-            comparison={salesTrendComparison}
-            fillGradientId="reportsIncomeChartFill"
+      <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 lg:grid-cols-2">
+        <Suspense fallback={<ReportMonthlyPulseSkeleton compact />}>
+          <ReportMonthlyPulseSection
+            todayKey={todayKey}
+            rangeFrom={rangeFrom}
+            rangeTo={rangeTo}
+            compact
           />
-        </div>
-        <div className="border-t border-zinc-100/90 px-6 py-4 text-xs leading-relaxed text-zinc-500 dark:border-zinc-800 dark:text-zinc-400 sm:px-8">
-          <p>
-            Solo ventas pagadas. La línea{" "}
-            <span className="font-medium text-rose-900/80 dark:text-rose-200/90">roja</span> es esta
-            semana; la{" "}
-            <span className="font-medium text-amber-800/80 dark:text-amber-300/90">ámbar punteada</span>{" "}
-            es la semana anterior ({prettyReportDayShortLabel(salesTrendPriorFrom)} –{" "}
-            {prettyReportDayShortLabel(salesTrendPriorTo)}), día a día en el mismo eje.
-          </p>
-          {peakIncomeDayKey && peakIncomeDayCents > 0 ? (
-            <p className="mt-2">
-              <Link
-                href={`/admin/ventas?from=${encodeURIComponent(peakIncomeDayKey)}&to=${encodeURIComponent(peakIncomeDayKey)}`}
-                className="font-medium text-rose-900 underline decoration-rose-900/35 underline-offset-2 hover:text-rose-950 dark:text-rose-200 dark:decoration-rose-200/40 dark:hover:text-rose-100"
-              >
-                Ver ventas del {prettyReportDayShortLabel(peakIncomeDayKey)}
-              </Link>
-              <span className="text-zinc-400 dark:text-zinc-500">
-                {" "}
-                · mejor día de la semana {formatCop(peakIncomeDayCents)}
-              </span>
-            </p>
-          ) : null}
-        </div>
-      </section>
-    </>
+        </Suspense>
+
+        <section
+          className={`reports-chart-reveal flex min-h-0 flex-col overflow-hidden ${adminPanelLgClass}`}
+          style={{ ["--reports-chart-delay" as string]: "260ms" }}
+        >
+          <div className="flex shrink-0 items-end justify-between gap-2 px-4 pt-3 sm:px-5 sm:pt-4">
+            <div className="min-w-0">
+              <h2 className="text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-600 dark:text-zinc-400">
+                Tendencia de ventas
+              </h2>
+              <p className="mt-0.5 truncate text-xs text-zinc-500 dark:text-zinc-400">
+                7 días vs semana anterior ·{" "}
+                {prettyReportDayShortLabel(salesTrendCurrentFrom)}–
+                {prettyReportDayShortLabel(salesTrendCurrentTo)}
+              </p>
+            </div>
+          </div>
+          <div className="min-h-0 flex-1 pb-1">
+            <ReportSalesWeekTrendChart
+              points={reportIncomeChartPoints}
+              comparison={salesTrendComparison}
+              fillGradientId="reportsIncomeChartFill"
+              compact
+            />
+          </div>
+        </section>
+      </div>
+    </div>
   );
 }

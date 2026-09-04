@@ -6,10 +6,10 @@ import {
 } from "@/lib/admin-report-monthly-pulse";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-export function ReportMonthlyPulseSkeleton() {
+export function ReportMonthlyPulseSkeleton({ compact = false }: { compact?: boolean }) {
   return (
     <div
-      className={`${adminPanelLgClass} mt-6 h-52 animate-pulse dark:border-zinc-700/60`}
+      className={`${adminPanelLgClass} ${compact ? "h-full min-h-0" : "mt-6 h-52"} animate-pulse dark:border-zinc-700/60`}
       role="status"
     >
       <span className="sr-only">Cargando pulso mensual…</span>
@@ -21,10 +21,12 @@ export async function ReportMonthlyPulseSection({
   todayKey,
   rangeFrom,
   rangeTo,
+  compact = false,
 }: {
   todayKey: string;
   rangeFrom: string;
   rangeTo: string;
+  compact?: boolean;
 }) {
   try {
     const supabase = await createSupabaseServerClient();
@@ -36,6 +38,7 @@ export async function ReportMonthlyPulseSection({
         months={pulse.months}
         insight={pulse.insight}
         highlightYearMonth={pulseHighlightYearMonth(rangeFrom, rangeTo, todayKey)}
+        compact={compact}
       />
     );
   } catch (err) {

@@ -19,7 +19,6 @@ export type ReportExpenseDetailLine = {
 type Props = {
   cardLabelClass: string;
   periodLabel: string;
-  /** `inflow` = solo cobros; `position` = arrastre + cobros − egresos */
   mode: "inflow" | "position";
   totalCobradoPedidos: number;
   efectivo: number;
@@ -30,7 +29,6 @@ type Props = {
   transferenciaNeta: number;
   egresosTransferenciaBucketCents: number;
   expensesOtros: ReportExpenseDetailLine[];
-  /** Solo en modo posición: efectivo que venía de caja al inicio del rango */
   arrastreEfectivoCents?: number;
 };
 
@@ -67,68 +65,59 @@ function ExpenseRows({ rows }: { rows: ReportExpenseDetailLine[] }) {
   );
 }
 
-function MiniEgresosBar({ cobrado, egresos }: { cobrado: number; egresos: number }) {
-  const base = Math.max(cobrado, egresos, 1);
-  const neto = cobrado - egresos;
-  const netoW = Math.max(0, (neto / base) * 100);
-  const egresoW = Math.min(100, (egresos / base) * 100);
-
+function MiniBar({
+  positive,
+  negative,
+}: {
+  positive: number;
+  negative: number;
+}) {
+  const base = Math.max(positive, negative, 1);
+  const posW = Math.max(0, (positive / base) * 100);
+  const negW = Math.min(100, (negative / base) * 100);
   return (
     <div
-      className="flex h-1 w-full overflow-hidden rounded-full bg-stone-200/60 dark:bg-zinc-700/50"
+      className="mt-2 flex h-1 w-full overflow-hidden rounded-full bg-stone-200/70 dark:bg-zinc-700/50"
       aria-hidden
     >
-      {netoW > 0 ? (
-        <div
-          className="h-full bg-emerald-500/55 dark:bg-emerald-600/45"
-          style={{ width: `${netoW}%` }}
-        />
+      {posW > 0 ? (
+        <div className="h-full bg-emerald-500/55 dark:bg-emerald-500/45" style={{ width: `${posW}%` }} />
       ) : null}
-      <div
-        className="h-full bg-red-400/70 dark:bg-red-500/55"
-        style={{ width: `${egresoW}%` }}
-      />
+      <div className="h-full bg-red-400/75 dark:bg-red-500/55" style={{ width: `${negW}%` }} />
     </div>
   );
 }
 
-function LiquidityBucketCard({
+function CompactBucket({
   label,
-  cobrado,
-  neto,
+  value,
+  hint,
   egresos,
   expenseCount,
-  hint,
-  staggerMs,
-  cardLabelClass,
-  infoBtnClass,
-  onOpenEgresos,
-  showEgresos,
   arrastreCents,
+  showEgresos,
+  onOpenEgresos,
+  infoBtnClass,
+  cardLabelClass,
 }: {
   label: string;
-  cobrado: number;
-  neto: number;
+  value: number;
+  hint: string;
   egresos: number;
   expenseCount: number;
-  hint: string;
-  staggerMs: number;
-  cardLabelClass: string;
-  infoBtnClass: string;
-  onOpenEgresos: () => void;
-  showEgresos: boolean;
   arrastreCents?: number;
+  showEgresos: boolean;
+  onOpenEgresos: () => void;
+  infoBtnClass: string;
+  cardLabelClass: string;
 }) {
   const hasEgresos = showEgresos && egresos > 0;
   const hasArrastre = typeof arrastreCents === "number" && arrastreCents > 0;
 
   return (
-    <div
-      className="reports-metric-card min-w-0"
-      style={{ ["--reports-stagger" as string]: `${staggerMs}ms` }}
-    >
-      <dt className={`${cardLabelClass} flex min-w-0 items-center gap-1`}>
-        <span className="min-w-0 truncate">{label}</span>
+    <div className="reports-metric-card min-w-0 rounded-xl border border-rose-200/35 bg-white/80 px-3 py-2.5 dark:border-zinc-700/70 dark:bg-zinc-900/80">
+      <dt className={`${cardLabelClass} flex items-center gap-1`}>
+        <span className="truncate">{label}</span>
         {hasEgresos ? (
           <button
             type="button"
@@ -136,47 +125,32 @@ function LiquidityBucketCard({
             onClick={onOpenEgresos}
             aria-label={`Ver egresos de ${label.toLowerCase()}`}
           >
-            <Info className="size-3.5" strokeWidth={2} aria-hidden />
+            <Info className="size-3" strokeWidth={2} aria-hidden />
           </button>
         ) : null}
       </dt>
-      <dd className="mt-1 text-2xl font-normal tabular-nums text-stone-900 dark:text-zinc-100">
+      <dd className="mt-1 text-lg font-semibold tabular-nums tracking-tight text-stone-900 dark:text-zinc-50 sm:text-xl">
         <StaticCopCents
-          cents={neto}
-          className={neto < 0 ? "text-red-700 dark:text-red-300" : undefined}
+          cents={value}
+          className={value < 0 ? "text-red-600 dark:text-red-400" : undefined}
         />
       </dd>
-
       {hasArrastre ? (
-        <p className="mt-1.5 text-[11px] tabular-nums leading-snug text-stone-500 dark:text-zinc-400">
-          Incluye arrastre de caja {formatCop(arrastreCents)}
+        <p className="mt-0.5 text-[10px] tabular-nums text-stone-400 dark:text-zinc-500">
+          + arrastre {formatCop(arrastreCents)}
         </p>
-      ) : null}
-
+      ) : (
+        <p className="mt-0.5 truncate text-[10px] text-stone-400 dark:text-zinc-500">{hint}</p>
+      )}
       {hasEgresos ? (
-        <button
-          type="button"
-          onClick={onOpenEgresos}
-          className="group mt-2.5 w-full text-left"
-        >
-          <MiniEgresosBar
-            cobrado={cobrado + (arrastreCents ?? 0)}
-            egresos={egresos}
-          />
-          <p className="mt-1.5 flex items-center gap-1.5 text-[11px] leading-none text-stone-400 transition group-hover:text-stone-500 dark:text-zinc-500 dark:group-hover:text-zinc-400">
-            <span className="size-1.5 shrink-0 rounded-full bg-red-500/80" aria-hidden />
-            <span className="tabular-nums text-red-600/85 dark:text-red-400/85">
-              −{formatCop(egresos)}
-            </span>
-            <span>egresos</span>
-            {expenseCount > 1 ? (
-              <span className="text-stone-300 dark:text-zinc-600">· {expenseCount}</span>
-            ) : null}
+        <button type="button" onClick={onOpenEgresos} className="w-full text-left">
+          <MiniBar positive={Math.max(0, value + egresos)} negative={egresos} />
+          <p className="mt-1 text-[10px] tabular-nums text-red-600/90 dark:text-red-400/85">
+            −{formatCop(egresos)}
+            {expenseCount > 1 ? ` · ${expenseCount}` : ""}
           </p>
         </button>
-      ) : (
-        <p className="mt-1 text-xs text-stone-500 dark:text-zinc-400">{hint}</p>
-      )}
+      ) : null}
     </div>
   );
 }
@@ -218,42 +192,23 @@ export function ReportLiquidityMetricCards({
   const transferenciaDisplay = mode === "inflow" ? transferencia : transferenciaNeta;
 
   const efectivoHint =
-    mode === "inflow"
-      ? totalCobradoPedidos > 0
-        ? `${Math.round((efectivo / totalCobradoPedidos) * 100)}% cobrado en efectivo`
-        : "Sin cobros POS en efectivo en el periodo"
-      : totalCobradoPedidos > 0
-        ? `${Math.round((efectivo / totalCobradoPedidos) * 100)}% cobrado en efectivo`
-        : egresosEfectivoCents > 0
-          ? "Solo egresos en efectivo en el periodo (sin ventas POS)"
-          : "Sin cobros POS en efectivo en el periodo";
+    totalCobradoPedidos > 0
+      ? `${Math.round((efectivo / totalCobradoPedidos) * 100)}% del cobrado`
+      : "Sin cobros POS en efectivo";
 
   const transferHint =
-    mode === "inflow"
-      ? totalCobradoPedidos > 0
-        ? `${Math.round((transferencia / totalCobradoPedidos) * 100)}% del cobrado en este bucket`
-        : "Sin cobros en este bucket en el periodo"
-      : totalCobradoPedidos > 0
-        ? `${Math.round((transferencia / totalCobradoPedidos) * 100)}% del cobrado en este bucket`
-        : egresosTransferenciaBucketCents > 0
-          ? "Solo egresos en el periodo (sin cobros en transferencia / web)"
-          : "Sin cobros en este bucket en el periodo";
+    totalCobradoPedidos > 0
+      ? `${Math.round((transferencia / totalCobradoPedidos) * 100)}% del cobrado`
+      : "Sin cobros en transferencia";
 
   const infoBtnClass =
-    "inline-flex shrink-0 rounded-sm text-rose-900/50 transition hover:text-rose-900/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400/50 dark:text-zinc-500 dark:hover:text-zinc-300 dark:focus-visible:ring-zinc-500/40";
+    "inline-flex shrink-0 rounded-sm text-rose-900/45 transition hover:text-rose-900/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400/50 dark:text-zinc-500 dark:hover:text-zinc-300";
 
   const modalTitle =
     open === "efectivo"
       ? "Egresos en efectivo"
       : open === "transferencia"
-        ? "Egresos en transferencia, tarjeta y otros"
-        : "";
-
-  const modalHelp =
-    open === "efectivo"
-      ? "Descontados del efectivo (arrastre + cobros del periodo)."
-      : open === "transferencia"
-        ? "Descontados del neto de Transferencia."
+        ? "Egresos en transferencia y otros"
         : "";
 
   const modalTotalCents =
@@ -288,7 +243,7 @@ export function ReportLiquidityMetricCards({
           >
             <header className="flex shrink-0 items-start justify-between gap-3 border-b border-stone-100 px-4 py-3.5 dark:border-zinc-800">
               <div className="min-w-0">
-                <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                <div className="flex flex-wrap items-baseline gap-x-2">
                   <h2
                     id={titleId}
                     className="text-sm font-semibold text-stone-900 dark:text-zinc-100"
@@ -303,7 +258,6 @@ export function ReportLiquidityMetricCards({
                 </div>
                 <p className="mt-0.5 text-[11px] text-stone-400 dark:text-zinc-500">
                   {periodLabel}
-                  {modalHelp ? ` · ${modalHelp}` : ""}
                 </p>
               </div>
               <button
@@ -324,33 +278,28 @@ export function ReportLiquidityMetricCards({
         </div>
       ) : null}
 
-      <LiquidityBucketCard
+      <CompactBucket
         label="Efectivo"
-        cobrado={efectivo}
-        neto={efectivoDisplay}
+        value={efectivoDisplay}
+        hint={efectivoHint}
         egresos={egresosEfectivoCents}
         expenseCount={expensesEfectivo.length}
-        hint={efectivoHint}
-        staggerMs={70}
-        cardLabelClass={cardLabelClass}
-        infoBtnClass={infoBtnClass}
-        onOpenEgresos={() => setOpen("efectivo")}
-        showEgresos={showEgresos}
         arrastreCents={mode === "position" ? arrastreEfectivoCents : undefined}
+        showEgresos={showEgresos}
+        onOpenEgresos={() => setOpen("efectivo")}
+        infoBtnClass={infoBtnClass}
+        cardLabelClass={cardLabelClass}
       />
-
-      <LiquidityBucketCard
+      <CompactBucket
         label="Transferencia"
-        cobrado={transferencia}
-        neto={transferenciaDisplay}
+        value={transferenciaDisplay}
+        hint={transferHint}
         egresos={egresosTransferenciaBucketCents}
         expenseCount={expensesOtros.length}
-        hint={transferHint}
-        staggerMs={135}
-        cardLabelClass={cardLabelClass}
-        infoBtnClass={infoBtnClass}
-        onOpenEgresos={() => setOpen("transferencia")}
         showEgresos={showEgresos}
+        onOpenEgresos={() => setOpen("transferencia")}
+        infoBtnClass={infoBtnClass}
+        cardLabelClass={cardLabelClass}
       />
     </>
   );

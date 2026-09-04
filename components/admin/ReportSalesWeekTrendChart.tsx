@@ -21,10 +21,12 @@ export function ReportSalesWeekTrendChart({
   points,
   comparison,
   fillGradientId = "reportsSalesWeekTrendFill",
+  compact = false,
 }: {
   points: TicketTrendPoint[];
   comparison: ReportSalesTrendComparison;
   fillGradientId?: string;
+  compact?: boolean;
 }) {
   if (points.length === 0) return null;
 
@@ -44,11 +46,11 @@ export function ReportSalesWeekTrendChart({
   const yMax = maxTrend * 1.1;
 
   const chartW = 1000;
-  const chartH = 280;
-  const padL = 54;
+  const chartH = compact ? 200 : 280;
+  const padL = compact ? 44 : 54;
   const padR = 10;
-  const padT = 16;
-  const padB = 44;
+  const padT = compact ? 10 : 16;
+  const padB = compact ? 32 : 44;
   const plotW = chartW - padL - padR;
   const plotH = chartH - padT - padB;
 
@@ -85,22 +87,34 @@ export function ReportSalesWeekTrendChart({
   const flat = changePercent === 0;
 
   return (
-    <div className={`w-full min-w-0 ${chartPaletteClass}`}>
-      <div className="flex flex-wrap items-end justify-between gap-4 px-6 pb-4 sm:px-8">
-        <div className="flex flex-wrap gap-x-6 gap-y-3">
+    <div className={`flex h-full min-h-0 w-full min-w-0 flex-col ${chartPaletteClass}`}>
+      <div
+        className={`flex shrink-0 flex-wrap items-end justify-between gap-2 ${
+          compact ? "px-4 pb-2 pt-3 sm:px-5" : "px-6 pb-4 sm:px-8"
+        }`}
+      >
+        <div className={`flex flex-wrap ${compact ? "gap-x-4 gap-y-1" : "gap-x-6 gap-y-3"}`}>
           <div>
             <p className="text-[10px] font-medium uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
               Esta semana
             </p>
-            <p className="mt-0.5 text-xl font-normal tabular-nums text-zinc-900 dark:text-zinc-100">
+            <p
+              className={`mt-0.5 font-semibold tabular-nums text-zinc-900 dark:text-zinc-100 ${
+                compact ? "text-base sm:text-lg" : "text-xl font-normal"
+              }`}
+            >
               {formatCop(currentTotalCents)}
             </p>
           </div>
           <div>
             <p className="text-[10px] font-medium uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
-              Semana anterior
+              Sem. ant.
             </p>
-            <p className="mt-0.5 text-xl font-normal tabular-nums text-zinc-500 dark:text-zinc-400">
+            <p
+              className={`mt-0.5 tabular-nums text-zinc-500 dark:text-zinc-400 ${
+                compact ? "text-sm sm:text-base" : "text-xl font-normal"
+              }`}
+            >
               {formatCop(priorTotalCents)}
             </p>
           </div>
@@ -108,7 +122,9 @@ export function ReportSalesWeekTrendChart({
 
         {changePercent != null ? (
           <div
-            className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium tabular-nums ${
+            className={`inline-flex items-center gap-1 rounded-full font-medium tabular-nums ${
+              compact ? "px-2 py-1 text-xs" : "gap-1.5 px-3 py-1.5 text-sm"
+            } ${
               improving
                 ? "bg-emerald-50 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300"
                 : declining
@@ -117,41 +133,41 @@ export function ReportSalesWeekTrendChart({
             }`}
           >
             {improving ? (
-              <TrendingUp className="size-4 shrink-0" strokeWidth={2} aria-hidden />
+              <TrendingUp className="size-3.5 shrink-0" strokeWidth={2} aria-hidden />
             ) : declining ? (
-              <TrendingDown className="size-4 shrink-0" strokeWidth={2} aria-hidden />
+              <TrendingDown className="size-3.5 shrink-0" strokeWidth={2} aria-hidden />
             ) : null}
-            {flat ? "Sin cambio" : `${changePercent > 0 ? "+" : ""}${changePercent}%`}
+            {flat ? "0%" : `${changePercent > 0 ? "+" : ""}${changePercent}%`}
           </div>
         ) : (
-          <span className="text-xs text-zinc-400 dark:text-zinc-500">
-            Sin ventas la semana anterior
-          </span>
+          <span className="text-xs text-zinc-400 dark:text-zinc-500">Sin sem. ant.</span>
         )}
       </div>
 
-      <div className="flex flex-wrap items-center gap-x-5 gap-y-2 px-6 pb-2 sm:px-8">
-        <span className="inline-flex items-center gap-2 text-[11px] font-medium text-zinc-600 dark:text-zinc-300">
-          <span
-            className="size-2.5 shrink-0 rounded-full ring-2 ring-rose-900/25 dark:ring-rose-300/30"
-            style={{ backgroundColor: "var(--chart-line)" }}
-            aria-hidden
-          />
-          Esta semana
-        </span>
-        <span className="inline-flex items-center gap-2 text-[11px] font-medium text-zinc-600 dark:text-zinc-300">
-          <span
-            className="size-2.5 shrink-0 rounded-sm ring-2 ring-amber-700/25 dark:ring-amber-300/35"
-            style={{ backgroundColor: "var(--chart-prior-line)" }}
-            aria-hidden
-          />
-          Semana anterior
-        </span>
-      </div>
+      {!compact ? (
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-2 px-6 pb-2 sm:px-8">
+          <span className="inline-flex items-center gap-2 text-[11px] font-medium text-zinc-600 dark:text-zinc-300">
+            <span
+              className="size-2.5 shrink-0 rounded-full ring-2 ring-rose-900/25 dark:ring-rose-300/30"
+              style={{ backgroundColor: "var(--chart-line)" }}
+              aria-hidden
+            />
+            Esta semana
+          </span>
+          <span className="inline-flex items-center gap-2 text-[11px] font-medium text-zinc-600 dark:text-zinc-300">
+            <span
+              className="size-2.5 shrink-0 rounded-sm ring-2 ring-amber-700/25 dark:ring-amber-300/35"
+              style={{ backgroundColor: "var(--chart-prior-line)" }}
+              aria-hidden
+            />
+            Semana anterior
+          </span>
+        </div>
+      ) : null}
 
       <svg
         viewBox={`0 0 ${chartW} ${chartH}`}
-        className="block h-auto w-full min-w-0"
+        className={`block w-full min-w-0 ${compact ? "min-h-0 flex-1" : "h-auto"}`}
         preserveAspectRatio="xMidYMid meet"
         role="img"
         aria-label="Ventas diarias: esta semana en rojo y semana anterior en ámbar"
