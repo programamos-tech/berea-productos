@@ -2,9 +2,12 @@ import {
   ReportMonthlyPulseSection,
   ReportMonthlyPulseSkeleton,
 } from "@/components/admin/ReportMonthlyPulseSection";
+import {
+  ReportActivityFeed,
+  ReportActivityFeedSkeleton,
+} from "@/components/admin/ReportActivityFeed";
 import { ReportPaymentDonut } from "@/components/admin/ReportPaymentDonut";
 import { ReportSalesWeekTrendChart } from "@/components/admin/ReportSalesWeekTrendChart";
-import { ReportStockTrendLine } from "@/components/admin/ReportStockTrendLine";
 import {
   StaticCopCents,
   StaticInteger,
@@ -125,7 +128,6 @@ export async function ReportsDashboardBody({
     efectivo,
     transferencia,
     anuladas,
-    ventasVirtuales,
     ventasPagadasPeriod,
     egresosPeriod,
     egresosEfectivoCents,
@@ -135,7 +137,6 @@ export async function ReportsDashboardBody({
     salesTrendComparison,
     stockInversionNet,
     stockInversionGross,
-    stockHasProducts,
     stockInvestmentTrend,
   } = report;
 
@@ -177,7 +178,7 @@ export async function ReportsDashboardBody({
           </p>
         </div>
 
-        <div className="mt-3 grid grid-cols-2 gap-x-6 gap-y-5 sm:grid-cols-4 xl:grid-cols-8">
+        <div className="mt-3 grid grid-cols-2 gap-x-6 gap-y-5 sm:grid-cols-4 xl:grid-cols-7">
           <Metric
             label="Total ingresos"
             staggerMs={0}
@@ -297,93 +298,93 @@ export async function ReportsDashboardBody({
             label="Stock"
             staggerMs={180}
             hint={
-              <>
-                {stockInversionGross > 0 ? (
-                  <span className="tabular-nums">
-                    c/IVA {formatCop(stockInversionGross)}
-                  </span>
-                ) : stockHasProducts ? (
-                  <>Sin costo con IVA cargado</>
-                ) : (
-                  <>—</>
-                )}
-                <div className="[&_p]:mt-0.5 [&_p]:text-[11px]">
-                  <ReportStockTrendLine trend={stockInvestmentTrend} />
-                </div>
-              </>
+              stockInvestmentTrend?.changeNetPercent != null ? (
+                <span
+                  className={
+                    stockInvestmentTrend.changeNetPercent > 0
+                      ? "text-emerald-600 dark:text-emerald-400"
+                      : stockInvestmentTrend.changeNetPercent < 0
+                        ? "text-red-600 dark:text-red-400"
+                        : undefined
+                  }
+                >
+                  {stockInvestmentTrend.changeNetPercent > 0 ? "+" : ""}
+                  {stockInvestmentTrend.changeNetPercent}% vs 7 días
+                </span>
+              ) : stockInversionGross > 0 ? (
+                <span className="tabular-nums">
+                  c/IVA {formatCop(stockInversionGross)}
+                </span>
+              ) : (
+                <>Inversión sin IVA</>
+              )
             }
           >
             <StaticCopCents cents={stockInversionNet} />
           </Metric>
-
-          <Metric
-            label="Ventas virtuales"
-            staggerMs={210}
-            hint="Checkout web (sin mostrador)"
-          >
-            <StaticCopCents cents={ventasVirtuales} />
-          </Metric>
         </div>
       </div>
 
-      <div className="grid min-h-0 flex-1 grid-cols-1 gap-5 border-t border-zinc-200/70 pt-4 dark:border-zinc-800 lg:grid-cols-12 lg:gap-6">
-        <section
-          className="reports-chart-reveal flex min-h-0 flex-col lg:col-span-5"
-          style={{ ["--reports-chart-delay" as string]: "120ms" }}
-        >
-          <div className="mb-2 flex shrink-0 flex-wrap items-end justify-between gap-2">
-            <div>
-              <h2 className={labelClass}>Ventas del mostrador</h2>
-              <p className="mt-0.5 text-xs text-zinc-500">
-                {prettyReportDayShortLabel(salesTrendCurrentFrom)} –{" "}
-                {prettyReportDayShortLabel(salesTrendCurrentTo)}
-                {salesTrendCurrentTo === todayKey ? " · hoy" : ""}
-              </p>
+      <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 border-t border-zinc-200/70 pt-4 dark:border-zinc-800 lg:grid-cols-12 lg:gap-6">
+        <div className="flex min-h-0 flex-col gap-3 lg:col-span-7">
+          <section
+            className="reports-chart-reveal flex min-h-0 flex-[1.15] flex-col"
+            style={{ ["--reports-chart-delay" as string]: "100ms" }}
+          >
+            <div className="mb-1 flex shrink-0 items-end justify-between gap-2">
+              <div>
+                <h2 className={labelClass}>Ventas del mostrador</h2>
+                <p className="mt-0.5 text-[11px] text-zinc-500">
+                  {prettyReportDayShortLabel(salesTrendCurrentFrom)} –{" "}
+                  {prettyReportDayShortLabel(salesTrendCurrentTo)}
+                  {salesTrendCurrentTo === todayKey ? " · hoy" : ""}
+                </p>
+              </div>
             </div>
-            <div className="hidden items-center gap-3 text-[10px] font-medium text-zinc-500 sm:flex">
-              <span className="inline-flex items-center gap-1.5">
-                <span className="size-2 rounded-full bg-rose-700 dark:bg-rose-300" />
-                Este periodo
-              </span>
-              <span className="inline-flex items-center gap-1.5">
-                <span className="size-2 rounded-sm bg-zinc-400 dark:bg-zinc-600" />
-                Anterior
-              </span>
+            <div className="min-h-0 flex-1">
+              <ReportSalesWeekTrendChart
+                points={reportIncomeChartPoints}
+                comparison={salesTrendComparison}
+                fillGradientId="reportsIncomeChartFill"
+                mini
+              />
             </div>
+          </section>
+
+          <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 sm:grid-cols-2">
+            <section
+              className="reports-chart-reveal min-h-0"
+              style={{ ["--reports-chart-delay" as string]: "140ms" }}
+            >
+              <ReportPaymentDonut
+                efectivoCents={efectivo}
+                transferenciaCents={transferencia}
+                flat
+                mini
+              />
+            </section>
+            <section
+              className="reports-chart-reveal min-h-0"
+              style={{ ["--reports-chart-delay" as string]: "180ms" }}
+            >
+              <Suspense fallback={<ReportMonthlyPulseSkeleton compact flat />}>
+                <ReportMonthlyPulseSection
+                  todayKey={todayKey}
+                  rangeFrom={rangeFrom}
+                  rangeTo={rangeTo}
+                  mini
+                />
+              </Suspense>
+            </section>
           </div>
-          <div className="min-h-0 flex-1">
-            <ReportSalesWeekTrendChart
-              points={reportIncomeChartPoints}
-              comparison={salesTrendComparison}
-              fillGradientId="reportsIncomeChartFill"
-              compact
-            />
-          </div>
-        </section>
+        </div>
 
         <section
-          className="reports-chart-reveal flex min-h-0 flex-col border-zinc-200/70 dark:border-zinc-800 lg:col-span-3 lg:border-l lg:pl-6"
-          style={{ ["--reports-chart-delay" as string]: "180ms" }}
+          className="reports-chart-reveal min-h-0 border-zinc-200/70 dark:border-zinc-800 lg:col-span-5 lg:border-l lg:pl-6"
+          style={{ ["--reports-chart-delay" as string]: "200ms" }}
         >
-          <ReportPaymentDonut
-            efectivoCents={efectivo}
-            transferenciaCents={transferencia}
-            flat
-          />
-        </section>
-
-        <section
-          className="reports-chart-reveal flex min-h-0 flex-col border-zinc-200/70 dark:border-zinc-800 lg:col-span-4 lg:border-l lg:pl-6"
-          style={{ ["--reports-chart-delay" as string]: "220ms" }}
-        >
-          <Suspense fallback={<ReportMonthlyPulseSkeleton compact flat />}>
-            <ReportMonthlyPulseSection
-              todayKey={todayKey}
-              rangeFrom={rangeFrom}
-              rangeTo={rangeTo}
-              compact
-              flat
-            />
+          <Suspense fallback={<ReportActivityFeedSkeleton />}>
+            <ReportActivityFeed />
           </Suspense>
         </section>
       </div>

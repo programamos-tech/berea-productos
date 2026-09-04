@@ -15,11 +15,9 @@ export function ReportMonthlyPulseSkeleton({
   return (
     <div
       className={`animate-pulse ${
-        flat
+        flat || compact
           ? "h-full min-h-0 rounded-lg bg-zinc-100/40 dark:bg-zinc-900/40"
-          : `rounded-2xl border border-rose-200/45 bg-white shadow-sm dark:border-zinc-700/80 dark:bg-zinc-900 ${
-              compact ? "h-full min-h-0" : "mt-6 h-52"
-            }`
+          : "mt-6 h-52 rounded-2xl bg-zinc-100/40 dark:bg-zinc-900/40"
       }`}
       role="status"
     >
@@ -34,13 +32,17 @@ export async function ReportMonthlyPulseSection({
   rangeTo,
   compact = false,
   flat = false,
+  mini = false,
 }: {
   todayKey: string;
   rangeFrom: string;
   rangeTo: string;
   compact?: boolean;
   flat?: boolean;
+  mini?: boolean;
 }) {
+  void compact;
+  void flat;
   try {
     const supabase = await createSupabaseServerClient();
     const pulse = await fetchAdminReportMonthlyPulse(supabase, {
@@ -51,8 +53,7 @@ export async function ReportMonthlyPulseSection({
         months={pulse.months}
         insight={pulse.insight}
         highlightYearMonth={pulseHighlightYearMonth(rangeFrom, rangeTo, todayKey)}
-        compact={compact}
-        flat={flat}
+        mini={mini}
       />
     );
   } catch (err) {

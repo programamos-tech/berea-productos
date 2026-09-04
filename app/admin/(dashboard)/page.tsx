@@ -30,8 +30,8 @@ function ReportsDashboardSkeleton() {
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4" role="status">
       <span className="sr-only">Cargando reportes…</span>
-      <div className="grid shrink-0 grid-cols-2 gap-x-6 gap-y-5 sm:grid-cols-4 xl:grid-cols-8">
-        {Array.from({ length: 8 }).map((_, i) => (
+      <div className="grid shrink-0 grid-cols-2 gap-x-6 gap-y-5 sm:grid-cols-4 xl:grid-cols-7">
+        {Array.from({ length: 7 }).map((_, i) => (
           <div
             key={i}
             className="h-16 animate-pulse rounded-lg bg-zinc-100/50 dark:bg-zinc-900/50 motion-reduce:animate-none"

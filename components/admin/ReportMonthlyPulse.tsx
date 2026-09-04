@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { formatCop, formatCopCompact } from "@/lib/money";
 import type { MonthlyPulsePoint } from "@/lib/admin-report-monthly-pulse";
+import { REPORT_CHART } from "@/components/admin/ReportSalesWeekTrendChart";
 
 function netaClass(n: number): string {
   if (n > 0) return "text-emerald-600 dark:text-emerald-400";
@@ -21,14 +22,14 @@ export function ReportMonthlyPulse({
   months,
   insight,
   highlightYearMonth,
-  compact = false,
-  flat = false,
+  mini = false,
 }: {
   months: MonthlyPulsePoint[];
   insight: string;
   highlightYearMonth?: string | null;
   compact?: boolean;
   flat?: boolean;
+  mini?: boolean;
 }) {
   if (months.length === 0) return null;
 
@@ -36,21 +37,8 @@ export function ReportMonthlyPulse({
   const maxAbs = Math.max(...months.map((m) => Math.abs(m.gananciaNeta)), 1);
 
   return (
-    <div
-      className={`reports-chart-reveal flex h-full min-h-0 flex-col ${
-        flat
-          ? ""
-          : `overflow-hidden rounded-2xl border border-rose-200/45 bg-white shadow-sm dark:border-zinc-700/80 dark:bg-zinc-900 ${
-              compact ? "" : "mt-6"
-            }`
-      }`}
-      style={{ ["--reports-chart-delay" as string]: "200ms" }}
-    >
-      <div
-        className={`flex shrink-0 flex-wrap items-end justify-between gap-2 ${
-          flat ? "" : "px-4 pt-3.5 sm:px-5"
-        }`}
-      >
+    <div className="reports-chart-reveal flex h-full min-h-0 flex-col">
+      <div className="flex shrink-0 flex-wrap items-end justify-between gap-2">
         <div className="min-w-0">
           <h2 className="text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
             Pulso mensual
@@ -58,26 +46,34 @@ export function ReportMonthlyPulse({
           <p className="mt-0.5 truncate text-xs text-zinc-500">
             {current.shortLabel}
             {current.isPartial ? " · ahora" : ""}
-            {insight ? ` · ${insight}` : ""}
+            {!mini && insight ? ` · ${insight}` : ""}
           </p>
         </div>
-        <p className={`text-lg font-semibold tabular-nums ${netaClass(current.gananciaNeta)}`}>
-          {formatCop(current.gananciaNeta)}
+        <p
+          className={`font-semibold tabular-nums ${mini ? "text-sm" : "text-base"} ${netaClass(current.gananciaNeta)}`}
+        >
+          {mini ? formatNetaCompact(current.gananciaNeta) : formatCop(current.gananciaNeta)}
         </p>
       </div>
 
-      <div className={`relative min-h-0 flex-1 ${flat ? "pt-2" : "px-3 pb-3 sm:px-4"}`}>
+      <div className={`relative min-h-0 flex-1 ${mini ? "pt-1" : "pt-2"}`}>
         <div
           className="pointer-events-none absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-zinc-200 dark:bg-zinc-800"
           aria-hidden
         />
-        <ul className="flex h-full items-stretch gap-1 sm:gap-1.5">
+        <ul className="flex h-full items-stretch gap-0.5 sm:gap-1">
           {months.map((m) => {
             const up = m.gananciaNeta >= 0;
-            const halfPct = (Math.abs(m.gananciaNeta) / maxAbs) * 46;
+            const halfPct = (Math.abs(m.gananciaNeta) / maxAbs) * (mini ? 42 : 46);
             const selected = highlightYearMonth === m.yearMonth;
             const href = `/admin?from=${encodeURIComponent(m.from)}&to=${encodeURIComponent(m.to)}`;
-            const barH = Math.max(halfPct, m.gananciaNeta === 0 ? 0 : 8);
+            const barH = Math.max(halfPct, m.gananciaNeta === 0 ? 0 : 6);
+            const color =
+              m.gananciaNeta === 0
+                ? undefined
+                : up
+                  ? REPORT_CHART.positive
+                  : REPORT_CHART.negative;
 
             return (
               <li key={m.yearMonth} className="min-w-0 flex-1">
@@ -87,26 +83,21 @@ export function ReportMonthlyPulse({
                   aria-current={selected ? "page" : undefined}
                 >
                   <div className="relative min-h-0 w-full flex-1">
-                    {up ? (
-                      <span
-                        className={`absolute bottom-1/2 left-1/2 w-[50%] max-w-3 -translate-x-1/2 rounded-full ${
-                          m.gananciaNeta === 0
-                            ? "bg-zinc-300 dark:bg-zinc-600"
-                            : "bg-emerald-500 dark:bg-emerald-400"
-                        } ${m.isCurrent ? "opacity-100" : "opacity-75 group-hover:opacity-100"}`}
-                        style={{ height: `${barH}%` }}
-                      />
-                    ) : (
-                      <span
-                        className={`absolute top-1/2 left-1/2 w-[50%] max-w-3 -translate-x-1/2 rounded-full bg-red-500 dark:bg-red-400 ${
-                          m.isCurrent ? "opacity-100" : "opacity-75 group-hover:opacity-100"
-                        }`}
-                        style={{ height: `${barH}%` }}
-                      />
-                    )}
+                    <span
+                      className={`absolute left-1/2 w-[45%] max-w-2.5 -translate-x-1/2 rounded-full ${
+                        m.gananciaNeta === 0
+                          ? "bg-zinc-400 dark:bg-zinc-600"
+                          : ""
+                      } ${m.isCurrent ? "opacity-100" : "opacity-70 group-hover:opacity-100"}`}
+                      style={{
+                        height: `${barH}%`,
+                        ...(up ? { bottom: "50%" } : { top: "50%" }),
+                        ...(color ? { backgroundColor: color } : {}),
+                      }}
+                    />
                   </div>
                   <span
-                    className={`mt-2 text-[9px] font-semibold uppercase tracking-[0.1em] sm:text-[10px] ${
+                    className={`mt-1 text-[8px] font-semibold uppercase tracking-wide sm:text-[9px] ${
                       selected || m.isCurrent
                         ? "text-zinc-800 dark:text-zinc-200"
                         : "text-zinc-500"
@@ -114,9 +105,11 @@ export function ReportMonthlyPulse({
                   >
                     {monthAbbrev(m.shortLabel)}
                   </span>
-                  <span className={`mt-0.5 text-[10px] tabular-nums sm:text-[11px] ${netaClass(m.gananciaNeta)}`}>
-                    {formatNetaCompact(m.gananciaNeta)}
-                  </span>
+                  {!mini ? (
+                    <span className={`mt-0.5 text-[10px] tabular-nums ${netaClass(m.gananciaNeta)}`}>
+                      {formatNetaCompact(m.gananciaNeta)}
+                    </span>
+                  ) : null}
                 </Link>
               </li>
             );
