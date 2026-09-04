@@ -1,10 +1,12 @@
 import { Suspense } from "react";
 import { ReportsPeriodFilter } from "@/components/admin/ReportsPeriodFilter";
+import { ReportsVistaFilter } from "@/components/admin/ReportsVistaFilter";
 import { ReportsAleyaExportButton } from "@/components/admin/ReportsAleyaExportButton";
 import { ReportsDashboardBody } from "@/components/admin/ReportsDashboardBody";
 import {
   currentYearMonthInReportStore,
   parseReportRangeFromSearchParams,
+  parseReportVistaFromSearchParams,
   prettyReportPeriodLabel,
   reportDataFetchYmdRange,
   reportSalesTrendWeekRanges,
@@ -38,6 +40,15 @@ function ReportsDashboardSkeleton() {
   );
 }
 
+function ReportsFiltersSkeleton() {
+  return (
+    <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto">
+      <div className="h-10 w-44 animate-pulse rounded-lg bg-zinc-200/80 dark:bg-zinc-800/90 motion-reduce:animate-none" />
+      <div className="h-10 w-36 animate-pulse rounded-lg bg-zinc-200/80 dark:bg-zinc-800/90 motion-reduce:animate-none" />
+    </div>
+  );
+}
+
 export default async function AdminHomePage({ searchParams }: PageProps) {
   const perm = await loadAdminPermissions();
   if (!perm) redirect("/admin/login");
@@ -51,6 +62,7 @@ export default async function AdminHomePage({ searchParams }: PageProps) {
     sp,
     todayKey,
   );
+  const vista = parseReportVistaFromSearchParams(sp);
   const periodLabel = prettyReportPeriodLabel(rangeFrom, rangeTo, todayKey);
   const {
     currentFrom: salesTrendCurrentFrom,
@@ -78,24 +90,29 @@ export default async function AdminHomePage({ searchParams }: PageProps) {
             Resumen ejecutivo y métricas de rendimiento de la tienda principal.
           </p>
         </div>
-        <div className="flex w-full shrink-0 flex-wrap items-center justify-end gap-2 sm:w-auto">
-          <ReportsAleyaExportButton
-            defaultYearMonth={
-              rangeFrom.slice(0, 7) === rangeTo.slice(0, 7)
-                ? rangeFrom.slice(0, 7)
-                : currentYearMonthInReportStore()
-            }
-          />
-          <ReportsPeriodFilter
-            rangeFrom={rangeFrom}
-            rangeTo={rangeTo}
-            todayKey={todayKey}
-          />
-        </div>
+        <Suspense fallback={<ReportsFiltersSkeleton />}>
+          <div className="flex w-full shrink-0 flex-col items-stretch gap-2 sm:w-auto sm:items-end">
+            <ReportsVistaFilter vista={vista} />
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              <ReportsAleyaExportButton
+                defaultYearMonth={
+                  rangeFrom.slice(0, 7) === rangeTo.slice(0, 7)
+                    ? rangeFrom.slice(0, 7)
+                    : currentYearMonthInReportStore()
+                }
+              />
+              <ReportsPeriodFilter
+                rangeFrom={rangeFrom}
+                rangeTo={rangeTo}
+                todayKey={todayKey}
+              />
+            </div>
+          </div>
+        </Suspense>
       </div>
 
       <Suspense
-        key={`${rangeFrom}-${rangeTo}`}
+        key={`${vista}-${rangeFrom}-${rangeTo}`}
         fallback={<ReportsDashboardSkeleton />}
       >
         <ReportsDashboardBody
@@ -111,6 +128,7 @@ export default async function AdminHomePage({ searchParams }: PageProps) {
           fetchTo={fetchTo}
           periodLabel={periodLabel}
           todayKey={todayKey}
+          vista={vista}
         />
       </Suspense>
     </div>

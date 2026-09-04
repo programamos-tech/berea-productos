@@ -6,7 +6,7 @@ import {
   prettyReportPeriodLabel,
   REPORT_DEFAULT_RANGE_DAY_COUNT,
 } from "@/lib/admin-report-range";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 const panelClass =
@@ -25,6 +25,7 @@ export function ReportsPeriodFilter({
   todayKey: string;
 }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const wrapRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<"day" | "range">("day");
@@ -58,7 +59,7 @@ export function ReportsPeriodFilter({
     let a = nextFrom;
     let b = nextTo;
     if (a > b) [a, b] = [b, a];
-    const params = new URLSearchParams();
+    const params = new URLSearchParams(searchParams.toString());
     params.set("from", a);
     params.set("to", b);
     router.push(`/admin?${params.toString()}`);

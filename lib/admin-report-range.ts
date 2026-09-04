@@ -102,6 +102,21 @@ export function parseReportRangeFromSearchParams(
   return { from: todayYmd, to: todayYmd };
 }
 
+/** Modo del resumen: ventas del periodo vs posición de la tienda (caja + egresos). */
+export type ReportVista = "dia" | "tienda";
+
+/**
+ * Interpreta `vista` en la URL.
+ * Por defecto `dia` (ventas del periodo, sin mezclar egresos/arrastre).
+ */
+export function parseReportVistaFromSearchParams(
+  sp: Record<string, string | string[] | undefined>,
+): ReportVista {
+  const raw = typeof sp.vista === "string" ? sp.vista.trim().toLowerCase() : "";
+  if (raw === "tienda" || raw === "store") return "tienda";
+  return "dia";
+}
+
 /** Gráfico de reportes: `REPORT_DEFAULT_RANGE_DAY_COUNT` días calendario terminando en `rangeTo` (inclusive). */
 export function reportChartDayRange(rangeToYmd: string): {
   chartFrom: string;

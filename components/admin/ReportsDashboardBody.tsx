@@ -9,8 +9,12 @@ import {
   StaticCopCents,
   StaticInteger,
 } from "@/components/admin/ReportsAnimatedFigures";
-import { prettyReportDayShortLabel } from "@/lib/admin-report-range";
+import {
+  prettyReportDayShortLabel,
+  type ReportVista,
+} from "@/lib/admin-report-range";
 import { fetchAdminReportDashboardData } from "@/lib/admin-reports-data";
+import { fetchCashArrastreCentsForReportStart } from "@/lib/cash-register";
 import { adminPanelLgClass } from "@/lib/admin-ui";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import Link from "next/link";
@@ -36,6 +40,7 @@ export async function ReportsDashboardBody({
   fetchTo,
   periodLabel,
   todayKey,
+  vista,
 }: {
   rangeFrom: string;
   rangeTo: string;
@@ -49,23 +54,32 @@ export async function ReportsDashboardBody({
   fetchTo: string;
   periodLabel: string;
   todayKey: string;
+  vista: ReportVista;
 }) {
   let report;
+  let arrastreEfectivoCents = 0;
   try {
     const supabase = await createSupabaseServerClient();
-    report = await fetchAdminReportDashboardData(supabase, {
-      rangeFrom,
-      rangeTo,
-      chartFrom,
-      chartTo,
-      salesTrendCurrentFrom,
-      salesTrendCurrentTo,
-      salesTrendPriorFrom,
-      salesTrendPriorTo,
-      fetchFrom,
-      fetchTo,
-      periodLabel,
-    });
+    const [dashboard, arrastre] = await Promise.all([
+      fetchAdminReportDashboardData(supabase, {
+        rangeFrom,
+        rangeTo,
+        chartFrom,
+        chartTo,
+        salesTrendCurrentFrom,
+        salesTrendCurrentTo,
+        salesTrendPriorFrom,
+        salesTrendPriorTo,
+        fetchFrom,
+        fetchTo,
+        periodLabel,
+      }),
+      vista === "tienda"
+        ? fetchCashArrastreCentsForReportStart(supabase, rangeFrom)
+        : Promise.resolve(0),
+    ]);
+    report = dashboard;
+    arrastreEfectivoCents = arrastre;
   } catch (err) {
     console.error("[admin reportes] body:", err);
     return (
@@ -99,7 +113,6 @@ export async function ReportsDashboardBody({
     egresosEfectivoCents,
     egresosTransferenciaBucketCents,
     cantidadEgresosPeriod,
-    efectivoNetoCaja,
     transferenciaNeta,
     reportExpensesEfectivoLines,
     reportExpensesOtrosLines,
@@ -110,19 +123,54 @@ export async function ReportsDashboardBody({
     stockInversionNet,
     stockInversionGross,
     stockHasProducts,
-    stockHasGrossCost,
     stockInvestmentTrend,
     revenueApproxFromOrderTotals,
   } = report;
 
+  const isTienda = vista === "tienda";
+  const efectivoNetoPosicion =
+    arrastreEfectivoCents + efectivo - egresosEfectivoCents;
+  const resumenTitle = isTienda ? "Cómo va la tienda" : "Reporte del día";
+  const resumenHint = isTienda
+    ? "Posición con arrastre de caja, cobros y egresos del periodo."
+    : "Ventas y cobros del periodo. Los egresos se ven en «Cómo va la tienda».";
+
+  const secondaryMetrics = isTienda
+    ? ([
+        {
+          label: "Facturas anuladas",
+          count: anuladas,
+          hint: "Facturas anuladas",
+          staggerMs: 80,
+        },
+        {
+          label: "Egresos",
+          cents: egresosPeriod,
+          hint: `${cantidadEgresosPeriod} registrados en el periodo`,
+          staggerMs: 120,
+        },
+      ] as const)
+    : ([
+        {
+          label: "Facturas anuladas",
+          count: anuladas,
+          hint: "Facturas anuladas",
+          staggerMs: 80,
+        },
+      ] as const);
+
   return (
     <>
       <div
-        key={`reports-body-${rangeFrom}-${rangeTo}`}
+        key={`reports-body-${vista}-${rangeFrom}-${rangeTo}`}
         className="border-t border-rose-200/55 pt-10 pb-4 dark:border-zinc-800"
       >
-        <p className={cardLabelClass}>Resumen del periodo</p>
-        <p className="mt-1 text-sm text-stone-500 dark:text-zinc-400">{periodLabel}</p>
+        <p className={cardLabelClass}>{resumenTitle}</p>
+        <p className="mt-1 text-sm text-stone-500 dark:text-zinc-400">
+          {periodLabel}
+          <span className="text-stone-300 dark:text-zinc-600"> · </span>
+          {resumenHint}
+        </p>
         {report.ordersRangeError ? (
           <p className="mt-3 rounded-lg border border-amber-200/90 bg-amber-50/80 px-3 py-2 text-xs leading-relaxed text-amber-950 dark:border-amber-900/50 dark:bg-amber-950/25 dark:text-amber-100">
             Algunos datos no se pudieron agregar en el servidor ({report.ordersRangeError}). Se
@@ -161,32 +209,19 @@ export async function ReportsDashboardBody({
           <ReportLiquidityMetricCards
             cardLabelClass={cardLabelClass}
             periodLabel={periodLabel}
+            mode={isTienda ? "position" : "inflow"}
             totalCobradoPedidos={totalCobradoPedidos}
             efectivo={efectivo}
-            efectivoNetoCaja={efectivoNetoCaja}
+            efectivoNetoCaja={efectivoNetoPosicion}
             egresosEfectivoCents={egresosEfectivoCents}
             expensesEfectivo={reportExpensesEfectivoLines}
             transferencia={transferencia}
             transferenciaNeta={transferenciaNeta}
             egresosTransferenciaBucketCents={egresosTransferenciaBucketCents}
             expensesOtros={reportExpensesOtrosLines}
+            arrastreEfectivoCents={arrastreEfectivoCents}
           />
-          {(
-            [
-              {
-                label: "Facturas anuladas",
-                count: anuladas,
-                hint: "Facturas anuladas",
-                staggerMs: 80,
-              },
-              {
-                label: "Egresos",
-                cents: egresosPeriod,
-                hint: `${cantidadEgresosPeriod} registrados en el periodo`,
-                staggerMs: 120,
-              },
-            ] as const
-          ).map((item) => (
+          {secondaryMetrics.map((item) => (
             <div
               key={item.label}
               className="reports-metric-card min-w-0"
@@ -218,25 +253,29 @@ export async function ReportsDashboardBody({
                   <StaticCopCents cents={gananciaBruta} />
                 </span>
               </span>
-              <span className="inline-flex min-w-0 items-baseline gap-1.5">
-                <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wide text-rose-900/40 dark:text-zinc-500">
-                  Neta
+              {isTienda ? (
+                <span className="inline-flex min-w-0 items-baseline gap-1.5">
+                  <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wide text-rose-900/40 dark:text-zinc-500">
+                    Neta
+                  </span>
+                  <span
+                    className={`text-sm font-normal tabular-nums ${
+                      gananciaNeta > 0
+                        ? "text-emerald-700 dark:text-emerald-400"
+                        : gananciaNeta < 0
+                          ? "text-red-700 dark:text-red-400"
+                          : "text-stone-500 dark:text-zinc-400"
+                    }`}
+                  >
+                    <StaticCopCents cents={gananciaNeta} />
+                  </span>
                 </span>
-                <span
-                  className={`text-sm font-normal tabular-nums ${
-                    gananciaNeta > 0
-                      ? "text-emerald-700 dark:text-emerald-400"
-                      : gananciaNeta < 0
-                        ? "text-red-700 dark:text-red-400"
-                        : "text-stone-500 dark:text-zinc-400"
-                  }`}
-                >
-                  <StaticCopCents cents={gananciaNeta} />
-                </span>
-              </span>
+              ) : null}
             </dd>
             <p className="mt-1 text-[11px] leading-snug text-stone-500 dark:text-zinc-400">
-              Margen de productos − egresos del periodo
+              {isTienda
+                ? "Margen de productos − egresos del periodo"
+                : "Margen de productos del periodo (sin egresos)"}
             </p>
           </div>
 

@@ -447,6 +447,37 @@ export async function fetchSuggestedOpeningFloatCents(
   return Math.max(0, Math.floor(Number(data?.counted_cash_cents ?? 0)));
 }
 
+/**
+ * Arrastre de efectivo al inicio de un rango de reportes:
+ * fondo de apertura de la caja de `rangeFrom`, o contado del último cierre anterior.
+ */
+export async function fetchCashArrastreCentsForReportStart(
+  supabase: SupabaseClient,
+  rangeFromYmd: string,
+): Promise<number> {
+  const day = rangeFromYmd.slice(0, 10);
+  if (!day) return 0;
+
+  const onDay = await fetchCashSessionForBusinessDay(supabase, day);
+  if (onDay) {
+    return Math.max(0, Math.floor(Number(onDay.opening_float_cents ?? 0)));
+  }
+
+  const { data, error } = await supabase
+    .from("cash_register_sessions")
+    .select("counted_cash_cents,business_day")
+    .eq("status", "closed")
+    .lt("business_day", day)
+    .order("business_day", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) {
+    console.error("fetchCashArrastreCentsForReportStart", error);
+    return 0;
+  }
+  return Math.max(0, Math.floor(Number(data?.counted_cash_cents ?? 0)));
+}
+
 export async function fetchCashSessionForBusinessDay(
   supabase: SupabaseClient,
   businessDayYmd: string,
