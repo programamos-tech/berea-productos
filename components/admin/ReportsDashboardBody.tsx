@@ -17,7 +17,10 @@ import {
   type ReportVista,
 } from "@/lib/admin-report-range";
 import { fetchAdminReportDashboardData } from "@/lib/admin-reports-data";
-import { fetchCashArrastreCentsForReportStart } from "@/lib/cash-register";
+import {
+  fetchCashArrastreCentsForReportStart,
+  fetchCashDayLiveTotals,
+} from "@/lib/cash-register";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import { Suspense } from "react";
@@ -86,9 +89,12 @@ export async function ReportsDashboardBody({
 }) {
   let report;
   let arrastreEfectivoCents = 0;
+  let cajaHoyCents = 0;
+  let cobrosEfectivoHoyCents = 0;
+  let egresosEfectivoHoyCents = 0;
   try {
     const supabase = await createSupabaseServerClient();
-    const [dashboard, arrastre] = await Promise.all([
+    const [dashboard, arrastreHoy] = await Promise.all([
       fetchAdminReportDashboardData(supabase, {
         rangeFrom,
         rangeTo,
@@ -103,11 +109,21 @@ export async function ReportsDashboardBody({
         periodLabel,
       }),
       vista === "tienda"
-        ? fetchCashArrastreCentsForReportStart(supabase, rangeFrom)
+        ? fetchCashArrastreCentsForReportStart(supabase, todayKey)
         : Promise.resolve(0),
     ]);
     report = dashboard;
-    arrastreEfectivoCents = arrastre;
+    arrastreEfectivoCents = arrastreHoy;
+    if (vista === "tienda") {
+      const live = await fetchCashDayLiveTotals(
+        supabase,
+        todayKey,
+        arrastreHoy,
+      );
+      cajaHoyCents = live.expectedCashCents;
+      cobrosEfectivoHoyCents = live.salesCashCents;
+      egresosEfectivoHoyCents = live.expensesCashCents;
+    }
   } catch (err) {
     console.error("[admin reportes] body:", err);
     return (
@@ -130,7 +146,6 @@ export async function ReportsDashboardBody({
     anuladas,
     ventasPagadasPeriod,
     egresosPeriod,
-    egresosEfectivoCents,
     egresosTransferenciaBucketCents,
     cantidadEgresosPeriod,
     reportIncomeChartPoints,
@@ -141,9 +156,7 @@ export async function ReportsDashboardBody({
   } = report;
 
   const isTienda = vista === "tienda";
-  const efectivoShown = isTienda
-    ? arrastreEfectivoCents + efectivo - egresosEfectivoCents
-    : efectivo;
+  const efectivoShown = isTienda ? cajaHoyCents : efectivo;
   const transferenciaShown = isTienda
     ? transferencia - egresosTransferenciaBucketCents
     : transferencia;
@@ -173,7 +186,7 @@ export async function ReportsDashboardBody({
           </p>
           <p className="text-[10px] text-zinc-500">
             {isTienda
-              ? "Arrastre + cobros − egresos"
+              ? "Mes en curso · caja = arrastre + cobros − egresos de hoy"
               : "Solo ventas y cobros del periodo"}
           </p>
         </div>
@@ -184,7 +197,8 @@ export async function ReportsDashboardBody({
             staggerMs={0}
             hint={
               <>
-                {ventasPagadasPeriod} venta{ventasPagadasPeriod === 1 ? "" : "s"} · IVA{" "}
+                {ventasPagadasPeriod} venta{ventasPagadasPeriod === 1 ? "" : "s"}
+                {isTienda ? " del mes" : ""} · IVA{" "}
                 <span className="tabular-nums">{formatCop(ivaRecaudadoPeriod)}</span>
                 <span className="sr-only">
                   {" "}
@@ -197,11 +211,19 @@ export async function ReportsDashboardBody({
           </Metric>
 
           <Metric
-            label="Efectivo"
+            label={isTienda ? "Caja hoy" : "Efectivo"}
             staggerMs={30}
             hint={
-              isTienda && arrastreEfectivoCents > 0 ? (
-                <>Incluye arrastre {formatCop(arrastreEfectivoCents)}</>
+              isTienda ? (
+                <>
+                  Arrastre {formatCop(arrastreEfectivoCents)}
+                  {cobrosEfectivoHoyCents > 0
+                    ? ` + cobros ${formatCop(cobrosEfectivoHoyCents)}`
+                    : ""}
+                  {egresosEfectivoHoyCents > 0
+                    ? ` − egresos ${formatCop(egresosEfectivoHoyCents)}`
+                    : ""}
+                </>
               ) : efectivoPct != null ? (
                 <>{efectivoPct}% del cobrado</>
               ) : (
@@ -221,7 +243,13 @@ export async function ReportsDashboardBody({
             label="Transferencia"
             staggerMs={60}
             hint={
-              transferPct != null ? (
+              isTienda ? (
+                transferPct != null ? (
+                  <>Neto del mes · {transferPct}% cobrado</>
+                ) : (
+                  <>Neto del mes (cobros − egresos)</>
+                )
+              ) : transferPct != null ? (
                 <>{transferPct}% del cobrado</>
               ) : (
                 <>Sin cobros en transferencia</>
@@ -231,7 +259,11 @@ export async function ReportsDashboardBody({
             <StaticCopCents cents={transferenciaShown} />
           </Metric>
 
-          <Metric label="Facturas anuladas" staggerMs={90} hint="En el periodo">
+          <Metric
+            label="Facturas anuladas"
+            staggerMs={90}
+            hint={isTienda ? "En el mes" : "En el periodo"}
+          >
             <StaticInteger value={anuladas} />
           </Metric>
 
@@ -242,6 +274,7 @@ export async function ReportsDashboardBody({
               <>
                 {cantidadEgresosPeriod} registrado
                 {cantidadEgresosPeriod === 1 ? "" : "s"}
+                {isTienda ? " del mes" : ""}
                 {isTienda ? (
                   <>
                     {" · "}
@@ -265,7 +298,7 @@ export async function ReportsDashboardBody({
             hint={
               isTienda ? (
                 <>
-                  Bruta {formatCop(gananciaBruta)} · margen − egresos
+                  Bruta {formatCop(gananciaBruta)} · margen − egresos del mes
                 </>
               ) : (
                 <>Margen de productos (sin egresos)</>

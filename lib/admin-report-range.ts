@@ -117,6 +117,33 @@ export function parseReportVistaFromSearchParams(
   return "dia";
 }
 
+/**
+ * Mes en curso hasta hoy (calendario tienda).
+ * Usado por la vista «Cómo va la tienda», que no sigue el filtro de fechas.
+ */
+export function reportMonthToDateRange(todayYmd: string): {
+  from: string;
+  to: string;
+} {
+  const ym = todayYmd.slice(0, 7);
+  const bounds = monthYmdBounds(ym);
+  if (!bounds) return { from: todayYmd, to: todayYmd };
+  return { from: bounds.from, to: todayYmd };
+}
+
+/** Etiqueta: «septiembre · hasta hoy». */
+export function prettyReportMonthToDateLabel(todayYmd: string): string {
+  const ym = todayYmd.slice(0, 7);
+  if (!isValidYearMonth(ym)) return "Mes en curso";
+  const [y, mo] = ym.split("-").map(Number);
+  const inst = new Date(noonOnStoreCalendarYmdAsUtcMs(y, mo, 1));
+  const month = new Intl.DateTimeFormat("es-CO", {
+    timeZone: REPORT_STORE_TIME_ZONE,
+    month: "long",
+  }).format(inst);
+  return `${month} · hasta hoy`;
+}
+
 /** Gráfico de reportes: `REPORT_DEFAULT_RANGE_DAY_COUNT` días calendario terminando en `rangeTo` (inclusive). */
 export function reportChartDayRange(rangeToYmd: string): {
   chartFrom: string;

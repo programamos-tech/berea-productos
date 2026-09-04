@@ -7,12 +7,12 @@ const options: Array<{ id: ReportVista; label: string; hint: string }> = [
   {
     id: "dia",
     label: "Del día",
-    hint: "Ventas y cobros del periodo",
+    hint: "Ventas y cobros del periodo que elijas",
   },
   {
     id: "tienda",
     label: "Cómo va la tienda",
-    hint: "Caja, transferencias y egresos",
+    hint: "Mes en curso + caja de hoy (arrastre)",
   },
 ];
 
@@ -31,8 +31,14 @@ export function ReportsVistaFilter({ vista }: { vista: ReportVista }) {
 
   function select(next: ReportVista) {
     const params = new URLSearchParams(searchParams.toString());
-    if (next === "dia") params.delete("vista");
-    else params.set("vista", next);
+    if (next === "dia") {
+      params.delete("vista");
+    } else {
+      params.set("vista", next);
+      // La vista tienda fija el mes en curso; no arrastra from/to del filtro de fechas.
+      params.delete("from");
+      params.delete("to");
+    }
     const qs = params.toString();
     router.push(qs ? `/admin?${qs}` : "/admin");
   }

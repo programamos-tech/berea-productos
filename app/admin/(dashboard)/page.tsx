@@ -7,8 +7,10 @@ import {
   currentYearMonthInReportStore,
   parseReportRangeFromSearchParams,
   parseReportVistaFromSearchParams,
+  prettyReportMonthToDateLabel,
   prettyReportPeriodLabel,
   reportDataFetchYmdRange,
+  reportMonthToDateRange,
   reportSalesTrendWeekRanges,
   todayYmdInReportStore,
 } from "@/lib/admin-report-range";
@@ -65,12 +67,14 @@ export default async function AdminHomePage({ searchParams }: PageProps) {
 
   const sp = await searchParams;
   const todayKey = todayYmdInReportStore();
-  const { from: rangeFrom, to: rangeTo } = parseReportRangeFromSearchParams(
-    sp,
-    todayKey,
-  );
   const vista = parseReportVistaFromSearchParams(sp);
-  const periodLabel = prettyReportPeriodLabel(rangeFrom, rangeTo, todayKey);
+  const urlRange = parseReportRangeFromSearchParams(sp, todayKey);
+  const { from: rangeFrom, to: rangeTo } =
+    vista === "tienda" ? reportMonthToDateRange(todayKey) : urlRange;
+  const periodLabel =
+    vista === "tienda"
+      ? prettyReportMonthToDateLabel(todayKey)
+      : prettyReportPeriodLabel(rangeFrom, rangeTo, todayKey);
   const {
     currentFrom: salesTrendCurrentFrom,
     currentTo: salesTrendCurrentTo,
@@ -96,7 +100,7 @@ export default async function AdminHomePage({ searchParams }: PageProps) {
           <p className="mt-0.5 text-xs text-rose-950/50 dark:text-zinc-500">
             {periodLabel}
             {vista === "tienda"
-              ? " · arrastre + cobros − egresos"
+              ? " · mes en curso + caja de hoy"
               : " · solo ventas y cobros"}
           </p>
         </div>
@@ -110,11 +114,20 @@ export default async function AdminHomePage({ searchParams }: PageProps) {
                   : currentYearMonthInReportStore()
               }
             />
-            <ReportsPeriodFilter
-              rangeFrom={rangeFrom}
-              rangeTo={rangeTo}
-              todayKey={todayKey}
-            />
+            {vista === "tienda" ? (
+              <span
+                className="inline-flex items-center rounded-lg border border-rose-200/70 bg-white px-2.5 py-1.5 text-xs font-medium text-rose-950/70 shadow-[0_1px_2px_0_rgb(190_24_93/0.06)] dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-400 dark:shadow-none"
+                title="En esta vista el periodo es siempre el mes en curso hasta hoy"
+              >
+                Mes en curso
+              </span>
+            ) : (
+              <ReportsPeriodFilter
+                rangeFrom={rangeFrom}
+                rangeTo={rangeTo}
+                todayKey={todayKey}
+              />
+            )}
           </div>
         </Suspense>
       </header>
