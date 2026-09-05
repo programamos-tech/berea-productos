@@ -221,6 +221,65 @@ body {
   background: transparent;
 }
 
+/* Reportes: feed de actividad sin barra de scroll visible */
+.reports-activity-scroll {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.reports-activity-scroll::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+  background: transparent;
+}
+
+@keyframes reports-activity-fresh-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+    background-color: color-mix(in srgb, rgb(16 185 129) 18%, transparent);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    background-color: transparent;
+  }
+}
+
+.reports-activity-fresh {
+  border-radius: 0.5rem;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .reports-activity-fresh {
+    animation: reports-activity-fresh-in 0.85s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .reports-activity-more svg {
+    animation: reports-activity-bounce 1.6s ease-in-out infinite;
+  }
+}
+
+@keyframes reports-activity-bounce {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(3px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reports-activity-fresh,
+  .reports-activity-more svg {
+    animation: none;
+  }
+}
+
+
+
 @media (prefers-reduced-motion: reduce) {
   .store-cart-drawer-backdrop,
   .store-cart-drawer-panel {

@@ -3,12 +3,14 @@ import { ReportsPeriodFilter } from "@/components/admin/ReportsPeriodFilter";
 import { ReportsVistaFilter } from "@/components/admin/ReportsVistaFilter";
 import { ReportsAleyaExportButton } from "@/components/admin/ReportsAleyaExportButton";
 import { ReportsDashboardBody } from "@/components/admin/ReportsDashboardBody";
+import { ReportsHeaderMeta } from "@/components/admin/ReportsHeaderMeta";
+import { ReportsRefreshButton } from "@/components/admin/ReportsRefreshButton";
 import {
   currentYearMonthInReportStore,
   parseReportRangeFromSearchParams,
   parseReportVistaFromSearchParams,
-  prettyReportMonthToDateLabel,
   prettyReportPeriodLabel,
+  prettyYearMonthLabel,
   reportDataFetchYmdRange,
   reportMonthToDateRange,
   reportSalesTrendWeekRanges,
@@ -73,8 +75,14 @@ export default async function AdminHomePage({ searchParams }: PageProps) {
     vista === "tienda" ? reportMonthToDateRange(todayKey) : urlRange;
   const periodLabel =
     vista === "tienda"
-      ? prettyReportMonthToDateLabel(todayKey)
+      ? prettyYearMonthLabel(rangeFrom.slice(0, 7))
       : prettyReportPeriodLabel(rangeFrom, rangeTo, todayKey);
+  const headerMonthLabel =
+    vista === "tienda"
+      ? prettyYearMonthLabel(todayKey.slice(0, 7))
+      : rangeFrom.slice(0, 7) === rangeTo.slice(0, 7)
+        ? prettyYearMonthLabel(rangeFrom.slice(0, 7))
+        : periodLabel;
   const {
     currentFrom: salesTrendCurrentFrom,
     currentTo: salesTrendCurrentTo,
@@ -97,12 +105,7 @@ export default async function AdminHomePage({ searchParams }: PageProps) {
           <h1 className="text-lg font-semibold tracking-tight text-rose-950 dark:text-zinc-100 sm:text-xl">
             Reportes
           </h1>
-          <p className="mt-0.5 text-xs text-rose-950/50 dark:text-zinc-500">
-            {periodLabel}
-            {vista === "tienda"
-              ? " · mes en curso + caja de hoy"
-              : " · solo ventas y cobros"}
-          </p>
+          <ReportsHeaderMeta monthLabel={headerMonthLabel} />
         </div>
         <Suspense fallback={<ReportsFiltersSkeleton />}>
           <div className="flex flex-wrap items-center justify-end gap-2">
@@ -115,12 +118,7 @@ export default async function AdminHomePage({ searchParams }: PageProps) {
               }
             />
             {vista === "tienda" ? (
-              <span
-                className="inline-flex items-center rounded-lg border border-rose-200/70 bg-white px-2.5 py-1.5 text-xs font-medium text-rose-950/70 shadow-[0_1px_2px_0_rgb(190_24_93/0.06)] dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-400 dark:shadow-none"
-                title="En esta vista el periodo es siempre el mes en curso hasta hoy"
-              >
-                Mes en curso
-              </span>
+              <ReportsRefreshButton />
             ) : (
               <ReportsPeriodFilter
                 rangeFrom={rangeFrom}

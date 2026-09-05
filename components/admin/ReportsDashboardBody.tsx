@@ -22,7 +22,6 @@ import {
   fetchCashDayLiveTotals,
 } from "@/lib/cash-register";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import Link from "next/link";
 import { Suspense } from "react";
 import { formatCop } from "@/lib/money";
 
@@ -34,18 +33,20 @@ function Metric({
   children,
   hint,
   staggerMs = 0,
+  labelClassName,
 }: {
   label: string;
   children: React.ReactNode;
   hint?: React.ReactNode;
   staggerMs?: number;
+  labelClassName?: string;
 }) {
   return (
     <div
       className="reports-metric-card min-w-0"
       style={{ ["--reports-stagger" as string]: `${staggerMs}ms` }}
     >
-      <p className={labelClass}>{label}</p>
+      <p className={labelClassName ?? labelClass}>{label}</p>
       <div className="mt-1.5 text-xl font-semibold tabular-nums tracking-tight text-zinc-900 dark:text-zinc-50 sm:text-2xl">
         {children}
       </div>
@@ -88,10 +89,7 @@ export async function ReportsDashboardBody({
   vista: ReportVista;
 }) {
   let report;
-  let arrastreEfectivoCents = 0;
   let cajaHoyCents = 0;
-  let cobrosEfectivoHoyCents = 0;
-  let egresosEfectivoHoyCents = 0;
   try {
     const supabase = await createSupabaseServerClient();
     const [dashboard, arrastreHoy] = await Promise.all([
@@ -113,7 +111,6 @@ export async function ReportsDashboardBody({
         : Promise.resolve(0),
     ]);
     report = dashboard;
-    arrastreEfectivoCents = arrastreHoy;
     if (vista === "tienda") {
       const live = await fetchCashDayLiveTotals(
         supabase,
@@ -121,8 +118,6 @@ export async function ReportsDashboardBody({
         arrastreHoy,
       );
       cajaHoyCents = live.expectedCashCents;
-      cobrosEfectivoHoyCents = live.salesCashCents;
-      egresosEfectivoHoyCents = live.expensesCashCents;
     }
   } catch (err) {
     console.error("[admin reportes] body:", err);
@@ -177,32 +172,20 @@ export async function ReportsDashboardBody({
       className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden"
     >
       <div className="shrink-0">
-        <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <p className={labelClass}>
-            {isTienda ? "Cómo va la tienda" : "Reporte del día"}
-            <span className="mx-1.5 font-normal normal-case tracking-normal text-zinc-600 dark:text-zinc-500">
-              · {periodLabel}
-            </span>
-          </p>
-          <p className="text-[10px] text-zinc-500">
-            {isTienda
-              ? "Mes en curso · caja = arrastre + cobros − egresos de hoy"
-              : "Solo ventas y cobros del periodo"}
-          </p>
-        </div>
-
-        <div className="mt-3 grid grid-cols-2 gap-x-6 gap-y-5 sm:grid-cols-4 xl:grid-cols-7">
+        <div className="grid grid-cols-2 gap-x-6 gap-y-5 sm:grid-cols-4 xl:grid-cols-7">
           <Metric
             label="Total ingresos"
             staggerMs={0}
             hint={
               <>
-                {ventasPagadasPeriod} venta{ventasPagadasPeriod === 1 ? "" : "s"}
-                {isTienda ? " del mes" : ""} · IVA{" "}
+                IVA ={" "}
                 <span className="tabular-nums">{formatCop(ivaRecaudadoPeriod)}</span>
                 <span className="sr-only">
                   {" "}
-                  Base {formatCop(ingresosSinIvaPeriod)}
+                  · {ventasPagadasPeriod} venta
+                  {ventasPagadasPeriod === 1 ? "" : "s"}
+                  {isTienda ? " del mes" : ""} · base{" "}
+                  {formatCop(ingresosSinIvaPeriod)}
                 </span>
               </>
             }
@@ -214,17 +197,7 @@ export async function ReportsDashboardBody({
             label={isTienda ? "Caja hoy" : "Efectivo"}
             staggerMs={30}
             hint={
-              isTienda ? (
-                <>
-                  Arrastre {formatCop(arrastreEfectivoCents)}
-                  {cobrosEfectivoHoyCents > 0
-                    ? ` + cobros ${formatCop(cobrosEfectivoHoyCents)}`
-                    : ""}
-                  {egresosEfectivoHoyCents > 0
-                    ? ` − egresos ${formatCop(egresosEfectivoHoyCents)}`
-                    : ""}
-                </>
-              ) : efectivoPct != null ? (
+              isTienda ? undefined : efectivoPct != null ? (
                 <>{efectivoPct}% del cobrado</>
               ) : (
                 <>Sin cobros POS en efectivo</>
@@ -240,23 +213,24 @@ export async function ReportsDashboardBody({
           </Metric>
 
           <Metric
-            label="Transferencia"
+            label={isTienda ? "En cuentas" : "Transferencia"}
             staggerMs={60}
             hint={
-              isTienda ? (
-                transferPct != null ? (
-                  <>Neto del mes · {transferPct}% cobrado</>
-                ) : (
-                  <>Neto del mes (cobros − egresos)</>
-                )
-              ) : transferPct != null ? (
-                <>{transferPct}% del cobrado</>
-              ) : (
-                <>Sin cobros en transferencia</>
-              )
+              isTienda
+                ? undefined
+                : transferPct != null
+                  ? <>{transferPct}% del cobrado</>
+                  : <>Sin cobros en transferencia</>
             }
           >
-            <StaticCopCents cents={transferenciaShown} />
+            <StaticCopCents
+              cents={transferenciaShown}
+              className={
+                transferenciaShown < 0
+                  ? "text-red-600 dark:text-red-400"
+                  : undefined
+              }
+            />
           </Metric>
 
           <Metric
@@ -271,38 +245,26 @@ export async function ReportsDashboardBody({
             label="Egresos"
             staggerMs={120}
             hint={
-              <>
-                {cantidadEgresosPeriod} registrado
-                {cantidadEgresosPeriod === 1 ? "" : "s"}
-                {isTienda ? " del mes" : ""}
-                {isTienda ? (
-                  <>
-                    {" · "}
-                    <Link
-                      href="/admin/egresos/nuevo"
-                      className="font-medium text-rose-800 underline-offset-2 hover:underline dark:text-rose-300"
-                    >
-                      + Egreso
-                    </Link>
-                  </>
-                ) : null}
-              </>
+              isTienda ? undefined : (
+                <>
+                  {cantidadEgresosPeriod} registrado
+                  {cantidadEgresosPeriod === 1 ? "" : "s"}
+                </>
+              )
             }
           >
             <StaticCopCents cents={egresosPeriod} />
           </Metric>
 
           <Metric
-            label="Ganancia"
+            label={gananciaShown < 0 ? "Pérdida" : "Ganancia"}
             staggerMs={150}
-            hint={
-              isTienda ? (
-                <>
-                  Bruta {formatCop(gananciaBruta)} · margen − egresos del mes
-                </>
-              ) : (
-                <>Margen de productos (sin egresos)</>
-              )
+            labelClassName={
+              gananciaShown < 0
+                ? "text-[10px] font-semibold uppercase tracking-[0.14em] text-red-600 dark:text-red-400"
+                : gananciaShown > 0
+                  ? "text-[10px] font-semibold uppercase tracking-[0.14em] text-emerald-600 dark:text-emerald-400"
+                  : labelClass
             }
           >
             <span
@@ -310,21 +272,12 @@ export async function ReportsDashboardBody({
                 gananciaShown < 0
                   ? "text-red-600 dark:text-red-400"
                   : gananciaShown > 0
-                    ? undefined
+                    ? "text-emerald-600 dark:text-emerald-400"
                     : "text-zinc-500"
               }
             >
-              <StaticCopCents cents={gananciaShown} />
+              <StaticCopCents cents={Math.abs(gananciaShown)} />
             </span>
-            {isTienda ? (
-              <span className="ml-2 text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
-                neta
-              </span>
-            ) : (
-              <span className="ml-2 text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
-                bruta
-              </span>
-            )}
           </Metric>
 
           <Metric
