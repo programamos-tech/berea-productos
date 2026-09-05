@@ -106,7 +106,7 @@ export function ReportsAleyaExportButton({
             strokeLinejoin="round"
           />
         </svg>
-        Exportar Excel ALEYA
+        Exportar CSV
       </button>
 
       {open ? (

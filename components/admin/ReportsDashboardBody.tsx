@@ -1,21 +1,16 @@
 import {
-  ReportMonthlyPulseSection,
-  ReportMonthlyPulseSkeleton,
-} from "@/components/admin/ReportMonthlyPulseSection";
-import {
   ReportActivityFeed,
   ReportActivityFeedSkeleton,
 } from "@/components/admin/ReportActivityFeed";
-import { ReportPaymentDonut } from "@/components/admin/ReportPaymentDonut";
-import { ReportSalesWeekTrendChart } from "@/components/admin/ReportSalesWeekTrendChart";
+import {
+  ReportMonthlyChartsSection,
+  ReportMonthlyChartsSkeleton,
+} from "@/components/admin/ReportMonthlyChartsSection";
 import {
   StaticCopCents,
   StaticInteger,
 } from "@/components/admin/ReportsAnimatedFigures";
-import {
-  prettyReportDayShortLabel,
-  type ReportVista,
-} from "@/lib/admin-report-range";
+import { type ReportVista } from "@/lib/admin-report-range";
 import { fetchAdminReportDashboardData } from "@/lib/admin-reports-data";
 import {
   fetchCashArrastreCentsForReportStart,
@@ -229,8 +224,6 @@ export async function ReportsDashboardBody({
     egresosTransferenciaBucketCents,
     cantidadEgresosPeriod,
     anuladas,
-    reportIncomeChartPoints,
-    salesTrendComparison,
     stockInversionNet,
     stockInversionGross,
     stockInvestmentTrend,
@@ -460,57 +453,15 @@ export async function ReportsDashboardBody({
       </div>
 
       <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 border-t border-zinc-200/70 pt-4 dark:border-zinc-800 lg:grid-cols-12 lg:gap-6">
-        <div className="flex min-h-0 flex-col gap-3 lg:col-span-7">
-          <section
-            className="reports-chart-reveal flex min-h-0 flex-[1.15] flex-col"
-            style={{ ["--reports-chart-delay" as string]: "100ms" }}
-          >
-            <div className="mb-1 flex shrink-0 items-end justify-between gap-2">
-              <div>
-                <h2 className={labelClass}>Ventas del mostrador</h2>
-                <p className="mt-0.5 text-[11px] text-zinc-500">
-                  {prettyReportDayShortLabel(salesTrendCurrentFrom)} –{" "}
-                  {prettyReportDayShortLabel(salesTrendCurrentTo)}
-                  {salesTrendCurrentTo === todayKey ? " · hoy" : ""}
-                </p>
-              </div>
-            </div>
-            <div className="min-h-0 flex-1">
-              <ReportSalesWeekTrendChart
-                points={reportIncomeChartPoints}
-                comparison={salesTrendComparison}
-                fillGradientId="reportsIncomeChartFill"
-                mini
-              />
-            </div>
-          </section>
-
-          <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 sm:grid-cols-2">
-            <section
-              className="reports-chart-reveal min-h-0"
-              style={{ ["--reports-chart-delay" as string]: "140ms" }}
-            >
-              <ReportPaymentDonut
-                efectivoCents={efectivo}
-                transferenciaCents={transferencia}
-                flat
-                mini
-              />
-            </section>
-            <section
-              className="reports-chart-reveal min-h-0"
-              style={{ ["--reports-chart-delay" as string]: "180ms" }}
-            >
-              <Suspense fallback={<ReportMonthlyPulseSkeleton compact flat />}>
-                <ReportMonthlyPulseSection
-                  todayKey={todayKey}
-                  rangeFrom={rangeFrom}
-                  rangeTo={rangeTo}
-                  mini
-                />
-              </Suspense>
-            </section>
-          </div>
+        <div className="flex min-h-0 flex-col lg:col-span-7">
+          <Suspense fallback={<ReportMonthlyChartsSkeleton />}>
+            <ReportMonthlyChartsSection
+              todayKey={todayKey}
+              rangeFrom={rangeFrom}
+              rangeTo={rangeTo}
+              periodLabel={periodLabel}
+            />
+          </Suspense>
         </div>
 
         <section
