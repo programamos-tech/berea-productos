@@ -12,9 +12,16 @@ type Props = {
   expenseId: string;
   initialDate: string;
   canEdit: boolean;
+  /** Sin label propio (p. ej. sidebar del detalle). */
+  compact?: boolean;
 };
 
-export function ExpenseDateEditForm({ expenseId, initialDate, canEdit }: Props) {
+export function ExpenseDateEditForm({
+  expenseId,
+  initialDate,
+  canEdit,
+  compact = false,
+}: Props) {
   const router = useRouter();
   const [date, setDate] = useState(initialDate);
   const [pending, setPending] = useState(false);
@@ -22,14 +29,18 @@ export function ExpenseDateEditForm({ expenseId, initialDate, canEdit }: Props) 
   const [saved, setSaved] = useState(false);
 
   if (!canEdit) {
-    return <p className="text-2xl font-semibold tabular-nums text-zinc-900 dark:text-zinc-100">{initialDate}</p>;
+    return (
+      <p className="text-sm font-medium tabular-nums text-zinc-900 dark:text-zinc-100">
+        {initialDate}
+      </p>
+    );
   }
 
   const dirty = date !== initialDate;
 
   return (
     <form
-      className="space-y-3"
+      className={compact ? "space-y-2" : "space-y-3"}
       onSubmit={async (e) => {
         e.preventDefault();
         if (!dirty) return;
@@ -52,10 +63,14 @@ export function ExpenseDateEditForm({ expenseId, initialDate, canEdit }: Props) 
         router.refresh();
       }}
     >
-      <label className={labelClass}>Fecha del gasto</label>
-      <p className="text-xs text-zinc-500 dark:text-zinc-400">
-        Elegí el día del gasto con el calendario.
-      </p>
+      {compact ? null : (
+        <>
+          <label className={labelClass}>Fecha del gasto</label>
+          <p className="text-xs text-zinc-500 dark:text-zinc-400">
+            Elegí el día del gasto con el calendario.
+          </p>
+        </>
+      )}
       <AdminDateInput
         name="expense_date"
         required

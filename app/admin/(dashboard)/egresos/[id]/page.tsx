@@ -1,9 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { CustomerAvatar } from "@/components/admin/CustomerAvatar";
 import { ExpenseDateEditForm } from "@/components/admin/ExpenseDateEditForm";
 import { ExpenseDetailHeaderActions } from "@/components/admin/ExpenseDetailHeaderActions";
-import { customerAvatarSeed } from "@/lib/customer-avatar-seed";
+import { StaticCopCents } from "@/components/admin/ReportsAnimatedFigures";
 import {
   expenseKindLabel,
   expensePaymentMethodLabel,
@@ -13,7 +12,6 @@ import {
 } from "@/lib/expenses-constants";
 import { loadAdminPermissions } from "@/lib/load-admin-permissions";
 import { formatStoreDateTime } from "@/lib/store-datetime-format";
-import { formatCop } from "@/lib/money";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -22,36 +20,15 @@ const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 const labelClass =
-  "text-[11px] font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500";
+  "text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500 dark:text-zinc-500";
 
-const shellCard =
-  "rounded-2xl border border-zinc-200/90 bg-white shadow-sm ring-1 ring-zinc-950/5 dark:border-zinc-700/90 dark:bg-zinc-900 dark:shadow-none dark:ring-white/[0.06]";
+const metaSepClass = "text-zinc-300 dark:text-zinc-600";
 
 function prettyDateTime(iso: string | null | undefined) {
   return formatStoreDateTime(iso, {
     dateStyle: "long",
     timeStyle: "short",
   });
-}
-
-function StatCol({
-  label,
-  children,
-  sub,
-}: {
-  label: string;
-  children: React.ReactNode;
-  sub?: React.ReactNode;
-}) {
-  return (
-    <div className="px-4 py-5 sm:px-5">
-      <p className={labelClass}>{label}</p>
-      <div className="mt-1 text-2xl font-semibold tabular-nums leading-tight text-zinc-900 dark:text-zinc-100">
-        {children}
-      </div>
-      {sub ? <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">{sub}</p> : null}
-    </div>
-  );
 }
 
 type Props = { params: Promise<{ id: string }> };
@@ -138,247 +115,237 @@ export default async function AdminEgresoDetailPage({ params }: Props) {
   const paymentPretty = expensePaymentMethodLabel(paymentRaw);
   const category = String(row.category ?? "operativo");
   const notes = row.notes ? String(row.notes).trim() : "";
-  const avatarSeed = customerAvatarSeed(row.id, concept);
+  const amountCents = Number(row.amount_cents ?? 0);
+  const docNoun = expenseKind === "egreso" ? "Egreso" : "Gasto";
+  const categoryIsLegacy = category.toLowerCase() === "legacy";
 
-  const metaParts = [
+  const metaItems = [
     kindLabel,
     scopeLabel,
     paymentPretty,
     expenseDate,
     category !== "operativo" ? category : null,
-  ].filter(Boolean);
-  const metaLine =
-    metaParts.length > 0
-      ? metaParts.join(" · ")
-      : expenseKind === "egreso"
-        ? "Egreso"
-        : "Gasto operativo";
-
-  const categoryIsLegacy = category.toLowerCase() === "legacy";
+  ].filter(Boolean) as string[];
 
   return (
-    <div className="mx-auto max-w-7xl space-y-6">
-      <p className="text-sm text-zinc-500 dark:text-zinc-400">
-        <Link
-          href="/admin/egresos"
-          className="font-medium hover:text-zinc-800 dark:hover:text-zinc-200"
-        >
-          Gastos y egresos
-        </Link>
-        <span className="mx-2 text-zinc-300 dark:text-zinc-600">/</span>
-        <span className="text-zinc-700 dark:text-zinc-300">{concept}</span>
-      </p>
-
-      <div className={`${shellCard} overflow-hidden`}>
-        <div className="flex flex-col gap-5 p-6 sm:flex-row sm:items-center sm:justify-between sm:gap-6 sm:p-8">
-          <div className="flex min-w-0 items-center gap-5 sm:gap-6">
-            <CustomerAvatar
-              seed={avatarSeed}
-              size={120}
-              className="shadow-md ring-2 ring-zinc-200/90 dark:ring-zinc-600"
-              label={`Identidad visual del ${kindLabel.toLowerCase()}: ${concept}`}
-            />
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <h1
-                  className={`text-2xl font-semibold uppercase tracking-tight text-zinc-900 dark:text-zinc-100 sm:text-3xl ${isCancelled ? "line-through decoration-zinc-400" : ""}`}
-                >
-                  {concept}
-                </h1>
-                <span
-                  className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide ${
-                    expenseKind === "egreso"
-                      ? "bg-amber-100 text-amber-900 dark:bg-amber-950/50 dark:text-amber-200"
-                      : "bg-sky-100 text-sky-900 dark:bg-sky-950/50 dark:text-sky-200"
-                  }`}
-                >
-                  {kindLabel}
-                </span>
-                <span
-                  className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide ${
-                    expenseScope === "mensual"
-                      ? "bg-violet-100 text-violet-900 dark:bg-violet-950/50 dark:text-violet-200"
-                      : "bg-emerald-100 text-emerald-900 dark:bg-emerald-950/50 dark:text-emerald-200"
-                  }`}
-                >
-                  {scopeLabel}
-                </span>
-                {isCancelled ? (
-                  <span className="inline-flex rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-red-800 dark:bg-red-950/50 dark:text-red-200">
-                    Anulado
+    <div className="flex w-full min-w-0 max-w-none flex-col gap-4">
+      <header className="flex flex-wrap items-start justify-between gap-2 gap-y-2">
+        <div className="min-w-0">
+          <p className="text-[11px] text-zinc-500">
+            <Link
+              href="/admin/egresos"
+              className="hover:text-zinc-800 dark:hover:text-zinc-200"
+            >
+              Gastos y egresos
+            </Link>
+            <span className="mx-1.5 text-zinc-400">/</span>
+            {docNoun}
+          </p>
+          <h1
+            className={`mt-0.5 text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 sm:text-2xl ${
+              isCancelled ? "line-through decoration-zinc-400" : ""
+            }`}
+          >
+            {concept}
+          </h1>
+          <p className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-zinc-500">
+            {metaItems.map((item, i) => (
+              <span key={`${item}-${i}`} className="inline-flex items-center gap-2">
+                {i > 0 ? (
+                  <span className={metaSepClass} aria-hidden>
+                    ·
                   </span>
                 ) : null}
-                {supplierLink ? (
-                  <Link
-                    href={`/admin/proveedores/${supplierLink.supplierId}/facturas/${supplierLink.invoiceId}`}
-                    className="inline-flex rounded-full bg-violet-100 px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-violet-900 hover:bg-violet-200 dark:bg-violet-950/50 dark:text-violet-200 dark:hover:bg-violet-900/60"
-                  >
-                    Proveedor
-                    {supplierLink.folio ? ` · ${supplierLink.folio}` : ""}
-                  </Link>
-                ) : null}
-              </div>
-              <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">{metaLine}</p>
-            </div>
-          </div>
-          <ExpenseDetailHeaderActions
-            expenseId={String(row.id)}
-            conceptLabel={concept}
-            isCancelled={isCancelled}
-            canCancel={canEdit}
-          />
+                <span
+                  className={
+                    i === 0
+                      ? "font-medium text-zinc-800 dark:text-zinc-200"
+                      : "tabular-nums"
+                  }
+                >
+                  {item}
+                </span>
+              </span>
+            ))}
+            {isCancelled ? (
+              <>
+                <span className={metaSepClass} aria-hidden>
+                  ·
+                </span>
+                <span className="font-medium text-[var(--admin-loss)] dark:text-[var(--admin-loss-dark)]">
+                  Anulado
+                </span>
+              </>
+            ) : null}
+            {supplierLink ? (
+              <>
+                <span className={metaSepClass} aria-hidden>
+                  ·
+                </span>
+                <Link
+                  href={`/admin/proveedores/${supplierLink.supplierId}/facturas/${supplierLink.invoiceId}`}
+                  className="font-medium text-zinc-800 underline-offset-2 hover:underline dark:text-zinc-200"
+                >
+                  {supplierLink.supplierName}
+                  {supplierLink.folio ? ` · ${supplierLink.folio}` : ""}
+                </Link>
+              </>
+            ) : null}
+          </p>
+          {isCancelled && row.cancellation_reason?.trim() ? (
+            <p className="mt-2 max-w-2xl text-sm text-[var(--admin-loss)] dark:text-[var(--admin-loss-dark)]">
+              Motivo: {String(row.cancellation_reason).trim()}
+              {row.cancelled_at
+                ? ` · ${prettyDateTime(String(row.cancelled_at))}`
+                : ""}
+            </p>
+          ) : null}
         </div>
+        <ExpenseDetailHeaderActions
+          expenseId={String(row.id)}
+          conceptLabel={concept}
+          isCancelled={isCancelled}
+          canCancel={canEdit}
+        />
+      </header>
 
-        {isCancelled && row.cancellation_reason?.trim() ? (
-          <div className="border-t border-red-100 bg-red-50/80 px-6 py-4 dark:border-red-900/40 dark:bg-red-950/30 sm:px-8">
-            <p className="text-[10px] font-semibold uppercase tracking-wide text-red-700 dark:text-red-300">
-              Motivo de anulación
+      <div className="flex flex-col gap-6 border-t border-zinc-200/70 pt-4 dark:border-zinc-800 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(16rem,18rem)] lg:items-start lg:gap-10 xl:gap-12">
+        <section className="min-w-0 space-y-8">
+          <div>
+            <h2 className={labelClass}>Notas y descripción</h2>
+            <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+              Texto libre del registro (importación CSV, aclaraciones, etc.).
             </p>
-            <p className="mt-1 whitespace-pre-wrap text-sm text-red-900 dark:text-red-100">
-              {String(row.cancellation_reason).trim()}
-            </p>
-            {row.cancelled_at ? (
-              <p className="mt-2 text-xs text-red-700/80 dark:text-red-300/80">
-                Anulado el {prettyDateTime(String(row.cancelled_at))}
+            {notes.length > 0 ? (
+              <p className="mt-4 whitespace-pre-wrap text-sm leading-relaxed text-zinc-800 dark:text-zinc-200">
+                {notes}
               </p>
+            ) : (
+              <p className="mt-4 text-sm text-zinc-500 dark:text-zinc-400">
+                Sin notas adicionales. Este {kindLabel.toLowerCase()} solo tiene
+                concepto y monto.
+              </p>
+            )}
+          </div>
+
+          <div>
+            <h2 className={labelClass}>Trazabilidad</h2>
+            <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+              Auditoría del registro en el sistema.
+            </p>
+            <dl className="mt-4 space-y-4 text-sm">
+              <div>
+                <dt className={labelClass}>Registrado en el sistema</dt>
+                <dd className="mt-1 font-medium text-zinc-900 dark:text-zinc-100">
+                  {prettyDateTime(createdAt)}
+                </dd>
+              </div>
+              <div>
+                <dt className={labelClass}>Identificador</dt>
+                <dd className="mt-1 break-all font-mono text-xs text-zinc-600 dark:text-zinc-400">
+                  {String(row.id)}
+                </dd>
+              </div>
+              <div>
+                <dt className={labelClass}>Método de pago (código)</dt>
+                <dd className="mt-1 font-mono text-xs text-zinc-600 dark:text-zinc-400">
+                  {paymentRaw || "—"}
+                </dd>
+              </div>
+            </dl>
+            {supplierLink ? (
+              <p className="mt-5 text-sm text-zinc-600 dark:text-zinc-400">
+                Vinculado a abono de proveedor ·{" "}
+                <Link
+                  href={`/admin/proveedores/${supplierLink.supplierId}/facturas/${supplierLink.invoiceId}`}
+                  className="font-semibold text-zinc-900 underline-offset-2 hover:underline dark:text-zinc-100"
+                >
+                  Ver factura
+                  {supplierLink.folio ? ` ${supplierLink.folio}` : ""}
+                </Link>
+              </p>
+            ) : (
+              <p className="mt-5 text-sm text-zinc-500 dark:text-zinc-400">
+                Sin vínculo con pedidos. En Reportes se descuenta según el método
+                de pago registrado.
+              </p>
+            )}
+          </div>
+        </section>
+
+        <aside className="shrink-0 space-y-5 border-t border-zinc-200/70 pt-4 dark:border-zinc-800 lg:sticky lg:top-3 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0 xl:pl-10 dark:lg:border-zinc-800">
+          <div>
+            <p className={labelClass}>Total</p>
+            <p
+              className={`mt-2 text-3xl font-semibold tabular-nums tracking-tight text-zinc-900 dark:text-zinc-50 ${
+                isCancelled ? "line-through decoration-zinc-400" : ""
+              }`}
+            >
+              <StaticCopCents cents={amountCents} />
+            </p>
+            {isCancelled ? (
+              <p className="mt-1 text-xs text-zinc-500">No cuenta en reportes</p>
             ) : null}
           </div>
-        ) : null}
 
-        <div className="border-t border-zinc-100 dark:border-zinc-800">
-          <div className="grid divide-y divide-zinc-100 dark:divide-zinc-800 sm:grid-cols-4 sm:divide-x sm:divide-y-0">
-            <StatCol
-              label="Monto"
-              sub={isCancelled ? "No cuenta en reportes" : "Valor contable del gasto"}
+          <div>
+            <p className={labelClass}>Método de pago</p>
+            <p className="mt-1.5 text-sm font-medium text-zinc-800 dark:text-zinc-200">
+              {paymentPretty}
+            </p>
+          </div>
+
+          <div>
+            <p className={labelClass}>Estado</p>
+            <p
+              className={`mt-1.5 text-sm font-medium ${
+                isCancelled
+                  ? "text-[var(--admin-loss)] dark:text-[var(--admin-loss-dark)]"
+                  : "text-[var(--admin-profit)] dark:text-[var(--admin-profit-dark)]"
+              }`}
             >
-              <span className={isCancelled ? "line-through decoration-zinc-400" : ""}>
-                {formatCop(Number(row.amount_cents ?? 0))}
-              </span>
-            </StatCol>
-            <StatCol label="Fecha del gasto" sub="Día asignado al gasto">
+              {isCancelled ? "Anulado" : "Registrado"}
+            </p>
+          </div>
+
+          <div>
+            <p className={labelClass}>Fecha del gasto</p>
+            <div className="mt-1.5">
               {isCancelled || !canEdit ? (
-                expenseDate
+                <p className="text-sm font-medium tabular-nums text-zinc-800 dark:text-zinc-200">
+                  {expenseDate}
+                </p>
               ) : (
                 <ExpenseDateEditForm
                   expenseId={String(row.id)}
                   initialDate={expenseDate}
                   canEdit
+                  compact
                 />
               )}
-            </StatCol>
-            <StatCol label="Forma de pago" sub="Medio registrado">
-              {paymentPretty}
-            </StatCol>
-            <StatCol label="Categoría" sub="Clasificación en base de datos">
-              {categoryIsLegacy ? (
-                <span className="text-violet-600 dark:text-violet-400">{category}</span>
-              ) : (
-                category
-              )}
-            </StatCol>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid gap-6 lg:grid-cols-2">
-        <section className={`${shellCard} p-6 sm:p-8`}>
-          <h2 className="text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-400 dark:text-zinc-500">
-            Notas y descripción
-          </h2>
-          <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-            Texto libre del registro (importación CSV, aclaraciones de IVA, etc.).
-          </p>
-          {notes.length > 0 ? (
-            <div className="mt-6 rounded-xl border border-zinc-100 bg-zinc-50/50 px-4 py-4 dark:border-zinc-800 dark:bg-zinc-950/40">
-              <p className="whitespace-pre-wrap text-sm leading-relaxed text-zinc-800 dark:text-zinc-200">
-                {notes}
-              </p>
             </div>
-          ) : (
-            <div className="mt-6 flex min-h-[180px] flex-col items-center justify-center rounded-xl border border-dashed border-zinc-200 bg-zinc-50/80 px-4 py-10 text-center dark:border-zinc-700 dark:bg-zinc-950/50">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="40"
-                height="40"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                className="text-zinc-300 dark:text-zinc-600"
-                aria-hidden
-              >
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" />
-              </svg>
-              <p className="mt-3 text-sm font-medium text-zinc-600 dark:text-zinc-300">
-                Sin notas adicionales
-              </p>
-              <p className="mt-2 max-w-sm text-xs text-zinc-500 dark:text-zinc-400">
-                Este gasto solo tiene concepto y monto. Podés ampliar la información al crear
-                nuevos registros desde el formulario.
-              </p>
-            </div>
-          )}
-        </section>
-
-        <section className={`${shellCard} p-6 sm:p-8`}>
-          <h2 className="text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-400 dark:text-zinc-500">
-            Trazabilidad
-          </h2>
-          <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-            Auditoría del registro en el sistema administrativo.
-          </p>
-          <ul className="mt-6 space-y-4 text-sm">
-            <li>
-              <p className={labelClass}>Registrado en el sistema</p>
-              <p className="mt-1 font-medium text-zinc-900 dark:text-zinc-100">
-                {prettyDateTime(createdAt)}
-              </p>
-            </li>
-            <li>
-              <p className={labelClass}>Identificador único</p>
-              <p className="mt-1 break-all font-mono text-xs leading-relaxed text-zinc-700 dark:text-zinc-300">
-                {String(row.id)}
-              </p>
-            </li>
-            <li>
-              <p className={labelClass}>Método de pago (código)</p>
-              <p className="mt-1 font-mono text-xs text-zinc-600 dark:text-zinc-400">
-                {paymentRaw || "—"}
-              </p>
-            </li>
-          </ul>
-
-          <div className="mt-8 flex min-h-[140px] flex-col items-center justify-center rounded-xl border border-dashed border-zinc-200 bg-zinc-50/80 px-4 py-8 text-center dark:border-zinc-700 dark:bg-zinc-950/50">
-            {supplierLink ? (
-              <>
-                <p className="text-sm font-medium text-zinc-600 dark:text-zinc-300">
-                  Vinculado a abono de proveedor
-                </p>
-                <p className="mt-2 max-w-xs text-xs text-zinc-500 dark:text-zinc-400">
-                  {supplierLink.supplierName}
-                  {supplierLink.folio ? ` · Folio ${supplierLink.folio}` : ""}.
-                </p>
-                <Link
-                  href={`/admin/proveedores/${supplierLink.supplierId}/facturas/${supplierLink.invoiceId}`}
-                  className="mt-3 text-sm font-semibold text-violet-700 hover:underline dark:text-violet-300"
-                >
-                  Ver factura
-                </Link>
-              </>
-            ) : (
-              <>
-                <p className="text-sm font-medium text-zinc-600 dark:text-zinc-300">
-                  Sin vínculo con pedidos
-                </p>
-                <p className="mt-2 max-w-xs text-xs text-zinc-500 dark:text-zinc-400">
-                  No se asocian a una venta concreta. En Reportes, el monto se descuenta del total de
-                  efectivo o de transferencia según el método de pago registrado aquí.
-                </p>
-              </>
-            )}
           </div>
-        </section>
+
+          <div>
+            <p className={labelClass}>Categoría</p>
+            <p
+              className={`mt-1.5 text-sm font-medium ${
+                categoryIsLegacy
+                  ? "text-violet-600 dark:text-violet-400"
+                  : "text-zinc-800 dark:text-zinc-200"
+              }`}
+            >
+              {category}
+            </p>
+          </div>
+
+          <div>
+            <p className={labelClass}>Alcance</p>
+            <p className="mt-1.5 text-sm font-medium text-zinc-800 dark:text-zinc-200">
+              {scopeLabel}
+            </p>
+          </div>
+        </aside>
       </div>
     </div>
   );
