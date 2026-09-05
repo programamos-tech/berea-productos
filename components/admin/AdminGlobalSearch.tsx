@@ -79,7 +79,7 @@ function IconX({ className }: { className?: string }) {
 
 /** Panel bajo el input: fondo opaco para leer resultados sobre el dashboard. */
 const liquidPanelClass =
-  "absolute left-0 right-0 top-[calc(100%+8px)] z-[100] max-h-[min(65vh,440px)] overflow-y-auto overscroll-contain rounded-2xl border border-rose-200/80 bg-white shadow-[0_22px_56px_-14px_rgba(0,0,0,0.22),0_0_0_1px_rgba(255,255,255,1)_inset] ring-1 ring-stone-900/[0.06] dark:border-zinc-600 dark:bg-zinc-900 dark:shadow-[0_24px_56px_-12px_rgba(0,0,0,0.55)] dark:ring-white/[0.08]";
+  "absolute left-0 right-0 top-[calc(100%+8px)] z-[100] max-h-[min(65vh,440px)] overflow-y-auto overscroll-contain rounded-2xl border border-[color-mix(in_srgb,var(--admin-coral)_28%,transparent)] bg-white shadow-[0_22px_56px_-14px_rgba(0,0,0,0.22),0_0_0_1px_rgba(255,255,255,1)_inset] ring-1 ring-zinc-950/[0.04] dark:border-zinc-600 dark:bg-zinc-900 dark:shadow-[0_24px_56px_-12px_rgba(0,0,0,0.55)] dark:ring-white/[0.08]";
 
 export function AdminGlobalSearch() {
   const [q, setQ] = useState("");
@@ -195,7 +195,7 @@ export function AdminGlobalSearch() {
         Buscar clientes, facturas y productos
       </label>
       <div className="relative min-w-0" role="search">
-        <IconSearch className="pointer-events-none absolute left-3.5 top-1/2 size-[18px] -translate-y-1/2 text-rose-900/40 dark:text-zinc-500" />
+        <IconSearch className="pointer-events-none absolute left-3.5 top-1/2 size-[18px] -translate-y-1/2 text-[var(--admin-coral-deep)]/45 dark:text-zinc-500" />
         <input
           ref={inputRef}
           id="admin-global-search"
@@ -207,12 +207,12 @@ export function AdminGlobalSearch() {
           onFocus={() => setPanelOpen(true)}
           autoComplete="off"
           placeholder="Clientes, facturas, productos, código…"
-          className="box-border min-w-0 w-full rounded-full border border-rose-200/65 bg-white py-2.5 pl-11 pr-10 text-sm text-stone-900 shadow-[0_1px_3px_0_rgb(190_24_93/0.06)] placeholder:text-stone-400 focus:border-rose-400/80 focus:outline-none focus:ring-2 focus:ring-rose-950/12 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:shadow-none dark:focus:border-zinc-500 dark:focus:ring-zinc-400/15"
+          className="box-border min-w-0 w-full rounded-full border border-[color-mix(in_srgb,var(--admin-coral)_35%,transparent)] bg-white py-2.5 pl-11 pr-10 text-sm text-stone-900 shadow-[0_1px_3px_0_color-mix(in_srgb,var(--admin-coral-deep)_8%,transparent)] placeholder:text-stone-400 focus:border-[var(--admin-coral)] focus:outline-none focus:ring-2 focus:ring-[color-mix(in_srgb,var(--admin-coral)_22%,transparent)] dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:shadow-none dark:focus:border-zinc-500 dark:focus:ring-zinc-400/15"
         />
         {q.trim() ? (
           <button
             type="button"
-            className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-full p-1 text-rose-900/45 transition hover:bg-rose-100/60 hover:text-rose-950 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+            className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-full p-1 text-[var(--admin-coral-deep)]/50 transition hover:bg-[var(--admin-coral-mist)] hover:text-[var(--admin-coral-deep)] dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
             aria-label="Limpiar búsqueda"
             onClick={() => {
               setQ("");
@@ -242,7 +242,7 @@ export function AdminGlobalSearch() {
 
           {loading ? (
             <div className="flex justify-center py-8">
-              <div className="size-7 animate-spin rounded-full border-2 border-rose-200/80 border-t-rose-800/90 dark:border-zinc-600 dark:border-t-zinc-300" />
+              <div className="size-7 animate-spin rounded-full border-2 border-[color-mix(in_srgb,var(--admin-coral)_35%,transparent)] border-t-[var(--admin-coral-deep)] dark:border-zinc-600 dark:border-t-zinc-300" />
             </div>
           ) : null}
 
@@ -263,7 +263,7 @@ export function AdminGlobalSearch() {
                         <Link
                           href={`/admin/products/${p.id}`}
                           onClick={closePanel}
-                          className="flex items-start justify-between gap-3 rounded-xl px-3 py-2.5 transition hover:bg-rose-100/50 dark:hover:bg-zinc-800/90"
+                          className="flex items-start justify-between gap-3 rounded-xl px-3 py-2.5 transition hover:bg-[var(--admin-coral-mist)] dark:hover:bg-zinc-800/90"
                         >
                           <div className="min-w-0">
                             <p className="font-medium text-stone-900 dark:text-zinc-100">{p.name}</p>
@@ -297,7 +297,7 @@ export function AdminGlobalSearch() {
                         <Link
                           href={`/admin/customers/${c.id}`}
                           onClick={closePanel}
-                          className="block rounded-xl px-3 py-2.5 transition hover:bg-rose-100/50 dark:hover:bg-zinc-800/90"
+                          className="block rounded-xl px-3 py-2.5 transition hover:bg-[var(--admin-coral-mist)] dark:hover:bg-zinc-800/90"
                         >
                           <p className="font-medium text-stone-900 dark:text-zinc-100">{c.name}</p>
                           <p className="mt-0.5 text-xs text-stone-700 dark:text-zinc-400">
@@ -327,7 +327,7 @@ export function AdminGlobalSearch() {
                           <Link
                             href={`/admin/orders/${o.id}`}
                             onClick={closePanel}
-                            className="flex items-start justify-between gap-3 rounded-xl px-3 py-2.5 transition hover:bg-rose-100/50 dark:hover:bg-zinc-800/90"
+                            className="flex items-start justify-between gap-3 rounded-xl px-3 py-2.5 transition hover:bg-[var(--admin-coral-mist)] dark:hover:bg-zinc-800/90"
                           >
                             <div className="min-w-0">
                               <p className="flex flex-wrap items-center gap-2">

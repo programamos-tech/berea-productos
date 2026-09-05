@@ -1,16 +1,15 @@
 /**
- * Tema del backoffice — coral como acento primario (CTA / activo),
- * chrome del workspace en neutros.
+ * Tema del backoffice — acento Berea House (#0197b2), chrome en neutros.
  *
- * Coral base:  #ED7464  (solo acciones primarias)
- * Sidebar light: zinc-50 (sin lavado mist coral)
+ * Brand teal:  #0197b2
+ * Sidebar light: zinc-50
  * Sidebar dark:  warm near-black
  */
-export const ADMIN_CORAL = "#ED7464" as const;
-export const ADMIN_CORAL_HOVER = "#D96558" as const;
-export const ADMIN_CORAL_DEEP = "#A65046" as const;
-export const ADMIN_CORAL_SOFT = "#FFBDB5" as const;
-export const ADMIN_CORAL_MIST = "#FFDEDA" as const;
+export const ADMIN_CORAL = "#0197b2" as const;
+export const ADMIN_CORAL_HOVER = "#01829a" as const;
+export const ADMIN_CORAL_DEEP = "#015a6e" as const;
+export const ADMIN_CORAL_SOFT = "#7ecfe0" as const;
+export const ADMIN_CORAL_MIST = "#e6f6fa" as const;
 
 /**
  * Fondo del sidebar (`--admin-sidebar-bg`): neutro claro.
@@ -25,7 +24,7 @@ export const ADMIN_SIDEBAR_BG_DARK = "#1A1413" as const;
 export const STORE_CHROME_BG = "#ffffff" as const;
 
 /**
- * Logo Berea (coral, fondo transparente) — legible en sidebar claro y oscuro.
+ * Logo Berea House (teal, fondo transparente) — legible en sidebar claro y oscuro.
  */
 export const ADMIN_BRAND_LOGO_ON_SIDEBAR_CLASS = "";
 
