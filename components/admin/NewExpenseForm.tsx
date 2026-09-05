@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import { createStoreExpense } from "@/app/actions/admin/expenses";
 import {
   AdminFormSubmitButton,
-  adminPrimarySubmitButtonClass,
 } from "@/components/admin/AdminFormSubmitButton";
 import { adminCreateFailedMessage } from "@/lib/admin-create-failed-messages";
 import {
@@ -36,9 +35,12 @@ import {
 export type TurnWorkerOption = { id: string; label: string };
 
 const choiceSelected =
-  "border-rose-900/35 bg-rose-50 ring-1 ring-rose-900/15 dark:border-rose-400/40 dark:bg-rose-950/35 dark:ring-rose-400/20";
+  "border-[color-mix(in_srgb,var(--admin-coral)_45%,transparent)] bg-[var(--admin-coral-mist)] ring-1 ring-[color-mix(in_srgb,var(--admin-coral)_22%,transparent)] dark:border-[color-mix(in_srgb,var(--admin-coral)_50%,transparent)] dark:bg-[color-mix(in_srgb,var(--admin-coral)_18%,transparent)] dark:ring-[color-mix(in_srgb,var(--admin-coral)_28%,transparent)]";
 const choiceIdle =
   "border-zinc-200 bg-white hover:border-zinc-300 dark:border-zinc-700 dark:bg-zinc-950 dark:hover:border-zinc-600";
+
+const choiceRadio =
+  "size-3.5 border-zinc-300 text-[var(--admin-coral)] focus:ring-[var(--admin-coral)] dark:border-zinc-600";
 
 const payMethodsDiario: { value: ExpensePaymentMethod; label: string }[] = [
   { value: "efectivo", label: "Efectivo" },
@@ -263,7 +265,7 @@ export function NewExpenseModal({
                             setConceptOther("");
                             setTurnWorkerId("");
                           }}
-                          className="size-3.5 border-zinc-300 text-rose-950 focus:ring-rose-900 dark:border-zinc-600"
+                          className={choiceRadio}
                           required
                         />
                         <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
@@ -305,7 +307,7 @@ export function NewExpenseModal({
                               setPaymentMethod("transferencia");
                             }
                           }}
-                          className="size-3.5 border-zinc-300 text-rose-950 focus:ring-rose-900 dark:border-zinc-600"
+                          className={choiceRadio}
                           required
                         />
                         <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
@@ -460,7 +462,7 @@ export function NewExpenseModal({
             <AdminFormSubmitButton
               pendingLabel="Registrando…"
               disabled={submitBlocked}
-              className={`w-full px-5 py-2.5 sm:w-auto ${adminPrimarySubmitButtonClass}`}
+              className="w-full rounded-lg border border-[var(--admin-coral)] bg-[var(--admin-coral)] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:border-[var(--admin-coral-hover)] hover:bg-[var(--admin-coral-hover)] disabled:cursor-not-allowed disabled:border-zinc-200 disabled:bg-zinc-200 disabled:text-zinc-500 sm:w-auto dark:disabled:border-zinc-700 dark:disabled:bg-zinc-800 dark:disabled:text-zinc-500"
             >
               {expenseKind === "egreso" ? "Registrar egreso" : "Registrar gasto"}
             </AdminFormSubmitButton>
