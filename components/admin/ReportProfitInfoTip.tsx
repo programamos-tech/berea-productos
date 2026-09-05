@@ -3,14 +3,16 @@
 import { Info } from "lucide-react";
 import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { formatCop } from "@/lib/money";
 
 type Pos = { top: number; left: number; maxWidth: number };
 
-export function ReportProfitInfoTip({
-  resultadoCents,
+/** Tip corto junto a una métrica (portal, sin heredar uppercase del label). */
+export function ReportMetricInfoTip({
+  children,
+  ariaLabel = "Qué significa este número",
 }: {
-  resultadoCents: number;
+  children: React.ReactNode;
+  ariaLabel?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState<Pos | null>(null);
@@ -18,7 +20,6 @@ export function ReportProfitInfoTip({
   const btnRef = useRef<HTMLButtonElement>(null);
   const tipRef = useRef<HTMLDivElement>(null);
   const tipId = useId();
-  const isLoss = resultadoCents < 0;
 
   useEffect(() => {
     setMounted(true);
@@ -86,23 +87,7 @@ export function ReportProfitInfoTip({
             }}
             className="rounded-lg border border-zinc-200 bg-white px-3 py-2.5 text-left text-[11px] font-normal normal-case leading-snug tracking-normal text-zinc-600 shadow-[0_16px_40px_-12px_rgba(0,0,0,0.45)] dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-300"
           >
-            <p className="text-zinc-600 dark:text-zinc-300">
-              Es lo que queda después de cubrir los egresos con la ganancia
-              bruta de las ventas.
-            </p>
-            <p
-              className={`mt-2 font-semibold tabular-nums ${
-                isLoss
-                  ? "text-red-600 dark:text-red-400"
-                  : "text-emerald-600 dark:text-emerald-400"
-              }`}
-            >
-              {isLoss
-                ? `Por ahora, ${formatCop(Math.abs(resultadoCents))} en rojo.`
-                : resultadoCents > 0
-                  ? `Por ahora, ${formatCop(resultadoCents)} en verde.`
-                  : "Por ahora, en cero."}
-            </p>
+            {children}
           </div>,
           document.body,
         )
@@ -116,12 +101,28 @@ export function ReportProfitInfoTip({
         className="inline-flex size-4 shrink-0 items-center justify-center rounded-full normal-case tracking-normal text-zinc-400 transition hover:text-zinc-700 dark:text-zinc-500 dark:hover:text-zinc-200"
         aria-expanded={open}
         aria-controls={tipId}
-        aria-label="Qué significa este número"
+        aria-label={ariaLabel}
         onClick={() => setOpen((v) => !v)}
       >
         <Info className="size-3" strokeWidth={2.25} aria-hidden />
       </button>
       {panel}
     </>
+  );
+}
+
+/** @deprecated Usar ReportMetricInfoTip */
+export function ReportProfitInfoTip({
+  resultadoCents,
+}: {
+  resultadoCents: number;
+}) {
+  void resultadoCents;
+  return (
+    <ReportMetricInfoTip>
+      <p>
+        Sale del precio de venta sin IVA, menos el costo de los productos.
+      </p>
+    </ReportMetricInfoTip>
   );
 }

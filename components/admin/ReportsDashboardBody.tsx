@@ -34,7 +34,7 @@ import {
   Wallet,
   type LucideIcon,
 } from "lucide-react";
-import { ReportProfitInfoTip } from "@/components/admin/ReportProfitInfoTip";
+import { ReportMetricInfoTip } from "@/components/admin/ReportProfitInfoTip";
 
 const labelClass =
   "text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500 dark:text-zinc-500";
@@ -280,22 +280,18 @@ export async function ReportsDashboardBody({
           </Metric>
 
           <Metric
-            label="Egresos"
-            icon={ArrowDownLeft}
+            label="Ganancia bruta"
+            icon={TrendingUp}
             staggerMs={90}
-            hint={
-              isTienda ? undefined : (
-                <>
-                  {cantidadEgresosPeriod} registrado
-                  {cantidadEgresosPeriod === 1 ? "" : "s"}
-                </>
-              )
+            labelExtra={
+              <ReportMetricInfoTip>
+                <p>
+                  Sale del precio de venta sin IVA, menos el costo de los
+                  productos.
+                </p>
+              </ReportMetricInfoTip>
             }
           >
-            <StaticCopCents cents={egresosPeriod} />
-          </Metric>
-
-          <Metric label="Ganancia bruta" icon={TrendingUp} staggerMs={120}>
             <StaticCopCents
               cents={gananciaBruta}
               className={
@@ -306,6 +302,22 @@ export async function ReportsDashboardBody({
                     : "text-zinc-500"
               }
             />
+          </Metric>
+
+          <Metric
+            label="Egresos"
+            icon={ArrowDownLeft}
+            staggerMs={120}
+            hint={
+              isTienda ? undefined : (
+                <>
+                  {cantidadEgresosPeriod} registrado
+                  {cantidadEgresosPeriod === 1 ? "" : "s"}
+                </>
+              )
+            }
+          >
+            <StaticCopCents cents={egresosPeriod} />
           </Metric>
 
           <Metric
@@ -326,7 +338,6 @@ export async function ReportsDashboardBody({
                   ? "text-[10px] font-semibold uppercase tracking-[0.14em] text-emerald-600 dark:text-emerald-400"
                   : labelClass
             }
-            labelExtra={<ReportProfitInfoTip resultadoCents={gananciaNeta} />}
           >
             <span
               className={
