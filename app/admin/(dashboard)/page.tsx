@@ -105,7 +105,11 @@ export default async function AdminHomePage({ searchParams }: PageProps) {
           <h1 className="text-lg font-semibold tracking-tight text-rose-950 dark:text-zinc-100 sm:text-xl">
             Reportes
           </h1>
-          <ReportsHeaderMeta monthLabel={headerMonthLabel} />
+          <ReportsHeaderMeta
+            vista={vista}
+            monthLabel={headerMonthLabel}
+            periodLabel={periodLabel}
+          />
         </div>
         <Suspense fallback={<ReportsFiltersSkeleton />}>
           <div className="flex flex-wrap items-center justify-end gap-2">

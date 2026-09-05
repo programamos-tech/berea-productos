@@ -154,7 +154,6 @@ export function ReportActivityFeedLive({
           <h2 className="text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
             Actividad reciente
           </h2>
-          <p className="mt-0.5 text-xs text-zinc-500">Se actualiza solo</p>
         </div>
         <Link
           href="/admin/actividades"

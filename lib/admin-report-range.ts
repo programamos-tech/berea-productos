@@ -107,7 +107,7 @@ export type ReportVista = "dia" | "tienda";
 
 /**
  * Interpreta `vista` en la URL.
- * Por defecto `dia` (ventas del periodo, sin mezclar egresos/arrastre).
+ * Por defecto `dia` (ventas del periodo elegido: día, semana, mes, etc.).
  */
 export function parseReportVistaFromSearchParams(
   sp: Record<string, string | string[] | undefined>,

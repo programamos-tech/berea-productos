@@ -233,11 +233,7 @@ export async function ReportsDashboardBody({
             />
           </Metric>
 
-          <Metric
-            label="Facturas anuladas"
-            staggerMs={90}
-            hint={isTienda ? "En el mes" : "En el periodo"}
-          >
+          <Metric label="Facturas anuladas" staggerMs={90}>
             <StaticInteger value={anuladas} />
           </Metric>
 
