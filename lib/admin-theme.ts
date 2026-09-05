@@ -2,7 +2,8 @@
  * Tema del backoffice — coral + sidebar independiente (ERP).
  *
  * Coral base:  #ED7464
- * Sidebar:     mist coral claro (#FFDEDA) — fresco, limpio, tipografía oscura
+ * Sidebar light: mist coral (#FFDEDA)
+ * Sidebar dark:  warm near-black with coral undertone
  * Soft:        #FFBDB5
  */
 export const ADMIN_CORAL = "#ED7464" as const;
@@ -12,17 +13,19 @@ export const ADMIN_CORAL_SOFT = "#FFBDB5" as const;
 export const ADMIN_CORAL_MIST = "#FFDEDA" as const;
 
 /**
- * Fondo del sidebar (`--admin-sidebar-bg`): coral mist.
- * Independiente del canvas blanco, sin tonos oscuros/marrones.
+ * Fondo del sidebar (`--admin-sidebar-bg`): coral mist en claro.
+ * En oscuro se sobreescribe vía CSS (`ADMIN_SIDEBAR_BG_DARK`).
  */
 export const ADMIN_SIDEBAR_BG = ADMIN_CORAL_MIST;
+
+/** Sidebar en modo oscuro: cálido, bajo contraste con el canvas zinc-950. */
+export const ADMIN_SIDEBAR_BG_DARK = "#1A1413" as const;
 
 /** Paneles suaves (cuenta, direcciones) — blanco, alineado al canvas. */
 export const STORE_CHROME_BG = "#ffffff" as const;
 
 /**
- * Logo Berea (coral sobre rosa pálido) en sidebar mist — sin filtro;
- * el fondo del asset se integra con `--admin-sidebar-bg`.
+ * Logo Berea (coral, fondo transparente) — legible en sidebar mist y en oscuro.
  */
 export const ADMIN_BRAND_LOGO_ON_SIDEBAR_CLASS = "";
 

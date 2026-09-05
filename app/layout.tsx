@@ -10,6 +10,7 @@ import {
   ADMIN_CORAL_MIST,
   ADMIN_CORAL_SOFT,
   ADMIN_SIDEBAR_BG,
+  ADMIN_SIDEBAR_BG_DARK,
   STORE_CHROME_BG,
 } from "@/lib/admin-theme";
 import { storeCheckoutBootScriptSource } from "@/lib/store-checkout-nav";
@@ -64,6 +65,7 @@ export default function RootLayout({
         style={
           {
             "--admin-sidebar-bg": ADMIN_SIDEBAR_BG,
+            "--admin-sidebar-bg-dark": ADMIN_SIDEBAR_BG_DARK,
             "--admin-coral": ADMIN_CORAL,
             "--admin-coral-hover": ADMIN_CORAL_HOVER,
             "--admin-coral-deep": ADMIN_CORAL_DEEP,
