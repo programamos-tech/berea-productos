@@ -1,6 +1,9 @@
 "use client";
 
-import { productInputOnWhiteClass } from "@/components/admin/product-form-primitives";
+import {
+  adminFilterInputClass,
+  adminFilterLabelClass,
+} from "@/lib/admin-ui";
 
 type Category = { id: string; name: string };
 
@@ -24,45 +27,34 @@ export function ProductFiltersBar({
   categories,
   categoriesModalOpen = false,
 }: Props) {
-  const labelClass =
-    "mb-1.5 block text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-600";
-  const fieldClass = `${productInputOnWhiteClass} font-medium`;
-
   return (
     <form
       method="get"
       action="/admin/products"
-      className="grid gap-4 sm:grid-cols-12"
+      className="grid gap-2 sm:grid-cols-2 lg:grid-cols-12 lg:items-end lg:gap-3"
     >
       {categoriesModalOpen ? (
         <input type="hidden" name="categories" value="1" />
       ) : null}
       <input type="hidden" name="page" value="1" />
       <input type="hidden" name="per_page" value={String(defaultPerPage)} />
-      <div className="sm:col-span-5">
-        <label htmlFor="q" className={labelClass}>
+      <div className="min-w-0 sm:col-span-2 lg:col-span-5">
+        <label htmlFor="q" className={adminFilterLabelClass}>
           Nombre / código
         </label>
-        <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-stretch">
-          <input
-            id="q"
-            name="q"
-            type="search"
-            defaultValue={defaultQ}
-            placeholder="Buscar…"
-            enterKeyHint="search"
-            className={`${fieldClass} min-w-0 flex-1`}
-          />
-          <button
-            type="submit"
-            className="inline-flex shrink-0 items-center justify-center rounded-lg border border-rose-200/80 bg-rose-950 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-rose-900 dark:border-rose-400/30 dark:bg-rose-400/15 dark:text-rose-50 dark:hover:bg-rose-400/25"
-          >
-            Buscar
-          </button>
-        </div>
+        <input
+          id="q"
+          name="q"
+          type="search"
+          defaultValue={defaultQ}
+          placeholder="Buscar…"
+          enterKeyHint="search"
+          className={adminFilterInputClass}
+          autoComplete="off"
+        />
       </div>
-      <div className="sm:col-span-3">
-        <label htmlFor="status" className={labelClass}>
+      <div className="min-w-0 lg:col-span-3">
+        <label htmlFor="status" className={adminFilterLabelClass}>
           Estado
         </label>
         <select
@@ -70,7 +62,7 @@ export function ProductFiltersBar({
           name="status"
           defaultValue={defaultStatus}
           onChange={(e) => e.currentTarget.form?.requestSubmit()}
-          className={fieldClass}
+          className={adminFilterInputClass}
         >
           <option value="all">Todos</option>
           <option value="active">Publicados</option>
@@ -79,8 +71,8 @@ export function ProductFiltersBar({
           <option value="out">Sin stock</option>
         </select>
       </div>
-      <div className="sm:col-span-4">
-        <label htmlFor="category_id" className={labelClass}>
+      <div className="min-w-0 sm:col-span-2 lg:col-span-4">
+        <label htmlFor="category_id" className={adminFilterLabelClass}>
           Categoría
         </label>
         <select
@@ -88,7 +80,7 @@ export function ProductFiltersBar({
           name="category_id"
           defaultValue={defaultCategoryId}
           onChange={(e) => e.currentTarget.form?.requestSubmit()}
-          className={fieldClass}
+          className={adminFilterInputClass}
         >
           <option value="">Todas las categorías</option>
           {categories.map((c) => (

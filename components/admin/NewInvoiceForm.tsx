@@ -8,8 +8,10 @@ import {
   useRef,
   useState,
 } from "react";
+import { createPortal } from "react-dom";
 import { createQuickStoreCustomer } from "@/app/actions/admin/store-customers";
 import { AdminFormSubmitButton } from "@/components/admin/AdminFormSubmitButton";
+import { AdminPortalRoot } from "@/components/admin/AdminPortalRoot";
 import { createPosInvoiceAction } from "@/app/actions/admin/pos-invoice";
 import { adminCreateFailedMessage } from "@/lib/admin-create-failed-messages";
 import {
@@ -17,6 +19,7 @@ import {
   productLabelClass as labelClass,
   productSectionTitle as sectionTitle,
 } from "@/components/admin/product-form-primitives";
+import { adminButtonCancelClass } from "@/lib/admin-ui";
 import { formatCop, parseCopInputDigitsToInt } from "@/lib/money";
 import {
   parseStoreCustomerKind,
@@ -34,8 +37,20 @@ import {
 import type { QuotationEditDraft } from "@/lib/load-quotation-edit-draft";
 import { saleVatPercentLabel, unitPriceGrossCents } from "@/lib/product-vat-price";
 
-const cardSectionClass =
-  "rounded-xl border border-zinc-200/90 bg-white p-4 shadow-sm ring-1 ring-zinc-950/5 sm:p-6 dark:border-zinc-700/90 dark:bg-zinc-900 dark:shadow-none dark:ring-white/[0.06]";
+const sectionClass =
+  "border-t border-zinc-200/70 pt-4 dark:border-zinc-800";
+
+const btnIdle =
+  "inline-flex items-center justify-center rounded-lg border border-zinc-300 bg-white px-2.5 py-1.5 text-xs font-medium text-zinc-800 transition hover:border-zinc-400 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200 dark:hover:border-zinc-600 dark:hover:bg-zinc-800";
+
+const segmentTrackClass =
+  "mt-3 flex gap-1 rounded-lg border border-zinc-200/80 bg-zinc-50/80 p-1 dark:border-zinc-800 dark:bg-zinc-900/50";
+
+const segmentBtnActive =
+  "border border-zinc-300 bg-white text-zinc-900 shadow-sm dark:border-zinc-600 dark:bg-zinc-950 dark:text-zinc-100 dark:shadow-none";
+
+const segmentBtnIdle =
+  "text-zinc-600 hover:bg-white/70 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-950/70 dark:hover:text-zinc-100";
 
 type ProductHit = {
   id: string;
@@ -193,6 +208,29 @@ function IconHome() {
   );
 }
 
+function IconTrash({ className = "size-3.5" }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className={className}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.8}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M3 6h18" />
+      <path d="M8 6V4h8v2" />
+      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+      <path d="M10 11v6M14 11v6" />
+    </svg>
+  );
+}
+
+const removeLineBtnClass =
+  "inline-flex size-8 shrink-0 items-center justify-center rounded-lg text-red-600 transition hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/40";
+
 function useDebounced<T>(value: T, ms: number): T {
   const [v, setV] = useState(value);
   useEffect(() => {
@@ -209,16 +247,16 @@ export function NewInvoiceHeader({
 }) {
   const editing = Boolean(editQuotation);
   return (
-    <div className="mb-6 flex min-w-0 flex-col gap-4 sm:mb-8 sm:flex-row sm:items-start sm:justify-between">
+    <header className="mb-4 flex flex-wrap items-center justify-between gap-2 gap-y-2">
       <div className="min-w-0">
-        <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+        <p className="text-[11px] text-zinc-500">
           <Link
             href="/admin/ventas"
             className="hover:text-zinc-800 dark:hover:text-zinc-200"
           >
             Ventas
           </Link>
-          <span className="mx-1.5 text-zinc-300 dark:text-zinc-600">/</span>
+          <span className="mx-1.5 text-zinc-400">/</span>
           {editing && editQuotation ? (
             <>
               <Link
@@ -227,23 +265,23 @@ export function NewInvoiceHeader({
               >
                 Cotización #{editQuotation.invoiceRef}
               </Link>
-              <span className="mx-1.5 text-zinc-300 dark:text-zinc-600">/</span>
-              <span className="text-zinc-700 dark:text-zinc-300">Editar</span>
+              <span className="mx-1.5 text-zinc-400">/</span>
+              Editar
             </>
           ) : (
-            <span className="text-zinc-700 dark:text-zinc-300">Nueva factura</span>
+            "Nueva factura"
           )}
         </p>
-        <h1 className="mt-2 text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 sm:text-2xl md:text-3xl">
+        <h1 className="mt-0.5 text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 sm:text-2xl">
           {editing && editQuotation
             ? `Editar cotización #${editQuotation.invoiceRef}`
             : "Nueva factura"}
         </h1>
-        <p className="mt-2 max-w-2xl text-sm text-zinc-500 dark:text-zinc-400">
-          {editing
-            ? "Modificá cliente, productos o cantidades y guardá. Después podés facturarla desde el detalle."
-            : "Cliente Final viene por defecto. Podés buscar otro, agregar productos y elegir si es venta o cotización."}
-        </p>
+        {editing ? (
+          <p className="mt-1 text-sm text-zinc-500">
+            Modificá cliente, productos o cantidades y guardá.
+          </p>
+        ) : null}
       </div>
       <Link
         href={
@@ -251,14 +289,26 @@ export function NewInvoiceHeader({
             ? `/admin/orders/${editQuotation.orderId}`
             : "/admin/ventas"
         }
-        className="inline-flex size-10 shrink-0 items-center justify-center self-start rounded-lg border border-zinc-200/90 bg-white text-zinc-600 transition hover:bg-zinc-50 hover:text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100 sm:self-auto"
+        className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-zinc-300 bg-white text-zinc-700 transition hover:border-zinc-400 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200 dark:hover:border-zinc-600 dark:hover:bg-zinc-800"
+        title={editing ? "Volver a la cotización" : "Volver a ventas"}
         aria-label={editing ? "Volver a la cotización" : "Volver a ventas"}
       >
-        <span className="text-lg leading-none" aria-hidden>
-          ←
-        </span>
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2}
+          className="size-4"
+          aria-hidden
+        >
+          <path
+            d="m15 18-6-6 6-6"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
       </Link>
-    </div>
+    </header>
   );
 }
 
@@ -298,6 +348,7 @@ function ConfirmInvoiceButton({
       pendingLabel="Guardando…"
       disabled={disabled}
       data-invoice-confirm="true"
+      className="mt-4 w-full rounded-lg border border-[var(--admin-coral)] bg-[var(--admin-coral)] py-2.5 text-sm font-semibold text-white transition hover:border-[var(--admin-coral-hover)] hover:bg-[var(--admin-coral-hover)] disabled:cursor-not-allowed disabled:opacity-45"
     >
       {editingQuotation
         ? "Guardar cambios"
@@ -880,6 +931,17 @@ export function NewInvoiceForm({
     setCustomerHits([]);
   }
 
+  function clearCustomer() {
+    setCustomer(null);
+    setCustomerWholesalePct(0);
+    setPosCustomerKind("retail");
+    setShipChoice(null);
+    setShipOptions([]);
+    setCustomerQuery("");
+    setCustomerHits([]);
+    window.setTimeout(() => customerSearchInputRef.current?.focus(), 0);
+  }
+
   function onProductSearchKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key !== "Enter") return;
     e.preventDefault();
@@ -1084,26 +1146,24 @@ export function NewInvoiceForm({
   const banner = errorMessage(initialError);
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col gap-4">
       {banner ? (
-        <p className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-900 dark:border-red-900/50 dark:bg-red-950/35 dark:text-red-100">
-          {banner}
-        </p>
+        <p className="text-sm text-red-600 dark:text-red-400">{banner}</p>
       ) : null}
 
       <form
         action={createPosInvoiceAction}
-        className="space-y-6"
+        className="flex flex-col gap-0"
         onSubmit={onInvoiceFormSubmit}
       >
         <input type="hidden" name="payload" value={payloadJson} readOnly />
 
-        <div className="flex min-w-0 flex-col gap-6 xl:grid xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] xl:items-start xl:gap-8">
+        <div className="flex min-w-0 flex-col gap-6 xl:grid xl:grid-cols-[minmax(0,1fr)_minmax(28rem,32rem)] xl:items-start xl:gap-10">
           <section
-            className={`${cardSectionClass} order-2 xl:order-none xl:col-start-1 xl:row-start-1`}
+            className={`${sectionClass} order-2 xl:order-none xl:col-start-1 xl:row-start-1`}
           >
             <h2 className={sectionTitle}>Productos y kits</h2>
-            <div className="relative mt-5">
+            <div className="relative mt-3">
               <input
                 value={productQuery}
                 onChange={(e) => setProductQuery(e.target.value)}
@@ -1197,16 +1257,16 @@ export function NewInvoiceForm({
           </section>
 
           <section
-            className={`${cardSectionClass} order-3 xl:order-none xl:col-start-1 xl:row-start-2`}
+            className={`${sectionClass} order-3 xl:order-none xl:col-start-1 xl:row-start-2`}
           >
             <h2 className={sectionTitle}>Ítems seleccionados</h2>
             {lines.length === 0 && kitLines.length === 0 ? (
-              <p className="mt-5 text-sm text-zinc-500 dark:text-zinc-400">
+              <p className="mt-3 text-sm text-zinc-500 dark:text-zinc-400">
                 Agrega productos o kits desde la búsqueda.
               </p>
             ) : (
               <>
-                <ul className="mt-5 divide-y divide-zinc-200/80 dark:divide-zinc-700/90">
+                <ul className="mt-3 divide-y divide-zinc-100 dark:divide-zinc-800">
                 {lines.map((line) => {
                   const stock = Number(
                     line.product.stock_local ?? line.product.stock_quantity ?? 0,
@@ -1230,10 +1290,10 @@ export function NewInvoiceForm({
                   const discBtn =
                     "rounded-md px-2 py-1 text-[11px] font-medium transition";
                   return (
-                    <li key={line.key} className="space-y-2 py-4 first:pt-0">
+                    <li key={line.key} className="space-y-2 py-3 first:pt-0">
                       <div className="flex flex-wrap items-center gap-3">
                         <div className="min-w-0 flex-1">
-                          <p className="font-medium text-zinc-900 dark:text-zinc-100">
+                          <p className="text-sm text-zinc-800 dark:text-zinc-200">
                             {line.product.name}
                           </p>
                           <p className="text-xs text-zinc-500 dark:text-zinc-400">
@@ -1257,32 +1317,34 @@ export function NewInvoiceForm({
                         <div className="flex items-center gap-2">
                           <button
                             type="button"
-                            className="rounded-lg border border-zinc-200/90 bg-white px-2.5 py-1 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200 dark:hover:bg-zinc-800"
+                            className={btnIdle}
                             onClick={() => setQty(line.key, line.quantity - 1)}
                           >
                             −
                           </button>
-                          <span className="w-8 text-center text-sm font-medium tabular-nums text-zinc-900 dark:text-zinc-100">
+                          <span className="w-8 text-center text-sm tabular-nums text-zinc-900 dark:text-zinc-100">
                             {line.quantity}
                           </span>
                           <button
                             type="button"
-                            className="rounded-lg border border-zinc-200/90 bg-white px-2.5 py-1 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200 dark:hover:bg-zinc-800"
+                            className={btnIdle}
                             onClick={() => setQty(line.key, line.quantity + 1)}
                             disabled={line.quantity >= maxQtyThisLine}
                           >
                             +
                           </button>
                         </div>
-                        <p className="text-sm font-medium tabular-nums text-zinc-900 dark:text-zinc-100">
+                        <p className="text-sm tabular-nums text-zinc-800 dark:text-zinc-200">
                           {formatCop(lineTotal)}
                         </p>
                         <button
                           type="button"
                           onClick={() => removeLine(line.key)}
-                          className="text-xs font-medium text-red-600 hover:underline dark:text-red-400"
+                          className={removeLineBtnClass}
+                          title="Quitar"
+                          aria-label={`Quitar ${line.product.name}`}
                         >
-                          Quitar
+                          <IconTrash />
                         </button>
                       </div>
                       <div className="flex flex-wrap items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
@@ -1359,7 +1421,7 @@ export function NewInvoiceForm({
                     <li key={line.key} className="py-4">
                       <div className="flex flex-wrap items-center gap-3">
                         <div className="min-w-0 flex-1">
-                          <p className="font-medium text-zinc-900 dark:text-zinc-100">
+                          <p className="text-sm text-zinc-800 dark:text-zinc-200">
                             {line.kit.name}
                             <span className="ml-1.5 text-[11px] font-semibold uppercase tracking-wide text-violet-700 dark:text-violet-300">
                               Kit
@@ -1375,32 +1437,34 @@ export function NewInvoiceForm({
                         <div className="flex items-center gap-2">
                           <button
                             type="button"
-                            className="rounded-lg border border-zinc-200/90 bg-white px-2.5 py-1 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200 dark:hover:bg-zinc-800"
+                            className={btnIdle}
                             onClick={() => setKitQty(line.key, line.quantity - 1)}
                           >
                             −
                           </button>
-                          <span className="w-8 text-center text-sm font-medium tabular-nums text-zinc-900 dark:text-zinc-100">
+                          <span className="w-8 text-center text-sm tabular-nums text-zinc-900 dark:text-zinc-100">
                             {line.quantity}
                           </span>
                           <button
                             type="button"
-                            className="rounded-lg border border-zinc-200/90 bg-white px-2.5 py-1 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200 dark:hover:bg-zinc-800"
+                            className={btnIdle}
                             onClick={() => setKitQty(line.key, line.quantity + 1)}
                             disabled={line.quantity >= maxQtyThisLine}
                           >
                             +
                           </button>
                         </div>
-                        <p className="text-sm font-medium tabular-nums text-zinc-900 dark:text-zinc-100">
+                        <p className="text-sm tabular-nums text-zinc-800 dark:text-zinc-200">
                           {formatCop(lineTotal)}
                         </p>
                         <button
                           type="button"
                           onClick={() => removeKitLine(line.key)}
-                          className="text-xs font-medium text-red-600 hover:underline dark:text-red-400"
+                          className={removeLineBtnClass}
+                          title="Quitar"
+                          aria-label={`Quitar ${line.kit.name}`}
                         >
-                          Quitar
+                          <IconTrash />
                         </button>
                       </div>
                     </li>
@@ -1422,68 +1486,113 @@ export function NewInvoiceForm({
             className="
               contents
               xl:col-start-2 xl:row-start-1 xl:row-span-4
-              xl:flex xl:flex-col xl:gap-6
-              xl:sticky xl:top-24 xl:z-10 xl:self-start
+              xl:flex xl:flex-col xl:gap-0
+              xl:sticky xl:top-20 xl:z-10 xl:self-start
+              xl:border-l xl:border-zinc-200/70 xl:pl-8 dark:xl:border-zinc-800
+              2xl:pl-10
             "
           >
-            <section className={`${cardSectionClass} order-1 xl:order-none`}>
+            <section className={`${sectionClass} order-1 xl:order-none xl:border-t-0 xl:pt-0`}>
               <h2 className={sectionTitle}>
                 Cliente <span className="text-red-600 dark:text-red-400">*</span>
               </h2>
-              <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-stretch">
+              <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-stretch">
                 <div className="relative min-w-0 flex-1">
-                  <input
-                    ref={customerSearchInputRef}
-                    value={customerQuery}
-                    onChange={(e) => setCustomerQuery(e.target.value)}
-                    onKeyDown={onCustomerSearchKeyDown}
-                    placeholder={
-                      customer
-                        ? "Buscar otro cliente por nombre, cédula, email o teléfono"
-                        : "Buscar por nombre, cédula, email o teléfono"
-                    }
-                    className={inputClass}
-                    autoComplete="off"
-                  />
-                  {customerQuery.trim().length > 0 ? (
-                    <div className="absolute z-20 mt-1 max-h-52 w-full overflow-auto rounded-lg border border-zinc-200 bg-white py-1 shadow-md shadow-zinc-900/10 dark:border-zinc-700 dark:bg-zinc-900 dark:shadow-lg dark:shadow-black/30">
-                      {customerLoading ? (
-                        <p className="px-3 py-2 text-sm text-zinc-500 dark:text-zinc-400">
-                          Buscando…
-                        </p>
-                      ) : customerSearchError ? (
-                        <button
-                          type="button"
-                          onClick={() =>
-                            void searchCustomers(customerQuery.trim())
-                          }
-                          className="w-full px-3 py-2 text-left text-sm text-amber-800 hover:bg-amber-50 dark:text-amber-200 dark:hover:bg-amber-950/40"
+                  {customer && customerQuery.trim().length === 0 ? (
+                    <div
+                      className={`${inputClass} flex items-center gap-2 pr-2`}
+                    >
+                      <Link
+                        href={`/admin/customers/${customer.id}`}
+                        className="min-w-0 flex-1 truncate font-medium text-zinc-900 underline-offset-2 hover:underline dark:text-zinc-100"
+                        title="Ver ficha del cliente"
+                      >
+                        {customer.name}
+                      </Link>
+                      {posCustomerKind === "wholesale" ? (
+                        <span className="shrink-0 text-[11px] font-medium text-amber-700 dark:text-amber-300">
+                          Mayorista
+                          {customerWholesalePct > 0
+                            ? ` ${customerWholesalePct}%`
+                            : ""}
+                        </span>
+                      ) : null}
+                      <button
+                        type="button"
+                        onClick={clearCustomer}
+                        className="inline-flex size-7 shrink-0 items-center justify-center rounded-md text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+                        title="Quitar cliente"
+                        aria-label="Quitar cliente y buscar otro"
+                      >
+                        <svg
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth={2}
+                          className="size-3.5"
+                          aria-hidden
                         >
-                          {customerSearchError}
-                        </button>
-                      ) : customerHits.length === 0 ? (
-                        <p className="px-3 py-2 text-sm text-zinc-500 dark:text-zinc-400">
-                          Sin resultados.
-                        </p>
-                      ) : (
-                        customerHits.map((c) => (
-                          <button
-                            key={c.id}
-                            type="button"
-                            onClick={() => selectCustomer(c)}
-                            className="flex w-full flex-col items-start gap-0.5 px-3 py-2.5 text-left text-sm transition hover:bg-zinc-50/80 dark:hover:bg-zinc-800/90"
-                          >
-                            <span className="font-medium text-zinc-900 dark:text-zinc-100">
-                              {c.name}
-                            </span>
-                            <span className="text-xs text-zinc-500 dark:text-zinc-400">
-                              {[c.document_id, c.email, c.phone].filter(Boolean).join(" · ")}
-                            </span>
-                          </button>
-                        ))
-                      )}
+                          <path
+                            d="M18 6 6 18M6 6l12 12"
+                            strokeLinecap="round"
+                          />
+                        </svg>
+                      </button>
                     </div>
-                  ) : null}
+                  ) : (
+                    <>
+                      <input
+                        ref={customerSearchInputRef}
+                        value={customerQuery}
+                        onChange={(e) => setCustomerQuery(e.target.value)}
+                        onKeyDown={onCustomerSearchKeyDown}
+                        placeholder="Buscar por nombre, cédula, email o teléfono"
+                        className={inputClass}
+                        autoComplete="off"
+                      />
+                      {customerQuery.trim().length > 0 ? (
+                        <div className="absolute z-20 mt-1 max-h-52 w-full overflow-auto rounded-lg border border-zinc-200 bg-white py-1 shadow-md shadow-zinc-900/10 dark:border-zinc-700 dark:bg-zinc-900 dark:shadow-lg dark:shadow-black/30">
+                          {customerLoading ? (
+                            <p className="px-3 py-2 text-sm text-zinc-500 dark:text-zinc-400">
+                              Buscando…
+                            </p>
+                          ) : customerSearchError ? (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                void searchCustomers(customerQuery.trim())
+                              }
+                              className="w-full px-3 py-2 text-left text-sm text-amber-800 hover:bg-amber-50 dark:text-amber-200 dark:hover:bg-amber-950/40"
+                            >
+                              {customerSearchError}
+                            </button>
+                          ) : customerHits.length === 0 ? (
+                            <p className="px-3 py-2 text-sm text-zinc-500 dark:text-zinc-400">
+                              Sin resultados.
+                            </p>
+                          ) : (
+                            customerHits.map((c) => (
+                              <button
+                                key={c.id}
+                                type="button"
+                                onClick={() => selectCustomer(c)}
+                                className="flex w-full flex-col items-start gap-0.5 px-3 py-2.5 text-left text-sm transition hover:bg-zinc-50/80 dark:hover:bg-zinc-800/90"
+                              >
+                                <span className="font-medium text-zinc-900 dark:text-zinc-100">
+                                  {c.name}
+                                </span>
+                                <span className="text-xs text-zinc-500 dark:text-zinc-400">
+                                  {[c.document_id, c.email, c.phone]
+                                    .filter(Boolean)
+                                    .join(" · ")}
+                                </span>
+                              </button>
+                            ))
+                          )}
+                        </div>
+                      ) : null}
+                    </>
+                  )}
                 </div>
                 <button
                   type="button"
@@ -1491,56 +1600,24 @@ export function NewInvoiceForm({
                     setQuickError(null);
                     setQuickModalOpen(true);
                   }}
-                  className="inline-flex shrink-0 items-center justify-center rounded-lg border border-zinc-200/90 bg-white px-4 py-2.5 text-sm font-medium text-zinc-800 transition hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-zinc-800"
+                  className={`${btnIdle} shrink-0 px-3 py-2.5`}
                 >
                   + Nuevo cliente
                 </button>
               </div>
-              {customer ? (
-                <div className="mt-4 flex flex-wrap items-center gap-2 rounded-lg border border-zinc-200/90 bg-white/60 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-950/80">
-                  <span className="font-medium text-zinc-900 dark:text-zinc-100">
-                    {customer.name}
-                  </span>
-                  {posCustomerKind === "wholesale" ? (
-                    <span className="rounded-full border border-amber-200/90 bg-amber-50 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-amber-950 dark:border-amber-800/80 dark:bg-amber-950/40 dark:text-amber-100">
-                      Mayorista
-                      {customerWholesalePct > 0 ? ` · ${customerWholesalePct}%` : null}
-                    </span>
-                  ) : null}
-                  <button
-                    type="button"
-                    className="text-xs font-medium text-zinc-600 hover:text-zinc-900 hover:underline dark:text-zinc-400 dark:hover:text-zinc-100"
-                    onClick={() => {
-                      setCustomer(null);
-                      setCustomerWholesalePct(0);
-                      setPosCustomerKind("retail");
-                      setShipChoice(null);
-                      setShipOptions([]);
-                      setCustomerQuery("");
-                      setCustomerHits([]);
-                      window.setTimeout(
-                        () => customerSearchInputRef.current?.focus(),
-                        0,
-                      );
-                    }}
-                  >
-                    Cambiar
-                  </button>
-                </div>
-              ) : null}
             </section>
 
-            <section className={`${cardSectionClass} order-4 xl:order-none`}>
+            <section className={`${sectionClass} order-4 xl:order-none`}>
               <h2 className={`${sectionTitle} flex items-center gap-2`}>
                 <IconHome />
                 Envío
               </h2>
               {!customer ? (
-                <p className="mt-4 text-sm text-zinc-500 dark:text-zinc-400">
+                <p className="mt-3 text-sm text-zinc-500 dark:text-zinc-400">
                   Selecciona un cliente para habilitar el envío
                 </p>
               ) : (
-                <div className="mt-4 space-y-3">
+                <div className="mt-3 space-y-3">
                   {shipLoading ? (
                     <p className="text-xs text-zinc-500 dark:text-zinc-400">
                       Actualizando direcciones…
@@ -1564,30 +1641,28 @@ export function NewInvoiceForm({
                     </select>
                   </div>
                   {selectedShipOption ? (
-                    <div className="rounded-lg border border-zinc-200/90 bg-zinc-50/80 px-3 py-2.5 text-sm dark:border-zinc-700 dark:bg-zinc-950/50">
-                      <p className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
-                        {selectedShipOption.kind === "address" ? "Dirección elegida" : "Detalle"}
-                      </p>
-                      <p className="mt-1 font-medium text-zinc-900 dark:text-zinc-100">
+                    <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                      <span className="font-medium text-zinc-800 dark:text-zinc-200">
                         {selectedShipOption.label}
-                      </p>
-                      <p className="mt-1 whitespace-pre-line text-sm leading-relaxed text-zinc-600 dark:text-zinc-300">
+                      </span>
+                      <span className="mx-1.5 text-zinc-400">·</span>
+                      <span className="whitespace-pre-line">
                         {selectedShipOption.detail}
-                      </p>
-                    </div>
+                      </span>
+                    </p>
                   ) : null}
                   {shipChoice === "pickup" && savedAddressOptions.length > 0 ? (
-                    <div className="rounded-lg border border-dashed border-zinc-200/90 bg-white/50 px-3 py-2.5 dark:border-zinc-600 dark:bg-zinc-950/30">
-                      <p className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+                    <div className="border-t border-dashed border-zinc-200/80 pt-3 dark:border-zinc-700">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
                         Otras direcciones guardadas
                       </p>
-                      <ul className="mt-2 space-y-2 text-sm text-zinc-700 dark:text-zinc-300">
+                      <ul className="mt-2 space-y-1.5 text-sm text-zinc-600 dark:text-zinc-400">
                         {savedAddressOptions.map((o) => (
                           <li key={o.id}>
-                            <span className="font-medium text-zinc-900 dark:text-zinc-100">
+                            <span className="font-medium text-zinc-800 dark:text-zinc-200">
                               {o.label}
                             </span>
-                            <span className="text-zinc-500 dark:text-zinc-400"> — </span>
+                            <span className="text-zinc-400"> — </span>
                             <span className="whitespace-pre-line">{o.detail}</span>
                           </li>
                         ))}
@@ -1598,16 +1673,16 @@ export function NewInvoiceForm({
               )}
             </section>
 
-            <section className={`${cardSectionClass} order-5 xl:order-none`}>
+            <section className={`${sectionClass} order-5 xl:order-none`}>
               <h2 className={sectionTitle}>Tipo de documento</h2>
               {editingQuotation ? (
-                <p className="mt-4 rounded-lg border border-amber-200/90 bg-amber-50/70 px-3 py-2.5 text-sm text-amber-950 dark:border-amber-800/60 dark:bg-amber-950/30 dark:text-amber-100">
+                <p className="mt-3 text-sm text-amber-700 dark:text-amber-300">
                   Estás editando una cotización. Al guardar se actualiza la misma
                   pre-factura (sin cobro ni descuento de stock).
                 </p>
               ) : (
                 <>
-              <div className="mt-4 flex rounded-xl border border-zinc-200/90 bg-zinc-100 p-1 dark:border-zinc-700 dark:bg-zinc-800/80">
+              <div className={segmentTrackClass}>
                 {(
                   [
                     {
@@ -1629,10 +1704,8 @@ export function NewInvoiceForm({
                       type="button"
                       onClick={() => setDocumentKind(tab.id)}
                       className={[
-                        "flex flex-1 flex-col items-center justify-center gap-0.5 rounded-lg px-2 py-2.5 text-center transition",
-                        active
-                          ? "border border-zinc-300 bg-white text-zinc-900 shadow-sm dark:border-zinc-600 dark:bg-zinc-950 dark:text-zinc-100 dark:shadow-none"
-                          : "text-zinc-600 hover:bg-white/80 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-900/70 dark:hover:text-zinc-100",
+                        "flex flex-1 flex-col items-center justify-center gap-0.5 rounded-md px-2 py-2 text-center transition",
+                        active ? segmentBtnActive : segmentBtnIdle,
                       ].join(" ")}
                     >
                       <span className="text-xs font-semibold sm:text-sm">{tab.label}</span>
@@ -1644,9 +1717,8 @@ export function NewInvoiceForm({
                 })}
               </div>
               {documentKind === "quotation" ? (
-                <p className="mt-3 text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
-                  La cotización queda como pre-factura: sin descontar stock ni registrar cobro.
-                  Desde el detalle podés editarla, descargarla y facturarla después.
+                <p className="mt-2 text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
+                  Queda como pre-factura: sin descontar stock ni registrar cobro.
                 </p>
               ) : null}
                 </>
@@ -1654,9 +1726,9 @@ export function NewInvoiceForm({
             </section>
 
             {documentKind === "sale" ? (
-            <section className={`${cardSectionClass} order-5 xl:order-none`}>
+            <section className={`${sectionClass} order-5 xl:order-none`}>
               <h2 className={sectionTitle}>Método de pago</h2>
-              <div className="mt-4 flex rounded-xl border border-zinc-200/90 bg-zinc-100 p-1 dark:border-zinc-700 dark:bg-zinc-800/80">
+              <div className={segmentTrackClass}>
                 {(
                   [
                     { id: "cash" as const, label: "Efectivo", icon: <IconCoin /> },
@@ -1671,10 +1743,8 @@ export function NewInvoiceForm({
                       type="button"
                       onClick={() => setPayment(tab.id)}
                       className={[
-                        "flex flex-1 flex-col items-center justify-center gap-1 rounded-lg px-2 py-2.5 text-center text-xs font-medium transition sm:flex-row sm:text-sm",
-                        active
-                          ? "border border-zinc-300 bg-white text-zinc-900 shadow-sm dark:border-zinc-600 dark:bg-zinc-950 dark:text-zinc-100 dark:shadow-none"
-                          : "text-zinc-600 hover:bg-white/80 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-900/70 dark:hover:text-zinc-100",
+                        "flex flex-1 flex-col items-center justify-center gap-1 rounded-md px-2 py-2 text-center text-xs font-medium transition sm:flex-row sm:text-sm",
+                        active ? segmentBtnActive : segmentBtnIdle,
                       ].join(" ")}
                     >
                       {tab.icon}
@@ -1685,7 +1755,7 @@ export function NewInvoiceForm({
               </div>
 
               {payment === "cash" ? (
-                <div className="mt-5 grid gap-4 sm:grid-cols-2">
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
                   <div>
                     <label className={labelClass}>Cuánto me dieron</label>
                     <input
@@ -1698,7 +1768,7 @@ export function NewInvoiceForm({
                   </div>
                   <div>
                     <label className={labelClass}>Cuánto regreso</label>
-                    <p className="mt-2 rounded-lg border border-zinc-200/90 bg-white/60 px-3 py-2.5 text-sm font-medium tabular-nums text-zinc-900 dark:border-zinc-700 dark:bg-zinc-950/80 dark:text-zinc-100">
+                    <p className="mt-1.5 text-sm font-medium tabular-nums text-zinc-900 dark:text-zinc-100">
                       {changeCents !== null ? formatCop(changeCents) : "—"}
                     </p>
                   </div>
@@ -1706,7 +1776,7 @@ export function NewInvoiceForm({
               ) : null}
 
               {payment === "transfer" ? (
-                <div className="mt-5">
+                <div className="mt-4">
                   <label className={labelClass}>Referencia (opcional)</label>
                   <input
                     value={transferRef}
@@ -1718,11 +1788,11 @@ export function NewInvoiceForm({
               ) : null}
 
               {payment === "mixed" ? (
-                <div className="mt-5 space-y-4">
+                <div className="mt-4 space-y-3">
                   <p className="text-xs text-zinc-500 dark:text-zinc-400">
                     Los importes en efectivo y transferencia deben sumar el total exacto.
                   </p>
-                  <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="grid gap-3 sm:grid-cols-2">
                     <div>
                       <label className={labelClass}>Efectivo</label>
                       <input
@@ -1752,16 +1822,13 @@ export function NewInvoiceForm({
             </section>
             ) : null}
 
-            <section className={`${cardSectionClass} order-6 xl:order-none`}>
+            <section className={`${sectionClass} order-6 xl:order-none`}>
               <h2 className={sectionTitle}>Resumen</h2>
-              <div className="mt-4 rounded-lg border border-zinc-200/90 bg-white/60 p-3 text-sm sm:p-4 dark:border-zinc-700 dark:bg-zinc-950/70">
-                <dl className="space-y-2 text-zinc-700 dark:text-zinc-300">
+              <dl className="mt-3 space-y-2 text-sm text-zinc-600 dark:text-zinc-400">
                   {wholesaleSavingsNetCents > 0 ? (
                     <>
                       <div className="flex justify-between gap-2">
-                        <dt className="text-zinc-500 dark:text-zinc-400">
-                          Subtotal (precio de lista)
-                        </dt>
+                        <dt>Subtotal (precio de lista)</dt>
                         <dd className="tabular-nums font-medium text-zinc-900 dark:text-zinc-100">
                           {formatCop(catalogNetSubtotalCents)}
                         </dd>
@@ -1778,12 +1845,12 @@ export function NewInvoiceForm({
                   ) : posCustomerKind === "wholesale" &&
                     customerWholesalePct <= 0 &&
                     lines.length > 0 ? (
-                    <div className="rounded-lg border border-amber-200/80 bg-amber-50/60 px-2.5 py-2 text-xs text-amber-950 dark:border-amber-800/60 dark:bg-amber-950/25 dark:text-amber-100">
+                    <p className="text-xs text-amber-700 dark:text-amber-300">
                       Cliente mayorista sin porcentaje de descuento configurado en su ficha.
-                    </div>
+                    </p>
                   ) : null}
                   <div className="flex justify-between gap-2">
-                    <dt className="text-zinc-500 dark:text-zinc-400">
+                    <dt>
                       Subtotal
                       {customerWholesalePct > 0 ? (
                         <span className="mt-0.5 block text-[10px] font-normal normal-case text-zinc-400 dark:text-zinc-500">
@@ -1795,34 +1862,27 @@ export function NewInvoiceForm({
                       {formatCop(subtotalCents)}
                     </dd>
                   </div>
-                  <div className="flex justify-between gap-2 border-t border-zinc-200/80 pt-2 dark:border-zinc-700/90">
-                    <dt className="text-zinc-500 dark:text-zinc-400">IVA</dt>
+                  <div className="flex justify-between gap-2 border-t border-zinc-200/70 pt-2 dark:border-zinc-800">
+                    <dt>IVA</dt>
                     <dd className="tabular-nums font-medium text-zinc-900 dark:text-zinc-100">
                       {formatCop(vatCents)}
                     </dd>
                   </div>
-                  <div className="flex justify-between gap-2 border-t border-zinc-200/80 pt-2 dark:border-zinc-700/90">
-                    <dt className="text-zinc-600 dark:text-zinc-400">Total</dt>
-                    <dd className="tabular-nums font-medium text-zinc-900 dark:text-zinc-100">
+                  <div className="flex justify-between gap-2 border-t border-zinc-200/70 pt-2 dark:border-zinc-800">
+                    <dt className="font-medium text-zinc-800 dark:text-zinc-200">
+                      {documentKind === "quotation" ? "Total cotizado" : "Total a cobrar"}
+                    </dt>
+                    <dd className="text-xl font-semibold tabular-nums tracking-tight text-zinc-900 dark:text-zinc-50">
                       {formatCop(totalCents)}
                     </dd>
                   </div>
-                </dl>
-              </div>
-              <div className="mt-5 border-t border-zinc-200/70 pt-5 dark:border-zinc-700/90">
-                <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
-                  {documentKind === "quotation" ? "Total cotizado" : "Total a cobrar"}
-                </p>
-                <p className="mt-1 text-xl font-medium tabular-nums text-zinc-900 dark:text-zinc-50 sm:text-2xl">
-                  {formatCop(totalCents)}
-                </p>
-              </div>
-              <p className="mt-5 text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
+              </dl>
+              <p className="mt-4 text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
                 {editingQuotation
                   ? "Los cambios reemplazan la cotización actual. Después podés facturarla desde el detalle."
                   : documentKind === "quotation"
-                    ? "Verificá cliente y productos. Se guarda como cotización (pre-factura) sin cobro ni descuento de stock."
-                    : "Verifica cliente, productos y pago antes de confirmar. La factura quedará registrada como venta en mostrador."}
+                    ? "Se guarda como cotización (pre-factura) sin cobro ni descuento de stock."
+                    : "Verificá cliente, productos y pago antes de confirmar."}
               </p>
               <ConfirmInvoiceButton
                 disabled={!canSubmit}
@@ -1834,101 +1894,110 @@ export function NewInvoiceForm({
         </div>
       </form>
 
-      {quickModalOpen ? (
-        <div className="fixed inset-0 z-[100] flex items-start justify-center overflow-y-auto bg-zinc-950/40 px-4 py-10 backdrop-blur-[1px] dark:bg-black/55 sm:py-16">
-          <button
-            type="button"
-            className="absolute inset-0 z-0 cursor-default"
-            aria-label="Cerrar"
-            onClick={closeQuickCustomerModal}
-          />
-          <div
-            className="relative z-10 mt-4 w-full max-w-md rounded-xl border border-zinc-200/90 bg-white p-6 shadow-xl dark:border-zinc-700 dark:bg-zinc-900 dark:shadow-[0_24px_64px_-24px_rgba(0,0,0,0.6)] sm:mt-8"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="quick-customer-title"
-          >
-            <div className="flex items-start justify-between gap-4">
-              <h2
-                id="quick-customer-title"
-                className="text-lg font-semibold text-zinc-900 dark:text-zinc-100"
-              >
-                Nuevo cliente rápido
-              </h2>
-              <button
-                type="button"
-                onClick={closeQuickCustomerModal}
-                className="rounded-lg p-1.5 text-lg leading-none text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700 dark:text-zinc-500 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
-                aria-label="Cerrar"
-              >
-                ×
-              </button>
-            </div>
-            <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-              Nombre y cédula para facturar ya. La factura en curso no se pierde.
-            </p>
-            <form onSubmit={submitQuickCustomer} className="mt-5 space-y-4">
-              {quickError ? (
-                <p className="rounded-lg border border-red-100 bg-red-50 px-3 py-2 text-sm text-red-900 dark:border-red-900/50 dark:bg-red-950/35 dark:text-red-100">
-                  {quickError}
-                </p>
-              ) : null}
-              <div>
-                <label htmlFor="quick-customer-name" className={labelClass}>
-                  Nombre <span className="text-red-600 dark:text-red-400">*</span>
-                </label>
-                <input
-                  ref={quickNameInputRef}
-                  id="quick-customer-name"
-                  value={quickName}
-                  onChange={(e) => setQuickName(e.target.value)}
-                  className={inputClass}
-                  placeholder="Nombre del cliente"
-                  autoComplete="name"
-                />
-              </div>
-              <div>
-                <label htmlFor="quick-customer-doc" className={labelClass}>
-                  Cédula / documento
-                </label>
-                <input
-                  id="quick-customer-doc"
-                  value={quickDocument}
-                  onChange={(e) => setQuickDocument(e.target.value)}
-                  className={inputClass}
-                  placeholder="Ej. 12.345.678"
-                  autoComplete="off"
-                />
-              </div>
-              <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+      {quickModalOpen
+        ? createPortal(
+            <AdminPortalRoot>
+              <>
                 <button
                   type="button"
+                  className="fixed inset-x-0 bottom-0 top-14 z-[100] bg-zinc-950/40 backdrop-blur-sm dark:bg-black/50 sm:top-16 lg:left-64"
+                  aria-label="Cerrar"
                   onClick={closeQuickCustomerModal}
-                  className="rounded-lg border border-zinc-200/90 bg-white px-4 py-2.5 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200 dark:hover:bg-zinc-800"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={quickPending}
-                  className="rounded-lg border border-rose-950 bg-rose-950 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-rose-900 hover:border-rose-900 disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-white"
-                >
-                  {quickPending ? "Guardando…" : "Crear y usar"}
-                </button>
-              </div>
-              <p className="text-center text-xs text-zinc-500 dark:text-zinc-400">
-                <Link
-                  href="/admin/customers/new?return=%2Fadmin%2Fventas%2Fnueva"
-                  className="font-medium text-zinc-700 underline decoration-zinc-300 underline-offset-2 hover:text-zinc-900 dark:text-zinc-300 dark:decoration-zinc-600 dark:hover:text-zinc-100"
-                  onClick={closeQuickCustomerModal}
-                >
-                  Ficha completa con direcciones y más datos
-                </Link>
-              </p>
-            </form>
-          </div>
-        </div>
-      ) : null}
+                />
+                <div className="pointer-events-none fixed inset-x-0 bottom-0 top-14 z-[101] flex items-center justify-center p-4 sm:top-16 sm:p-6 lg:left-64">
+                  <div
+                    className="pointer-events-auto relative w-full max-w-md rounded-2xl border border-zinc-200 bg-white p-6 shadow-xl dark:border-zinc-700 dark:bg-zinc-900 dark:shadow-[0_24px_64px_-24px_rgba(0,0,0,0.6)]"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="quick-customer-title"
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <h2
+                        id="quick-customer-title"
+                        className="text-lg font-semibold text-zinc-900 dark:text-zinc-100"
+                      >
+                        Nuevo cliente rápido
+                      </h2>
+                      <button
+                        type="button"
+                        onClick={closeQuickCustomerModal}
+                        className="rounded-lg p-1.5 text-lg leading-none text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700 dark:text-zinc-500 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
+                        aria-label="Cerrar"
+                      >
+                        ×
+                      </button>
+                    </div>
+                    <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+                      Nombre y cédula para facturar ya. La factura en curso no se
+                      pierde.
+                    </p>
+                    <form onSubmit={submitQuickCustomer} className="mt-5 space-y-4">
+                      {quickError ? (
+                        <p className="text-sm text-red-600 dark:text-red-400">
+                          {quickError}
+                        </p>
+                      ) : null}
+                      <div>
+                        <label htmlFor="quick-customer-name" className={labelClass}>
+                          Nombre{" "}
+                          <span className="text-red-600 dark:text-red-400">*</span>
+                        </label>
+                        <input
+                          ref={quickNameInputRef}
+                          id="quick-customer-name"
+                          value={quickName}
+                          onChange={(e) => setQuickName(e.target.value)}
+                          className={inputClass}
+                          placeholder="Nombre del cliente"
+                          autoComplete="name"
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="quick-customer-doc" className={labelClass}>
+                          Cédula / documento
+                        </label>
+                        <input
+                          id="quick-customer-doc"
+                          value={quickDocument}
+                          onChange={(e) => setQuickDocument(e.target.value)}
+                          className={inputClass}
+                          placeholder="Ej. 12.345.678"
+                          autoComplete="off"
+                        />
+                      </div>
+                      <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                        <button
+                          type="button"
+                          onClick={closeQuickCustomerModal}
+                          className={adminButtonCancelClass}
+                        >
+                          Cancelar
+                        </button>
+                        <button
+                          type="submit"
+                          disabled={quickPending}
+                          className="rounded-lg border border-[var(--admin-coral)] bg-[var(--admin-coral)] px-4 py-2.5 text-sm font-medium text-white transition hover:border-[var(--admin-coral-hover)] hover:bg-[var(--admin-coral-hover)] disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {quickPending ? "Guardando…" : "Crear y usar"}
+                        </button>
+                      </div>
+                      <p className="text-center text-xs text-zinc-500 dark:text-zinc-400">
+                        <Link
+                          href="/admin/customers/new?return=%2Fadmin%2Fventas%2Fnueva"
+                          className="font-medium text-zinc-700 underline decoration-zinc-300 underline-offset-2 hover:text-zinc-900 dark:text-zinc-300 dark:decoration-zinc-600 dark:hover:text-zinc-100"
+                          onClick={closeQuickCustomerModal}
+                        >
+                          Ficha completa con direcciones y más datos
+                        </Link>
+                      </p>
+                    </form>
+                  </div>
+                </div>
+              </>
+            </AdminPortalRoot>,
+            document.body,
+          )
+        : null}
     </div>
   );
 }

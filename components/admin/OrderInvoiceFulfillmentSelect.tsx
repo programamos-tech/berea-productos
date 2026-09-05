@@ -6,14 +6,24 @@ import { updateAdminOrderFulfillment } from "@/app/actions/admin/order-fulfillme
 import {
   ADMIN_FULFILLMENT_OPTIONS,
   isOrderFulfillmentStatus,
-  orderFulfillmentBadgeClass,
   type OrderFulfillmentStatus,
 } from "@/lib/order-fulfillment";
 
 function selectClassForFulfillment(status: OrderFulfillmentStatus): string {
   const base =
-    "w-full min-w-[170px] rounded-lg border px-3 py-2 text-sm font-semibold outline-none transition focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-offset-2 dark:focus-visible:ring-zinc-500 dark:focus-visible:ring-offset-zinc-900";
-  return `${base} ${orderFulfillmentBadgeClass(status)}`;
+    "w-full min-w-[150px] rounded-lg border bg-white px-2.5 py-1.5 text-xs font-medium outline-none transition focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-offset-2 dark:bg-zinc-950 dark:focus-visible:ring-zinc-500 dark:focus-visible:ring-offset-zinc-900";
+  switch (status) {
+    case "awaiting_payment":
+      return `${base} border-amber-300 text-amber-800 dark:border-amber-700/70 dark:text-amber-200`;
+    case "preparing":
+      return `${base} border-sky-300 text-sky-800 dark:border-sky-700/70 dark:text-sky-200`;
+    case "shipped":
+      return `${base} border-violet-300 text-violet-800 dark:border-violet-700/70 dark:text-violet-200`;
+    case "completed":
+      return `${base} border-emerald-300 text-emerald-800 dark:border-emerald-700/70 dark:text-emerald-200`;
+    default:
+      return `${base} border-zinc-300 text-zinc-700 dark:border-zinc-600 dark:text-zinc-200`;
+  }
 }
 
 export function OrderInvoiceFulfillmentSelect({

@@ -105,7 +105,7 @@ export default async function AdminHomePage({ searchParams }: PageProps) {
     <div className={reportsViewportClass}>
       <header className="flex shrink-0 flex-wrap items-center justify-between gap-2 gap-y-2">
         <div className="min-w-0">
-          <h1 className="text-lg font-semibold tracking-tight text-rose-950 dark:text-zinc-100 sm:text-xl">
+          <h1 className="text-lg font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 sm:text-xl">
             Reportes
           </h1>
           <ReportsHeaderMeta

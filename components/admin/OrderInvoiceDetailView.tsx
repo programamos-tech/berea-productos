@@ -5,19 +5,18 @@ import {
 } from "@/components/admin/OrderInvoiceHeaderControls";
 import { OrderQuotationActions } from "@/components/admin/OrderQuotationActions";
 import { OrderInvoiceFulfillmentSelect } from "@/components/admin/OrderInvoiceFulfillmentSelect";
-import { adminOwnerDisplayName } from "@/lib/admin-owner";
+import { StaticCopCents } from "@/components/admin/ReportsAnimatedFigures";
 import {
-  invoiceLegalName,
-  invoiceLogoPath,
-  invoiceStoreAddress,
-  invoiceStoreCity,
-  invoiceTaxNit,
-  invoiceTradeName,
-  storeBrand,
-  storeSupportEmail,
-  storeSupportHours,
-  storeSupportPhone,
-  storeTaxRegime,
+  invoiceLegalName as envInvoiceLegalName,
+  invoiceLogoPath as envInvoiceLogoPath,
+  invoiceStoreAddress as envInvoiceStoreAddress,
+  invoiceStoreCity as envInvoiceStoreCity,
+  invoiceTaxNit as envInvoiceTaxNit,
+  invoiceTradeName as envInvoiceTradeName,
+  storeSupportEmail as envStoreSupportEmail,
+  storeSupportHours as envStoreSupportHours,
+  storeSupportPhone as envStoreSupportPhone,
+  storeTaxRegime as envStoreTaxRegime,
 } from "@/lib/brand";
 import { formatCop } from "@/lib/money";
 import { getPublicSiteUrl } from "@/lib/public-site-url";
@@ -26,13 +25,18 @@ import {
   formatStoreInvoiceDateTime,
 } from "@/lib/store-datetime-format";
 import { STORE_BRAND } from "@/lib/store-theme";
+import type { InvoiceBrandFields } from "@/lib/tenant-brand";
 import {
-  ventaFormaPagoBadge,
-  ventaPagoRecibidoBadge,
+  ventaFormaPagoTone,
+  ventaPagoRecibidoTone,
 } from "@/lib/ventas-sales";
 
 const labelClass =
-  "text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-400 dark:text-zinc-500";
+  "text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500";
+
+const metaIconClass = "size-4 shrink-0 text-zinc-400 dark:text-zinc-500";
+const metaSepClass = "text-zinc-300 dark:text-zinc-600";
+const metaTextClass = "text-zinc-700 dark:text-zinc-300";
 
 type Line = {
   id: string;
@@ -44,12 +48,12 @@ type Line = {
   lineDiscountAmountCents: number;
 };
 
-function lineDiscountHint(line: Line): string | null {
+function lineDiscountColumn(line: Line): string | null {
   if (line.lineDiscountPercent != null && line.lineDiscountPercent > 0) {
-    return `Descuento ${line.lineDiscountPercent}% (neto de línea)`;
+    return `${line.lineDiscountPercent}%`;
   }
   if (line.lineDiscountAmountCents > 0) {
-    return `Descuento ${formatCop(line.lineDiscountAmountCents)} (neto de línea)`;
+    return formatCop(line.lineDiscountAmountCents);
   }
   return null;
 }
@@ -60,6 +64,10 @@ export type OrderInvoiceDetailViewProps = {
   status: string;
   customerName: string;
   customerEmail: string;
+  /** Perfil del cliente en admin, si existe (enlace al detalle). */
+  customerId?: string | null;
+  /** Quién registró la venta en mostrador (si hay log). */
+  sellerName?: string | null;
   /** Cédula / documento del cliente (perfil), si existe. */
   customerDocumentId?: string | null;
   /** Teléfono: pedido o perfil del cliente. */
@@ -88,6 +96,8 @@ export type OrderInvoiceDetailViewProps = {
   fulfillmentStatus?: string | null;
   /** Enlace al listado Ventas (p. ej. misma página y filtros). */
   ventasListHref?: string;
+  /** Marca de tirilla/factura (tenant brand → env fallback). */
+  invoiceBrand?: InvoiceBrandFields;
 };
 
 function IconClock({ className }: { className?: string }) {
@@ -124,22 +134,6 @@ function IconUser({ className }: { className?: string }) {
   );
 }
 
-function IconStore({ className }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.65}
-      className={className}
-      aria-hidden
-    >
-      <path d="M3 10h18v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V10Z" strokeLinejoin="round" />
-      <path d="M3 10V8l3-5h12l3 5v2" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
 function IconBuilding({ className }: { className?: string }) {
   return (
     <svg
@@ -161,7 +155,7 @@ function IconBuilding({ className }: { className?: string }) {
   );
 }
 
-function IconSpark({ className }: { className?: string }) {
+function IconSeller({ className }: { className?: string }) {
   return (
     <svg
       viewBox="0 0 24 24"
@@ -173,7 +167,10 @@ function IconSpark({ className }: { className?: string }) {
       className={className}
       aria-hidden
     >
-      <path d="M9.5 2 12 5.5 16 4l-2.5 4L20 12l-10.5 1.5L7 22l-2.5-6L2 12l5-2.5L9.5 2Z" />
+      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
     </svg>
   );
 }
@@ -193,6 +190,8 @@ export function OrderInvoiceDetailView(props: OrderInvoiceDetailViewProps) {
     status,
     customerName,
     customerEmail,
+    customerId = null,
+    sellerName = null,
     customerDocumentId = null,
     customerPhone = null,
     customerAddress = null,
@@ -211,16 +210,38 @@ export function OrderInvoiceDetailView(props: OrderInvoiceDetailViewProps) {
     checkoutPaymentMethod = null,
     fulfillmentStatus = null,
     ventasListHref = "/admin/ventas",
+    invoiceBrand,
   } = props;
+
+  const invoiceTradeName =
+    invoiceBrand?.invoiceTradeName ?? envInvoiceTradeName;
+  const invoiceLegalName =
+    invoiceBrand?.invoiceLegalName ?? envInvoiceLegalName;
+  const invoiceTaxNit = invoiceBrand?.invoiceTaxNit ?? envInvoiceTaxNit;
+  const storeTaxRegime = invoiceBrand?.storeTaxRegime ?? envStoreTaxRegime;
+  const invoiceStoreAddress =
+    invoiceBrand?.invoiceStoreAddress ?? envInvoiceStoreAddress;
+  const invoiceStoreCity =
+    invoiceBrand?.invoiceStoreCity ?? envInvoiceStoreCity;
+  const invoiceLogoPath =
+    invoiceBrand?.invoiceLogoSrc ??
+    invoiceBrand?.invoiceLogoPath ??
+    envInvoiceLogoPath;
+  const storeSupportPhone =
+    invoiceBrand?.storeSupportPhone ?? envStoreSupportPhone;
+  const storeSupportEmail =
+    invoiceBrand?.storeSupportEmail ?? envStoreSupportEmail;
+  const storeSupportHours =
+    invoiceBrand?.storeSupportHours ?? envStoreSupportHours;
 
   const isTransferWeb = checkoutPaymentMethod === "transfer";
   const isQuotation = status === "quotation";
   const docNoun = isQuotation ? "Cotización" : "Factura";
 
-  const pagoBadge = ventaFormaPagoBadge(wompiReference, {
+  const pagoTone = ventaFormaPagoTone(wompiReference, {
     checkoutPaymentMethod: checkoutPaymentMethod ?? undefined,
   });
-  const pagoRecibido = ventaPagoRecibidoBadge(status);
+  const pagoRecibido = ventaPagoRecibidoTone(status);
 
   const subtotalLines = lines.reduce(
     (s, l) => s + l.unitPriceCents * l.quantity,
@@ -252,495 +273,550 @@ export function OrderInvoiceDetailView(props: OrderInvoiceDetailViewProps) {
   const printDocumentId = customerDocumentId?.trim() || null;
   const printPhone = (customerPhone ?? shippingPhone)?.trim() || null;
   const printAddress = customerAddress?.trim() || null;
+  const showDirMeta =
+    hasShipping &&
+    Boolean(printAddress) &&
+    printAddress!.toLowerCase() !== ubicacionLine.toLowerCase();
+  const customerHref = customerId
+    ? `/admin/customers/${customerId}`
+    : null;
+  const isPosSale = Boolean(wompiReference?.trim().startsWith("POS:"));
+  const sellerLabel =
+    sellerName?.trim() ||
+    (isPosSale ? null : "En línea");
   const siteUrl = getPublicSiteUrl().replace(/^https?:\/\//, "");
   const contactEmail = storeSupportEmail;
 
   const th =
-    "px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-400 dark:text-zinc-500 md:px-5";
+    "pb-2 pr-4 text-left text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500";
+
+  const showTransferProofs =
+    (status === "pending" || status === "paid") &&
+    checkoutPaymentMethod === "transfer" &&
+    transferProofAttachments.length > 0;
 
   return (
     <div
       className={
         isQuotation
-          ? "quotation-letterhead-print w-full min-w-0 max-w-none space-y-6 px-3 sm:px-4 md:px-5 print:mx-auto print:max-w-none print:space-y-0 print:bg-white print:px-0 print:py-0 print:text-zinc-900 dark:print:bg-white"
-          : "invoice-ticket-print w-full min-w-0 max-w-none space-y-6 px-3 sm:px-4 md:px-5 print:mx-auto print:max-w-[72mm] print:space-y-2 print:bg-white print:px-0 print:py-0 print:text-zinc-900 print:leading-snug dark:print:bg-white"
+          ? "quotation-letterhead-print flex w-full min-w-0 max-w-none flex-col gap-4 print:mx-auto print:max-w-none print:gap-0 print:bg-white print:px-0 print:py-0 print:text-zinc-900 dark:print:bg-white"
+          : "invoice-ticket-print flex w-full min-w-0 max-w-none flex-col gap-4 print:mx-auto print:max-w-[72mm] print:gap-2 print:bg-white print:px-0 print:py-0 print:text-zinc-900 print:leading-snug dark:print:bg-white"
       }
     >
-      <nav className="text-sm text-zinc-500 print:hidden dark:text-zinc-400">
+      <header className="flex flex-wrap items-center justify-between gap-2 gap-y-2 print:hidden">
+        <div className="min-w-0">
+          <p className="text-[11px] text-zinc-500">
+            <Link
+              href={ventasListHref}
+              className="hover:text-zinc-800 dark:hover:text-zinc-200"
+            >
+              Ventas
+            </Link>
+            <span className="mx-1.5 text-zinc-400">/</span>
+            {docNoun} #{invoiceRef}
+          </p>
+          <h1 className="mt-0.5 text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 sm:text-2xl">
+            {docNoun} #{invoiceRef}
+          </h1>
+          <p className="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1.5 text-sm text-zinc-500">
+            <span className="inline-flex items-center gap-1.5">
+              <IconClock className={metaIconClass} />
+              <span className={`tabular-nums ${metaTextClass}`}>
+                {formatInvoiceDate(createdAt)}
+              </span>
+            </span>
+            <span className={metaSepClass} aria-hidden>
+              ·
+            </span>
+            <span className="inline-flex min-w-0 items-center gap-1.5">
+              <IconUser className={metaIconClass} />
+              {customerHref ? (
+                <Link
+                  href={customerHref}
+                  className="min-w-0 truncate font-medium text-zinc-800 underline-offset-2 transition hover:text-zinc-950 hover:underline dark:text-zinc-200 dark:hover:text-white"
+                >
+                  {customerName}
+                </Link>
+              ) : (
+                <span className={`min-w-0 truncate font-medium ${metaTextClass}`}>
+                  {customerName}
+                </span>
+              )}
+            </span>
+            <span className={metaSepClass} aria-hidden>
+              ·
+            </span>
+            <span className="inline-flex min-w-0 items-center gap-1.5">
+              <IconBuilding className={metaIconClass} />
+              <span className={`min-w-0 truncate ${metaTextClass}`}>
+                {ubicacionLine}
+              </span>
+            </span>
+            {sellerLabel ? (
+              <>
+                <span className={metaSepClass} aria-hidden>
+                  ·
+                </span>
+                <span className="inline-flex min-w-0 items-center gap-1.5">
+                  <IconSeller className={metaIconClass} />
+                  <span className={`min-w-0 truncate ${metaTextClass}`}>
+                    <span className="text-zinc-500">Vendió </span>
+                    <span className="font-medium text-zinc-800 dark:text-zinc-200">
+                      {sellerLabel}
+                    </span>
+                  </span>
+                </span>
+              </>
+            ) : null}
+            {printDocumentId ? (
+              <>
+                <span className={metaSepClass} aria-hidden>
+                  ·
+                </span>
+                <span>
+                  Cédula{" "}
+                  <span className="font-medium tabular-nums text-zinc-800 dark:text-zinc-200">
+                    {printDocumentId}
+                  </span>
+                </span>
+              </>
+            ) : null}
+            {printPhone ? (
+              <>
+                <span className={metaSepClass} aria-hidden>
+                  ·
+                </span>
+                <span>
+                  Tel.{" "}
+                  <span className="font-medium tabular-nums text-zinc-800 dark:text-zinc-200">
+                    {printPhone}
+                  </span>
+                </span>
+              </>
+            ) : null}
+            {showDirMeta ? (
+              <>
+                <span className={metaSepClass} aria-hidden>
+                  ·
+                </span>
+                <span className="min-w-0 break-words">
+                  Dir.{" "}
+                  <span className="font-medium text-zinc-800 dark:text-zinc-200">
+                    {printAddress}
+                  </span>
+                </span>
+              </>
+            ) : null}
+          </p>
+          {status === "cancelled" && cancellationReason?.trim() ? (
+            <p className="mt-1.5 text-sm text-red-600 dark:text-red-400">
+              <span className="font-medium">Anulación: </span>
+              {cancellationReason.trim()}
+            </p>
+          ) : null}
+        </div>
         <Link
           href={ventasListHref}
-          className="font-medium hover:text-zinc-800 dark:hover:text-zinc-200"
+          className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-zinc-300 bg-white text-zinc-700 transition hover:border-zinc-400 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200 dark:hover:border-zinc-600 dark:hover:bg-zinc-800"
+          title="Volver"
+          aria-label="Volver a ventas"
         >
-          Ventas
-        </Link>
-        <span className="mx-2 text-zinc-300 dark:text-zinc-600">/</span>
-        <span className="text-zinc-800 dark:text-zinc-200 print:text-zinc-800">
-          {docNoun} #{invoiceRef}
-        </span>
-      </nav>
-
-      <div className="rounded-2xl border border-zinc-200/90 bg-white p-4 shadow-[0_1px_0_0_rgb(24_24_27/0.04)] dark:border-zinc-700/90 dark:bg-zinc-900 dark:shadow-none sm:p-6 md:p-7 print:rounded-none print:border-0 print:p-0 print:shadow-none dark:print:border-0 dark:print:bg-white">
-        {isQuotation ? (
-          <div className="hidden print:block print:text-[10.5pt] print:leading-snug print:text-zinc-900">
-            <div
-              className="ql-accent-bar print:mb-4 print:h-2 print:w-full print:rounded-sm"
-              style={{ background: STORE_BRAND }}
-              aria-hidden
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+            className="size-4"
+            aria-hidden
+          >
+            <path
+              d="m15 18-6-6 6-6"
+              strokeLinecap="round"
+              strokeLinejoin="round"
             />
-            <div className="print:flex print:items-start print:justify-between print:gap-6">
-              <div className="print:flex print:min-w-0 print:flex-1 print:items-start print:gap-4">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={invoiceLogoPath}
-                  alt={invoiceTradeName}
-                  className="print:h-[22mm] print:w-auto print:max-w-[42mm] print:object-contain print:bg-black print:p-1"
-                />
-                <div className="print:min-w-0">
-                  <p className="print:text-[16pt] print:font-bold print:leading-tight print:tracking-tight print:text-zinc-950">
-                    {invoiceLegalName}
-                  </p>
-                  <p className="print:mt-0.5 print:text-[9.5pt] print:font-semibold print:text-[#be185d]">
-                    {invoiceTradeName} · {storeTaxRegime}
-                  </p>
-                  <p className="print:mt-1 print:text-[9pt] print:text-zinc-600">
-                    NIT {invoiceTaxNit}
-                  </p>
-                  {(invoiceStoreAddress || invoiceStoreCity) && (
-                    <p className="print:mt-0.5 print:text-[9pt] print:text-zinc-600">
-                      {[invoiceStoreAddress, invoiceStoreCity]
-                        .filter(Boolean)
-                        .join(" · ")}
-                    </p>
-                  )}
-                </div>
-              </div>
-              <div className="print:max-w-[52mm] print:text-right print:text-[9pt] print:leading-relaxed print:text-zinc-600">
-                <p className="print:font-semibold print:text-zinc-900">Contacto</p>
-                <p>Tel. {storeSupportPhone}</p>
-                <p>{contactEmail}</p>
-                <p>{siteUrl}</p>
-                {storeSupportHours ? <p>{storeSupportHours}</p> : null}
-              </div>
-            </div>
+          </svg>
+        </Link>
+      </header>
 
-            <div className="ql-rule print:mt-4 print:border-b-2 print:border-[#ff76a1]" />
-
-            <div className="print:mt-4 print:flex print:items-end print:justify-between print:gap-4">
-              <div>
-                <span className="ql-badge print:inline-block print:rounded print:border print:border-[#ffc2d6] print:bg-[#fff5f8] print:px-2 print:py-0.5 print:text-[8.5pt] print:font-bold print:uppercase print:tracking-[0.14em] print:text-[#be185d]">
-                  Cotización
-                </span>
-                <p className="print:mt-1.5 print:text-[18pt] print:font-bold print:leading-none print:text-zinc-950">
-                  #{invoiceRef}
-                </p>
-              </div>
-              <p className="print:text-right print:text-[10pt] print:tabular-nums print:text-zinc-600">
-                {formatInvoiceDateShort(createdAt)}
-              </p>
-            </div>
-
-            <div className="print:mt-4 print:rounded print:border print:border-zinc-200 print:bg-zinc-50 print:px-3 print:py-2.5">
-              <p className="print:text-[8pt] print:font-bold print:uppercase print:tracking-[0.12em] print:text-zinc-500">
-                Cliente
-              </p>
-              <p className="print:mt-0.5 print:text-[11pt] print:font-semibold print:text-zinc-950">
-                {customerName}
-              </p>
-              <div className="print:mt-1 print:space-y-0.5 print:text-[9.5pt] print:text-zinc-700">
-                {printDocumentId ? <p>Documento: {printDocumentId}</p> : null}
-                {printPhone ? <p>Teléfono: {printPhone}</p> : null}
-                {customerEmail && !customerEmail.includes("@local.invalid") ? (
-                  <p>Correo: {customerEmail}</p>
-                ) : null}
-                {printAddress ? <p>Dirección: {printAddress}</p> : null}
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="hidden print:block print:text-[10px] print:leading-snug print:text-black">
-            <div className="print:flex print:flex-col print:items-center print:pb-2">
+      {isQuotation ? (
+        <div className="hidden print:block print:text-[10.5pt] print:leading-snug print:text-zinc-900">
+          <div
+            className="ql-accent-bar print:mb-4 print:h-2 print:w-full print:rounded-sm"
+            style={{ background: STORE_BRAND }}
+            aria-hidden
+          />
+          <div className="print:flex print:items-start print:justify-between print:gap-6">
+            <div className="print:flex print:min-w-0 print:flex-1 print:items-start print:gap-4">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={invoiceLogoPath}
                 alt={invoiceTradeName}
-                className="print:mb-2 print:h-11 print:w-auto print:max-w-[58mm] print:object-contain"
+                className="print:h-[22mm] print:w-auto print:max-w-[42mm] print:object-contain print:bg-black print:p-1"
               />
-              <p className="print:text-center print:text-[12px] print:font-bold print:leading-tight">
-                {invoiceLegalName}
-              </p>
-              <p className="print:mt-0.5 print:text-center print:text-[10px] print:font-semibold">
-                NIT: {invoiceTaxNit} — {storeTaxRegime}
-              </p>
-              {invoiceStoreAddress ? (
-                <p className="print:mt-1 print:text-center print:text-[10px]">
-                  {invoiceStoreAddress}
+              <div className="print:min-w-0">
+                <p className="print:text-[16pt] print:font-bold print:leading-tight print:tracking-tight print:text-zinc-950">
+                  {invoiceLegalName}
                 </p>
-              ) : null}
-              {invoiceStoreCity ? (
-                <p className="print:text-center print:text-[10px] print:font-semibold">
-                  {invoiceStoreCity}
+                <p className="print:mt-0.5 print:text-[9.5pt] print:font-semibold print:text-[#be185d]">
+                  {invoiceTradeName} · {storeTaxRegime}
                 </p>
-              ) : null}
-              <p className="print:mt-1 print:text-center print:text-[10px] print:font-semibold">
-                TEL: {storeSupportPhone}
-              </p>
-              <p className="print:mt-2 print:text-center print:text-[10px] print:font-bold">
-                {docNoun} #{invoiceRef}
-              </p>
-              <p className="print:text-center print:text-[10px] print:tabular-nums">
-                {formatInvoiceDateShort(createdAt)}
-              </p>
+                <p className="print:mt-1 print:text-[9pt] print:text-zinc-600">
+                  NIT {invoiceTaxNit}
+                </p>
+                {(invoiceStoreAddress || invoiceStoreCity) && (
+                  <p className="print:mt-0.5 print:text-[9pt] print:text-zinc-600">
+                    {[invoiceStoreAddress, invoiceStoreCity]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </p>
+                )}
+              </div>
             </div>
-
-            <div className="print:my-2 print:border-t print:border-dashed print:border-black" />
-
-            <div className="print:space-y-1 print:px-0.5">
-              <p>
-                <span className="font-bold">Cliente:</span> {customerName}
-              </p>
-              {printDocumentId ? (
-                <p>
-                  <span className="font-bold">Cédula:</span> {printDocumentId}
-                </p>
-              ) : null}
-              {printPhone ? (
-                <p>
-                  <span className="font-bold">Teléfono:</span> {printPhone}
-                </p>
-              ) : null}
-              {printAddress ? (
-                <p className="print:break-words">
-                  <span className="font-bold">Dirección:</span> {printAddress}
-                </p>
-              ) : null}
+            <div className="print:max-w-[52mm] print:text-right print:text-[9pt] print:leading-relaxed print:text-zinc-600">
+              <p className="print:font-semibold print:text-zinc-900">Contacto</p>
+              <p>Tel. {storeSupportPhone}</p>
+              <p>{contactEmail}</p>
+              <p>{siteUrl}</p>
+              {storeSupportHours ? <p>{storeSupportHours}</p> : null}
             </div>
           </div>
-        )}
 
-        <div className="flex items-center justify-between gap-3 print:hidden">
-          <h1 className="min-w-0 flex-1 text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 sm:text-2xl md:text-3xl">
-            {docNoun} #{invoiceRef}
-          </h1>
-          <Link
-            href={ventasListHref}
-            className="inline-flex size-10 shrink-0 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-600 shadow-sm transition hover:border-zinc-300 hover:bg-zinc-50 hover:text-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300 dark:shadow-none dark:hover:border-zinc-600 dark:hover:bg-zinc-800 dark:hover:text-zinc-100 print:hidden"
-            aria-label="Volver a ventas"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              width={20}
-              height={20}
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={1.8}
-              strokeLinecap="round"
-              aria-hidden
-            >
-              <path d="M15 18 9 12l6-6" />
-            </svg>
-          </Link>
-        </div>
+          <div className="ql-rule print:mt-4 print:border-b-2 print:border-[#ff76a1]" />
 
-        <div className="mt-5 grid grid-cols-1 gap-3 text-sm text-zinc-700 print:hidden dark:text-zinc-300 sm:gap-4 md:grid-cols-2 md:gap-x-8 md:gap-y-3 xl:flex xl:flex-row xl:flex-wrap xl:gap-x-10 xl:gap-y-3">
-          <p className="flex min-w-0 items-start gap-2 sm:items-center">
-            <IconClock className="mt-0.5 size-4 shrink-0 text-zinc-400 dark:text-zinc-500 sm:mt-0" />
-            <span className="min-w-0 leading-snug">{formatInvoiceDate(createdAt)}</span>
-          </p>
-          <p className="flex min-w-0 items-start gap-2 sm:items-center">
-            <IconUser className="mt-0.5 size-4 shrink-0 text-zinc-400 dark:text-zinc-500 sm:mt-0" />
-            <span className="min-w-0 break-words leading-snug">
+          <div className="print:mt-4 print:flex print:items-end print:justify-between print:gap-4">
+            <div>
+              <span className="ql-badge print:inline-block print:rounded print:border print:border-[#ffc2d6] print:bg-[#fff5f8] print:px-2 print:py-0.5 print:text-[8.5pt] print:font-bold print:uppercase print:tracking-[0.14em] print:text-[#be185d]">
+                Cotización
+              </span>
+              <p className="print:mt-1.5 print:text-[18pt] print:font-bold print:leading-none print:text-zinc-950">
+                #{invoiceRef}
+              </p>
+            </div>
+            <p className="print:text-right print:text-[10pt] print:tabular-nums print:text-zinc-600">
+              {formatInvoiceDateShort(createdAt)}
+            </p>
+          </div>
+
+          <div className="print:mt-4 print:rounded print:border print:border-zinc-200 print:bg-zinc-50 print:px-3 print:py-2.5">
+            <p className="print:text-[8pt] print:font-bold print:uppercase print:tracking-[0.12em] print:text-zinc-500">
+              Cliente
+            </p>
+            <p className="print:mt-0.5 print:text-[11pt] print:font-semibold print:text-zinc-950">
               {customerName}
-              {customerEmail ? (
-                <span className="text-zinc-500 dark:text-zinc-400"> · {customerEmail}</span>
+            </p>
+            <div className="print:mt-1 print:space-y-0.5 print:text-[9.5pt] print:text-zinc-700">
+              {printDocumentId ? <p>Documento: {printDocumentId}</p> : null}
+              {printPhone ? <p>Teléfono: {printPhone}</p> : null}
+              {customerEmail && !customerEmail.includes("@local.invalid") ? (
+                <p>Correo: {customerEmail}</p>
               ) : null}
-            </span>
-          </p>
-          <p className="flex min-w-0 items-start gap-2 sm:items-center">
-            <IconStore className="mt-0.5 size-4 shrink-0 text-zinc-400 dark:text-zinc-500 sm:mt-0" />
-            <span className="min-w-0 break-words leading-snug">
-              <span className="text-zinc-500 dark:text-zinc-400">Tienda · </span>
-              {storeBrand}
-            </span>
-          </p>
-          <p className="flex min-w-0 items-start gap-2 sm:items-center">
-            <IconBuilding className="mt-0.5 size-4 shrink-0 text-zinc-400 dark:text-zinc-500 sm:mt-0" />
-            <span className="min-w-0 break-words leading-snug">{ubicacionLine}</span>
-          </p>
-          <p className="flex min-w-0 items-start gap-2 sm:items-center md:col-span-2 xl:col-span-1">
-            <IconSpark className="mt-0.5 size-4 shrink-0 text-zinc-400 dark:text-zinc-500 sm:mt-0" />
-            <span className="min-w-0 break-words leading-snug">{adminOwnerDisplayName}</span>
-          </p>
+              {printAddress ? <p>Dirección: {printAddress}</p> : null}
+            </div>
+          </div>
         </div>
+      ) : (
+        <div className="hidden print:block print:text-[10px] print:leading-snug print:text-black">
+          <div className="print:flex print:flex-col print:items-center print:pb-2">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={invoiceLogoPath}
+              alt={invoiceTradeName}
+              className="print:mb-2 print:h-11 print:w-auto print:max-w-[58mm] print:object-contain"
+            />
+            <p className="print:text-center print:text-[12px] print:font-bold print:leading-tight">
+              {invoiceLegalName}
+            </p>
+            <p className="print:mt-0.5 print:text-center print:text-[10px] print:font-semibold">
+              NIT: {invoiceTaxNit} — {storeTaxRegime}
+            </p>
+            {invoiceStoreAddress ? (
+              <p className="print:mt-1 print:text-center print:text-[10px]">
+                {invoiceStoreAddress}
+              </p>
+            ) : null}
+            {invoiceStoreCity ? (
+              <p className="print:text-center print:text-[10px] print:font-semibold">
+                {invoiceStoreCity}
+              </p>
+            ) : null}
+            <p className="print:mt-1 print:text-center print:text-[10px] print:font-semibold">
+              TEL: {storeSupportPhone}
+            </p>
+            <p className="print:mt-2 print:text-center print:text-[10px] print:font-bold">
+              {docNoun} #{invoiceRef}
+            </p>
+            <p className="print:text-center print:text-[10px] print:tabular-nums">
+              {formatInvoiceDateShort(createdAt)}
+            </p>
+          </div>
 
-        {(printPhone || printDocumentId || printAddress) && (
-          <div className="mt-3 space-y-1 text-sm text-zinc-600 print:hidden dark:text-zinc-400">
+          <div className="print:my-2 print:border-t print:border-dashed print:border-black" />
+
+          <div className="print:space-y-1 print:px-0.5">
+            <p>
+              <span className="font-bold">Cliente:</span> {customerName}
+            </p>
             {printDocumentId ? (
               <p>
-                Cédula{" "}
-                <span className="font-medium text-zinc-800 dark:text-zinc-200">{printDocumentId}</span>
+                <span className="font-bold">Cédula:</span> {printDocumentId}
               </p>
             ) : null}
             {printPhone ? (
               <p>
-                Tel.{" "}
-                <span className="font-medium text-zinc-800 dark:text-zinc-200">{printPhone}</span>
+                <span className="font-bold">Teléfono:</span> {printPhone}
               </p>
             ) : null}
             {printAddress ? (
-              <p className="break-words">
-                Dirección{" "}
-                <span className="font-medium text-zinc-800 dark:text-zinc-200">{printAddress}</span>
+              <p className="print:break-words">
+                <span className="font-bold">Dirección:</span> {printAddress}
               </p>
             ) : null}
           </div>
-        )}
+        </div>
+      )}
 
-        {status === "cancelled" && cancellationReason?.trim() ? (
-          <div className="mt-5 rounded-xl border border-red-100 bg-red-50/80 px-4 py-3 text-sm text-red-900 print:mt-3 print:rounded-md print:px-2 print:py-2 print:text-[10px] dark:border-red-900/50 dark:bg-red-950/35 dark:text-red-100 print:border-red-800 print:bg-red-50">
-            <p className="text-[10px] font-semibold uppercase tracking-wide text-red-700 dark:text-red-300">
-              Motivo de anulación
-            </p>
-            <p className="mt-1 whitespace-pre-wrap">{cancellationReason.trim()}</p>
-          </div>
-        ) : null}
+      {/* Pantalla: layout limpio estilo Reportes (impresión arriba en bloques hidden print:block) */}
+      <div className="print:hidden">
+        <div className="flex flex-col gap-6 border-t border-zinc-200/70 pt-4 dark:border-zinc-800 lg:grid lg:grid-cols-[minmax(0,1fr)_15rem] lg:items-start lg:gap-8">
+          <section className="reports-chart-reveal min-w-0">
+            {lines.length === 0 ? (
+              <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                No hay ítems en este pedido.
+              </p>
+            ) : (
+              <div className="max-h-[min(52dvh,28rem)] overflow-x-auto overflow-y-auto lg:max-h-[calc(100dvh-14rem)]">
+                <table className="min-w-full text-left text-[13px] leading-snug sm:text-sm">
+                  <thead className="sticky top-0 z-[1] bg-white dark:bg-zinc-950">
+                    <tr className="border-b border-zinc-200/70 dark:border-zinc-800">
+                      <th className={th}>Producto</th>
+                      <th className={`${th} w-12 text-right`}>Ud</th>
+                      <th className={`${th} w-28 text-right`}>P. unit.</th>
+                      <th className={`${th} w-24 text-right`}>Descuento</th>
+                      <th className={`${th} w-28 text-right pr-0`}>Subtotal</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {lines.map((line) => {
+                      const sub = line.unitPriceCents * line.quantity;
+                      const ref = line.reference?.trim();
+                      const disc = lineDiscountColumn(line);
+                      return (
+                        <tr
+                          key={line.id}
+                          className="border-b border-zinc-100/80 last:border-0 dark:border-zinc-800/80"
+                        >
+                          <td className="max-w-[28rem] py-2 pr-4 align-middle text-zinc-800 dark:text-zinc-200">
+                            <span className="block leading-snug">{line.name}</span>
+                            {ref ? (
+                              <span className="mt-0.5 block font-mono text-[11px] text-zinc-500">
+                                Ref. {ref}
+                              </span>
+                            ) : null}
+                          </td>
+                          <td className="py-2 pr-4 text-right tabular-nums text-zinc-700 dark:text-zinc-300">
+                            {line.quantity}
+                          </td>
+                          <td className="whitespace-nowrap py-2 pr-4 text-right tabular-nums text-zinc-600 dark:text-zinc-400">
+                            {formatCop(line.unitPriceCents)}
+                          </td>
+                          <td
+                            className={`whitespace-nowrap py-2 pr-4 text-right tabular-nums ${
+                              disc
+                                ? "text-amber-700 dark:text-amber-400"
+                                : "text-zinc-400 dark:text-zinc-600"
+                            }`}
+                          >
+                            {disc ?? "—"}
+                          </td>
+                          <td className="whitespace-nowrap py-2 text-right tabular-nums text-zinc-800 dark:text-zinc-200">
+                            {formatCop(sub)}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </section>
 
-        <div className="mt-6 grid grid-cols-1 gap-5 border-t border-zinc-100 pt-6 dark:border-zinc-800 sm:grid-cols-2 sm:gap-6 xl:grid-cols-5 xl:gap-6 print:mt-4 print:grid-cols-1 print:gap-3 print:border-t print:border-zinc-300 print:pt-3">
-          {!(totalsMatch && lines.length > 0) ? (
-          <div className="min-w-0 print:hidden">
-            <p className={labelClass}>Total</p>
-            <p className="mt-1 text-xl font-bold tabular-nums text-zinc-900 dark:text-zinc-50 sm:text-2xl">
-              {formatCop(totalCents)}
-            </p>
-          </div>
-          ) : null}
-          <div className="min-w-0 print:hidden">
-            <p className={labelClass}>Método de pago</p>
-            <p className="mt-2">
-              <span
-                className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${pagoBadge.className}`}
-              >
-                {pagoBadge.label}
-              </span>
-            </p>
-          </div>
-          <div className="min-w-0 print:hidden">
-            <p className={labelClass}>Estado del pago</p>
-            <p className="mt-2">
-              <span
-                className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${pagoRecibido.className}`}
-              >
+          <aside className="reports-chart-reveal shrink-0 space-y-5 border-t border-zinc-200/70 pt-4 dark:border-zinc-800 lg:sticky lg:top-3 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0 dark:lg:border-zinc-800">
+            {showShippingRow ? (
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between gap-3">
+                  <span className="text-zinc-500">Subtotal</span>
+                  <span className="tabular-nums font-medium text-zinc-900 dark:text-zinc-100">
+                    <StaticCopCents cents={subtotalLines} />
+                  </span>
+                </div>
+                <div className="flex justify-between gap-3">
+                  <span className="text-zinc-500">
+                    Envío
+                    {shippingCity?.trim() ? ` · ${shippingCity.trim()}` : ""}
+                  </span>
+                  <span className="tabular-nums font-medium text-zinc-900 dark:text-zinc-100">
+                    {shippingCents > 0 ? (
+                      <StaticCopCents cents={shippingCents} />
+                    ) : (
+                      "Gratis"
+                    )}
+                  </span>
+                </div>
+                <div className="flex justify-between gap-3 border-t border-zinc-200/70 pt-2 dark:border-zinc-800">
+                  <span className="font-semibold text-zinc-900 dark:text-zinc-100">
+                    Total
+                  </span>
+                  <span className="text-xl font-semibold tabular-nums tracking-tight text-zinc-900 dark:text-zinc-50">
+                    <StaticCopCents cents={totalCents} />
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <div>
+                <p className={labelClass}>Total</p>
+                <p className="mt-1.5 text-2xl font-semibold tabular-nums tracking-tight text-zinc-900 dark:text-zinc-50">
+                  <StaticCopCents cents={totalCents} />
+                </p>
+              </div>
+            )}
+
+            <div>
+              <p className={labelClass}>Método de pago</p>
+              <p className={`mt-1.5 text-sm ${pagoTone.className}`}>{pagoTone.label}</p>
+            </div>
+            <div>
+              <p className={labelClass}>Estado del pago</p>
+              <p className={`mt-1.5 text-sm ${pagoRecibido.className}`}>
                 {pagoRecibido.label}
-              </span>
-            </p>
-          </div>
-          <div className="min-w-0 print:hidden">
-            <p className={labelClass}>Impresión</p>
-            <div className="mt-2">
-              {isQuotation ? (
-                <OrderQuotationActions
+              </p>
+            </div>
+
+            <div>
+              <p className={labelClass}>Impresión</p>
+              <div className="mt-1.5">
+                {isQuotation ? (
+                  <OrderQuotationActions
+                    orderId={orderId}
+                    invoiceRef={invoiceRef}
+                    customerEmail={customerEmail}
+                    totalCents={totalCents}
+                  />
+                ) : (
+                  <OrderInvoicePrintButton />
+                )}
+              </div>
+            </div>
+            <div>
+              <p className={labelClass}>
+                {isQuotation ? "Estado del documento" : "Estado de la factura"}
+              </p>
+              <div className="mt-1.5">
+                <OrderInvoiceStatusSelect
                   orderId={orderId}
                   invoiceRef={invoiceRef}
-                  customerEmail={customerEmail}
-                  totalCents={totalCents}
-                />
-              ) : (
-                <OrderInvoicePrintButton />
-              )}
-            </div>
-          </div>
-          <div className="min-w-0 print:hidden sm:col-span-2 xl:col-span-1 xl:text-right">
-            <p className={`${labelClass} xl:text-right`}>
-              {isQuotation ? "Estado del documento" : "Estado de la factura"}
-            </p>
-            <div className="mt-2 xl:ml-auto xl:max-w-[min(100%,220px)]">
-              <OrderInvoiceStatusSelect
-                orderId={orderId}
-                invoiceRef={invoiceRef}
-                currentStatus={status}
-              />
-            </div>
-          </div>
-          {isTransferWeb && status !== "cancelled" ? (
-            <div className="min-w-0 print:hidden sm:col-span-2 xl:col-span-1 xl:text-right">
-              <p className={`${labelClass} xl:text-right`}>Estado del envío</p>
-              <div className="mt-2 xl:ml-auto xl:max-w-[min(100%,220px)]">
-                <OrderInvoiceFulfillmentSelect
-                  orderId={orderId}
-                  currentStatus={fulfillmentStatus}
+                  currentStatus={status}
                 />
               </div>
             </div>
-          ) : null}
+            {isTransferWeb && status !== "cancelled" ? (
+              <div>
+                <p className={labelClass}>Estado del envío</p>
+                <div className="mt-1.5">
+                  <OrderInvoiceFulfillmentSelect
+                    orderId={orderId}
+                    currentStatus={fulfillmentStatus}
+                  />
+                </div>
+              </div>
+            ) : null}
+
+            {showTransferProofs ? (
+              <div>
+                <p className={labelClass}>Comprobantes</p>
+                <ul className="mt-1.5 space-y-1">
+                  {transferProofAttachments.map((att, idx) => {
+                    const label =
+                      att.filename?.trim() ||
+                      `Archivo ${idx + 1}`;
+                    return (
+                      <li key={`${att.createdAt}-${idx}`}>
+                        <a
+                          href={att.signedUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block truncate text-xs font-medium text-sky-700 underline-offset-2 hover:underline dark:text-sky-400"
+                        >
+                          {label}
+                        </a>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            ) : null}
+          </aside>
         </div>
       </div>
 
-      {(status === "pending" || status === "paid") &&
-      checkoutPaymentMethod === "transfer" &&
-      transferProofAttachments.length > 0 ? (
-        <div className="rounded-2xl border border-sky-200/90 bg-sky-50/40 p-5 shadow-[0_1px_0_0_rgb(24_24_27/0.04)] dark:border-sky-800/60 dark:bg-sky-950/25 dark:shadow-none md:p-7 print:hidden">
-          <p className={labelClass}>Comprobantes de transferencia</p>
-          <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-            Archivos enviados por el cliente desde la tienda web.
-          </p>
-          <ul className="mt-5 grid gap-4 sm:grid-cols-2">
-            {transferProofAttachments.map((att, idx) => {
-              const isPdf =
-                (att.filename?.toLowerCase().endsWith(".pdf") ?? false) ||
-                att.signedUrl.toLowerCase().includes("application/pdf");
-              return (
-                <li
-                  key={`${att.createdAt}-${idx}`}
-                  className="overflow-hidden rounded-xl border border-zinc-200/90 bg-white dark:border-zinc-700/90 dark:bg-zinc-900"
-                >
-                  <a
-                    href={att.signedUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500"
-                  >
-                    {isPdf ? (
-                      <div className="flex min-h-[120px] flex-col items-center justify-center gap-2 bg-zinc-50 px-4 py-8 dark:bg-zinc-950/80">
-                        <span className="text-sm font-semibold text-zinc-800 dark:text-zinc-100">
-                          PDF
-                        </span>
-                        <span className="text-xs text-sky-700 underline dark:text-sky-400">
-                          Abrir archivo
-                        </span>
-                      </div>
-                    ) : (
-                      /* URL firmada de Supabase Storage; `next/image` no aplica sin dominio fijo en remotePatterns. */
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={att.signedUrl}
-                        alt={att.filename ? `Comprobante ${att.filename}` : "Comprobante de pago"}
-                        className="max-h-56 w-full object-contain bg-zinc-50 dark:bg-zinc-950/50"
-                      />
-                    )}
-                  </a>
-                  <div className="border-t border-zinc-100 px-3 py-2 text-xs text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
-                    <span className="tabular-nums">{formatInvoiceDate(att.createdAt)}</span>
-                    {att.filename ? (
-                      <span className="mt-0.5 block truncate font-medium text-zinc-700 dark:text-zinc-300">
-                        {att.filename}
-                      </span>
-                    ) : null}
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        </div>
-      ) : null}
-
-      <div className="rounded-2xl border border-zinc-200/90 bg-white p-5 shadow-[0_1px_0_0_rgb(24_24_27/0.04)] dark:border-zinc-700/90 dark:bg-zinc-900 dark:shadow-none md:p-7 print:rounded-none print:border-0 print:p-0 print:shadow-none dark:print:border-0 dark:print:bg-white">
-        <p className={`${labelClass} print:hidden`}>
-          {isQuotation ? "Productos de la cotización" : "Productos de la factura"}
-        </p>
-
-        {lines.length === 0 ? (
-          <p className="mt-6 text-sm text-zinc-500 dark:text-zinc-400">No hay ítems en este pedido.</p>
-        ) : (
+      {/* PRINT-ONLY: tablas + totales (pantalla ya tiene layout compacto arriba) */}
+      <div className="hidden print:block">
+        {lines.length === 0 ? null : (
           <>
-            <div className="mt-2 hidden print:block">
-              {isQuotation ? (
-                <table className="ql-table w-full border-collapse text-[10pt] text-zinc-900">
-                  <thead>
-                    <tr>
-                      <th className="py-2 pr-2 text-left text-[8pt] font-bold uppercase tracking-[0.1em]">
-                        Cant.
-                      </th>
-                      <th className="py-2 pr-2 text-left text-[8pt] font-bold uppercase tracking-[0.1em]">
-                        Descripción
-                      </th>
-                      <th className="w-[22mm] py-2 pr-2 text-right text-[8pt] font-bold uppercase tracking-[0.1em]">
-                        V. unit.
-                      </th>
-                      <th className="w-[26mm] py-2 text-right text-[8pt] font-bold uppercase tracking-[0.1em]">
-                        Total
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {lines.map((line) => {
-                      const sub = line.unitPriceCents * line.quantity;
-                      const ref = line.reference?.trim();
-                      return (
-                        <tr key={`print-${line.id}`} className="align-top">
-                          <td className="border-b border-zinc-100 py-2 pr-2 tabular-nums font-semibold">
-                            {line.quantity}
-                          </td>
-                          <td className="border-b border-zinc-100 py-2 pr-2">
-                            <span className="block break-words font-medium leading-snug">
-                              {line.name}
-                            </span>
-                            {ref ? (
-                              <span className="mt-0.5 block font-mono text-[8pt] text-zinc-500">
-                                Ref. {ref}
-                              </span>
-                            ) : null}
-                          </td>
-                          <td className="border-b border-zinc-100 py-2 pr-2 text-right tabular-nums">
-                            {formatCop(line.unitPriceCents)}
-                          </td>
-                          <td className="border-b border-zinc-100 py-2 text-right tabular-nums font-semibold">
-                            {formatCop(sub)}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              ) : (
-                <table className="w-full border-collapse text-[10px] text-black">
-                  <thead>
-                    <tr className="border-b-2 border-black">
-                      <th className="w-8 py-1 text-left font-bold">Cant.</th>
-                      <th className="py-1 text-left font-bold">Artículo</th>
-                      <th className="w-[4.5rem] py-1 text-right font-bold">Total</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {lines.map((line) => {
-                      const sub = line.unitPriceCents * line.quantity;
-                      const ref = line.reference?.trim();
-                      return (
-                        <tr
-                          key={`print-${line.id}`}
-                          className="border-b border-dashed border-zinc-500 align-top"
-                        >
-                          <td className="py-1.5 tabular-nums font-semibold">
-                            {line.quantity}
-                          </td>
-                          <td className="py-1.5 pr-1">
-                            <span className="block break-words font-medium leading-snug">
-                              {line.name}
-                            </span>
-                            {ref ? (
-                              <span className="block font-mono text-[9px] text-zinc-800">
-                                Ref. {ref}
-                              </span>
-                            ) : null}
-                          </td>
-                          <td className="py-1.5 text-right tabular-nums font-bold">
-                            {formatCop(sub)}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              )}
-            </div>
-
-            <div className="mt-5 overflow-x-auto print:hidden">
-              <table className="w-full min-w-[640px] text-sm">
+            {isQuotation ? (
+              <table className="ql-table w-full border-collapse text-[10pt] text-zinc-900">
                 <thead>
-                  <tr className="border-b border-zinc-100 dark:border-zinc-800">
-                    <th className={th}>Producto</th>
-                    <th className={th}>Cant. pedida</th>
-                    <th className={th}>P. unit.</th>
-                    <th className={th}>Cant.</th>
-                    <th className={`${th} text-right`}>Subtotal</th>
+                  <tr>
+                    <th className="py-2 pr-2 text-left text-[8pt] font-bold uppercase tracking-[0.1em]">
+                      Cant.
+                    </th>
+                    <th className="py-2 pr-2 text-left text-[8pt] font-bold uppercase tracking-[0.1em]">
+                      Descripción
+                    </th>
+                    <th className="w-[22mm] py-2 pr-2 text-right text-[8pt] font-bold uppercase tracking-[0.1em]">
+                      V. unit.
+                    </th>
+                    <th className="w-[26mm] py-2 text-right text-[8pt] font-bold uppercase tracking-[0.1em]">
+                      Total
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {lines.map((line) => {
+                    const sub = line.unitPriceCents * line.quantity;
+                    const ref = line.reference?.trim();
+                    return (
+                      <tr key={`print-${line.id}`} className="align-top">
+                        <td className="border-b border-zinc-100 py-2 pr-2 tabular-nums font-semibold">
+                          {line.quantity}
+                        </td>
+                        <td className="border-b border-zinc-100 py-2 pr-2">
+                          <span className="block break-words font-medium leading-snug">
+                            {line.name}
+                          </span>
+                          {ref ? (
+                            <span className="mt-0.5 block font-mono text-[8pt] text-zinc-500">
+                              Ref. {ref}
+                            </span>
+                          ) : null}
+                        </td>
+                        <td className="border-b border-zinc-100 py-2 pr-2 text-right tabular-nums">
+                          {formatCop(line.unitPriceCents)}
+                        </td>
+                        <td className="border-b border-zinc-100 py-2 text-right tabular-nums font-semibold">
+                          {formatCop(sub)}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            ) : (
+              <table className="w-full border-collapse text-[10px] text-black">
+                <thead>
+                  <tr className="border-b-2 border-black">
+                    <th className="w-8 py-1 text-left font-bold">Cant.</th>
+                    <th className="py-1 text-left font-bold">Artículo</th>
+                    <th className="w-[4.5rem] py-1 text-right font-bold">Total</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -749,32 +825,23 @@ export function OrderInvoiceDetailView(props: OrderInvoiceDetailViewProps) {
                     const ref = line.reference?.trim();
                     return (
                       <tr
-                        key={line.id}
-                        className="border-b border-zinc-100 bg-white last:border-0 dark:border-zinc-800 dark:bg-zinc-900"
+                        key={`print-${line.id}`}
+                        className="border-b border-dashed border-zinc-500 align-top"
                       >
-                        <td className="px-4 py-4 font-medium text-zinc-900 dark:text-zinc-100 md:px-5">
-                          <span>{line.name}</span>
+                        <td className="py-1.5 tabular-nums font-semibold">
+                          {line.quantity}
+                        </td>
+                        <td className="py-1.5 pr-1">
+                          <span className="block break-words font-medium leading-snug">
+                            {line.name}
+                          </span>
                           {ref ? (
-                            <span className="mt-0.5 block font-mono text-xs font-normal text-zinc-400 dark:text-zinc-500">
-                              ({ref})
-                            </span>
-                          ) : null}
-                          {lineDiscountHint(line) ? (
-                            <span className="mt-0.5 block text-xs font-normal text-amber-800 dark:text-amber-500/90">
-                              {lineDiscountHint(line)}
+                            <span className="block font-mono text-[9px] text-zinc-800">
+                              Ref. {ref}
                             </span>
                           ) : null}
                         </td>
-                        <td className="px-4 py-4 tabular-nums text-zinc-700 dark:text-zinc-300 md:px-5">
-                          {line.quantity}
-                        </td>
-                        <td className="px-4 py-4 tabular-nums text-zinc-700 dark:text-zinc-300 md:px-5">
-                          {formatCop(line.unitPriceCents)}
-                        </td>
-                        <td className="px-4 py-4 tabular-nums text-zinc-700 dark:text-zinc-300 md:px-5">
-                          {line.quantity}
-                        </td>
-                        <td className="px-4 py-4 text-right font-semibold tabular-nums text-zinc-900 dark:text-zinc-100 md:px-5">
+                        <td className="py-1.5 text-right tabular-nums font-bold">
                           {formatCop(sub)}
                         </td>
                       </tr>
@@ -782,29 +849,29 @@ export function OrderInvoiceDetailView(props: OrderInvoiceDetailViewProps) {
                   })}
                 </tbody>
               </table>
-            </div>
+            )}
 
-            <div className="mt-6 flex justify-end print:mt-4 print:break-inside-avoid">
+            <div className="mt-4 flex justify-end print:break-inside-avoid">
               <div
                 className={
                   isQuotation
-                    ? "ql-total-box w-full max-w-xs rounded-xl border border-[#ff76a1] bg-[#fff5f8] px-5 py-4 print:max-w-[70mm] print:rounded print:px-3 print:py-3"
-                    : "w-full max-w-xs rounded-xl border border-zinc-200 bg-zinc-50/80 px-5 py-4 dark:border-zinc-700 dark:bg-zinc-950/80 print:max-w-none print:border-0 print:bg-white print:px-0 print:py-0"
+                    ? "ql-total-box w-full max-w-[70mm] rounded border border-[#ff76a1] bg-[#fff5f8] px-3 py-3"
+                    : "w-full max-w-none"
                 }
               >
                 {totalsMatch && !showShippingRow ? (
                   <div
                     className={
                       isQuotation
-                        ? "flex justify-between gap-4 print:text-[11pt]"
-                        : "flex justify-between gap-4 border-t-2 border-black pt-2 print:pt-2 dark:border-zinc-700/90"
+                        ? "flex justify-between gap-4 text-[11pt]"
+                        : "flex justify-between gap-4 border-t-2 border-black pt-2"
                     }
                   >
                     <span
                       className={
                         isQuotation
-                          ? "font-bold uppercase tracking-wide text-[#be185d] print:text-[9pt]"
-                          : "font-bold text-zinc-900 print:text-[12px] print:text-black dark:text-zinc-200"
+                          ? "font-bold uppercase tracking-wide text-[9pt] text-[#be185d]"
+                          : "font-bold text-[12px] text-black"
                       }
                     >
                       TOTAL
@@ -812,8 +879,8 @@ export function OrderInvoiceDetailView(props: OrderInvoiceDetailViewProps) {
                     <span
                       className={
                         isQuotation
-                          ? "text-lg font-bold tabular-nums text-zinc-950 print:text-[13pt]"
-                          : "text-lg font-bold tabular-nums text-zinc-900 print:text-[13px] print:text-black dark:text-zinc-50"
+                          ? "text-[13pt] font-bold tabular-nums text-zinc-950"
+                          : "text-[13px] font-bold tabular-nums text-black"
                       }
                     >
                       {formatCop(totalCents)}
@@ -821,32 +888,32 @@ export function OrderInvoiceDetailView(props: OrderInvoiceDetailViewProps) {
                   </div>
                 ) : (
                   <>
-                    <div className="flex justify-between gap-4 text-sm print:text-[11px]">
-                      <span className="font-semibold text-zinc-700 print:text-black">
+                    <div className="flex justify-between gap-4 text-[11px]">
+                      <span className="font-semibold text-black">
                         Subtotal productos
                       </span>
-                      <span className="font-bold tabular-nums text-zinc-900 print:text-black">
+                      <span className="font-bold tabular-nums text-black">
                         {formatCop(subtotalLines)}
                       </span>
                     </div>
                     {showShippingRow ? (
-                      <div className="mt-2 flex justify-between gap-4 text-sm print:text-[11px]">
-                        <span className="font-semibold text-zinc-700 print:text-black">
+                      <div className="mt-2 flex justify-between gap-4 text-[11px]">
+                        <span className="font-semibold text-black">
                           Envío
                           {shippingCity?.trim()
                             ? ` · ${shippingCity.trim()}`
                             : ""}
                         </span>
-                        <span className="font-bold tabular-nums text-zinc-900 print:text-black">
+                        <span className="font-bold tabular-nums text-black">
                           {shippingCents > 0 ? formatCop(shippingCents) : "Gratis"}
                         </span>
                       </div>
                     ) : null}
-                    <div className="mt-3 flex justify-between gap-4 border-t-2 border-black pt-3 print:border-zinc-800 dark:border-zinc-700/90">
-                      <span className="font-bold text-zinc-900 print:text-[11px] print:text-black dark:text-zinc-200">
+                    <div className="mt-3 flex justify-between gap-4 border-t-2 border-black pt-3">
+                      <span className="font-bold text-[11px] text-black">
                         {isQuotation ? "Total cotizado" : "Total a pagar"}
                       </span>
-                      <span className="text-lg font-bold tabular-nums text-zinc-900 print:text-base print:text-black dark:text-zinc-50">
+                      <span className="text-base font-bold tabular-nums text-black">
                         {formatCop(totalCents)}
                       </span>
                     </div>

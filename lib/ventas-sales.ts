@@ -90,6 +90,28 @@ export function ventaFormaPagoBadge(
   };
 }
 
+/** Color de letra + bold (sin pastilla), para listados limpios. */
+export function ventaFormaPagoTone(
+  wompiReference: string | null | undefined,
+  opts?: VentaFormaPagoOpts,
+): { label: string; className: string } {
+  const { label } = ventaFormaPagoBadge(wompiReference, opts);
+  const r = wompiReference?.trim() ?? "";
+  if (r === "POS:cash") {
+    return { label, className: "font-semibold text-amber-700 dark:text-amber-300" };
+  }
+  if (r === "POS:transfer" || opts?.checkoutPaymentMethod === "transfer") {
+    return { label, className: "font-semibold text-sky-700 dark:text-sky-300" };
+  }
+  if (r === "POS:mixed" || r === "POS:quotation") {
+    return { label, className: "font-semibold text-violet-700 dark:text-violet-300" };
+  }
+  if (r.startsWith("POS:")) {
+    return { label, className: "font-semibold text-zinc-700 dark:text-zinc-300" };
+  }
+  return { label, className: "font-semibold text-indigo-700 dark:text-indigo-300" };
+}
+
 export type VentaPagoFilter = "all" | "cash" | "transfer" | "mixed" | "online";
 
 export function matchesVentaPagoFilter(
@@ -165,6 +187,46 @@ export function ventaPagoRecibidoBadge(status: string): { label: string; classNa
   }
 }
 
+/** Color de letra + bold (sin pastilla). */
+export function ventaPagoRecibidoTone(status: string): {
+  label: string;
+  className: string;
+} {
+  const { label } = ventaPagoRecibidoBadge(status);
+  switch (status) {
+    case "paid":
+      return {
+        label,
+        className: "font-semibold text-emerald-700 dark:text-emerald-400",
+      };
+    case "quotation":
+      return {
+        label,
+        className: "font-semibold text-violet-700 dark:text-violet-300",
+      };
+    case "pending":
+      return {
+        label,
+        className: "font-semibold text-amber-700 dark:text-amber-300",
+      };
+    case "failed":
+      return {
+        label,
+        className: "font-semibold text-zinc-500 dark:text-zinc-400",
+      };
+    case "cancelled":
+      return {
+        label,
+        className: "font-semibold text-red-600 dark:text-red-400",
+      };
+    default:
+      return {
+        label,
+        className: "font-semibold text-zinc-700 dark:text-zinc-300",
+      };
+  }
+}
+
 export function ventaEstadoBadge(status: string): { label: string; className: string } {
   switch (status) {
     case "paid":
@@ -203,6 +265,25 @@ export function ventaEstadoBadge(status: string): { label: string; className: st
         className:
           "bg-zinc-100 text-zinc-700 ring-1 ring-zinc-200/80 dark:bg-zinc-800/80 dark:text-zinc-200 dark:ring-zinc-600/70",
       };
+  }
+}
+
+/** Color de letra + bold (sin pastilla), para listados limpios. */
+export function ventaEstadoTone(status: string): { label: string; className: string } {
+  const { label } = ventaEstadoBadge(status);
+  switch (status) {
+    case "paid":
+      return { label, className: "font-semibold text-emerald-700 dark:text-emerald-400" };
+    case "quotation":
+      return { label, className: "font-semibold text-violet-700 dark:text-violet-300" };
+    case "cancelled":
+      return { label, className: "font-semibold text-red-600 dark:text-red-400" };
+    case "pending":
+      return { label, className: "font-semibold text-amber-700 dark:text-amber-300" };
+    case "failed":
+      return { label, className: "font-semibold text-zinc-500 dark:text-zinc-400" };
+    default:
+      return { label, className: "font-semibold text-zinc-700 dark:text-zinc-300" };
   }
 }
 

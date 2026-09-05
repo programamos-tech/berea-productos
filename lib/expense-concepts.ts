@@ -137,6 +137,36 @@ export function isValidEgresoTaxConcept(concept: string): boolean {
   return c !== EXPENSE_CONCEPT_OTHER_TAX && c.length >= 3;
 }
 
+/** Conceptos fijos para el filtro del listado (sin “Otro…” de texto libre). */
+export function expenseConceptFilterOptions(): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const o of [
+    ...EXPENSE_CONCEPT_OPTIONS,
+    ...EXPENSE_EGRESO_TAX_OPTIONS,
+  ]) {
+    if (
+      o.concept === EXPENSE_CONCEPT_OTHER ||
+      o.concept === EXPENSE_CONCEPT_OTHER_TAX
+    ) {
+      continue;
+    }
+    if (seen.has(o.concept)) continue;
+    seen.add(o.concept);
+    out.push(o.concept);
+  }
+  return out;
+}
+
+/** Valida un concepto de filtro contra el catálogo. */
+export function parseExpenseConceptFilter(
+  raw: string | null | undefined,
+): string | null {
+  const t = String(raw ?? "").trim();
+  if (!t || t === "all") return null;
+  return expenseConceptFilterOptions().includes(t) ? t : null;
+}
+
 /** Concepto espejo al registrar un abono en Proveedores. */
 export const EXPENSE_CONCEPT_SUPPLIER_PAYMENT = "Pago a proveedor";
 

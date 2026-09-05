@@ -3,6 +3,11 @@ import type { User } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
 import { withTimeout } from "@/lib/async-timeout";
 import { hasSupabaseAuthCookie } from "@/lib/supabase-auth-cookie";
+import {
+  resolveTenantFromHost,
+  TENANT_KIND_HEADER,
+  TENANT_SLUG_HEADER,
+} from "@/lib/tenancy";
 
 const MIDDLEWARE_AUTH_TIMEOUT_MS = 8_000;
 
@@ -44,23 +49,45 @@ function isCuentaPath(path: string) {
   return path === "/cuenta" || path.startsWith("/cuenta/");
 }
 
+/** Attach tenant host resolution for downstream RSC / route handlers. */
+function withTenantHeaders(
+  request: NextRequest,
+  response: NextResponse,
+): NextResponse {
+  const resolved = resolveTenantFromHost(request.headers.get("host"));
+  if (resolved.slug) {
+    response.headers.set(TENANT_SLUG_HEADER, resolved.slug);
+    request.headers.set(TENANT_SLUG_HEADER, resolved.slug);
+  }
+  response.headers.set(TENANT_KIND_HEADER, resolved.kind);
+  request.headers.set(TENANT_KIND_HEADER, resolved.kind);
+  return response;
+}
+
+function nextWithTenant(request: NextRequest): NextResponse {
+  return withTenantHeaders(request, NextResponse.next({ request }));
+}
+
 export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
 
   if (skipsMiddlewareAuth(path)) {
-    return NextResponse.next({ request });
+    return nextWithTenant(request);
   }
 
   // Admin (excepto login): solo cookie. El layout valida sesión/perfil.
   // Evita getUser en cada navegación (POS, ventas, etc.) — fuente típica de cuelgues.
   if (path.startsWith("/admin") && !path.startsWith("/admin/login")) {
     if (!hasSupabaseAuthCookie(request)) {
-      return NextResponse.redirect(new URL("/admin/login", request.url));
+      return withTenantHeaders(
+        request,
+        NextResponse.redirect(new URL("/admin/login", request.url)),
+      );
     }
-    return NextResponse.next({ request });
+    return nextWithTenant(request);
   }
 
-  let response = NextResponse.next({ request });
+  let response = nextWithTenant(request);
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
@@ -79,7 +106,7 @@ export async function middleware(request: NextRequest) {
             cookiesToSet.forEach(({ name, value }) =>
               request.cookies.set(name, value),
             );
-            response = NextResponse.next({ request });
+            response = nextWithTenant(request);
             cookiesToSet.forEach(({ name, value, options }) =>
               response.cookies.set(name, value, options),
             );
@@ -121,17 +148,23 @@ export async function middleware(request: NextRequest) {
         : { data: null };
 
     if (user && profile && cuentaPublicPaths.has(path)) {
-      return NextResponse.redirect(new URL("/admin", request.url));
+      return withTenantHeaders(
+        request,
+        NextResponse.redirect(new URL("/admin", request.url)),
+      );
     }
 
     if (!cuentaPublicPaths.has(path) && !user) {
       const next = new URL("/cuenta/entrar", request.url);
       next.searchParams.set("next", path + request.nextUrl.search);
-      return NextResponse.redirect(next);
+      return withTenantHeaders(request, NextResponse.redirect(next));
     }
 
     if (cuentaPublicPaths.has(path) && user && !profile) {
-      return NextResponse.redirect(new URL("/cuenta", request.url));
+      return withTenantHeaders(
+        request,
+        NextResponse.redirect(new URL("/cuenta", request.url)),
+      );
     }
   }
 
@@ -143,7 +176,10 @@ export async function middleware(request: NextRequest) {
         .eq("id", user.id)
         .maybeSingle();
       if (profile) {
-        return NextResponse.redirect(new URL("/admin", request.url));
+        return withTenantHeaders(
+          request,
+          NextResponse.redirect(new URL("/admin", request.url)),
+        );
       }
       const hasNoProfileError =
         request.nextUrl.searchParams.get("error") === "no_profile";
@@ -152,7 +188,7 @@ export async function middleware(request: NextRequest) {
         next.searchParams.set("error", "no_profile");
         next.searchParams.set("uid", user.id);
         if (user.email) next.searchParams.set("email", user.email);
-        return NextResponse.redirect(next);
+        return withTenantHeaders(request, NextResponse.redirect(next));
       }
     }
     return response;

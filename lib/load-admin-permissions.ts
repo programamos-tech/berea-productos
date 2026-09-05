@@ -14,6 +14,8 @@ async function loadAdminPermissionsUncached(): Promise<{
   userId: string;
   permissions: PermissionMap;
   jobRole: CollaboratorJobRole;
+  tenantId: string;
+  tenantSlug: string;
 } | null> {
   const supabase = await createSupabaseServerClient();
   const authResult = (await withTimeout(
@@ -26,7 +28,7 @@ async function loadAdminPermissionsUncached(): Promise<{
   const profileResult = await withTimeout(
     supabase
       .from("profiles")
-      .select("permissions, job_role")
+      .select("permissions, job_role, tenant_id, tenants!inner(slug)")
       .eq("id", user.id)
       .maybeSingle(),
     ADMIN_AUTH_TIMEOUT_MS,
@@ -45,13 +47,34 @@ async function loadAdminPermissionsUncached(): Promise<{
 
   if (!row) return null;
 
+  const tenantId = row.tenant_id as string | null;
+  if (!tenantId) {
+    console.error("[admin] profiles: missing tenant_id");
+    return null;
+  }
+
+  const tenantsJoin = row.tenants as { slug?: string } | { slug?: string }[] | null;
+  const tenantSlug = Array.isArray(tenantsJoin)
+    ? tenantsJoin[0]?.slug
+    : tenantsJoin?.slug;
+  if (!tenantSlug) {
+    console.error("[admin] profiles: missing tenant slug");
+    return null;
+  }
+
   const jobRole = normalizeCollaboratorJobRole(row.job_role as string | null);
   const permissions = mergePermissionsWithDefaults(
     row.permissions as PermissionMap | null,
     jobRole,
   );
 
-  return { userId: user.id, permissions, jobRole };
+  return {
+    userId: user.id,
+    permissions,
+    jobRole,
+    tenantId,
+    tenantSlug,
+  };
 }
 
 /** Una sola lectura de perfil por request (layout + página + permisos de sección). */

@@ -10,6 +10,7 @@ import { StoreWelcomeSignupModal } from "@/components/store/StoreWelcomeSignupMo
 import { StoreWelcomeDiscountBanner } from "@/components/store/StoreWelcomeDiscountBanner";
 import { StoreWhatsAppFloatingButton } from "@/components/store/StoreWhatsAppFloatingButton";
 import { StoreCartDrawerProvider } from "@/components/store/StoreCartDrawerProvider";
+import { StoreChromeShell } from "@/components/store/StoreChromeShell";
 import { resolveWelcomeModalCtaHref } from "@/lib/store-welcome-modal";
 import { STORE_HEADER_BG, STORE_HEADER_FG } from "@/lib/store-theme";
 import {
@@ -27,6 +28,35 @@ export default async function StoreLayout({
     getCachedBannerStoreCoupon(),
   ]);
 
+  const top = (
+    <>
+      <Suspense fallback={<StoreHeaderSkeleton />}>
+        <StoreHeader />
+      </Suspense>
+      {promoBanner ? (
+        <StoreWelcomeDiscountBanner dbCoupon={promoBanner} />
+      ) : null}
+    </>
+  );
+
+  const bottom = (
+    <>
+      <StoreFooter />
+      <StoreWhatsAppFloatingButton />
+      <StoreCookiesBanner />
+      {welcomeModal ? (
+        <StoreWelcomeSignupModal
+          title={welcomeModal.title}
+          description={welcomeModal.description}
+          imagePath={welcomeModal.image_path}
+          discountCode={welcomeModal.discount_code}
+          ctaLabel={welcomeModal.cta_label}
+          ctaHref={resolveWelcomeModalCtaHref(welcomeModal.cta_href)}
+        />
+      ) : null}
+    </>
+  );
+
   return (
     <StoreFavoritesProvider>
       <StoreCartDrawerProvider>
@@ -40,28 +70,9 @@ export default async function StoreLayout({
               } as CSSProperties
             }
           >
-            <Suspense fallback={<StoreHeaderSkeleton />}>
-              <StoreHeader />
-            </Suspense>
-            {promoBanner ? (
-              <StoreWelcomeDiscountBanner dbCoupon={promoBanner} />
-            ) : null}
-            <main className="flex-1">
-              <Suspense>{children}</Suspense>
-            </main>
-            <StoreFooter />
-            <StoreWhatsAppFloatingButton />
-            <StoreCookiesBanner />
-            {welcomeModal ? (
-              <StoreWelcomeSignupModal
-                title={welcomeModal.title}
-                description={welcomeModal.description}
-                imagePath={welcomeModal.image_path}
-                discountCode={welcomeModal.discount_code}
-                ctaLabel={welcomeModal.cta_label}
-                ctaHref={resolveWelcomeModalCtaHref(welcomeModal.cta_href)}
-              />
-            ) : null}
+            <StoreChromeShell top={top} bottom={bottom}>
+              <main className="flex-1">{children}</main>
+            </StoreChromeShell>
           </div>
         </StoreAuthModalProvider>
       </StoreCartDrawerProvider>

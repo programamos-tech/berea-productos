@@ -8,7 +8,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 const panelClass =
-  "absolute right-0 top-[calc(100%+0.35rem)] z-40 w-[min(100vw-1.5rem,16rem)] rounded-xl border border-rose-200/60 bg-white p-2 shadow-[0_16px_48px_-24px_rgba(190,24,93,0.18)] dark:border-zinc-700 dark:bg-zinc-900 dark:shadow-[0_16px_48px_-24px_rgba(0,0,0,0.55)]";
+  "absolute right-0 top-[calc(100%+0.35rem)] z-40 w-[min(100vw-1.5rem,16rem)] rounded-xl border border-red-200/60 bg-white p-2 shadow-[0_16px_48px_-24px_rgba(220,38,38,0.18)] dark:border-zinc-700 dark:bg-zinc-900 dark:shadow-[0_16px_48px_-24px_rgba(0,0,0,0.55)]";
 
 function sentenceCase(label: string): string {
   const t = label.trim();
@@ -69,14 +69,14 @@ export function ReportsMonthFilter({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="inline-flex items-center gap-2 rounded-lg border border-rose-200/70 bg-white px-2.5 py-1.5 text-xs font-medium text-rose-950 shadow-[0_1px_2px_0_rgb(190_24_93/0.06)] transition hover:border-rose-300/80 hover:bg-rose-50/50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:shadow-none dark:hover:border-zinc-600 dark:hover:bg-zinc-800"
+        className="inline-flex items-center gap-2 rounded-lg border border-red-200/70 bg-white px-2.5 py-1.5 text-xs font-medium text-red-950 shadow-[0_1px_2px_0_rgb(220_38_38/0.06)] transition hover:border-red-300/80 hover:bg-red-50/50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:shadow-none dark:hover:border-zinc-600 dark:hover:bg-zinc-800"
         aria-expanded={open}
         aria-haspopup="listbox"
       >
         <span className="tabular-nums">{summary}</span>
         <svg
           viewBox="0 0 24 24"
-          className={`size-4 shrink-0 text-rose-900/45 transition dark:text-zinc-400 ${open ? "rotate-180" : ""}`}
+          className={`size-4 shrink-0 text-red-900/45 transition dark:text-zinc-400 ${open ? "rotate-180" : ""}`}
           fill="none"
           stroke="currentColor"
           strokeWidth={2}
@@ -104,8 +104,8 @@ export function ReportsMonthFilter({
                     onClick={() => selectMonth(ym)}
                     className={`w-full rounded-lg px-3 py-2 text-left text-sm transition ${
                       active
-                        ? "bg-rose-800 font-semibold text-white dark:bg-rose-600"
-                        : "font-medium text-rose-950 hover:bg-rose-50/80 dark:text-zinc-100 dark:hover:bg-zinc-800"
+                        ? "bg-red-800 font-semibold text-white dark:bg-red-600"
+                        : "font-medium text-red-950 hover:bg-red-50/80 dark:text-zinc-100 dark:hover:bg-zinc-800"
                     }`}
                   >
                     {label}

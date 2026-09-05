@@ -3,16 +3,16 @@ import { formatCop, formatCopCompact } from "@/lib/money";
 import type { TicketTrendPoint } from "@/lib/customer-ticket-trend";
 import type { ReportSalesTrendComparison } from "@/lib/admin-reports-data";
 
-/** Shared report chart palette (professional, consistent). */
+/** Shared report chart palette (rojo base, no rosa). */
 export const REPORT_CHART = {
-  primary: "#be123c",
-  primaryDark: "#fda4af",
+  primary: "#ED7464",
+  primaryDark: "#FFBDB5",
   secondary: "#a1a1aa",
   secondaryDark: "#71717a",
   grid: "#27272a",
   gridLight: "#f4f4f5",
   positive: "#10b981",
-  negative: "#f43f5e",
+  negative: "#ef4444",
 } as const;
 
 function xLabelForPoint(p: TicketTrendPoint) {
@@ -234,7 +234,7 @@ export function ReportSalesWeekTrendChart({
           strokeWidth={2.25}
           strokeLinecap="round"
           strokeLinejoin="round"
-          className="dark:[stroke:#fda4af]"
+          className="dark:[stroke:#f87171]"
         />
 
         {trend.map((t, i) => (
@@ -246,7 +246,7 @@ export function ReportSalesWeekTrendChart({
               fill="#09090b"
               stroke={REPORT_CHART.primary}
               strokeWidth={1.5}
-              className="dark:fill-zinc-950 dark:[stroke:#fda4af]"
+              className="dark:fill-zinc-950 dark:[stroke:#f87171]"
             />
           </g>
         ))}

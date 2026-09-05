@@ -135,7 +135,7 @@ export async function closeCashRegisterSession(formData: FormData) {
   const difference = countedCash - expected;
 
   // Validar antes del token: si falla, pueden reintentar con el mismo formulario.
-  if (difference !== 0 && !notes) {
+  if (!notes) {
     redirectCaja("notes_required");
   }
 

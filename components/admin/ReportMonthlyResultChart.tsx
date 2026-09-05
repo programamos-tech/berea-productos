@@ -234,7 +234,7 @@ export function ReportMonthlyResultChart({
           strokeWidth={2.25}
           strokeLinecap="round"
           strokeLinejoin="round"
-          className="dark:[stroke:#fda4af]"
+          className="dark:[stroke:#f87171]"
         />
 
         {months.map((m, i) => {
@@ -253,7 +253,7 @@ export function ReportMonthlyResultChart({
                     r={10}
                     fill={REPORT_CHART.primary}
                     fillOpacity={0.12}
-                    className="dark:[fill:#fda4af] dark:[fill-opacity:0.18]"
+                    className="dark:[fill:#f87171] dark:[fill-opacity:0.18]"
                   />
                 ) : null}
                 <circle
@@ -263,7 +263,7 @@ export function ReportMonthlyResultChart({
                   fill="#09090b"
                   stroke={REPORT_CHART.primary}
                   strokeWidth={1.75}
-                  className="dark:fill-zinc-950 dark:[stroke:#fda4af]"
+                  className="dark:fill-zinc-950 dark:[stroke:#f87171]"
                 />
                 <circle
                   cx={xAt(i)}

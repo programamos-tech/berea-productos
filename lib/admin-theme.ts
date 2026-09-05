@@ -1,29 +1,41 @@
 /**
- * Fondo del sidebar (`--admin-sidebar-bg` en `app/layout.tsx`): blanco,
- * el rosa queda solo en acentos (bordes, botones, marca).
+ * Tema del backoffice — coral + sidebar independiente (ERP).
+ *
+ * Coral base:  #ED7464
+ * Sidebar:     mist coral claro (#FFDEDA) — fresco, limpio, tipografía oscura
+ * Soft:        #FFBDB5
  */
-export const ADMIN_SIDEBAR_BG = "#ffffff" as const;
+export const ADMIN_CORAL = "#ED7464" as const;
+export const ADMIN_CORAL_HOVER = "#D96558" as const;
+export const ADMIN_CORAL_DEEP = "#A65046" as const;
+export const ADMIN_CORAL_SOFT = "#FFBDB5" as const;
+export const ADMIN_CORAL_MIST = "#FFDEDA" as const;
 
-/** Paneles suaves (cuenta, direcciones) — blanco, alineado al backoffice. */
+/**
+ * Fondo del sidebar (`--admin-sidebar-bg`): coral mist.
+ * Independiente del canvas blanco, sin tonos oscuros/marrones.
+ */
+export const ADMIN_SIDEBAR_BG = ADMIN_CORAL_MIST;
+
+/** Paneles suaves (cuenta, direcciones) — blanco, alineado al canvas. */
 export const STORE_CHROME_BG = "#ffffff" as const;
 
 /**
- * Logo del panel (PNG blanco sobre transparente): silueta oscura en fondo claro;
- * en `data-admin-theme="dark"` sin filtro para ver el blanco sobre zinc.
+ * Logo Berea (coral sobre rosa pálido) en sidebar mist — sin filtro;
+ * el fondo del asset se integra con `--admin-sidebar-bg`.
  */
-export const ADMIN_BRAND_LOGO_ON_SIDEBAR_CLASS =
-  "[filter:brightness(0)_saturate(1)] dark:[filter:none]";
+export const ADMIN_BRAND_LOGO_ON_SIDEBAR_CLASS = "";
 
 /**
- * `logo-berea12.png` va blanco sobre negro opaco (no igual al PNG de Milagros).
- * Para que en claro se lea como la silueta de Milagros (`brightness(0)` sobre transparente):
- * invertimos → el negro pasa a claro sobre el lienzo interno → `multiply` con el blanco del
- * sidebar hace que ese “fondo negro invertido” desaparezca y solo quede la marca en tinta oscura.
- * En oscuro, `screen` hace que el negro caiga contra el zinc y las letras queden claras, sin caja negra.
+ * Firma Berea sobre sidebar claro (misma lógica que antes en fondo blanco).
  */
 export const ADMIN_BEREA_SIGNATURE_ON_SIDEBAR_CLASS =
-  "invert mix-blend-multiply dark:invert-0 dark:mix-blend-screen";
+  "invert mix-blend-multiply";
 
-/** Tamaño del wordmark Berea junto al de Milagros en el sidebar. */
+/** Tamaño del wordmark Berea (firma) junto a “Experiencia por”. */
 export const ADMIN_BEREA_MARK_IMG_CLASS =
   "block h-8 w-auto max-w-[9.5rem] object-contain object-center sm:h-9 sm:max-w-[10.5rem]";
+
+/** Logo producto Berea (hero) en cabecera del sidebar. */
+export const ADMIN_SIDEBAR_PRODUCT_LOGO_CLASS =
+  "block h-auto w-full max-w-[9.5rem] object-contain object-center sm:max-w-[10.5rem]";

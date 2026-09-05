@@ -78,7 +78,7 @@ export function StoreMotivationalOverlay({
 
   return createPortal(
     <div
-      className={`fixed inset-0 ${zIndexClass} flex items-center justify-center bg-[#fff8fb]/95 px-6 backdrop-blur-sm`}
+      className={`fixed inset-0 ${zIndexClass} flex items-center justify-center bg-[#fff8fb] px-6`}
       role="status"
       aria-live="polite"
       aria-busy="true"

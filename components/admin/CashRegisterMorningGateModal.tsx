@@ -85,10 +85,9 @@ export function CashRegisterMorningGateModal({
             <p className="mt-1 text-sm font-medium text-zinc-800 dark:text-zinc-200">
               {name}
             </p>
-            <p className="mt-1.5 text-sm leading-relaxed text-zinc-600 dark:text-zinc-300">
-              Iniciamos el día · {businessDayLabel}. Confirmá el efectivo que quedó
-              del cierre anterior. Los $100.000 de cambio no se cargan acá. Sin
-              abrir la caja no podés facturar ni usar el resto del panel.
+            <p className="mt-1.5 text-sm leading-snug text-zinc-600 dark:text-zinc-300">
+              {businessDayLabel} · confirmá el arrastre. El cambio de $100.000 no
+              se carga.
             </p>
           </div>
         </div>
@@ -108,7 +107,7 @@ export function CashRegisterMorningGateModal({
             onSubmit={(e) => {
               if (floatCents === 0) {
                 const ok = window.confirm(
-                  "El efectivo del día anterior está en $0.\n\n¿Estás segura de que la caja va a comenzar en 0? (Los $100.000 de cambio no se cargan acá.)",
+                  "El arrastre está en $0.\n\n¿Abrir caja en 0? (El cambio de $100.000 no se carga acá.)",
                 );
                 if (!ok) {
                   e.preventDefault();
@@ -136,15 +135,15 @@ export function CashRegisterMorningGateModal({
               </div>
               {suggestedOpeningFloatCents > 0 ? (
                 <p className="mt-1.5 text-xs text-zinc-500 dark:text-zinc-400">
-                  Sugerido del último cierre: {formatCop(suggestedOpeningFloatCents)}
+                  Último cierre: {formatCop(suggestedOpeningFloatCents)}
                 </p>
               ) : null}
             </div>
             <AdminFormSubmitButton
-              pendingLabel="Abriendo caja…"
+              pendingLabel="Abriendo…"
               className={adminPrimarySubmitButtonFullWidthClass}
             >
-              Abrir caja e iniciar el día
+              Abrir caja
             </AdminFormSubmitButton>
           </form>
         )}

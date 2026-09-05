@@ -1,6 +1,7 @@
 import { buildQuotationPdf, quotationPdfFilename } from "@/lib/quotation-pdf";
 import { loadAdminPermissions } from "@/lib/load-admin-permissions";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getTenantBrandForRequest } from "@/lib/tenant-context";
 import { ventaNumeroReferencia } from "@/lib/ventas-sales";
 
 export const runtime = "nodejs";
@@ -67,16 +68,19 @@ export async function GET(_req: Request, ctx: RouteCtx) {
     }
   }
 
+  const brand = await getTenantBrandForRequest();
   const invoiceRef = ventaNumeroReferencia(orderId);
   const bytes = await buildQuotationPdf({
     invoiceRef,
     customerName: String(order.customer_name ?? "Cliente"),
-    customerEmail: order.customer_email != null ? String(order.customer_email) : null,
+    customerEmail:
+      order.customer_email != null ? String(order.customer_email) : null,
     customerDocumentId,
     customerPhone,
     customerAddress,
     createdAt: order.created_at ? String(order.created_at) : null,
     totalCents: Math.max(0, Math.floor(Number(order.total_cents ?? 0))),
+    brand,
     lines: (items ?? []).map((it) => {
       const raw = it.products as
         | { reference?: string | null }
@@ -91,12 +95,15 @@ export async function GET(_req: Request, ctx: RouteCtx) {
         name: String(it.product_name_snapshot ?? "Producto"),
         reference: ref.length > 0 ? ref : null,
         quantity: Math.max(0, Math.floor(Number(it.quantity ?? 0))),
-        unitPriceCents: Math.max(0, Math.floor(Number(it.unit_price_cents ?? 0))),
+        unitPriceCents: Math.max(
+          0,
+          Math.floor(Number(it.unit_price_cents ?? 0)),
+        ),
       };
     }),
   });
 
-  const filename = quotationPdfFilename(invoiceRef);
+  const filename = quotationPdfFilename(invoiceRef, brand.invoiceTradeName);
   return new Response(Buffer.from(bytes), {
     status: 200,
     headers: {

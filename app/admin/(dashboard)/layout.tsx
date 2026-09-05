@@ -12,6 +12,7 @@ import {
 } from "@/lib/cash-register-gate";
 import { loadAdminPermissions } from "@/lib/load-admin-permissions";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { canOnboardTenants } from "@/lib/tenant-onboarding-auth";
 import { redirect } from "next/navigation";
 
 export default async function AdminDashboardLayout({
@@ -22,7 +23,11 @@ export default async function AdminDashboardLayout({
   const perm = await loadAdminPermissions();
   if (!perm) redirect("/admin/login");
 
-  let allowedNavHrefs = adminNavAllowedHrefList(perm.permissions);
+  const showOnboarding = await canOnboardTenants();
+  let allowedNavHrefs = adminNavAllowedHrefList(perm.permissions, {
+    jobRole: perm.jobRole,
+    canOnboard: showOnboarding,
+  });
   let cashGate: {
     mustOpen: boolean;
     businessDayLabel: string;

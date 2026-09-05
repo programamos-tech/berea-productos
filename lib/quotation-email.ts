@@ -1,14 +1,19 @@
 import {
-  invoiceLegalName,
-  invoiceLogoPath,
-  invoiceStoreAddress,
-  invoiceStoreCity,
-  invoiceTaxNit,
-  invoiceTradeName,
-  storeTaxRegime,
+  invoiceLegalName as envInvoiceLegalName,
+  invoiceLogoPath as envInvoiceLogoPath,
+  invoiceStoreAddress as envInvoiceStoreAddress,
+  invoiceStoreCity as envInvoiceStoreCity,
+  invoiceTaxNit as envInvoiceTaxNit,
+  invoiceTradeName as envInvoiceTradeName,
+  storeTaxRegime as envStoreTaxRegime,
 } from "@/lib/brand";
 import { formatCop } from "@/lib/money";
 import { getPublicSiteUrl } from "@/lib/public-site-url";
+import {
+  resolveInvoiceLogoSrc,
+  tenantBrandToInvoiceFields,
+  type InvoiceBrandFields,
+} from "@/lib/tenant-brand";
 
 export type QuotationEmailLine = {
   name: string;
@@ -22,8 +27,22 @@ export function buildQuotationEmailHtml(input: {
   createdAt: string | null;
   totalCents: number;
   lines: QuotationEmailLine[];
+  brand?: InvoiceBrandFields;
 }): { subject: string; html: string; text: string } {
-  const logoUrl = `${getPublicSiteUrl().replace(/\/$/, "")}${invoiceLogoPath.startsWith("/") ? "" : "/"}${invoiceLogoPath}`;
+  const brand = input.brand ?? tenantBrandToInvoiceFields(null);
+  const invoiceTradeName = brand.invoiceTradeName || envInvoiceTradeName;
+  const invoiceLegalName = brand.invoiceLegalName || envInvoiceLegalName;
+  const invoiceTaxNit = brand.invoiceTaxNit || envInvoiceTaxNit;
+  const storeTaxRegime = brand.storeTaxRegime || envStoreTaxRegime;
+  const invoiceStoreAddress =
+    brand.invoiceStoreAddress || envInvoiceStoreAddress;
+  const invoiceStoreCity = brand.invoiceStoreCity || envInvoiceStoreCity;
+  const invoiceLogoPath = brand.invoiceLogoPath || envInvoiceLogoPath;
+
+  const logoResolved = resolveInvoiceLogoSrc(invoiceLogoPath);
+  const logoUrl = /^https?:\/\//i.test(logoResolved)
+    ? logoResolved
+    : `${getPublicSiteUrl().replace(/\/$/, "")}${logoResolved.startsWith("/") ? "" : "/"}${logoResolved}`;
   const dateLabel = input.createdAt
     ? new Date(input.createdAt).toLocaleString("es-CO", {
         timeZone: "America/Bogota",

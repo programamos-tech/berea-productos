@@ -19,6 +19,7 @@ import {
 } from "@/lib/product-kits";
 import { fetchKitsByIdsWithItems } from "@/lib/load-product-kits";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getTenantBrandForRequest } from "@/lib/tenant-context";
 import { ventaNumeroReferencia } from "@/lib/ventas-sales";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -331,11 +332,13 @@ export async function sendQuotationEmailAction(formData: FormData): Promise<
     .eq("order_id", orderId);
 
   const invoiceRef = ventaNumeroReferencia(orderId);
+  const brand = await getTenantBrandForRequest();
   const { subject, html, text } = buildQuotationEmailHtml({
     invoiceRef,
     customerName: String(order.customer_name ?? "Cliente"),
     createdAt: order.created_at ? String(order.created_at) : null,
     totalCents: Math.max(0, Math.floor(Number(order.total_cents ?? 0))),
+    brand,
     lines: (items ?? []).map((it) => ({
       name: String(it.product_name_snapshot ?? "Producto"),
       quantity: Math.max(0, Math.floor(Number(it.quantity ?? 0))),

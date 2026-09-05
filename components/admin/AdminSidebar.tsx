@@ -5,14 +5,14 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { Suspense, type SVGProps } from "react";
 import {
-  ADMIN_BEREA_MARK_IMG_CLASS,
-  ADMIN_BEREA_SIGNATURE_ON_SIDEBAR_CLASS,
   ADMIN_BRAND_LOGO_ON_SIDEBAR_CLASS,
+  ADMIN_SIDEBAR_PRODUCT_LOGO_CLASS,
 } from "@/lib/admin-theme";
 import {
+  adminProductBrand,
   adminSidebarLogoPath,
-  bereaSignaturePath,
-  storeBrand,
+  adminTenantBrand,
+  adminTenantLogoPath,
 } from "@/lib/brand";
 
 function Icon(props: SVGProps<SVGSVGElement> & { children: React.ReactNode }) {
@@ -54,6 +54,15 @@ const navSections: {
     title: "Comercial",
     items: [
       {
+        href: "/admin",
+        label: "Reportes",
+        icon: (
+          <Icon>
+            <path d="M4 11.5 12 5l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1v-8.5Z" />
+          </Icon>
+        ),
+      },
+      {
         href: "/admin/caja",
         label: "Caja",
         icon: (
@@ -61,15 +70,6 @@ const navSections: {
             <rect x="2" y="6" width="20" height="12" rx="2" />
             <circle cx="12" cy="12" r="3" />
             <path d="M6 12h.01M18 12h.01" />
-          </Icon>
-        ),
-      },
-      {
-        href: "/admin",
-        label: "Reportes",
-        icon: (
-          <Icon>
-            <path d="M4 11.5 12 5l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1v-8.5Z" />
           </Icon>
         ),
       },
@@ -91,17 +91,6 @@ const navSections: {
             <path d="M4 6h16v12H4z" />
             <path d="M8 10h8" />
             <path d="M8 14h5" />
-          </Icon>
-        ),
-      },
-      {
-        href: "/admin/proveedores",
-        label: "Proveedores",
-        icon: (
-          <Icon>
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-            <polyline points="14 2 14 8 20 8" />
-            <path d="M12 18h-1M16 18h-1M8 18H7" />
           </Icon>
         ),
       },
@@ -225,6 +214,22 @@ const navSections: {
       },
     ],
   },
+  {
+    title: "Berea",
+    items: [
+      {
+        href: "/admin/tenants/nuevo",
+        label: "Nueva tienda",
+        icon: (
+          <Icon>
+            <path d="M3 9.5 12 3l9 6.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1V9.5Z" />
+            <path d="M12 12v4" />
+            <path d="M10 14h4" />
+          </Icon>
+        ),
+      },
+    ],
+  },
 ];
 
 function isActive(pathname: string, href: string) {
@@ -242,7 +247,6 @@ const ORDERS_HREF = "/admin/orders";
 const CUSTOMERS_HREF = "/admin/customers";
 const COUPONS_HREF = "/admin/coupons";
 const USUARIOS_HREF = "/admin/usuarios";
-const PROVEEDORES_HREF = "/admin/proveedores";
 const CUENTA_HREF = "/admin/cuenta";
 
 function navItemActive(
@@ -275,31 +279,91 @@ function navItemActive(
   if (href === COUPONS_HREF) {
     return pathname === COUPONS_HREF || pathname.startsWith(`${COUPONS_HREF}/`);
   }
-  if (href === PROVEEDORES_HREF) {
-    return pathname === PROVEEDORES_HREF || pathname.startsWith(`${PROVEEDORES_HREF}/`);
-  }
   return isActive(pathname, href);
 }
 
-const sidebarInk = "text-rose-800/85 dark:text-zinc-200";
-const sidebarInkMuted = "text-rose-700/78 dark:text-zinc-500";
+const sidebarInkMuted = "text-[var(--admin-coral-deep)]/55";
+const sidebarBorder = "border-[color-mix(in_srgb,var(--admin-coral-deep)_14%,transparent)]";
 
-function SidebarLogo() {
+function SidebarProductBrand() {
   return (
     <Link
       href="/admin"
       prefetch
-      className="inline-block rounded-md outline-none transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-[var(--store-brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--admin-sidebar-bg)] dark:focus-visible:ring-offset-zinc-950"
+      className="inline-block rounded-md outline-none transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-[var(--admin-coral)]/40 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--admin-sidebar-bg)]"
     >
       <Image
         src={adminSidebarLogoPath}
-        alt={storeBrand}
-        width={320}
-        height={320}
-        className={`h-auto w-full max-w-[72px] object-contain object-center sm:max-w-[76px] ${ADMIN_BRAND_LOGO_ON_SIDEBAR_CLASS}`}
+        alt={adminProductBrand}
+        width={728}
+        height={343}
+        className={`${ADMIN_SIDEBAR_PRODUCT_LOGO_CLASS} ${ADMIN_BRAND_LOGO_ON_SIDEBAR_CLASS}`}
         priority
       />
     </Link>
+  );
+}
+
+function SidebarTenantAccount({
+  showStorefront,
+  onNavigate,
+}: {
+  showStorefront: boolean;
+  onNavigate: () => void;
+}) {
+  const href = showStorefront ? STOREFRONT_HREF : CUENTA_HREF;
+  const title = showStorefront
+    ? `Ver tienda · ${adminTenantBrand}`
+    : `Cuenta · ${adminTenantBrand}`;
+
+  return (
+    <Link
+      href={href}
+      prefetch
+      onClick={() => onNavigate()}
+      title={title}
+      className="group mt-3.5 flex w-full items-center gap-2.5 rounded-lg border border-[color-mix(in_srgb,var(--admin-coral-deep)_16%,transparent)] bg-white/55 px-2.5 py-2 text-left transition hover:border-[color-mix(in_srgb,var(--admin-coral)_35%,transparent)] hover:bg-white/80"
+    >
+      <span className="relative flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-md bg-[#3d3d3f]">
+        <Image
+          src={adminTenantLogoPath}
+          alt=""
+          width={64}
+          height={64}
+          className="size-full object-contain p-0.5"
+        />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-[13px] font-medium text-[var(--admin-coral-deep)]/90">
+          {adminTenantBrand}
+        </span>
+      </span>
+      {showStorefront ? (
+        <span className={`shrink-0 opacity-70 ${sidebarInkMuted}`} aria-hidden>
+          <IconExternalStore className="size-4" />
+        </span>
+      ) : null}
+    </Link>
+  );
+}
+
+function SidebarHeader({
+  showStorefront,
+  onNavigate,
+}: {
+  showStorefront: boolean;
+  onNavigate: () => void;
+}) {
+  return (
+    <div className={`border-b px-3 py-4 ${sidebarBorder}`}>
+      <div className="flex flex-col items-center text-center">
+        <SidebarProductBrand />
+      </div>
+      <SidebarTenantAccount
+        showStorefront={showStorefront}
+        onNavigate={onNavigate}
+      />
+    </div>
   );
 }
 
@@ -322,12 +386,12 @@ function AdminSidebarInner({
     }))
     .filter((section) => section.items.length > 0);
 
-  const linkClass = (href: string, active: boolean) =>
+  const linkClass = (active: boolean) =>
     [
-      "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition duration-200",
+      "flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] font-medium transition",
       active
-        ? "bg-[var(--store-brand)] text-white shadow-[0_4px_14px_-6px_rgba(220,53,126,0.55)] hover:bg-[var(--store-brand-hover)] dark:text-white"
-        : "text-zinc-800 hover:bg-white/95 hover:text-rose-950 dark:text-zinc-200 dark:hover:bg-zinc-800/75 dark:hover:text-white",
+        ? "bg-[var(--admin-coral)] text-white shadow-sm shadow-[color-mix(in_srgb,var(--admin-coral-deep)_18%,transparent)]"
+        : "text-[var(--admin-coral-deep)]/85 hover:bg-white/70 hover:text-[var(--admin-coral-deep)]",
     ].join(" ");
 
   const drawerTranslate =
@@ -341,28 +405,24 @@ function AdminSidebarInner({
 
   return (
     <aside
-      className={`flex shrink-0 flex-col border-r border-rose-200/90 bg-[var(--admin-sidebar-bg)] shadow-[1px_0_0_rgba(255,255,255,0.9)_inset,2px_0_24px_-18px_rgba(190,24,93,0.12)] transition-transform duration-300 ease-out motion-reduce:transition-none print:hidden dark:border-zinc-800/90 dark:bg-zinc-950 dark:shadow-[1px_0_0_rgba(255,255,255,0.05)_inset] fixed inset-y-0 left-0 z-[50] w-[min(88vw,288px)] max-w-[288px] lg:w-64 lg:max-w-none lg:border-b-0 ${drawerTranslate} ${drawerHiddenMobile}`}
+      className={`fixed inset-y-0 left-0 z-[50] flex w-[min(88vw,288px)] max-w-[288px] shrink-0 flex-col border-r bg-[var(--admin-sidebar-bg)] transition-transform duration-300 ease-out motion-reduce:transition-none print:hidden lg:w-64 lg:max-w-none ${sidebarBorder} ${drawerTranslate} ${drawerHiddenMobile}`}
     >
-      <div className="flex flex-col items-center border-b border-rose-200/70 px-4 py-6 text-center dark:border-zinc-800/80">
-        <SidebarLogo />
-        <p
-          className={`mt-3 text-[9px] font-semibold uppercase tracking-[0.22em] ${sidebarInk}`}
-        >
-          Backoffice
-        </p>
-      </div>
+      <SidebarHeader
+        showStorefront={allowed.has(STOREFRONT_HREF)}
+        onNavigate={onNavigate}
+      />
       <nav
         id="admin-sidebar-nav"
-        className="admin-sidebar-nav-scroll flex-1 space-y-7 overflow-y-auto overscroll-contain px-3 py-5"
+        className="admin-sidebar-nav-scroll flex-1 space-y-6 overflow-y-auto overscroll-contain px-2.5 py-4"
       >
         {navSectionsFiltered.map((section) => (
           <div key={section.title}>
             <p
-              className={`px-3 text-[10px] font-semibold uppercase tracking-[0.22em] ${sidebarInkMuted}`}
+              className={`px-2.5 text-[10px] font-semibold uppercase tracking-[0.14em] ${sidebarInkMuted}`}
             >
               {section.title}
             </p>
-            <ul className="mt-2.5 space-y-0.5">
+            <ul className="mt-2 space-y-0.5">
               {section.items.map((item) => {
                 const active = navItemActive(pathname, item.href);
                 return (
@@ -370,7 +430,7 @@ function AdminSidebarInner({
                     <Link
                       href={item.href}
                       prefetch
-                      className={linkClass(item.href, active)}
+                      className={linkClass(active)}
                       onClick={() => onNavigate()}
                     >
                       {item.icon}
@@ -383,55 +443,27 @@ function AdminSidebarInner({
           </div>
         ))}
       </nav>
-      <div className="shrink-0 border-t border-rose-200/70 px-3 pb-4 pt-3 dark:border-zinc-800/80">
-        {allowed.has(STOREFRONT_HREF) ? (
-          <Link
-            href={STOREFRONT_HREF}
-            prefetch
-            onClick={() => onNavigate()}
-            className="mb-3 flex w-full items-center justify-center gap-2.5 rounded-xl border border-rose-200/90 bg-white px-3 py-2.5 text-sm font-semibold text-rose-950 shadow-sm transition hover:border-[var(--store-brand)] hover:bg-white dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:border-rose-400/50 dark:hover:bg-zinc-800"
-          >
-            <IconExternalStore />
-            Ir a la tienda
-          </Link>
-        ) : null}
-        <div className="flex flex-col items-center gap-1 px-1 text-center">
-          <span
-            className={`text-[8px] font-medium uppercase tracking-[0.2em] ${sidebarInk}`}
-          >
-            Experiencia por
-          </span>
-          <Image
-            src={bereaSignaturePath}
-            alt="Berea — diseño y desarrollo"
-            width={320}
-            height={82}
-            className={`${ADMIN_BEREA_MARK_IMG_CLASS} ${ADMIN_BEREA_SIGNATURE_ON_SIDEBAR_CLASS}`}
-          />
-        </div>
-      </div>
     </aside>
   );
 }
 
 function AdminSidebarFallback() {
   return (
-    <aside className="fixed inset-y-0 left-0 z-[45] hidden w-64 flex-col border-r border-rose-200/90 bg-[var(--admin-sidebar-bg)] print:hidden dark:border-zinc-800/90 dark:bg-zinc-950 lg:flex lg:flex-col">
-      <div className="flex flex-col items-center border-b border-rose-200/70 px-4 py-6 text-center dark:border-zinc-800/80">
-        <SidebarLogo />
-        <p
-          className={`mt-3 text-[9px] font-semibold uppercase tracking-[0.22em] ${sidebarInk}`}
-        >
-          Backoffice
-        </p>
-      </div>
-      <div className="flex-1 px-3 py-5" aria-busy aria-label="Cargando menú" />
-      <div className="shrink-0 border-t border-rose-200/70 px-3 pb-4 pt-3 dark:border-zinc-800/80">
-        <div className="flex flex-col items-center gap-1">
-          <div className="h-2.5 w-16 rounded bg-rose-200/80 dark:bg-zinc-700/80" aria-hidden />
-          <div className="h-10 w-[8.75rem] max-w-full rounded bg-rose-100/90 dark:bg-zinc-800/80 sm:h-11" aria-hidden />
+    <aside
+      className={`fixed inset-y-0 left-0 z-[45] hidden w-64 flex-col border-r bg-[var(--admin-sidebar-bg)] print:hidden lg:flex lg:flex-col ${sidebarBorder}`}
+    >
+      <div className={`border-b px-3 py-4 ${sidebarBorder}`}>
+        <div className="flex flex-col items-center text-center">
+          <SidebarProductBrand />
+        </div>
+        <div className="mt-3.5 flex w-full items-center gap-2.5 rounded-lg border border-[color-mix(in_srgb,var(--admin-coral-deep)_16%,transparent)] bg-white/55 px-2.5 py-2">
+          <span className="size-8 shrink-0 rounded-md bg-[#3d3d3f]" />
+          <span className="min-w-0 flex-1">
+            <span className="block h-3 w-20 rounded bg-[var(--admin-coral-deep)]/15" />
+          </span>
         </div>
       </div>
+      <div className="flex-1 px-2.5 py-4" aria-busy aria-label="Cargando menú" />
     </aside>
   );
 }

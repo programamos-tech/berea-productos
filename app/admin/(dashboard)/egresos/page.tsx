@@ -1,26 +1,29 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { ExpenseRowActions } from "@/components/admin/ExpenseRowActions";
 import { ExpensesFiltersBar } from "@/components/admin/ExpensesFiltersBar";
+import {
+  ExpensesTable,
+  type ExpenseTableRow,
+} from "@/components/admin/ExpensesTable";
 import { NewExpenseModalHost } from "@/components/admin/NewExpenseForm";
 import { VentasPagination } from "@/components/admin/VentasPagination";
-import { StaticCopCents, StaticInteger } from "@/components/admin/ReportsAnimatedFigures";
-import {
-  currentYearMonthInReportStore,
-  monthYmdBounds,
-  prettyYearMonthLabel,
-  reportCalendarDayKeyFromIso,
-} from "@/lib/admin-report-range";
 import { loadAdminPermissions } from "@/lib/load-admin-permissions";
-import { expenseKindLabel, expensePaymentMethodLabel, expenseScopeLabel } from "@/lib/expenses-constants";
+import { parseExpenseConceptFilter } from "@/lib/expense-concepts";
 import { fetchAdminExpensesPage } from "@/lib/supabase/admin-expenses-list";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
-const EGRESOS_PAGE_SIZE = 25;
+const EGRESOS_PAGE_SIZE = 20;
 
 const YMD_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+const btnBase =
+  "inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition";
+const btnPrimary =
+  "border-red-700 bg-red-700 text-white hover:border-red-600 hover:bg-red-600 dark:border-red-600 dark:bg-red-600 dark:hover:border-red-500 dark:hover:bg-red-500";
+const btnIdle =
+  "inline-flex size-8 items-center justify-center rounded-lg border border-zinc-300 bg-white text-zinc-700 transition hover:border-zinc-400 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200 dark:hover:border-zinc-600 dark:hover:bg-zinc-800";
 
 function searchParamFirst(
   v: string | string[] | undefined,
@@ -44,21 +47,6 @@ function normalizeDateRange(
   return { from: f, to: t };
 }
 
-function expenseCalendarYmd(e: {
-  expense_date?: unknown;
-  created_at?: unknown;
-}): string {
-  const ed = e.expense_date;
-  if (typeof ed === "string" && /^\d{4}-\d{2}-\d{2}/.test(ed.trim())) {
-    return ed.trim().slice(0, 10);
-  }
-  const ca = e.created_at;
-  if (typeof ca === "string" && ca.length > 0) {
-    return reportCalendarDayKeyFromIso(ca);
-  }
-  return "";
-}
-
 export default async function AdminEgresosPage({
   searchParams,
 }: {
@@ -66,24 +54,21 @@ export default async function AdminEgresosPage({
 }) {
   const sp = await searchParams;
   const qRaw = (searchParamFirst(sp.q) ?? "").trim();
-  const { from: urlFrom, to: urlTo } = normalizeDateRange(
+  const conceptRaw = parseExpenseConceptFilter(searchParamFirst(sp.concept));
+  const { from: dateFrom, to: dateTo } = normalizeDateRange(
     searchParamFirst(sp.from),
     searchParamFirst(sp.to),
   );
 
   const pageRaw = searchParamFirst(sp.page);
   const pageParsed = pageRaw ? Number.parseInt(pageRaw, 10) : 1;
-  const page = Number.isFinite(pageParsed) && pageParsed > 0 ? pageParsed : 1;
+  let page = Number.isFinite(pageParsed) && pageParsed > 0 ? pageParsed : 1;
 
   const hasExplicitFilters =
-    qRaw.length > 0 || Boolean(urlFrom) || Boolean(urlTo);
-
-  // Sin filtros: limitar al mes actual para no cargar/pintar todo el historial.
-  const currentMonth = currentYearMonthInReportStore();
-  const monthBounds = monthYmdBounds(currentMonth);
-  const defaultMonthApplied = !hasExplicitFilters && monthBounds != null;
-  const dateFrom = hasExplicitFilters ? urlFrom : monthBounds?.from ?? null;
-  const dateTo = hasExplicitFilters ? urlTo : monthBounds?.to ?? null;
+    qRaw.length > 0 ||
+    Boolean(conceptRaw) ||
+    Boolean(dateFrom) ||
+    Boolean(dateTo);
 
   const supabase = await createSupabaseServerClient();
   const perm = await loadAdminPermissions();
@@ -95,9 +80,19 @@ export default async function AdminEgresosPage({
     Boolean(searchParamFirst(sp.expense_error));
   const expenseErrorCode = searchParamFirst(sp.expense_error);
 
-  const [{ rows, stats, error: expensesError }, profilesRes] = await Promise.all([
+  let rows: Awaited<ReturnType<typeof fetchAdminExpensesPage>>["rows"] = [];
+  let stats: Awaited<ReturnType<typeof fetchAdminExpensesPage>>["stats"] = {
+    totalActivoCents: 0,
+    todayTotalCents: 0,
+    cancelledCount: 0,
+    total: 0,
+  };
+  let expensesError: string | null = null;
+
+  const [fetched, profilesRes] = await Promise.all([
     fetchAdminExpensesPage(supabase, {
       q: qRaw,
+      concept: conceptRaw,
       dateFrom,
       dateTo,
       page,
@@ -112,6 +107,26 @@ export default async function AdminEgresosPage({
       : Promise.resolve({ data: null }),
   ]);
 
+  rows = fetched.rows;
+  stats = fetched.stats;
+  expensesError = fetched.error;
+
+  const totalPages = Math.max(1, Math.ceil(stats.total / EGRESOS_PAGE_SIZE));
+  if (!expensesError && page > totalPages && stats.total > 0) {
+    page = totalPages;
+    const refetch = await fetchAdminExpensesPage(supabase, {
+      q: qRaw,
+      concept: conceptRaw,
+      dateFrom,
+      dateTo,
+      page,
+      pageSize: EGRESOS_PAGE_SIZE,
+    });
+    rows = refetch.rows;
+    stats = refetch.stats;
+    expensesError = refetch.error;
+  }
+
   const turnWorkers = (profilesRes.data ?? []).map((p) => {
     const display = String(p.display_name ?? "").trim();
     const login = String(p.login_username ?? "").trim();
@@ -121,20 +136,34 @@ export default async function AdminEgresosPage({
     };
   });
 
-  const { totalActivoCents, todayTotalCents, cancelledCount, total } = stats;
+  const { total } = stats;
 
-  const periodLabel = defaultMonthApplied
-    ? prettyYearMonthLabel(currentMonth)
-    : null;
-
-  const filterLabelClass =
-    "mb-1.5 block text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-600 dark:text-zinc-400";
+  const tableRows: ExpenseTableRow[] = rows.map((e) => ({
+    id: e.id,
+    concept: e.concept,
+    amount_cents: e.amount_cents,
+    payment_method: e.payment_method,
+    notes: e.notes,
+    expense_date: e.expense_date,
+    created_at: e.created_at,
+    is_cancelled: e.is_cancelled === true,
+    expense_kind: e.expense_kind,
+    expense_scope: e.expense_scope,
+    supplierLink: e.supplierLink
+      ? {
+          supplierId: e.supplierLink.supplierId,
+          invoiceId: e.supplierLink.invoiceId,
+          folio: e.supplierLink.folio || null,
+        }
+      : null,
+  }));
 
   const buildPageHref = (targetPage: number) => {
     const p = new URLSearchParams();
     if (qRaw) p.set("q", qRaw);
-    if (urlFrom) p.set("from", urlFrom);
-    if (urlTo) p.set("to", urlTo);
+    if (conceptRaw) p.set("concept", conceptRaw);
+    if (dateFrom) p.set("from", dateFrom);
+    if (dateTo) p.set("to", dateTo);
     if (targetPage > 1) p.set("page", String(targetPage));
     const qs = p.toString();
     return qs ? `/admin/egresos?${qs}` : "/admin/egresos";
@@ -143,15 +172,16 @@ export default async function AdminEgresosPage({
   const nuevoHref = (() => {
     const p = new URLSearchParams();
     if (qRaw) p.set("q", qRaw);
-    if (urlFrom) p.set("from", urlFrom);
-    if (urlTo) p.set("to", urlTo);
+    if (conceptRaw) p.set("concept", conceptRaw);
+    if (dateFrom) p.set("from", dateFrom);
+    if (dateTo) p.set("to", dateTo);
     if (page > 1) p.set("page", String(page));
     p.set("nuevo", "1");
     return `/admin/egresos?${p.toString()}`;
   })();
 
   return (
-    <div className="w-full min-w-0 space-y-8">
+    <div className="flex w-full min-w-0 max-w-none flex-col gap-4">
       {canCreate ? (
         <NewExpenseModalHost
           open={openNuevo}
@@ -159,222 +189,87 @@ export default async function AdminEgresosPage({
           turnWorkers={turnWorkers}
         />
       ) : null}
-      <div className="mb-2 flex min-w-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+
+      <header className="flex shrink-0 flex-wrap items-center justify-between gap-2 gap-y-2">
         <div className="min-w-0">
-          <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
-            <Link href="/admin" className="hover:text-zinc-800 dark:hover:text-zinc-200">
-              Reportes
-            </Link>
-            <span className="mx-1.5 text-zinc-300 dark:text-zinc-600">/</span>
-            <span className="text-zinc-700 dark:text-zinc-300">Tabla de gastos y egresos</span>
-          </p>
-          <h1 className="mt-2 text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 sm:text-2xl md:text-3xl">
+          <h1 className="text-lg font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 sm:text-xl">
             Gastos y egresos
           </h1>
-          <p className="mt-2 max-w-2xl text-sm text-zinc-500 dark:text-zinc-400">
-            {defaultMonthApplied && periodLabel
-              ? `Mostrando ${periodLabel}. Usá los filtros de fecha para ver otro periodo.`
-              : "Vista de tabla con filtros por texto y rango de fechas."}
-          </p>
         </div>
-        <div className="flex items-center gap-2">
-          <div
-            className="reports-metric-card rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm shadow-[0_1px_0_0_rgb(24_24_27/0.04)] dark:border-zinc-700 dark:bg-zinc-900 dark:shadow-none"
-            style={{ ["--reports-stagger" as string]: "40ms" }}
-          >
-            <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-3">
-              <p className="text-zinc-500 dark:text-zinc-400">Hoy</p>
-              <p className="font-semibold text-zinc-900 dark:text-zinc-100">
-                <StaticCopCents cents={todayTotalCents} />
-              </p>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                Total activo (periodo):{" "}
-                <StaticCopCents cents={totalActivoCents} className="font-medium text-zinc-700 dark:text-zinc-200" />
-                {cancelledCount > 0 ? (
-                  <span className="ml-1">
-                    · {cancelledCount} anulado{cancelledCount === 1 ? "" : "s"}
-                  </span>
-                ) : null}
-              </p>
-            </div>
-          </div>
+        <div className="flex flex-wrap items-center justify-end gap-2">
           {canCreate ? (
-            <Link
-              href={nuevoHref}
-              className="inline-flex items-center justify-center rounded-lg border border-rose-950 bg-rose-950 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-rose-900 hover:border-rose-900 dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-white"
-            >
+            <Link href={nuevoHref} className={`${btnBase} ${btnPrimary}`}>
               + Nuevo
             </Link>
           ) : null}
           <Link
             href="/admin"
-            className="inline-flex size-10 items-center justify-center rounded-lg border border-zinc-200/90 bg-white text-zinc-600 transition hover:bg-zinc-50 hover:text-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+            className={btnIdle}
+            title="Volver a reportes"
             aria-label="Volver a reportes"
           >
-            <span className="text-lg leading-none" aria-hidden>
-              ←
-            </span>
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2}
+              className="size-4"
+              aria-hidden
+            >
+              <path
+                d="m15 18-6-6 6-6"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
           </Link>
         </div>
-      </div>
+      </header>
 
-      <div className="rounded-xl border border-zinc-200/90 bg-white shadow-[0_1px_0_0_rgb(24_24_27/0.04)] dark:border-zinc-700/90 dark:bg-zinc-900 dark:shadow-none">
+      <div className="flex min-h-0 flex-col gap-4">
         <Suspense
           fallback={
-            <div className="border-b border-zinc-100 px-4 py-4 dark:border-zinc-800 sm:px-5">
-              <label className={filterLabelClass}>Concepto / notas</label>
-              <div
-                className="mt-1.5 h-[42px] animate-pulse rounded-lg border border-zinc-200 bg-zinc-100/80 dark:border-zinc-700 dark:bg-zinc-800/60"
-                aria-hidden
-              />
+            <div
+              role="status"
+              className="h-16 animate-pulse rounded-lg bg-zinc-100/80 dark:bg-zinc-800/60 motion-reduce:animate-none"
+            >
+              <span className="sr-only">Cargando filtros…</span>
             </div>
           }
         >
           <ExpensesFiltersBar
             initialQ={qRaw}
-            initialFrom={urlFrom ?? ""}
-            initialTo={urlTo ?? ""}
+            initialConcept={conceptRaw ?? ""}
+            initialFrom={dateFrom ?? ""}
+            initialTo={dateTo ?? ""}
           />
         </Suspense>
 
-        <div className="border-b border-zinc-100 px-4 py-4 dark:border-zinc-800 sm:px-5">
-          <div className="flex flex-wrap items-end justify-between gap-2">
-            <h2 className="text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-400 dark:text-zinc-500">
-              Historial
-            </h2>
-            <p className="text-xs text-zinc-500 dark:text-zinc-400">
-              <StaticInteger value={total} className="font-semibold tabular-nums text-zinc-600 dark:text-zinc-300" />{" "}
-              {total === 1 ? "resultado" : "resultados"}
+        <section className="min-h-0 border-t border-zinc-200/70 pt-4 dark:border-zinc-800">
+          {expensesError ? (
+            <p className="py-6 text-sm text-amber-700 dark:text-amber-300">
+              No se pudieron aplicar los filtros: {expensesError}
             </p>
-          </div>
-        </div>
-        {expensesError ? (
-          <p className="px-4 py-6 text-sm text-amber-800 dark:text-amber-200 sm:px-5">
-            No se pudieron aplicar los filtros: {expensesError}
-          </p>
-        ) : rows.length === 0 ? (
-          <p className="px-4 py-6 text-sm text-zinc-500 dark:text-zinc-400 sm:px-5">
-            {hasExplicitFilters
-              ? "No hay registros que coincidan con la búsqueda o las fechas."
-              : "Aún no hay gastos ni egresos registrados en este periodo."}
-          </p>
-        ) : (
-          <>
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-0 text-left text-sm xl:min-w-[960px]">
-                <thead>
-                  <tr className="border-b border-zinc-100 bg-white dark:border-zinc-800 dark:bg-zinc-950/80">
-                    <th className="px-4 py-3.5 text-xs font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
-                      Concepto / estado
-                    </th>
-                    <th className="px-4 py-3.5 text-xs font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
-                      Pago
-                    </th>
-                    <th className="min-w-[9.5rem] whitespace-nowrap px-4 py-3.5 text-xs font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
-                      Fecha
-                    </th>
-                    <th className="px-4 py-3.5 text-right text-xs font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
-                      Monto
-                    </th>
-                    <th className="px-4 py-3.5 text-right text-xs font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
-                      Acciones
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rows.map((e, index) => {
-                    const isCancelled = e.is_cancelled === true;
-                    const zebra =
-                      index % 2 === 1
-                        ? "bg-zinc-50/80 dark:bg-zinc-900/50"
-                        : "bg-white dark:bg-zinc-900";
-                    const dateStr = expenseCalendarYmd(e);
-                    return (
-                      <tr
-                        key={String(e.id)}
-                        className={`border-b border-zinc-100/90 ${zebra} align-top transition hover:bg-zinc-100/60 dark:border-zinc-800 dark:hover:bg-zinc-800/50 ${isCancelled ? "opacity-70" : ""}`}
-                      >
-                        <td className="max-w-md px-4 py-3.5">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <p
-                              className={`font-semibold text-zinc-900 dark:text-zinc-100 ${isCancelled ? "line-through decoration-zinc-400" : ""}`}
-                            >
-                              {String(e.concept ?? "Gasto")}
-                            </p>
-                            <span
-                              className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
-                                e.expense_kind === "egreso"
-                                  ? "bg-amber-100 text-amber-900 dark:bg-amber-950/50 dark:text-amber-200"
-                                  : "bg-sky-100 text-sky-900 dark:bg-sky-950/50 dark:text-sky-200"
-                              }`}
-                            >
-                              {expenseKindLabel(e.expense_kind)}
-                            </span>
-                            <span
-                              className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
-                                e.expense_scope === "mensual"
-                                  ? "bg-violet-100 text-violet-900 dark:bg-violet-950/50 dark:text-violet-200"
-                                  : "bg-emerald-100 text-emerald-900 dark:bg-emerald-950/50 dark:text-emerald-200"
-                              }`}
-                            >
-                              {expenseScopeLabel(e.expense_scope)}
-                            </span>
-                            {isCancelled ? (
-                              <span className="inline-flex rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-red-800 dark:bg-red-950/50 dark:text-red-200">
-                                Anulado
-                              </span>
-                            ) : null}
-                            {e.supplierLink ? (
-                              <Link
-                                href={`/admin/proveedores/${e.supplierLink.supplierId}/facturas/${e.supplierLink.invoiceId}`}
-                                className="inline-flex rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-violet-900 hover:bg-violet-200 dark:bg-violet-950/50 dark:text-violet-200 dark:hover:bg-violet-900/60"
-                              >
-                                Proveedor
-                                {e.supplierLink.folio
-                                  ? ` · ${e.supplierLink.folio}`
-                                  : ""}
-                              </Link>
-                            ) : null}
-                          </div>
-                          {e.notes ? (
-                            <p className="mt-0.5 line-clamp-2 text-xs leading-snug text-zinc-500 dark:text-zinc-400">
-                              {String(e.notes)}
-                            </p>
-                          ) : null}
-                        </td>
-                        <td className="whitespace-nowrap px-4 py-3.5 text-zinc-600 dark:text-zinc-300">
-                          {expensePaymentMethodLabel(e.payment_method)}
-                        </td>
-                        <td className="min-w-[9.5rem] whitespace-nowrap px-4 py-3.5 tabular-nums text-zinc-600 dark:text-zinc-300">
-                          {dateStr}
-                        </td>
-                        <td className="whitespace-nowrap px-4 py-3.5 text-right font-semibold tabular-nums text-zinc-900 dark:text-zinc-100">
-                          <span className={isCancelled ? "line-through decoration-zinc-400" : ""}>
-                            <StaticCopCents cents={Number(e.amount_cents ?? 0)} />
-                          </span>
-                        </td>
-                        <td className="px-4 py-3.5">
-                          <ExpenseRowActions
-                            expenseId={String(e.id)}
-                            conceptLabel={String(e.concept ?? "Gasto")}
-                            isCancelled={isCancelled}
-                            canCancel={canCancel}
-                          />
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-            <VentasPagination
-              page={page}
-              pageSize={EGRESOS_PAGE_SIZE}
-              total={total}
-              buildHref={buildPageHref}
-            />
-          </>
-        )}
+          ) : (
+            <>
+              <ExpensesTable
+                rows={tableRows}
+                canCancel={canCancel}
+                emptyMessage={
+                  hasExplicitFilters
+                    ? "No hay registros que coincidan con la búsqueda o las fechas."
+                    : "Aún no hay gastos ni egresos registrados."
+                }
+              />
+              <VentasPagination
+                page={page}
+                pageSize={EGRESOS_PAGE_SIZE}
+                total={total}
+                buildHref={buildPageHref}
+              />
+            </>
+          )}
+        </section>
       </div>
     </div>
   );

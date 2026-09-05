@@ -1,12 +1,16 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
-import { EditProductForm } from "@/components/admin/EditProductForm";
-import { ProductDeleteConfirmForm } from "@/components/admin/ProductDeleteConfirmForm";
+import {
+  EditProductForm,
+  EditProductHeader,
+} from "@/components/admin/EditProductForm";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { updateProduct } from "@/app/actions/admin/products";
 import type { FragranceRowInitial } from "@/components/admin/ProductFragranceRows";
 import type { SizeRowState } from "@/components/admin/ProductSizeRows";
-import { normalizeSizeOptionsFromRow, SIZE_UNITS } from "@/lib/product-size-options";
+import {
+  normalizeSizeOptionsFromRow,
+  SIZE_UNITS,
+} from "@/lib/product-size-options";
 import { storagePublicObjectUrl } from "@/lib/storage-public-url";
 import { requireAdminPermission } from "@/lib/require-admin-permission";
 import { SALE_VAT_PERCENT } from "@/lib/product-vat-price";
@@ -76,19 +80,15 @@ function sizeRowsForEditForm(p: ProductRow): SizeRowState[] {
   if (opts.length === 0) return [{ value: "", unit: "ml" }];
   return opts.map((o) => {
     const u = o.unit.trim().toLowerCase();
-    const unit = (
-      SIZE_UNITS as readonly string[]
-    ).includes(u)
+    const unit = (SIZE_UNITS as readonly string[]).includes(u)
       ? (u as SizeRowState["unit"])
       : "unidad";
     return { value: String(o.value), unit };
   });
 }
 
-function breadcrumbSegment(name: string) {
-  const t = name.trim();
-  if (t.length <= 40) return t;
-  return `${t.slice(0, 39)}…`;
+function shortSku(id: string) {
+  return id.replace(/-/g, "").slice(0, 8).toUpperCase();
 }
 
 export default async function EditProductPage({ params, searchParams }: Props) {
@@ -112,67 +112,39 @@ export default async function EditProductPage({ params, searchParams }: Props) {
   const p = product as ProductRow;
   const cats = categories ?? [];
   const categoryId = p.category_id ?? "";
+  const stockLocal = Math.max(
+    0,
+    Math.floor(Number(p.stock_local ?? p.stock_quantity ?? 0)),
+  );
+  const referenceLabel =
+    (p.reference ?? "").trim() || shortSku(id);
 
   const img = storagePublicObjectUrl(p.image_path);
   const boundUpdate = updateProduct.bind(null, id);
 
   return (
-    <div className="mx-auto max-w-7xl">
-      <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
-            <Link href="/admin/products" className="hover:text-zinc-800 dark:hover:text-zinc-200">
-              Inventario
-            </Link>
-            <span className="mx-1.5 text-zinc-300 dark:text-zinc-600">/</span>
-            <Link
-              href={`/admin/products/${id}`}
-              className="text-zinc-600 hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-zinc-100"
-              title={p.name}
-            >
-              {breadcrumbSegment(p.name)}
-            </Link>
-            <span className="mx-1.5 text-zinc-300 dark:text-zinc-600">/</span>
-            <span className="text-zinc-700 dark:text-zinc-300">Editar</span>
-          </p>
-          <h1 className="mt-2 text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 sm:text-3xl">
-            Editar producto
-          </h1>
-          <p className="mt-2 max-w-2xl text-sm text-zinc-500 dark:text-zinc-400">
-            Modifica los datos del producto. El stock se ajusta desde{" "}
-            <Link
-              href="/admin/products"
-              className="font-medium text-zinc-700 underline decoration-zinc-300 underline-offset-2 hover:text-zinc-900 dark:text-zinc-300 dark:decoration-zinc-600 dark:hover:text-zinc-100"
-            >
-              Actualizar stock
-            </Link>{" "}
-            en el listado.
-          </p>
-        </div>
-        <Link
-          href="/admin/products"
-          className="inline-flex size-10 shrink-0 items-center justify-center rounded-lg border border-zinc-200/90 bg-white text-zinc-600 transition hover:bg-zinc-50 hover:text-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
-          aria-label="Volver al listado"
-        >
-          <span className="text-lg leading-none" aria-hidden>
-            ←
-          </span>
-        </Link>
-      </div>
+    <div className="flex w-full min-w-0 max-w-none flex-col gap-4">
+      <EditProductHeader
+        productId={id}
+        productName={p.name}
+        referenceLabel={referenceLabel}
+        stockLocal={stockLocal}
+      />
 
       {error ? (
-        <p className="mb-6 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-900 dark:border-red-900/50 dark:bg-red-950/35 dark:text-red-100">
+        <p className="text-sm text-red-600 dark:text-red-400" role="alert">
           {error === "rls"
-            ? "No tienes permiso para actualizar. Verifica que exista tu fila en public.profiles con rol admin."
+            ? "No tienes permiso para actualizar. Verifica tu perfil admin."
             : error === "reference"
               ? "La referencia es obligatoria."
               : error === "name"
                 ? "El nombre es obligatorio."
-                : "Error al guardar. Aplica la migración de productos si falta, o revisa los logs del servidor."}
+                : "Error al guardar. Revisa los datos o los logs del servidor."}
         </p>
       ) : null}
 
       <EditProductForm
+        productId={id}
         formAction={boundUpdate}
         categories={cats}
         currentImageUrl={img}
@@ -185,7 +157,7 @@ export default async function EditProductPage({ params, searchParams }: Props) {
           priceCents: p.price_cents,
           costCents: p.cost_cents ?? 0,
           costGrossCents: p.cost_gross_cents ?? 0,
-          stockLocal: p.stock_local ?? 0,
+          stockLocal,
           stockWarehouse: p.stock_warehouse ?? 0,
           isPublished: p.is_published === true,
           sizeRows: sizeRowsForEditForm(p),
@@ -198,16 +170,6 @@ export default async function EditProductPage({ params, searchParams }: Props) {
           fragranceRows: fragranceRowsForEditForm(p),
         }}
       />
-
-      <ProductDeleteConfirmForm
-        productId={id}
-        productName={p.name}
-        className="mt-8 rounded-xl border border-zinc-200/90 bg-white p-6 shadow-sm ring-1 ring-zinc-950/5 dark:border-zinc-700/90 dark:bg-zinc-900 dark:shadow-none dark:ring-white/[0.06]"
-      >
-        <p className="text-sm text-zinc-600 dark:text-zinc-300">
-          Elimina el producto solo si no debe volver a figurar en el catálogo.
-        </p>
-      </ProductDeleteConfirmForm>
     </div>
   );
 }

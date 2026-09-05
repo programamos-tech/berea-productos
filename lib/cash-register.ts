@@ -16,6 +16,8 @@ export type CashStockOutLine = {
   name: string;
   reference: string | null;
   quantity: number;
+  /** Stock local al momento del cierre (congelado en el JSON). */
+  stock_remaining: number | null;
 };
 
 export type CashExpenseLine = {
@@ -124,6 +126,61 @@ export function toBlindCashSummary(
   };
 }
 
+/** Solo UI: arma el resumen del modal a partir de un cierre ya guardado. */
+export function closedSessionToBlindSummary(
+  session: CashRegisterSessionRow,
+): CashDayBlindSummary {
+  const expensesCashCents = Math.max(
+    0,
+    Math.floor(Number(session.expenses_cash_cents ?? 0)),
+  );
+  const expensesOtherCents = Math.max(
+    0,
+    Math.floor(Number(session.expenses_other_cents ?? 0)),
+  );
+  return {
+    businessDay: session.business_day,
+    salesCount: Math.max(0, Math.floor(Number(session.sales_count ?? 0))),
+    unitsSold: Math.max(0, Math.floor(Number(session.units_sold ?? 0))),
+    openingFloatCents: Math.max(
+      0,
+      Math.floor(Number(session.opening_float_cents ?? 0)),
+    ),
+    salesCashCents: Math.max(0, Math.floor(Number(session.sales_cash_cents ?? 0))),
+    salesTransferCents: Math.max(
+      0,
+      Math.floor(Number(session.sales_transfer_cents ?? 0)),
+    ),
+    salesMixedCents: Math.max(
+      0,
+      Math.floor(Number(session.sales_mixed_cents ?? 0)),
+    ),
+    salesOtherCents: Math.max(
+      0,
+      Math.floor(Number(session.sales_other_cents ?? 0)),
+    ),
+    salesTotalCents: Math.max(
+      0,
+      Math.floor(Number(session.sales_total_cents ?? 0)),
+    ),
+    expensesCashCents,
+    expensesOtherCents,
+    expensesTotalCents: expensesCashCents + expensesOtherCents,
+    expectedCashCents: Math.max(
+      0,
+      Math.floor(Number(session.expected_cash_cents ?? 0)),
+    ),
+    stockOutLines: session.stock_out_lines,
+    expenseLines: session.expense_lines.map((e) => ({
+      id: e.id,
+      concept: e.concept,
+      payment_method: e.payment_method,
+      amount_cents: e.amount_cents,
+      affects_cash_drawer: expensePaymentAffectsDailyCashDrawer(e.payment_method),
+    })),
+  };
+}
+
 const SESSION_SELECT =
   "id,business_day,status,opening_float_cents,opened_at,opened_by,sales_count,sales_total_cents,sales_cash_cents,sales_transfer_cents,sales_mixed_cents,sales_other_cents,expenses_cash_cents,expenses_other_cents,expected_cash_cents,counted_cash_cents,cash_difference_cents,units_sold,stock_out_lines,expense_lines,notes,closed_at,closed_by,created_at";
 
@@ -141,9 +198,60 @@ function parseStockLines(raw: unknown): CashStockOutLine[] {
       r.reference == null || String(r.reference).trim() === ""
         ? null
         : String(r.reference).trim();
-    out.push({ product_id: productId, name, reference, quantity: qty });
+    const stockRaw = r.stock_remaining;
+    const stockParsed =
+      stockRaw == null
+        ? null
+        : Math.max(0, Math.floor(Number(stockRaw)));
+    out.push({
+      product_id: productId,
+      name,
+      reference,
+      quantity: qty,
+      stock_remaining:
+        stockParsed != null && Number.isFinite(stockParsed) ? stockParsed : null,
+    });
   }
   return out;
+}
+
+/** Rellena stock_remaining con stock_local actual si el cierre no lo congeló. */
+export async function enrichStockOutLinesRemaining(
+  supabase: SupabaseClient,
+  lines: CashStockOutLine[],
+): Promise<CashStockOutLine[]> {
+  const needIds = [
+    ...new Set(
+      lines
+        .filter((l) => l.stock_remaining == null)
+        .map((l) => l.product_id)
+        .filter(Boolean),
+    ),
+  ];
+  if (needIds.length === 0) return lines;
+
+  const stockById = new Map<string, number>();
+  const { data: products } = await supabase
+    .from("products")
+    .select("id,stock_local")
+    .in("id", needIds);
+  for (const p of products ?? []) {
+    stockById.set(
+      String(p.id),
+      Math.max(0, Math.floor(Number(p.stock_local ?? 0))),
+    );
+  }
+
+  return lines.map((l) =>
+    l.stock_remaining != null
+      ? l
+      : {
+          ...l,
+          stock_remaining: stockById.has(l.product_id)
+            ? (stockById.get(l.product_id) as number)
+            : null,
+        },
+  );
 }
 
 function parseExpenseLines(raw: unknown): CashExpenseLine[] {
@@ -363,11 +471,14 @@ export async function fetchCashDayLiveTotals(
   }
 
   const productIds = [...qtyByProduct.keys()];
-  const nameById = new Map<string, { name: string; reference: string | null }>();
+  const nameById = new Map<
+    string,
+    { name: string; reference: string | null; stock_remaining: number | null }
+  >();
   if (productIds.length > 0) {
     const { data: products } = await supabase
       .from("products")
-      .select("id,name,reference")
+      .select("id,name,reference,stock_local")
       .in("id", productIds);
     for (const p of products ?? []) {
       nameById.set(String(p.id), {
@@ -376,6 +487,7 @@ export async function fetchCashDayLiveTotals(
           p.reference == null || String(p.reference).trim() === ""
             ? null
             : String(p.reference).trim(),
+        stock_remaining: Math.max(0, Math.floor(Number(p.stock_local ?? 0))),
       });
     }
   }
@@ -391,7 +503,13 @@ export async function fetchCashDayLiveTotals(
       const pid = String(s.product_id ?? "");
       if (!pid || nameById.has(pid)) continue;
       const n = String(s.product_name_snapshot ?? "").trim();
-      if (n) nameById.set(pid, { name: n, reference: null });
+      if (n) {
+        nameById.set(pid, {
+          name: n,
+          reference: null,
+          stock_remaining: null,
+        });
+      }
     }
   }
 
@@ -403,6 +521,7 @@ export async function fetchCashDayLiveTotals(
         name: meta?.name ?? "Producto",
         reference: meta?.reference ?? null,
         quantity,
+        stock_remaining: meta?.stock_remaining ?? null,
       };
     })
     .sort((a, b) => b.quantity - a.quantity || a.name.localeCompare(b.name))
@@ -529,16 +648,69 @@ export async function fetchRecentCashSessions(
   supabase: SupabaseClient,
   limit = 30,
 ): Promise<CashRegisterSessionRow[]> {
-  const { data, error } = await supabase
+  const { rows } = await fetchCashSessionsPage(supabase, {
+    page: 1,
+    pageSize: limit,
+  });
+  return rows;
+}
+
+export async function fetchCashSessionsPage(
+  supabase: SupabaseClient,
+  opts: {
+    page: number;
+    pageSize?: number;
+    /** Busca en notas y día (YYYY-MM-DD). */
+    q?: string;
+    status?: "all" | CashSessionStatus;
+    /** Rango inclusivo sobre `business_day` (YYYY-MM-DD). */
+    from?: string;
+    to?: string;
+  },
+): Promise<{ rows: CashRegisterSessionRow[]; total: number }> {
+  const pageSize = Math.min(50, Math.max(5, Math.trunc(opts.pageSize ?? 15)));
+  const page = Math.max(1, Math.trunc(opts.page));
+  const fromIdx = (page - 1) * pageSize;
+  const toIdx = fromIdx + pageSize - 1;
+
+  let query = supabase
     .from("cash_register_sessions")
-    .select(SESSION_SELECT)
-    .order("business_day", { ascending: false })
-    .limit(Math.min(100, Math.max(1, limit)));
-  if (error) {
-    console.error("fetchRecentCashSessions", error);
-    return [];
+    .select(SESSION_SELECT, { count: "exact" })
+    .order("business_day", { ascending: false });
+
+  const status = opts.status ?? "all";
+  if (status === "open" || status === "closed") {
+    query = query.eq("status", status);
   }
-  return (data ?? []).map((r) => mapCashSessionRow(r as Record<string, unknown>));
+
+  const fromDay = String(opts.from ?? "").trim();
+  const toDay = String(opts.to ?? "").trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(fromDay)) {
+    query = query.gte("business_day", fromDay);
+  }
+  if (/^\d{4}-\d{2}-\d{2}$/.test(toDay)) {
+    query = query.lte("business_day", toDay);
+  }
+
+  const q = String(opts.q ?? "").trim();
+  if (q) {
+    const safe = q.replace(/[%_,]/g, "");
+    if (safe) {
+      query = query.or(`notes.ilike.%${safe}%,business_day.ilike.%${safe}%`);
+    }
+  }
+
+  const { data, error, count } = await query.range(fromIdx, toIdx);
+
+  if (error) {
+    console.error("fetchCashSessionsPage", error);
+    return { rows: [], total: 0 };
+  }
+
+  return {
+    rows: (data ?? []).map((r) => mapCashSessionRow(r as Record<string, unknown>)),
+    total: count ?? 0,
+  };
 }
 
 export function todayBusinessDayYmd(): string {

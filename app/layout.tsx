@@ -3,7 +3,15 @@ import type { CSSProperties } from "react";
 import { Geist_Mono, Poppins } from "next/font/google";
 import Script from "next/script";
 import { storeBrand, storeShortDescription } from "@/lib/brand";
-import { ADMIN_SIDEBAR_BG, STORE_CHROME_BG } from "@/lib/admin-theme";
+import {
+  ADMIN_CORAL,
+  ADMIN_CORAL_DEEP,
+  ADMIN_CORAL_HOVER,
+  ADMIN_CORAL_MIST,
+  ADMIN_CORAL_SOFT,
+  ADMIN_SIDEBAR_BG,
+  STORE_CHROME_BG,
+} from "@/lib/admin-theme";
 import { storeCheckoutBootScriptSource } from "@/lib/store-checkout-nav";
 import {
   STORE_ACCENT,
@@ -56,6 +64,11 @@ export default function RootLayout({
         style={
           {
             "--admin-sidebar-bg": ADMIN_SIDEBAR_BG,
+            "--admin-coral": ADMIN_CORAL,
+            "--admin-coral-hover": ADMIN_CORAL_HOVER,
+            "--admin-coral-deep": ADMIN_CORAL_DEEP,
+            "--admin-coral-soft": ADMIN_CORAL_SOFT,
+            "--admin-coral-mist": ADMIN_CORAL_MIST,
             "--store-chrome-bg": STORE_CHROME_BG,
             "--store-accent": STORE_ACCENT,
             "--store-accent-hover": STORE_ACCENT_HOVER,

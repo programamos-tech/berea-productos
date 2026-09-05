@@ -1,12 +1,15 @@
 "use client";
 
+import { RefreshCw } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import {
   AdminDateInput,
-  productInputClass as inputClass,
 } from "@/components/admin/product-form-primitives";
-import { adminButtonToolbarOutlineClass } from "@/lib/admin-ui";
+import {
+  adminFilterInputClass,
+  adminFilterLabelClass,
+} from "@/lib/admin-ui";
 import type { VentaEstadoFilter, VentaPagoFilter } from "@/lib/ventas-sales";
 
 function IconSearch() {
@@ -72,8 +75,7 @@ function buildQuery(
   return qs ? `${pathname}?${qs}` : pathname;
 }
 
-const filterLabelClass =
-  "mb-1.5 block text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-600 dark:text-zinc-400";
+const filterLabelClass = adminFilterLabelClass;
 
 type VentasFiltersBarProps = {
   initialQ: string;
@@ -81,7 +83,11 @@ type VentasFiltersBarProps = {
   initialTo: string;
 };
 
-export function VentasFiltersBar({ initialQ, initialFrom, initialTo }: VentasFiltersBarProps) {
+export function VentasFiltersBar({
+  initialQ,
+  initialFrom,
+  initialTo,
+}: VentasFiltersBarProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -124,102 +130,105 @@ export function VentasFiltersBar({ initialQ, initialFrom, initialTo }: VentasFil
   }, [q, pushQuery, searchParams]);
 
   return (
-    <div className="border-b border-zinc-100 px-4 py-4 dark:border-zinc-800 sm:px-5">
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-12 lg:items-end">
-        <div className="relative min-w-0 sm:col-span-2 lg:col-span-4">
-          <label htmlFor="ventas-q" className={filterLabelClass}>
-            Buscar
-          </label>
-          <div className="relative">
-            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2">
-              <IconSearch />
-            </span>
-            <input
-              id="ventas-q"
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="Factura, cliente…"
-              className={`${inputClass} w-full min-w-0 pl-10`}
-              autoComplete="off"
-              aria-label="Buscar por factura o cliente"
-            />
-          </div>
-        </div>
-        <div className="min-w-0 lg:col-span-2">
-          <label htmlFor="ventas-status" className={filterLabelClass}>
-            Estado
-          </label>
-          <select
-            id="ventas-status"
-            value={status}
-            onChange={(e) =>
-              pushQuery({ status: e.target.value as VentaEstadoFilter })
-            }
-            className={`${inputClass} w-full min-w-0`}
-          >
-            <option value="all">Todas</option>
-            <option value="paid">Finalizada</option>
-            <option value="quotation">Cotización</option>
-            <option value="cancelled">Anulada</option>
-            <option value="pending">Pendiente</option>
-            <option value="failed">Fallida</option>
-          </select>
-        </div>
-        <div className="min-w-0 lg:col-span-2">
-          <label htmlFor="ventas-payment" className={filterLabelClass}>
-            Forma de pago
-          </label>
-          <select
-            id="ventas-payment"
-            value={payment}
-            onChange={(e) =>
-              pushQuery({ payment: e.target.value as VentaPagoFilter })
-            }
-            className={`${inputClass} w-full min-w-0`}
-          >
-            <option value="all">Todas</option>
-            <option value="cash">Efectivo</option>
-            <option value="transfer">Transferencia</option>
-            <option value="mixed">Mixto</option>
-            <option value="online">En línea</option>
-          </select>
-        </div>
-        <div className="min-w-0 lg:col-span-2">
-          <label htmlFor="ventas-from" className={filterLabelClass}>
-            Desde
-          </label>
-          <AdminDateInput
-            id="ventas-from"
-            name="from"
-            value={from}
-            allowEmpty
-            emptyLabel="dd/mm/aaaa"
-            onChange={(next) => {
-              setFrom(next);
-              pushQuery({ from: next });
-            }}
+    <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-12 lg:items-end lg:gap-3">
+      <div className="relative min-w-0 sm:col-span-2 lg:col-span-4">
+        <label htmlFor="ventas-q" className={filterLabelClass}>
+          Buscar
+        </label>
+        <div className="relative">
+          <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2">
+            <IconSearch />
+          </span>
+          <input
+            id="ventas-q"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Factura, cliente…"
+            className={`${adminFilterInputClass} pl-8`}
+            autoComplete="off"
+            aria-label="Buscar por factura o cliente"
           />
         </div>
-        <div className="min-w-0 lg:col-span-2">
-          <label htmlFor="ventas-to" className={filterLabelClass}>
-            Hasta
-          </label>
-          <AdminDateInput
-            id="ventas-to"
-            name="to"
-            value={to}
-            allowEmpty
-            emptyLabel="dd/mm/aaaa"
-            onChange={(next) => {
-              setTo(next);
-              pushQuery({ to: next });
-            }}
-          />
-        </div>
+      </div>
+      <div className="min-w-0 lg:col-span-2">
+        <label htmlFor="ventas-status" className={filterLabelClass}>
+          Estado
+        </label>
+        <select
+          id="ventas-status"
+          value={status}
+          onChange={(e) =>
+            pushQuery({ status: e.target.value as VentaEstadoFilter })
+          }
+          className={adminFilterInputClass}
+        >
+          <option value="all">Todas</option>
+          <option value="paid">Finalizada</option>
+          <option value="quotation">Cotización</option>
+          <option value="cancelled">Anulada</option>
+          <option value="pending">Pendiente</option>
+          <option value="failed">Fallida</option>
+        </select>
+      </div>
+      <div className="min-w-0 lg:col-span-2">
+        <label htmlFor="ventas-payment" className={filterLabelClass}>
+          Forma de pago
+        </label>
+        <select
+          id="ventas-payment"
+          value={payment}
+          onChange={(e) =>
+            pushQuery({ payment: e.target.value as VentaPagoFilter })
+          }
+          className={adminFilterInputClass}
+        >
+          <option value="all">Todas</option>
+          <option value="cash">Efectivo</option>
+          <option value="transfer">Transferencia</option>
+          <option value="mixed">Mixto</option>
+          <option value="online">En línea</option>
+        </select>
+      </div>
+      <div className="min-w-0 lg:col-span-2">
+        <label htmlFor="ventas-from" className={filterLabelClass}>
+          Desde
+        </label>
+        <AdminDateInput
+          id="ventas-from"
+          name="from"
+          value={from}
+          allowEmpty
+          emptyLabel="dd/mm/aaaa"
+          className={adminFilterInputClass}
+          onChange={(next) => {
+            setFrom(next);
+            pushQuery({ from: next });
+          }}
+        />
+      </div>
+      <div className="min-w-0 lg:col-span-2">
+        <label htmlFor="ventas-to" className={filterLabelClass}>
+          Hasta
+        </label>
+        <AdminDateInput
+          id="ventas-to"
+          name="to"
+          value={to}
+          allowEmpty
+          emptyLabel="dd/mm/aaaa"
+          className={adminFilterInputClass}
+          onChange={(next) => {
+            setTo(next);
+            pushQuery({ to: next });
+          }}
+        />
       </div>
     </div>
   );
 }
+
+const refreshBtnClass =
+  "inline-flex size-8 items-center justify-center rounded-lg border border-zinc-300 bg-white text-zinc-700 transition hover:border-zinc-400 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200 dark:hover:border-zinc-600 dark:hover:bg-zinc-800";
 
 export function VentasRefreshButton() {
   const router = useRouter();
@@ -227,22 +236,11 @@ export function VentasRefreshButton() {
     <button
       type="button"
       onClick={() => router.refresh()}
-      className={adminButtonToolbarOutlineClass}
+      className={refreshBtnClass}
+      aria-label="Actualizar ventas"
+      title="Actualizar"
     >
-      <svg
-        viewBox="0 0 24 24"
-        className="size-4 shrink-0"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth={1.8}
-        aria-hidden
-      >
-        <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" strokeLinecap="round" />
-        <path d="M3 3v5h5" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" strokeLinecap="round" />
-        <path d="M16 21h5v-5" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-      Actualizar
+      <RefreshCw className="size-3.5 shrink-0" strokeWidth={2.25} aria-hidden />
     </button>
   );
 }

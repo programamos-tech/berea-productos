@@ -1,9 +1,5 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { resendCashCloseReport } from "@/app/actions/admin/cash-register";
-import {
-  AdminFormSubmitButton,
-} from "@/components/admin/AdminFormSubmitButton";
 import {
   CashClosedMoneyGrid,
   CashDiscrepancyBanner,
@@ -11,7 +7,11 @@ import {
   CashStockOutReadonly,
 } from "@/components/admin/CashRegisterForms";
 import { prettyReportDayShortLabel } from "@/lib/admin-report-range";
-import { fetchCashSessionById } from "@/lib/cash-register";
+import {
+  enrichStockOutLinesRemaining,
+  fetchCashSessionById,
+} from "@/lib/cash-register";
+import { resolveProfileName } from "@/lib/cash-close-report";
 import { cashCloseReportRecipientsLabel } from "@/lib/email/send";
 import { requireAdminAnyPermission } from "@/lib/require-admin-permission";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -25,8 +25,7 @@ export default async function AdminCajaDetailPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const perm = await requireAdminAnyPermission(["caja_ver", "caja_gestionar"]);
-  const canManage = Boolean(perm.permissions.caja_gestionar);
+  await requireAdminAnyPermission(["caja_ver", "caja_gestionar"]);
   const { id } = await params;
   const sp = await searchParams;
   const reportRaw = typeof sp.report === "string" ? sp.report : undefined;
@@ -35,10 +34,14 @@ export default async function AdminCajaDetailPage({
   const session = await fetchCashSessionById(supabase, id);
   if (!session) notFound();
 
-  // Mientras esté abierta, el detalle completo no se muestra (cierre a ciegas).
   if (session.status === "open") {
     redirect("/admin/caja");
   }
+
+  const [stockOutLines, closedByLabel] = await Promise.all([
+    enrichStockOutLinesRemaining(supabase, session.stock_out_lines),
+    resolveProfileName(supabase, session.closed_by),
+  ]);
 
   const dayLabel = prettyReportDayShortLabel(session.business_day);
   const diff = session.cash_difference_cents;
@@ -49,29 +52,25 @@ export default async function AdminCajaDetailPage({
       value: session.opening_float_cents,
       kind: "fondo" as const,
     },
-    { label: "Ventas total", value: session.sales_total_cents, kind: "ventas" as const },
-    { label: "Ventas efectivo", value: session.sales_cash_cents, kind: "efectivo" as const },
     {
-      label: "Ventas transferencia",
+      label: "Ventas totales",
+      value: session.sales_total_cents,
+      kind: "ventas" as const,
+    },
+    {
+      label: "Ventas efectivo",
+      value: session.sales_cash_cents,
+      kind: "efectivo" as const,
+    },
+    {
+      label: "Transferencias",
       value: session.sales_transfer_cents,
       kind: "transfer" as const,
     },
     {
-      label: "Ventas mixtas / otras",
+      label: "Egresos",
       value:
-        session.sales_mixed_cents != null || session.sales_other_cents != null
-          ? (session.sales_mixed_cents ?? 0) + (session.sales_other_cents ?? 0)
-          : null,
-      kind: "mixtas" as const,
-    },
-    {
-      label: "Egresos efectivo",
-      value: session.expenses_cash_cents,
-      kind: "egreso" as const,
-    },
-    {
-      label: "Egresos otros",
-      value: session.expenses_other_cents,
+        (session.expenses_cash_cents ?? 0) + (session.expenses_other_cents ?? 0),
       kind: "egreso" as const,
     },
     {
@@ -96,47 +95,63 @@ export default async function AdminCajaDetailPage({
           : null;
 
   return (
-    <div className="w-full max-w-none space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
-            <Link href="/admin/caja" className="hover:text-zinc-800 dark:hover:text-zinc-200">
-              Cierre de caja
+    <div className="flex w-full max-w-none flex-col gap-4">
+      <header className="flex flex-wrap items-center justify-between gap-2 gap-y-2">
+        <div className="min-w-0">
+          <p className="text-[11px] text-zinc-500">
+            <Link
+              href="/admin/caja"
+              className="hover:text-zinc-800 dark:hover:text-zinc-200"
+            >
+              Caja
             </Link>
-            <span className="mx-1.5 text-zinc-300 dark:text-zinc-600">/</span>
-            <span className="text-zinc-700 dark:text-zinc-300">{dayLabel}</span>
+            <span className="mx-1.5 text-zinc-400">/</span>
+            {dayLabel}
           </p>
-          <h1 className="mt-2 text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
+          <h1 className="mt-0.5 text-lg font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 sm:text-xl">
             Registro del {dayLabel}
           </h1>
-          <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
-            Cierre congelado — no se modifica.
+          <p className="mt-0.5 text-xs text-zinc-500">
+            Cerrado por{" "}
+            <span className="font-medium text-zinc-700 dark:text-zinc-300">
+              {closedByLabel ?? "—"}
+            </span>
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          {canManage ? (
-            <form action={resendCashCloseReport}>
-              <input type="hidden" name="session_id" value={session.id} />
-              <AdminFormSubmitButton
-                pendingLabel="Enviando…"
-                className="inline-flex items-center justify-center rounded-lg border border-rose-950 bg-rose-950 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:border-rose-900 hover:bg-rose-900 disabled:cursor-not-allowed disabled:border-zinc-200 disabled:bg-zinc-200 disabled:text-zinc-500 dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-white dark:disabled:border-zinc-700 dark:disabled:bg-zinc-800 dark:disabled:text-zinc-500"
-              >
-                Enviar reporte por correo
-              </AdminFormSubmitButton>
-            </form>
-          ) : null}
-          <span className="rounded-md bg-zinc-100 px-2.5 py-1 text-xs font-medium text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200">
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <Link
+            href="/admin/caja"
+            className="inline-flex size-8 items-center justify-center rounded-lg border border-zinc-300 bg-white text-zinc-700 transition hover:border-zinc-400 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200 dark:hover:border-zinc-600 dark:hover:bg-zinc-800"
+            title="Volver"
+            aria-label="Volver a caja"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2}
+              className="size-4"
+              aria-hidden
+            >
+              <path
+                d="m15 18-6-6 6-6"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </Link>
+          <span className="inline-flex items-center rounded-md bg-zinc-100 px-2 py-0.5 text-[11px] font-medium uppercase tracking-[0.08em] text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
             Cerrada
           </span>
         </div>
-      </div>
+      </header>
 
       {reportBanner ? (
         <p
-          className={`rounded-xl border px-4 py-3 text-sm ${
+          className={`text-sm ${
             reportRaw === "sent"
-              ? "border-emerald-200 bg-emerald-50 text-emerald-900 dark:border-emerald-900/50 dark:bg-emerald-950/30 dark:text-emerald-100"
-              : "border-amber-200 bg-amber-50 text-amber-950 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-100"
+              ? "text-emerald-700 dark:text-emerald-400"
+              : "text-amber-700 dark:text-amber-300"
           }`}
         >
           {reportBanner}
@@ -146,20 +161,29 @@ export default async function AdminCajaDetailPage({
       {diff != null ? (
         <CashDiscrepancyBanner
           diff={diff}
-          unitsSold={session.units_sold}
-          expenseCount={session.expense_lines.length}
           notes={session.notes}
         />
+      ) : session.notes ? (
+        <p className="text-sm text-zinc-600 dark:text-zinc-400">
+          <span className="font-medium text-zinc-800 dark:text-zinc-200">
+            Nota:{" "}
+          </span>
+          {session.notes}
+        </p>
       ) : null}
 
-      <CashClosedMoneyGrid rows={moneyRows} />
-
-      <div className="grid gap-5 lg:grid-cols-2">
-        <CashStockOutReadonly
-          lines={session.stock_out_lines}
-          unitsSold={session.units_sold}
+      <div className="border-t border-zinc-200/70 pt-4 dark:border-zinc-800">
+        <CashClosedMoneyGrid
+          rows={moneyRows}
+          cashDifferenceCents={diff}
         />
-        <CashExpensesReadonly lines={session.expense_lines} />
+      </div>
+
+      <div className="grid gap-6 border-t border-zinc-200/70 pt-4 dark:border-zinc-800 lg:grid-cols-2 lg:gap-8">
+        <CashStockOutReadonly lines={stockOutLines} />
+        <div className="lg:border-l lg:border-zinc-200/70 lg:pl-8 dark:lg:border-zinc-800">
+          <CashExpensesReadonly lines={session.expense_lines} />
+        </div>
       </div>
     </div>
   );

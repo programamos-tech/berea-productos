@@ -89,10 +89,6 @@ export function ProductSizeRows({ initialRows }: Props) {
         <Plus className="size-4" strokeWidth={1.5} aria-hidden />
         Añadir tamaño
       </button>
-      <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
-        Podés cargar varias presentaciones (ej. 177 ml y 400 ml). La primera fila
-        también actualiza el tamaño que usa el filtro del catálogo cuando aplica.
-      </p>
     </div>
   );
 }

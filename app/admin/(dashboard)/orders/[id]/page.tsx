@@ -1,7 +1,9 @@
 import { notFound } from "next/navigation";
 import { OrderInvoiceDetailView } from "@/components/admin/OrderInvoiceDetailView";
 import { safeAdminVentasListReturnPath } from "@/lib/admin-ventas-list-url";
+import { resolveProfileName } from "@/lib/cash-close-report";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getTenantBrandForRequest } from "@/lib/tenant-context";
 import { ventaNumeroReferencia } from "@/lib/ventas-sales";
 
 export const dynamic = "force-dynamic";
@@ -77,7 +79,7 @@ export default async function AdminOrderDetailPage({ params, searchParams }: Pro
 
   const needsTransferProofs = checkoutPm === "transfer";
 
-  const [customerRes, proofsRes] = await Promise.all([
+  const [customerRes, proofsRes, saleActorRes] = await Promise.all([
     customerId
       ? supabase
           .from("customers")
@@ -92,7 +94,24 @@ export default async function AdminOrderDetailPage({ params, searchParams }: Pro
           .eq("order_id", id)
           .order("created_at", { ascending: true })
       : Promise.resolve({ data: [] as { storage_path: string; original_filename: string | null; created_at: string }[] }),
+    supabase
+      .from("admin_activity_log")
+      .select("actor_id")
+      .eq("action_type", "sale_created")
+      .eq("entity_type", "order")
+      .eq("entity_id", id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
   ]);
+
+  const sellerActorId =
+    saleActorRes.data?.actor_id != null
+      ? String(saleActorRes.data.actor_id)
+      : null;
+  const sellerName = sellerActorId
+    ? await resolveProfileName(supabase, sellerActorId)
+    : null;
 
   let customerDocumentId: string | null = null;
   let customerPhoneFromProfile: string | null = null;
@@ -163,57 +182,60 @@ export default async function AdminOrderDetailPage({ params, searchParams }: Pro
     ).filter((x): x is NonNullable<typeof x> => x != null);
   }
 
+  const invoiceBrand = await getTenantBrandForRequest();
+
   return (
-    <div className="-mx-3 w-[calc(100%+1.5rem)] max-w-none bg-zinc-50/70 py-6 dark:bg-zinc-950/80 sm:-mx-4 sm:w-[calc(100%+2rem)] md:-mx-6 md:w-[calc(100%+3rem)] print:mx-0 print:w-auto print:bg-transparent print:py-0 print:p-0">
-      <OrderInvoiceDetailView
-        orderId={id}
-        invoiceRef={invoiceRef}
-        status={String(order.status)}
-        customerName={String(order.customer_name ?? "")}
-        customerEmail={String(order.customer_email ?? "")}
-        totalCents={Number(order.total_cents ?? 0)}
-        createdAt={String(order.created_at)}
-        wompiReference={
-          order.wompi_reference != null ? String(order.wompi_reference) : null
-        }
-        shippingAddress={
-          order.shipping_address != null ? String(order.shipping_address) : null
-        }
-        shippingCity={
-          order.shipping_city != null ? String(order.shipping_city) : null
-        }
-        shippingNeighborhood={
-          orderShippingNeighborhood.length > 0
-            ? orderShippingNeighborhood
-            : null
-        }
-        shippingReference={
-          orderShippingReference.length > 0 ? orderShippingReference : null
-        }
-        shippingCents={Number(
-          "shipping_cents" in order ? (order.shipping_cents ?? 0) : 0,
-        )}
-        customerDocumentId={customerDocumentId}
-        customerPhone={customerPhone}
-        customerAddress={customerAddress}
-        shippingPhone={
-          order.shipping_phone != null ? String(order.shipping_phone) : null
-        }
-        cancellationReason={
-          order.cancellation_reason != null
-            ? String(order.cancellation_reason)
-            : null
-        }
-        lines={lines}
-        transferProofAttachments={transferProofAttachments}
-        checkoutPaymentMethod={checkoutPm}
-        fulfillmentStatus={
-          "fulfillment_status" in order && order.fulfillment_status != null
-            ? String(order.fulfillment_status)
-            : null
-        }
-        ventasListHref={ventasListHref}
-      />
-    </div>
+    <OrderInvoiceDetailView
+      orderId={id}
+      invoiceRef={invoiceRef}
+      status={String(order.status)}
+      customerName={String(order.customer_name ?? "")}
+      customerEmail={String(order.customer_email ?? "")}
+      customerId={customerId}
+      sellerName={sellerName}
+      totalCents={Number(order.total_cents ?? 0)}
+      createdAt={String(order.created_at)}
+      wompiReference={
+        order.wompi_reference != null ? String(order.wompi_reference) : null
+      }
+      shippingAddress={
+        order.shipping_address != null ? String(order.shipping_address) : null
+      }
+      shippingCity={
+        order.shipping_city != null ? String(order.shipping_city) : null
+      }
+      shippingNeighborhood={
+        orderShippingNeighborhood.length > 0
+          ? orderShippingNeighborhood
+          : null
+      }
+      shippingReference={
+        orderShippingReference.length > 0 ? orderShippingReference : null
+      }
+      shippingCents={Number(
+        "shipping_cents" in order ? (order.shipping_cents ?? 0) : 0,
+      )}
+      customerDocumentId={customerDocumentId}
+      customerPhone={customerPhone}
+      customerAddress={customerAddress}
+      shippingPhone={
+        order.shipping_phone != null ? String(order.shipping_phone) : null
+      }
+      cancellationReason={
+        order.cancellation_reason != null
+          ? String(order.cancellation_reason)
+          : null
+      }
+      lines={lines}
+      transferProofAttachments={transferProofAttachments}
+      checkoutPaymentMethod={checkoutPm}
+      fulfillmentStatus={
+        "fulfillment_status" in order && order.fulfillment_status != null
+          ? String(order.fulfillment_status)
+          : null
+      }
+      ventasListHref={ventasListHref}
+      invoiceBrand={invoiceBrand}
+    />
   );
 }

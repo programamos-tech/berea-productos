@@ -8,20 +8,25 @@ import {
   type PDFPage,
 } from "pdf-lib";
 import {
-  invoiceLegalName,
-  invoiceLogoPath,
-  invoiceStoreAddress,
-  invoiceStoreCity,
-  invoiceTaxNit,
-  invoiceTradeName,
-  storeSupportEmail,
-  storeSupportHours,
-  storeSupportPhone,
-  storeTaxRegime,
+  invoiceLegalName as envInvoiceLegalName,
+  invoiceLogoPath as envInvoiceLogoPath,
+  invoiceStoreAddress as envInvoiceStoreAddress,
+  invoiceStoreCity as envInvoiceStoreCity,
+  invoiceTaxNit as envInvoiceTaxNit,
+  invoiceTradeName as envInvoiceTradeName,
+  storeSupportEmail as envStoreSupportEmail,
+  storeSupportHours as envStoreSupportHours,
+  storeSupportPhone as envStoreSupportPhone,
+  storeTaxRegime as envStoreTaxRegime,
 } from "@/lib/brand";
 import { formatCop } from "@/lib/money";
 import { getPublicSiteUrl } from "@/lib/public-site-url";
 import { STORE_BRAND } from "@/lib/store-theme";
+import {
+  resolveInvoiceLogoSrc,
+  tenantBrandToInvoiceFields,
+  type InvoiceBrandFields,
+} from "@/lib/tenant-brand";
 
 export type QuotationPdfLine = {
   name: string;
@@ -40,6 +45,8 @@ export type QuotationPdfInput = {
   createdAt: string | null;
   totalCents: number;
   lines: QuotationPdfLine[];
+  /** Tenant brand; omit to use env defaults (Aleya). */
+  brand?: InvoiceBrandFields;
 };
 
 const BRAND = hexToRgb(STORE_BRAND);
@@ -114,11 +121,15 @@ function drawText(
   return y;
 }
 
-async function loadLogoBytes(): Promise<Uint8Array | null> {
+async function loadLogoBytes(logoPath: string): Promise<Uint8Array | null> {
   try {
-    const rel = invoiceLogoPath.startsWith("/")
-      ? invoiceLogoPath.slice(1)
-      : invoiceLogoPath;
+    const src = resolveInvoiceLogoSrc(logoPath);
+    if (/^https?:\/\//i.test(src)) {
+      const res = await fetch(src);
+      if (!res.ok) return null;
+      return new Uint8Array(await res.arrayBuffer());
+    }
+    const rel = src.startsWith("/") ? src.slice(1) : src;
     const buf = await readFile(join(process.cwd(), "public", rel));
     return new Uint8Array(buf);
   } catch {
@@ -127,11 +138,25 @@ async function loadLogoBytes(): Promise<Uint8Array | null> {
 }
 
 /**
- * Genera PDF membretado de cotización (carta) con marca Aleya Shop SAS.
+ * Genera PDF membretado de cotización (carta).
+ * Usa `input.brand` cuando hay tenant; si no, env de Aleya.
  */
 export async function buildQuotationPdf(
   input: QuotationPdfInput,
 ): Promise<Uint8Array> {
+  const brand = input.brand ?? tenantBrandToInvoiceFields(null);
+  const invoiceLegalName = brand.invoiceLegalName || envInvoiceLegalName;
+  const invoiceTradeName = brand.invoiceTradeName || envInvoiceTradeName;
+  const invoiceTaxNit = brand.invoiceTaxNit || envInvoiceTaxNit;
+  const storeTaxRegime = brand.storeTaxRegime || envStoreTaxRegime;
+  const invoiceStoreAddress =
+    brand.invoiceStoreAddress || envInvoiceStoreAddress;
+  const invoiceStoreCity = brand.invoiceStoreCity || envInvoiceStoreCity;
+  const invoiceLogoPath = brand.invoiceLogoPath || envInvoiceLogoPath;
+  const storeSupportPhone = brand.storeSupportPhone || envStoreSupportPhone;
+  const storeSupportEmail = brand.storeSupportEmail || envStoreSupportEmail;
+  const storeSupportHours = brand.storeSupportHours || envStoreSupportHours;
+
   const pdf = await PDFDocument.create();
   const font = await pdf.embedFont(StandardFonts.Helvetica);
   const fontBold = await pdf.embedFont(StandardFonts.HelveticaBold);
@@ -161,11 +186,16 @@ export async function buildQuotationPdf(
   });
   y = pageHeight - 36;
 
-  const logoBytes = await loadLogoBytes();
+  const logoBytes = await loadLogoBytes(invoiceLogoPath);
   let logoBottom = y;
   if (logoBytes) {
     try {
-      const logo = await pdf.embedPng(logoBytes);
+      let logo;
+      try {
+        logo = await pdf.embedPng(logoBytes);
+      } catch {
+        logo = await pdf.embedJpg(logoBytes);
+      }
       const maxW = 108;
       const maxH = 72;
       const scale = Math.min(maxW / logo.width, maxH / logo.height);
@@ -588,7 +618,13 @@ export async function buildQuotationPdf(
   return pdf.save();
 }
 
-export function quotationPdfFilename(invoiceRef: string): string {
+export function quotationPdfFilename(
+  invoiceRef: string,
+  tradeName?: string,
+): string {
   const safe = invoiceRef.replace(/[^\w.-]+/g, "_");
-  return `Cotizacion_${safe}_AleyaShop.pdf`;
+  const brand = (tradeName ?? envInvoiceTradeName)
+    .replace(/[^\w.-]+/g, "")
+    .slice(0, 24);
+  return `Cotizacion_${safe}_${brand || "tienda"}.pdf`;
 }

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ExpenseCancelButton } from "@/components/admin/ExpenseCancelButton";
 
 const iconBtnClass =
-  "inline-flex size-9 items-center justify-center rounded-lg text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100";
+  "inline-flex size-8 items-center justify-center rounded-lg text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100";
 
 type Props = {
   expenseId: string;

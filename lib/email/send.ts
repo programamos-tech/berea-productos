@@ -4,21 +4,20 @@ export type SendEmailResult =
   | { ok: true; id: string | null }
   | { ok: false; error: string };
 
+const OWNER_CASH_CLOSE_TO = "aleyashopoficial@gmail.com";
+const DEV_INBOX_BLOCKLIST = new Set(["programamos.st@gmail.com"]);
+
 export function cashCloseReportToAddresses(): string[] {
   const fromEnv = process.env.CASH_CLOSE_REPORT_TO?.trim();
-  const defaults = [
-    "programamos.st@gmail.com",
-    "aleyashopoficial@gmail.com",
-  ];
-  const parsed = (fromEnv ? fromEnv.split(/[,;]+/) : defaults)
+  const parsed = (fromEnv ? fromEnv.split(/[,;]+/) : [OWNER_CASH_CLOSE_TO])
     .map((s) => s.trim().toLowerCase())
-    .filter(Boolean);
-  return [...new Set(parsed.length > 0 ? parsed : defaults)];
+    .filter((s) => s && !DEV_INBOX_BLOCKLIST.has(s));
+  return [...new Set(parsed.length > 0 ? parsed : [OWNER_CASH_CLOSE_TO])];
 }
 
 /** @deprecated Prefer `cashCloseReportToAddresses`. */
 export function cashCloseReportToAddress(): string {
-  return cashCloseReportToAddresses()[0] ?? "programamos.st@gmail.com";
+  return cashCloseReportToAddresses()[0] ?? OWNER_CASH_CLOSE_TO;
 }
 
 export function cashCloseReportRecipientsLabel(): string {
@@ -28,8 +27,8 @@ export function cashCloseReportRecipientsLabel(): string {
 export function emailFromAddress(): string {
   return (
     process.env.EMAIL_FROM?.trim() ||
-    // Sin dominio verificado en Resend: solo llega al dueño de la cuenta (programamos.st@gmail.com).
-    "Milagros Guacarí <onboarding@resend.dev>"
+    // Sin dominio verificado, Resend no entrega a Aleya. Verificar aleyashop.net y usar caja@aleyashop.net.
+    "Aleya Shop SAS <onboarding@resend.dev>"
   );
 }
 

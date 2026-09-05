@@ -162,14 +162,20 @@ async function fetchOrderStatsForCustomers(
   const customerIds = pageCustomers.map((c) => c.id);
 
   if (customerIds.length > 0) {
-    const { data, error } = await supabase
-      .from("orders")
-      .select("id,customer_id,customer_email,total_cents,created_at")
-      .in("customer_id", customerIds);
+    // Pedidos en lotes (PostgREST limita .in())
+    const chunkSize = 80;
+    for (let i = 0; i < customerIds.length; i += chunkSize) {
+      const chunk = customerIds.slice(i, i + chunkSize);
+      const { data, error } = await supabase
+        .from("orders")
+        .select("id,customer_id,customer_email,total_cents,created_at")
+        .eq("status", "paid")
+        .in("customer_id", chunk);
 
-    if (!error && data?.length) {
-      const maps = buildStatsMapsFromOrders(data as OrderStatRow[]);
-      for (const [k, v] of maps.byCustomerId) byCustomerId.set(k, v);
+      if (!error && data?.length) {
+        const maps = buildStatsMapsFromOrders(data as OrderStatRow[]);
+        for (const [k, v] of maps.byCustomerId) byCustomerId.set(k, v);
+      }
     }
   }
 
@@ -181,26 +187,58 @@ async function fetchOrderStatsForCustomers(
   }
 
   if (emailsForFallback.length > 0) {
-    const { data, error } = await supabase
-      .from("orders")
-      .select("id,customer_id,customer_email,total_cents,created_at")
-      .is("customer_id", null)
-      .in("customer_email", emailsForFallback);
+    const chunkSize = 80;
+    for (let i = 0; i < emailsForFallback.length; i += chunkSize) {
+      const chunk = emailsForFallback.slice(i, i + chunkSize);
+      const { data, error } = await supabase
+        .from("orders")
+        .select("id,customer_id,customer_email,total_cents,created_at")
+        .eq("status", "paid")
+        .is("customer_id", null)
+        .in("customer_email", chunk);
 
-    if (!error && data?.length) {
-      const maps = buildStatsMapsFromOrders(data as OrderStatRow[]);
-      for (const [k, v] of maps.byEmail) byEmail.set(k, v);
+      if (!error && data?.length) {
+        const maps = buildStatsMapsFromOrders(data as OrderStatRow[]);
+        for (const [k, v] of maps.byEmail) byEmail.set(k, v);
+      }
     }
   }
 
   return { byCustomerId, byEmail };
 }
 
+function sortByMostPurchases(a: AdminCustomerListRow, b: AdminCustomerListRow) {
+  if (b.purchases !== a.purchases) return b.purchases - a.purchases;
+  if (b.totalSpent !== a.totalSpent) return b.totalSpent - a.totalSpent;
+  return a.name.localeCompare(b.name, "es", { sensitivity: "base" });
+}
+
 export type FetchAdminCustomersPageOpts = {
   q?: string;
+  /** `retail` = minorista / final; `wholesale` = mayorista. */
+  kind?: "all" | "retail" | "wholesale";
+  /** Filtro por última compra pagada (90 días = activo). */
+  activity?: "all" | "active" | "inactive" | "never";
   page: number;
   pageSize: number;
 };
+
+const ACTIVE_PURCHASE_MS = 90 * 24 * 60 * 60 * 1000;
+
+function matchesActivity(
+  row: AdminCustomerListRow,
+  activity: "all" | "active" | "inactive" | "never",
+  nowMs: number,
+): boolean {
+  if (activity === "all") return true;
+  if (activity === "never") return row.purchases <= 0;
+  if (row.purchases <= 0 || !row.lastPurchaseAt) return false;
+  const lastMs = new Date(row.lastPurchaseAt).getTime();
+  if (!Number.isFinite(lastMs)) return false;
+  const isRecent = nowMs - lastMs <= ACTIVE_PURCHASE_MS;
+  if (activity === "active") return isRecent;
+  return !isRecent;
+}
 
 export type FetchAdminCustomersPageResult = {
   rows: AdminCustomerListRow[];
@@ -210,7 +248,7 @@ export type FetchAdminCustomersPageResult = {
 };
 
 /**
- * Listado admin paginado: clientes en SQL + stats de pedidos solo para la página actual.
+ * Listado admin paginado, ordenado por más compras (pedidos pagados).
  */
 export async function fetchAdminCustomersPage(
   supabase: SupabaseClient,
@@ -218,43 +256,69 @@ export async function fetchAdminCustomersPage(
 ): Promise<FetchAdminCustomersPageResult> {
   const qRaw = opts.q?.trim() ?? "";
   const q = qRaw ? sanitizeIlikeQuery(qRaw) : "";
+  const kind =
+    opts.kind === "wholesale" || opts.kind === "retail" ? opts.kind : "all";
+  const activity =
+    opts.activity === "active" ||
+    opts.activity === "inactive" ||
+    opts.activity === "never"
+      ? opts.activity
+      : "all";
   const safePage = Math.max(1, Math.floor(opts.page));
   const safeSize = Math.min(100, Math.max(1, Math.floor(opts.pageSize)));
   const from = (safePage - 1) * safeSize;
-  const to = from + safeSize - 1;
+  const nowMs = Date.now();
 
-  let query = supabase
-    .from("customers")
-    .select(CUSTOMER_SELECT, { count: "exact" })
-    .order("name", { ascending: true })
-    .range(from, to);
+  const rawRows: Record<string, unknown>[] = [];
+  const fetchChunk = 1000;
+  let offset = 0;
 
-  if (q) {
-    const pattern = `%${q}%`;
-    query = query.or(
-      [
-        `name.ilike.${pattern}`,
-        `email.ilike.${pattern}`,
-        `phone.ilike.${pattern}`,
-        `document_id.ilike.${pattern}`,
-        `shipping_address.ilike.${pattern}`,
-        `shipping_city.ilike.${pattern}`,
-      ].join(","),
-    );
+  for (;;) {
+    let query = supabase
+      .from("customers")
+      .select(CUSTOMER_SELECT)
+      .order("name", { ascending: true })
+      .range(offset, offset + fetchChunk - 1);
+
+    if (kind === "wholesale") {
+      query = query.eq("customer_kind", "wholesale");
+    } else if (kind === "retail") {
+      query = query.or("customer_kind.eq.retail,customer_kind.is.null");
+    }
+
+    if (q) {
+      const pattern = `%${q}%`;
+      query = query.or(
+        [
+          `name.ilike.${pattern}`,
+          `email.ilike.${pattern}`,
+          `phone.ilike.${pattern}`,
+          `document_id.ilike.${pattern}`,
+          `shipping_address.ilike.${pattern}`,
+          `shipping_city.ilike.${pattern}`,
+        ].join(","),
+      );
+    }
+
+    const { data: customerRows, error: cErr } = await query;
+
+    if (cErr) {
+      return {
+        rows: [],
+        total: 0,
+        error: cErr,
+        withoutShippingFields: false,
+      };
+    }
+
+    const batch = (customerRows ?? []) as Record<string, unknown>[];
+    rawRows.push(...batch);
+    if (batch.length < fetchChunk) break;
+    offset += fetchChunk;
+    // Tope de seguridad
+    if (offset >= 20_000) break;
   }
 
-  const { data: customerRows, error: cErr, count } = await query;
-
-  if (cErr) {
-    return {
-      rows: [],
-      total: 0,
-      error: cErr,
-      withoutShippingFields: false,
-    };
-  }
-
-  const rawRows = customerRows ?? [];
   const pageCustomers = rawRows.map((r) => {
     const row = r as { id: string; email?: string | null };
     return { id: String(row.id), email: row.email ?? null };
@@ -265,17 +329,17 @@ export async function fetchAdminCustomersPage(
     pageCustomers,
   );
 
-  const rows = rawRows.map((raw) =>
-    mapCustomerRow(
-      raw as Record<string, unknown>,
-      byCustomerId,
-      byEmail,
-    ),
-  );
+  const sorted = rawRows
+    .map((raw) => mapCustomerRow(raw, byCustomerId, byEmail))
+    .filter((row) => matchesActivity(row, activity, nowMs))
+    .sort(sortByMostPurchases);
+
+  const total = sorted.length;
+  const rows = sorted.slice(from, from + safeSize);
 
   return {
     rows,
-    total: count ?? rows.length,
+    total,
     error: null,
     withoutShippingFields: false,
   };

@@ -2,6 +2,14 @@ import { REPORT_STORE_TIME_ZONE } from "@/lib/admin-report-range";
 
 const TZ = { timeZone: REPORT_STORE_TIME_ZONE } as const;
 
+/** Node vs browser a veces usan NBSP / narrow-NBSP en am/pm → rompe hidratación. */
+function normalizeLocaleText(s: string): string {
+  return s
+    .replace(/[\u00A0\u202F\u2009]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 /** Fecha corta + hora (lista ventas / tarjetas). */
 export function formatStoreVentaFecha(iso: string | null | undefined): string {
   if (!iso) return "—";
@@ -18,7 +26,7 @@ export function formatStoreVentaFecha(iso: string | null | undefined): string {
     day: "numeric",
     month: "short",
   });
-  return `${time} · ${date}`;
+  return normalizeLocaleText(`${time} · ${date}`);
 }
 
 export function formatStoreDateTime(
@@ -28,41 +36,47 @@ export function formatStoreDateTime(
   if (!iso) return "—";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "—";
-  return d.toLocaleString("es-CO", { ...TZ, ...options });
+  return normalizeLocaleText(d.toLocaleString("es-CO", { ...TZ, ...options }));
 }
 
 export function formatStoreInvoiceDateTime(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "—";
-  return d.toLocaleString("es-CO", {
-    ...TZ,
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: true,
-  });
+  return normalizeLocaleText(
+    d.toLocaleString("es-CO", {
+      ...TZ,
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    }),
+  );
 }
 
 export function formatStoreInvoiceDateNumeric(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "—";
-  return d.toLocaleDateString("es-CO", {
-    ...TZ,
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  });
+  return normalizeLocaleText(
+    d.toLocaleDateString("es-CO", {
+      ...TZ,
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    }),
+  );
 }
 
 /** Hora HH:mm en calendario tienda (p. ej. junto a fecha de factura de proveedor). */
 export function formatStoreTimeHourMinute(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "—";
-  return d.toLocaleTimeString("es-CO", {
-    ...TZ,
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  return normalizeLocaleText(
+    d.toLocaleTimeString("es-CO", {
+      ...TZ,
+      hour: "2-digit",
+      minute: "2-digit",
+    }),
+  );
 }

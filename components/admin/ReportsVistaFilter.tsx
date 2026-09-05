@@ -25,13 +25,13 @@ const options: Array<{
 ];
 
 const btnBase =
-  "inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium shadow-[0_1px_2px_0_rgb(190_24_93/0.06)] transition dark:shadow-none";
+  "inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium shadow-[0_1px_2px_0_rgb(220_38_38/0.06)] transition dark:shadow-none";
 
 const btnIdle =
-  "border-rose-200/70 bg-white text-rose-950/85 hover:border-rose-300/80 hover:bg-rose-50/50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-400 dark:hover:border-zinc-600 dark:hover:bg-zinc-800 dark:hover:text-zinc-200";
+  "border-zinc-300 bg-white text-zinc-800 hover:border-zinc-400 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-400 dark:hover:border-zinc-600 dark:hover:bg-zinc-800 dark:hover:text-zinc-200";
 
 const btnActive =
-  "border-rose-800 bg-rose-800 text-white hover:bg-rose-700 dark:border-rose-500 dark:bg-rose-600 dark:text-white dark:hover:bg-rose-500";
+  "border-[var(--admin-coral)] bg-[var(--admin-coral)] text-white hover:bg-[var(--admin-coral-hover)]";
 
 export function ReportsVistaFilter({ vista }: { vista: ReportVista }) {
   const router = useRouter();

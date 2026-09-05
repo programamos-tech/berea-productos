@@ -2,39 +2,45 @@
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
+import { AdminDateInput } from "@/components/admin/product-form-primitives";
 import {
-  AdminDateInput,
-  productInputClass as inputClass,
-} from "@/components/admin/product-form-primitives";
+  adminFilterInputClass,
+  adminFilterLabelClass,
+} from "@/lib/admin-ui";
+import { expenseConceptFilterOptions } from "@/lib/expense-concepts";
 
 function buildExpensesQuery(
   pathname: string,
-  patch: { q?: string; from?: string; to?: string },
+  patch: { q?: string; concept?: string; from?: string; to?: string },
   current: URLSearchParams,
 ) {
   const p = new URLSearchParams(current.toString());
   for (const [key, val] of Object.entries(patch)) {
     if (val === undefined) continue;
     const t = String(val).trim();
-    if (!t) p.delete(key);
+    if (!t || (key === "concept" && t === "all")) p.delete(key);
     else p.set(key, t);
   }
-  // Cambiar cualquier filtro reinicia la paginación.
   p.delete("page");
   const qs = p.toString();
   return qs ? `${pathname}?${qs}` : pathname;
 }
 
-const filterLabelClass =
-  "mb-1.5 block text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-600 dark:text-zinc-400";
+const CONCEPT_OPTIONS = expenseConceptFilterOptions();
 
 type Props = {
   initialQ: string;
+  initialConcept: string;
   initialFrom: string;
   initialTo: string;
 };
 
-export function ExpensesFiltersBar({ initialQ, initialFrom, initialTo }: Props) {
+export function ExpensesFiltersBar({
+  initialQ,
+  initialConcept,
+  initialFrom,
+  initialTo,
+}: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -42,6 +48,7 @@ export function ExpensesFiltersBar({ initialQ, initialFrom, initialTo }: Props) 
   const [q, setQ] = useState(initialQ);
   const [from, setFrom] = useState(initialFrom);
   const [to, setTo] = useState(initialTo);
+  const concept = (searchParams.get("concept") ?? initialConcept) || "all";
 
   useEffect(() => {
     setQ(searchParams.get("q") ?? "");
@@ -50,7 +57,7 @@ export function ExpensesFiltersBar({ initialQ, initialFrom, initialTo }: Props) 
   }, [searchParams]);
 
   const pushQuery = useCallback(
-    (patch: { q?: string; from?: string; to?: string }) => {
+    (patch: { q?: string; concept?: string; from?: string; to?: string }) => {
       router.replace(buildExpensesQuery(pathname, patch, searchParams));
     },
     [pathname, router, searchParams],
@@ -65,71 +72,78 @@ export function ExpensesFiltersBar({ initialQ, initialFrom, initialTo }: Props) 
     return () => clearTimeout(t);
   }, [q, pushQuery, searchParams]);
 
+  const conceptValue =
+    concept && CONCEPT_OPTIONS.includes(concept) ? concept : "all";
+
   return (
-    <div className="border-b border-zinc-100 px-4 py-4 dark:border-zinc-800 sm:px-5">
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-12 lg:items-end">
-        <div className="min-w-0 sm:col-span-2 lg:col-span-5">
-          <label htmlFor="expense-q" className={filterLabelClass}>
-            Concepto / notas
-          </label>
-          <input
-            id="expense-q"
-            name="q"
-            type="search"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Buscar…"
-            className={inputClass}
-            autoComplete="off"
-            aria-label="Buscar por concepto o notas"
-          />
-        </div>
-        <div className="min-w-0 lg:col-span-3">
-          <label htmlFor="expense-from" className={filterLabelClass}>
-            Desde
-          </label>
-          <AdminDateInput
-            id="expense-from"
-            name="from"
-            value={from}
-            allowEmpty
-            emptyLabel="dd/mm/aaaa"
-            onChange={(next) => {
-              setFrom(next);
-              pushQuery({ from: next });
-            }}
-          />
-        </div>
-        <div className="min-w-0 lg:col-span-3">
-          <label htmlFor="expense-to" className={filterLabelClass}>
-            Hasta
-          </label>
-          <AdminDateInput
-            id="expense-to"
-            name="to"
-            value={to}
-            allowEmpty
-            emptyLabel="dd/mm/aaaa"
-            onChange={(next) => {
-              setTo(next);
-              pushQuery({ to: next });
-            }}
-          />
-        </div>
-        <div className="flex items-end gap-2 sm:col-span-2 lg:col-span-1">
-          <button
-            type="button"
-            onClick={() => {
-              setFrom("");
-              setTo("");
-              setQ("");
-              router.replace(pathname);
-            }}
-            className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2.5 text-xs font-semibold text-zinc-600 shadow-[0_1px_0_0_rgb(24_24_27/0.04)] transition hover:bg-zinc-50 hover:text-zinc-900 dark:border-zinc-600 dark:bg-zinc-950 dark:text-zinc-300 dark:shadow-none dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
-          >
-            Limpiar
-          </button>
-        </div>
+    <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-12 lg:items-end lg:gap-3">
+      <div className="min-w-0 sm:col-span-2 lg:col-span-3">
+        <label htmlFor="expense-q" className={adminFilterLabelClass}>
+          Buscar
+        </label>
+        <input
+          id="expense-q"
+          name="q"
+          type="search"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Notas, texto…"
+          className={adminFilterInputClass}
+          autoComplete="off"
+          aria-label="Buscar por notas o texto"
+        />
+      </div>
+      <div className="min-w-0 sm:col-span-2 lg:col-span-3">
+        <label htmlFor="expense-concept" className={adminFilterLabelClass}>
+          Concepto
+        </label>
+        <select
+          id="expense-concept"
+          value={conceptValue}
+          onChange={(e) => pushQuery({ concept: e.target.value })}
+          className={adminFilterInputClass}
+        >
+          <option value="all">Todos</option>
+          {CONCEPT_OPTIONS.map((c) => (
+            <option key={c} value={c}>
+              {c}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className="min-w-0 lg:col-span-3">
+        <label htmlFor="expense-from" className={adminFilterLabelClass}>
+          Desde
+        </label>
+        <AdminDateInput
+          id="expense-from"
+          name="from"
+          value={from}
+          allowEmpty
+          emptyLabel="dd/mm/aaaa"
+          className={adminFilterInputClass}
+          onChange={(next) => {
+            setFrom(next);
+            pushQuery({ from: next });
+          }}
+        />
+      </div>
+      <div className="min-w-0 lg:col-span-3">
+        <label htmlFor="expense-to" className={adminFilterLabelClass}>
+          Hasta
+        </label>
+        <AdminDateInput
+          id="expense-to"
+          name="to"
+          value={to}
+          allowEmpty
+          emptyLabel="dd/mm/aaaa"
+          className={adminFilterInputClass}
+          onChange={(next) => {
+            setTo(next);
+            pushQuery({ to: next });
+          }}
+        />
       </div>
     </div>
   );

@@ -58,9 +58,30 @@ export const storeTaxRegime =
 export const storeLogoPath =
   process.env.NEXT_PUBLIC_STORE_LOGO?.trim() || "/logo-finala.png";
 
-/** Logo del sidebar del backoffice (`/public/logo-finala.png`). */
+/**
+ * Logo del producto Berea en el sidebar del backoffice (`/public/logo-berea.png`).
+ * Override: `NEXT_PUBLIC_ADMIN_SIDEBAR_LOGO`.
+ */
 export const adminSidebarLogoPath =
-  process.env.NEXT_PUBLIC_ADMIN_SIDEBAR_LOGO?.trim() || "/logo-finala.png";
+  process.env.NEXT_PUBLIC_ADMIN_SIDEBAR_LOGO?.trim() || "/logo-berea.png";
+
+/** Nombre del producto / sistema en el backoffice (marca Berea). */
+export const adminProductBrand = "Berea";
+
+/**
+ * Cuenta SaaS / workspace en el sidebar.
+ * Override: `NEXT_PUBLIC_ADMIN_TENANT_NAME` (por defecto “Aleya Shop”).
+ */
+export const adminTenantBrand =
+  process.env.NEXT_PUBLIC_ADMIN_TENANT_NAME?.trim() || "Aleya Shop";
+
+/**
+ * Avatar de la cuenta tenant (logo Aleya, claro sobre fondo oscuro).
+ * Override: `NEXT_PUBLIC_ADMIN_TENANT_LOGO`.
+ */
+export const adminTenantLogoPath =
+  process.env.NEXT_PUBLIC_ADMIN_TENANT_LOGO?.trim() ||
+  "/logo-aleyashop-mark.png";
 
 /** Firma Berea (“Experiencia por”). Prioridad: `NEXT_PUBLIC_BEREA_LOGO`, luego `logo-berea12.png`. */
 export const bereaSignaturePath =

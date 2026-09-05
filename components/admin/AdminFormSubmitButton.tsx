@@ -3,9 +3,9 @@
 import type { ReactNode } from "react";
 import { useFormStatus } from "react-dom";
 
-/** Botón primario de formularios admin (POS, inventario, clientes). */
+/** Botón primario de formularios admin (coral). */
 export const adminPrimarySubmitButtonClass =
-  "rounded-lg border border-rose-950 bg-rose-950 py-3.5 text-sm font-semibold text-white shadow-sm transition hover:bg-rose-900 hover:border-rose-900 disabled:cursor-not-allowed disabled:border-zinc-200 disabled:bg-zinc-200 disabled:text-zinc-500 dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-white dark:disabled:border-zinc-700 dark:disabled:bg-zinc-800 dark:disabled:text-zinc-500";
+  "rounded-lg border border-[var(--admin-coral)] bg-[var(--admin-coral)] py-3.5 text-sm font-semibold text-white shadow-sm transition hover:border-[var(--admin-coral-hover)] hover:bg-[var(--admin-coral-hover)] disabled:cursor-not-allowed disabled:border-zinc-200 disabled:bg-zinc-200 disabled:text-zinc-500 dark:disabled:border-zinc-700 dark:disabled:bg-zinc-800 dark:disabled:text-zinc-500";
 
 /** Ancho completo en columnas laterales de formularios de alta. */
 export const adminPrimarySubmitButtonFullWidthClass = `mt-5 w-full ${adminPrimarySubmitButtonClass}`;

@@ -1,84 +1,86 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { ProductDeleteConfirmForm } from "@/components/admin/ProductDeleteConfirmForm";
+import { UpdateProductStockModal } from "@/components/admin/UpdateProductStockModal";
 
-function IconBack() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="size-5" aria-hidden>
-      <path d="M15 18 9 12l6-6" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
+const btnIcon =
+  "inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-zinc-300 bg-white text-zinc-700 transition hover:border-zinc-400 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200 dark:hover:border-zinc-600 dark:hover:bg-zinc-800";
 
-function IconPencil() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="size-5" aria-hidden>
-      <path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5Z" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
+const btnIdle =
+  "inline-flex items-center justify-center rounded-lg border border-zinc-300 bg-white px-2.5 py-1.5 text-xs font-medium text-zinc-700 transition hover:border-zinc-400 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200 dark:hover:border-zinc-600 dark:hover:bg-zinc-800";
 
-function IconBox() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="size-5 shrink-0" aria-hidden>
-      <path d="M21 16V8l-9-5-9 5v8l9 5 9-5z" strokeLinejoin="round" />
-      <path d="M3.3 7L12 12l8.7-5M12 22V12" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-function IconTransfer() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="size-5" aria-hidden>
-      <path d="M7 16V4M7 4 3 8m4-4 4 4M17 8v12m0 0 4-4m-4 4-4-4" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
+const btnPrimary =
+  "inline-flex items-center justify-center rounded-lg border border-[var(--admin-coral)] bg-[var(--admin-coral)] px-2.5 py-1.5 text-xs font-medium text-white transition hover:border-[var(--admin-coral-hover)] hover:bg-[var(--admin-coral-hover)]";
 
 type Props = {
   productId: string;
   productName: string;
+  referenceLabel: string;
+  stockLocal: number;
 };
 
 export function AdminProductDetailToolbar({
   productId,
   productName,
+  referenceLabel,
+  stockLocal,
 }: Props) {
+  const [stockOpen, setStockOpen] = useState(false);
+
   return (
     <div className="flex flex-wrap items-center justify-end gap-2">
       <Link
-        href="/admin/products"
-        className="inline-flex size-10 items-center justify-center rounded-full border border-zinc-200/90 bg-white text-zinc-600 transition hover:bg-zinc-50 hover:text-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
-        title="Volver al inventario"
-      >
-        <IconBack />
-      </Link>
-      <Link
         href={`/admin/products/${productId}/edit`}
-        className="inline-flex size-10 items-center justify-center rounded-full border border-rose-950 bg-rose-950 text-white transition hover:bg-rose-900 hover:border-rose-900 dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-white"
+        className={btnPrimary}
         title="Editar producto"
       >
-        <IconPencil />
+        Editar
       </Link>
-      <Link
-        href={`/admin/products/${productId}/stock`}
-        className="inline-flex size-10 items-center justify-center rounded-full border border-zinc-200/90 bg-white text-zinc-600 transition hover:bg-zinc-50 hover:text-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
-        title="Actualizar stock"
+      <button
+        type="button"
+        onClick={() => setStockOpen(true)}
+        className={btnIdle}
+        title="Actualizar stock del punto"
+        aria-label="Actualizar stock"
       >
-        <IconBox />
-      </Link>
-      <Link
-        href={`/admin/products/${productId}/transfer`}
-        className="inline-flex size-10 items-center justify-center rounded-full border border-zinc-200/90 bg-white text-zinc-600 transition hover:bg-zinc-50 hover:text-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
-        title="Transferir stock"
-      >
-        <IconTransfer />
-      </Link>
+        Stock
+      </button>
       <ProductDeleteConfirmForm
         productId={productId}
         productName={productName}
-        variant="toolbar"
+        variant="header"
+      />
+      <Link
+        href="/admin/products"
+        className={btnIcon}
+        title="Volver al inventario"
+        aria-label="Volver al inventario"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2}
+          className="size-4"
+          aria-hidden
+        >
+          <path
+            d="m15 18-6-6 6-6"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </Link>
+      <UpdateProductStockModal
+        open={stockOpen}
+        onClose={() => setStockOpen(false)}
+        productId={productId}
+        productName={productName}
+        referenceLabel={referenceLabel}
+        stockLocal={stockLocal}
+        returnTo={`/admin/products/${productId}`}
       />
     </div>
   );

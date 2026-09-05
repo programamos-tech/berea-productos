@@ -12,7 +12,7 @@ import {
   useState,
   useTransition,
 } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { Minus, Plus } from "lucide-react";
 import { setKitLineQuantity, setLineQuantity } from "@/app/actions/cart";
 import { CartUpsellScroller } from "@/components/store/CartUpsellScroller";
@@ -26,6 +26,10 @@ import {
   shouldUnoptimizeStorageImageUrl,
   storagePublicObjectUrl,
 } from "@/lib/storage-public-url";
+import {
+  markStoreCheckoutNavigation,
+  STORE_CHECKOUT_READY_EVENT,
+} from "@/lib/store-checkout-nav";
 import { STORE_IMAGE_QUALITY } from "@/lib/store-image";
 
 export type StoreCartDrawerItem = {
@@ -183,7 +187,6 @@ export function StoreCartDrawerProvider({
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const pathname = usePathname() || "/";
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<StoreCartDrawerItem[]>([]);
   const [suggestions, setSuggestions] = useState<StoreCartSuggestion[]>([]);
@@ -303,16 +306,22 @@ export function StoreCartDrawerProvider({
   const goToCheckout = useCallback(() => {
     setGoingCheckout(true);
     setOpen(false);
-    // Navegación dura: evita flash del home (layout) mientras carga el RSC de checkout.
-    window.location.assign("/checkout");
-  }, []);
+    markStoreCheckoutNavigation();
+    // Soft nav: el overlay del layout sigue vivo hasta el beacon del checkout.
+    router.push("/checkout");
+  }, [router]);
 
-  // El provider vive en el layout: apagar overlay solo al estar en checkout.
+  // La animación dura hasta que CheckoutViewGate avisa que la vista ya pintó.
   useEffect(() => {
-    if (pathname.startsWith("/checkout")) {
-      setGoingCheckout(false);
-    }
-  }, [pathname]);
+    if (!goingCheckout) return;
+    const finish = () => setGoingCheckout(false);
+    window.addEventListener(STORE_CHECKOUT_READY_EVENT, finish);
+    const safety = window.setTimeout(finish, 15_000);
+    return () => {
+      window.removeEventListener(STORE_CHECKOUT_READY_EVENT, finish);
+      window.clearTimeout(safety);
+    };
+  }, [goingCheckout]);
 
   useEffect(() => {
     if (!open) return;
@@ -371,7 +380,8 @@ export function StoreCartDrawerProvider({
       <StoreMotivationalOverlay
         active={goingCheckout}
         messages={STORE_CHECKOUT_ROUTE_MESSAGES}
-        zIndexClass="z-[120]"
+        footnote="Estamos armando tu checkout; un segundo y listo."
+        zIndexClass="z-[250]"
       />
       {open ? (
         <>

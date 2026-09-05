@@ -74,7 +74,7 @@ export function isMensualPaymentMethod(raw: string): boolean {
 export function expensePaymentMethodLabel(raw: string | null | undefined): string {
   switch (String(raw ?? "").trim().toLowerCase()) {
     case "efectivo":
-      return "Efectivo (gaveta)";
+      return "Efectivo";
     case "efectivo_acumulado":
       return "Efectivo acumulado";
     case "transferencia":

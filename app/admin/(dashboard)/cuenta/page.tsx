@@ -61,7 +61,6 @@ export default async function AdminCuentaPage({
     ordersPaidCount,
     ordersPaid30d,
     expensesCount,
-    suppliersCount,
     activity30d,
   ] = await Promise.all([
     supabase.from("products").select("id", { count: "exact", head: true }),
@@ -76,7 +75,6 @@ export default async function AdminCuentaPage({
       .eq("status", "paid")
       .gte("created_at", sinceIso),
     supabase.from("store_expenses").select("id", { count: "exact", head: true }),
-    supabase.from("suppliers").select("id", { count: "exact", head: true }),
     supabase
       .from("admin_activity_log")
       .select("id", { count: "exact", head: true })
@@ -292,11 +290,6 @@ export default async function AdminCuentaPage({
             label="Gastos registrados"
             value={expensesCount.count ?? 0}
             href="/admin/egresos"
-          />
-          <StatCard
-            label="Proveedores"
-            value={suppliersCount.count ?? 0}
-            href="/admin/proveedores"
           />
           <StatCard
             label="Movimientos en el panel (30 días)"

@@ -52,18 +52,21 @@ type AdminTopBarProps = {
   showOrderNotifications?: boolean;
 };
 
+const iconBtnClass =
+  "rounded-lg p-2 text-[var(--admin-coral-deep)]/45 transition hover:bg-[var(--admin-coral-mist)] hover:text-[var(--admin-coral-deep)] dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100";
+
 export function AdminTopBar({
   onMenuClick,
   menuOpen,
   showOrderNotifications = false,
 }: AdminTopBarProps = {}) {
   return (
-    <header className="sticky top-0 z-50 w-full min-w-0 overflow-visible border-b border-rose-200/50 bg-white/88 backdrop-blur-md print:hidden dark:border-zinc-800 dark:bg-zinc-900/90">
+    <header className="sticky top-0 z-50 w-full min-w-0 overflow-visible border-b border-[color-mix(in_srgb,var(--admin-coral)_22%,transparent)] bg-white/90 backdrop-blur-md print:hidden dark:border-zinc-800 dark:bg-zinc-900/90">
       <div className="flex h-14 min-w-0 items-center gap-2 overflow-visible px-3 sm:h-16 sm:gap-3 sm:px-6">
         <button
           type="button"
           onClick={onMenuClick}
-          className="flex size-10 shrink-0 items-center justify-center rounded-lg text-rose-950 transition hover:bg-rose-100/60 active:bg-rose-100 dark:text-zinc-100 dark:hover:bg-zinc-800 dark:active:bg-zinc-700/80 lg:hidden"
+          className="flex size-10 shrink-0 items-center justify-center rounded-lg text-[var(--admin-coral-deep)] transition hover:bg-[var(--admin-coral-mist)] active:bg-[var(--admin-coral-soft)] dark:text-zinc-100 dark:hover:bg-zinc-800 dark:active:bg-zinc-700/80 lg:hidden"
           aria-label="Abrir menú"
           aria-expanded={menuOpen ?? false}
           aria-controls="admin-sidebar-nav"
@@ -71,7 +74,6 @@ export function AdminTopBar({
           <IconMenu />
         </button>
 
-        {/* Navbar backoffice: buscador global (sin spacer extra: el sidebar ya ocupa su columna) */}
         <div className="flex min-w-0 flex-1 basis-0 items-center overflow-visible">
           <div className="w-full min-w-0 overflow-visible pl-0.5">
             <AdminGlobalSearch />
@@ -84,7 +86,7 @@ export function AdminTopBar({
           </div>
           <Link
             href="/admin/ventas/nueva"
-            className="flex size-9 items-center justify-center rounded-full border border-rose-950 bg-rose-950 text-lg font-light leading-none text-white shadow-[0_8px_24px_-12px_rgba(136,19,55,0.35)] transition hover:bg-rose-900 hover:shadow-[0_10px_28px_-12px_rgba(136,19,55,0.4)] sm:size-10"
+            className="flex size-9 items-center justify-center rounded-full border border-[var(--admin-coral)] bg-[var(--admin-coral)] text-lg font-light leading-none text-white shadow-[0_8px_24px_-12px_color-mix(in_srgb,var(--admin-coral-deep)_40%,transparent)] transition hover:border-[var(--admin-coral-hover)] hover:bg-[var(--admin-coral-hover)] sm:size-10"
             title="Nueva factura"
           >
             +
@@ -92,25 +94,21 @@ export function AdminTopBar({
           {showOrderNotifications ? (
             <AdminNotificationBell className="lg:hidden" />
           ) : null}
-          <div className="ml-0.5 hidden items-center gap-0.5 border-l border-rose-200/55 pl-2 dark:border-zinc-700 lg:flex">
+          <div className="ml-0.5 hidden items-center gap-0.5 border-l border-[color-mix(in_srgb,var(--admin-coral)_22%,transparent)] pl-2 dark:border-zinc-700 lg:flex">
             <AdminThemeToggle />
-            <button
-              type="button"
-              className="rounded-lg p-2 text-rose-900/45 transition hover:bg-rose-100/55 hover:text-rose-950 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
-              title="Ayuda"
-            >
+            <button type="button" className={iconBtnClass} title="Ayuda">
               <IconHelp />
             </button>
             <Link
               href="/admin/actividades"
-              className="rounded-lg p-2 text-rose-900/45 transition hover:bg-rose-100/55 hover:text-rose-950 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+              className={iconBtnClass}
               title="Registro de actividades"
             >
               <IconPulse />
             </Link>
             <Link
               href="/admin/settings"
-              className="rounded-lg p-2 text-rose-900/45 transition hover:bg-rose-100/55 hover:text-rose-950 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+              className={iconBtnClass}
               title="Ajustes"
             >
               <IconSliders />

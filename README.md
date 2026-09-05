@@ -1,4 +1,4 @@
-# Milagros Guacarí
+# Berea Productos
 
 Tienda con **Next.js**, **Tailwind**, **Supabase** (Postgres, Auth, Storage) y **Wompi**. Repo independiente; base local en puertos propios (`57520–57529`) para no interferir con otros proyectos Supabase en la misma máquina.
 

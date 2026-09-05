@@ -2,52 +2,58 @@
 
 import Link from "next/link";
 import { CustomerDeleteConfirmForm } from "@/components/admin/CustomerDeleteConfirmForm";
-import { adminButtonCancelClass } from "@/lib/admin-ui";
 
-function IconBack() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      className="size-5"
-      aria-hidden
-    >
-      <path d="m15 18-6-6 6-6" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
+const btnIdle =
+  "inline-flex items-center justify-center rounded-lg border border-zinc-300 bg-white px-2.5 py-1.5 text-xs font-medium text-zinc-700 transition hover:border-zinc-400 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200 dark:hover:border-zinc-600 dark:hover:bg-zinc-800";
+const btnPrimary =
+  "inline-flex items-center justify-center rounded-lg border border-[var(--admin-coral)] bg-[var(--admin-coral)] px-2.5 py-1.5 text-xs font-medium text-white transition hover:border-[var(--admin-coral-hover)] hover:bg-[var(--admin-coral-hover)]";
+const btnIcon =
+  "inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-zinc-300 bg-white text-zinc-700 transition hover:border-zinc-400 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200 dark:hover:border-zinc-600 dark:hover:bg-zinc-800";
 
 type Props = {
   customerId: string;
   customerName: string;
 };
 
-/** Barra del card de título: volver + Editar (texto) + Eliminar (texto), como el mockup de cliente. */
-export function CustomerDetailHeaderActions({ customerId, customerName }: Props) {
+export function CustomerDetailHeaderActions({
+  customerId,
+  customerName,
+}: Props) {
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      <Link
-        href="/admin/customers"
-        className="inline-flex size-10 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-600 shadow-sm transition hover:bg-zinc-50 hover:text-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300 dark:shadow-none dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
-        title="Volver"
-        aria-label="Volver al listado de clientes"
-      >
-        <IconBack />
-      </Link>
+    <div className="flex flex-wrap items-center justify-end gap-2">
       <Link
         href={`/admin/customers/${customerId}/edit`}
-        className={`${adminButtonCancelClass} inline-flex items-center justify-center px-4 py-2.5`}
+        className={btnPrimary}
       >
         Editar
       </Link>
       <CustomerDeleteConfirmForm
         customerId={customerId}
         customerName={customerName}
-        variant="block"
+        variant="header"
         className="inline-flex shrink-0"
       />
+      <Link
+        href="/admin/customers"
+        className={btnIcon}
+        title="Volver"
+        aria-label="Volver al listado de clientes"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2}
+          className="size-4"
+          aria-hidden
+        >
+          <path
+            d="m15 18-6-6 6-6"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </Link>
     </div>
   );
 }

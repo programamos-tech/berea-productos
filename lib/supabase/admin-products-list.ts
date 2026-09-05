@@ -24,6 +24,8 @@ function isRetriableSelectError(err: { message?: string; code?: string } | null)
 
 /** Select strings from richest schema → minimal (init-only). */
 const PRODUCT_SELECT_ATTEMPTS = [
+  "id,name,reference,price_cents,cost_cents,cost_gross_cents,has_vat,vat_percent,stock_quantity,stock_warehouse,stock_local,is_published,image_path,created_at,category_id,categories(id,name)",
+  "id,name,reference,price_cents,cost_cents,cost_gross_cents,has_vat,vat_percent,stock_quantity,stock_warehouse,stock_local,is_published,image_path,created_at,category_id",
   "id,name,reference,price_cents,has_vat,vat_percent,stock_quantity,stock_warehouse,stock_local,is_published,image_path,created_at,category_id,categories(id,name)",
   "id,name,reference,price_cents,has_vat,vat_percent,stock_quantity,stock_warehouse,stock_local,is_published,image_path,created_at,category_id",
   "id,name,price_cents,has_vat,vat_percent,stock_quantity,stock_warehouse,stock_local,is_published,image_path,created_at,category_id,categories(id,name)",
@@ -55,11 +57,18 @@ export async function fetchAdminProductsList(
       continue;
     }
 
-    let query = supabase
-      .from("products")
-      .select(sel, { count: "exact" })
-      .order("created_at", { ascending: false })
-      .range(from, to);
+    let query = supabase.from("products").select(sel, { count: "exact" });
+
+    // Listar por código de referencia ascendente (01, 02, …).
+    if (sel.includes("reference")) {
+      query = query
+        .order("reference", { ascending: true, nullsFirst: false })
+        .order("created_at", { ascending: true });
+    } else {
+      query = query.order("created_at", { ascending: true });
+    }
+
+    query = query.range(from, to);
 
     if (q) {
       const qt = q.trim();

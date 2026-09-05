@@ -247,8 +247,13 @@ function isFkCategoryError(err: { message?: string } | null) {
 /** Rutas seguras post stock / traslado (evita open redirect). */
 function safeStockAdjustReturnTo(raw: string): string {
   const s = raw.trim();
-  if (s === "/admin/products") return s;
-  if (/^\/admin\/products\/[0-9a-f-]{36}(\/(stock|transfer))?$/i.test(s)) return s;
+  if (!s.startsWith("/")) return "/admin/products";
+  const pathOnly = s.split("?")[0] ?? s;
+  if (pathOnly === "/admin/products") {
+    // Conserva filtros/paginación del listado (?q=&page=…).
+    return s.split("#")[0] ?? s;
+  }
+  if (/^\/admin\/products\/[0-9a-f-]{36}$/i.test(pathOnly)) return pathOnly;
   return "/admin/products";
 }
 

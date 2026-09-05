@@ -32,7 +32,7 @@ type Props = {
   customerName: string;
   className?: string;
   children?: ReactNode;
-  variant?: "block" | "toolbar";
+  variant?: "block" | "toolbar" | "header";
 };
 
 export function CustomerDeleteConfirmForm({
@@ -111,6 +111,23 @@ export function CustomerDeleteConfirmForm({
         </button>
         {dialog}
       </>
+    );
+  }
+
+  if (variant === "header") {
+    return (
+      <div className={className}>
+        <button
+          type="button"
+          title="Eliminar cliente"
+          aria-label="Eliminar cliente"
+          className="inline-flex items-center justify-center rounded-lg border border-zinc-300 bg-white px-2.5 py-1.5 text-xs font-medium text-red-700 transition hover:border-red-300 hover:bg-red-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-red-400 dark:hover:border-red-800 dark:hover:bg-red-950/40"
+          onClick={openDialog}
+        >
+          Eliminar
+        </button>
+        {dialog}
+      </div>
     );
   }
 

@@ -67,8 +67,11 @@ export function storefrontPriceAfterCouponCents(
  */
 export async function fetchStorefrontCouponDiscountPercentByProductId(
   supabase: SupabaseClient,
+  tenantSlug?: string | null,
 ): Promise<Record<string, number>> {
-  const { data, error } = await supabase.rpc("storefront_coupon_discounts");
+  const { data, error } = await supabase.rpc("storefront_coupon_discounts", {
+    p_tenant_slug: tenantSlug ?? null,
+  });
 
   if (error) {
     if (process.env.NODE_ENV === "development") {

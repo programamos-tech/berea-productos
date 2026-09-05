@@ -1,11 +1,10 @@
-import { notFound } from "next/navigation";
 import {
   EditCustomerForm,
   EditCustomerHeader,
 } from "@/components/admin/EditCustomerForm";
-import { customerAvatarSeed } from "@/lib/customer-avatar-seed";
 import { requireAdminPermission } from "@/lib/require-admin-permission";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { notFound } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
@@ -14,7 +13,10 @@ type Props = {
   searchParams: Promise<{ error?: string }>;
 };
 
-export default async function AdminCustomerEditPage({ params, searchParams }: Props) {
+export default async function AdminCustomerEditPage({
+  params,
+  searchParams,
+}: Props) {
   await requireAdminPermission("clientes_editar");
   const { id } = await params;
   const sp = await searchParams;
@@ -31,8 +33,6 @@ export default async function AdminCustomerEditPage({ params, searchParams }: Pr
 
   if (!customer) notFound();
 
-  const avatarSeed = customerAvatarSeed(id, customer.email);
-
   const { data: addressRows } = await supabase
     .from("customer_addresses")
     .select("label,address_line,reference,sort_order")
@@ -44,7 +44,6 @@ export default async function AdminCustomerEditPage({ params, searchParams }: Pr
       <EditCustomerHeader
         customerId={id}
         customerName={String(customer.name)}
-        avatarSeed={avatarSeed}
       />
 
       {error ? (
@@ -58,14 +57,7 @@ export default async function AdminCustomerEditPage({ params, searchParams }: Pr
           ) : error === "wholesale_required" ? (
             "Cliente mayorista: completá NIT, correo electrónico válido y teléfono (todos obligatorios)."
           ) : (
-            <>
-              No se pudo guardar en la base de datos. Si falta la tabla de direcciones,
-              ejecuta la migración{" "}
-              <code className="rounded bg-red-100/80 px-1 py-0.5 text-xs dark:bg-red-950/60">
-                20260513120000_customer_addresses.sql
-              </code>{" "}
-              en Supabase.
-            </>
+            "No se pudo guardar. Intenta de nuevo o revisa los logs del servidor."
           )}
         </p>
       ) : null}
@@ -94,13 +86,11 @@ export default async function AdminCustomerEditPage({ params, searchParams }: Pr
             ),
           ),
         )}
-        addressRows={
-          (addressRows ?? []).map((r) => ({
-            label: String(r.label ?? ""),
-            address_line: r.address_line,
-            reference: r.reference,
-          }))
-        }
+        addressRows={(addressRows ?? []).map((r) => ({
+          label: String(r.label ?? ""),
+          address_line: r.address_line,
+          reference: r.reference,
+        }))}
         shippingFallback={
           addressRows && addressRows.length > 0
             ? null

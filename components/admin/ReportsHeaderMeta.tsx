@@ -66,7 +66,7 @@ export function ReportsHeaderMeta({
       : `Por periodo · ${periodLabel}`;
 
   return (
-    <p className="mt-0.5 text-xs text-rose-950/50 dark:text-zinc-500">
+    <p className="mt-0.5 text-xs text-zinc-500">
       <span>{lead}</span>
       <span className="mx-1.5 text-zinc-400 dark:text-zinc-600">·</span>
       <time dateTime={now.toISOString()} className="tabular-nums">

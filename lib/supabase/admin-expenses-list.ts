@@ -4,6 +4,9 @@ import {
   todayYmdInReportStore,
 } from "@/lib/admin-report-range";
 import {
+  EXPENSE_CONCEPT_PERSONAL_TURNOS,
+} from "@/lib/expense-concepts";
+import {
   parseExpenseKind,
   parseExpenseScope,
   type ExpenseKind,
@@ -45,6 +48,8 @@ const UUID_RE =
 
 export type ExpensesFilterOpts = {
   q?: string;
+  /** Concepto del catálogo (exacto; Personal Turnos usa prefijo). */
+  concept?: string | null;
   dateFrom: string | null;
   dateTo: string | null;
 };
@@ -57,6 +62,15 @@ function sanitizeIlikeQuery(q: string): string {
 function applyExpensesFilters(query: any, opts: ExpensesFilterOpts) {
   if (opts.dateFrom) query = query.gte("expense_date", opts.dateFrom);
   if (opts.dateTo) query = query.lte("expense_date", opts.dateTo);
+
+  const concept = opts.concept?.trim() ?? "";
+  if (concept.length > 0) {
+    if (concept === EXPENSE_CONCEPT_PERSONAL_TURNOS) {
+      query = query.ilike("concept", `${concept}%`);
+    } else {
+      query = query.eq("concept", concept);
+    }
+  }
 
   const raw = opts.q?.trim() ?? "";
   if (UUID_RE.test(raw)) {
@@ -181,6 +195,11 @@ async function fetchExpensesFilterStats(
   supabase: SupabaseClient,
   opts: ExpensesFilterOpts,
 ): Promise<ExpensesFilterStats> {
+  // El RPC aún no recibe concepto: con ese filtro usamos el fallback Node.
+  if (opts.concept?.trim()) {
+    return fetchExpensesFilterStatsFallback(supabase, opts);
+  }
+
   const q = opts.q?.trim() ? sanitizeIlikeQuery(opts.q) : null;
 
   try {
@@ -225,7 +244,9 @@ export async function fetchAdminExpensesPage(
   const to = from + safeSize - 1;
 
   const listQuery = applyExpensesFilters(
-    supabase.from("store_expenses").select(EXPENSES_DETAIL_SELECT),
+    supabase
+      .from("store_expenses")
+      .select(EXPENSES_DETAIL_SELECT, { count: "exact" }),
     opts,
   )
     .order("expense_date", { ascending: false })
@@ -313,7 +334,14 @@ export async function fetchAdminExpensesPage(
 
   return {
     rows,
-    stats,
+    stats: {
+      ...stats,
+      // Misma fuente que Ventas: count exacto del listado paginado.
+      total:
+        typeof listRes.count === "number" && listRes.count >= 0
+          ? listRes.count
+          : stats.total,
+    },
     error: null,
   };
 }

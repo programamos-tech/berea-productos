@@ -1,9 +1,9 @@
 import { formatCop, formatCopCompact } from "@/lib/money";
 import type { TicketTrendPoint } from "@/lib/customer-ticket-trend";
 
-/** Línea guinda (ingresos) y ámbar (egresos); rejilla y ejes en zinc. */
+/** Línea coral (ingresos) y ámbar (egresos); rejilla y ejes en zinc. */
 const chartPaletteClass =
-  "[--chart-line:#881337] [--chart-grid:#f4f4f5] [--chart-axis:#a1a1aa] [--chart-point-fill:#ffffff] [--chart-point-stroke:#881337] [--chart-expense-line:#b45309] [--chart-expense-point-fill:#fffbeb] [--chart-expense-point-stroke:#b45309] dark:[--chart-line:#fda4af] dark:[--chart-grid:#3f3f46] dark:[--chart-axis:#71717a] dark:[--chart-point-fill:#27272a] dark:[--chart-point-stroke:#fda4af] dark:[--chart-expense-line:#fbbf24] dark:[--chart-expense-point-fill:#422006] dark:[--chart-expense-point-stroke:#fbbf24]";
+  "[--chart-line:#ED7464] [--chart-grid:#f4f4f5] [--chart-axis:#a1a1aa] [--chart-point-fill:#ffffff] [--chart-point-stroke:#ED7464] [--chart-expense-line:#b45309] [--chart-expense-point-fill:#fffbeb] [--chart-expense-point-stroke:#b45309] dark:[--chart-line:#FFBDB5] dark:[--chart-grid:#3f3f46] dark:[--chart-axis:#71717a] dark:[--chart-point-fill:#27272a] dark:[--chart-point-stroke:#FFBDB5] dark:[--chart-expense-line:#fbbf24] dark:[--chart-expense-point-fill:#422006] dark:[--chart-expense-point-stroke:#fbbf24]";
 
 function monthLabelEs(monthKey: string) {
   const [y, m] = monthKey.split("-").map(Number);
@@ -59,6 +59,7 @@ export function CustomerTicketTrendChart({
   peakCaption,
   secondaryCaption,
   fillGradientId = "customerTicketChartFill",
+  compact = false,
 }: {
   points: TicketTrendPoint[];
   /** `day`: ticket promedio por día con ventas. `month`: promedio por mes. */
@@ -73,6 +74,8 @@ export function CustomerTicketTrendChart({
   secondaryCaption?: string | null;
   /** Id único del degradado (evita colisiones si hay varios SVG en la misma página). */
   fillGradientId?: string;
+  /** Altura y paddings reducidos para caber en vistas de un solo viewport. */
+  compact?: boolean;
 }) {
   if (points.length === 0) return null;
 
@@ -96,11 +99,11 @@ export function CustomerTicketTrendChart({
     trend.length <= 12 ? 1 : Math.max(1, Math.ceil(trend.length / 10));
 
   const chartW = 1000;
-  const chartH = 300;
-  const padL = 54;
+  const chartH = compact ? 200 : 300;
+  const padL = compact ? 44 : 54;
   const padR = 10;
-  const padT = 20;
-  const padB = 48;
+  const padT = compact ? 12 : 20;
+  const padB = compact ? 36 : 48;
   const plotW = chartW - padL - padR;
   const plotH = chartH - padT - padB;
 
@@ -157,9 +160,15 @@ export function CustomerTicketTrendChart({
     secondaryCaption === undefined ? defaultSecondaryFooter : secondaryCaption;
 
   return (
-    <div className={`mt-3 w-full min-w-0 ${chartPaletteClass}`}>
+    <div
+      className={`w-full min-w-0 ${compact ? "mt-1" : "mt-3"} ${chartPaletteClass}`}
+    >
       {dualFinance ? (
-        <div className="flex flex-wrap items-center gap-x-5 gap-y-2 px-6 pb-2 sm:px-8">
+        <div
+          className={`flex flex-wrap items-center gap-x-5 gap-y-2 ${
+            compact ? "px-0 pb-1" : "px-6 pb-2 sm:px-8"
+          }`}
+        >
           <span className="inline-flex items-center gap-2 text-[11px] font-medium text-zinc-600 dark:text-zinc-300">
             <span
               className="size-2.5 shrink-0 rounded-full ring-2 ring-rose-900/25 dark:ring-rose-300/30"
@@ -180,7 +189,7 @@ export function CustomerTicketTrendChart({
       ) : null}
       <svg
         viewBox={`0 0 ${chartW} ${chartH}`}
-        className="block h-auto w-full min-w-0"
+        className={`block w-full min-w-0 ${compact ? "h-full max-h-full" : "h-auto"}`}
         preserveAspectRatio="xMidYMid meet"
         role="img"
         aria-label={
@@ -357,16 +366,30 @@ export function CustomerTicketTrendChart({
           ) : null,
         )}
       </svg>
-      <div className="px-6 pb-6 pt-0 sm:px-8 sm:pb-8">
-        {peakLineFooter ? (
-          <p className="mt-2 text-center text-xs text-zinc-400 dark:text-zinc-500">{peakLineFooter}</p>
-        ) : null}
-        {secondaryLineFooter ? (
-          <p className="mt-1 text-center text-[11px] text-zinc-500 dark:text-zinc-400">
-            {secondaryLineFooter}
-          </p>
-        ) : null}
-      </div>
+      {peakLineFooter || secondaryLineFooter ? (
+        <div
+          className={
+            compact
+              ? "px-0 pb-0 pt-1"
+              : "px-6 pb-6 pt-0 sm:px-8 sm:pb-8"
+          }
+        >
+          {peakLineFooter ? (
+            <p
+              className={`text-center text-zinc-400 dark:text-zinc-500 ${
+                compact ? "mt-0.5 text-[10px]" : "mt-2 text-xs"
+              }`}
+            >
+              {peakLineFooter}
+            </p>
+          ) : null}
+          {secondaryLineFooter ? (
+            <p className="mt-1 text-center text-[11px] text-zinc-500 dark:text-zinc-400">
+              {secondaryLineFooter}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
     </div>
   );
 }

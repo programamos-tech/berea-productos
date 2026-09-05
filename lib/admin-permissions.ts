@@ -87,11 +87,7 @@ export const PERMISSION_MODULES: PermissionModule[] = [
       { key: "egresos_crear", label: "Crear gastos y egresos" },
     ],
   },
-  {
-    id: "proveedores",
-    label: "Proveedores",
-    items: [{ key: "proveedores_ver", label: "Proveedores y facturas de compra" }],
-  },
+  // Módulo Proveedores oculto del panel (permiso se conserva en DB por compatibilidad).
   {
     id: "inventario",
     label: "Inventario",
@@ -101,7 +97,7 @@ export const PERMISSION_MODULES: PermissionModule[] = [
       { key: "productos_editar", label: "Editar productos" },
       { key: "categorias_gestionar", label: "Gestionar categorías" },
       { key: "stock_actualizar", label: "Actualizar stock" },
-      { key: "stock_transferir", label: "Transferir stock" },
+      // Traslados ocultos del panel (permiso se conserva en DB).
     ],
   },
   {
