@@ -88,39 +88,56 @@ function Metric({
   );
 }
 
-/** Barrita de egresos vs cobros (vista tienda). */
-function EgresosOutHint({
-  cobrosCents,
-  egresosCents,
+/** Barrita del mix de egresos: caja (amarillo) + transferencia (azul). Solo en vista tienda. */
+function EgresosMixHint({
+  egresosEfectivoCents,
+  egresosTransferCents,
 }: {
-  cobrosCents: number;
-  egresosCents: number;
+  egresosEfectivoCents: number;
+  egresosTransferCents: number;
 }) {
-  if (egresosCents <= 0) {
+  const cash = Math.max(0, egresosEfectivoCents);
+  const transfer = Math.max(0, egresosTransferCents);
+  const total = cash + transfer;
+  if (total <= 0) {
     return <span>Sin egresos</span>;
   }
-  const base = Math.max(cobrosCents, egresosCents, 1);
-  const posW = Math.max(0, (Math.max(0, cobrosCents) / base) * 100);
-  const negW = Math.min(100, (egresosCents / base) * 100);
+  const cashPct = (cash / total) * 100;
+  const transferPct = (transfer / total) * 100;
   return (
-    <div className="w-full max-w-[8.5rem]">
+    <div className="w-full max-w-[9.5rem]">
       <div
-        className="flex h-1 w-full overflow-hidden rounded-full bg-zinc-200/80 dark:bg-zinc-700/50"
+        className="flex h-1.5 w-full overflow-hidden rounded-full bg-zinc-200/80 dark:bg-zinc-700/50"
         aria-hidden
       >
-        {posW > 0 ? (
+        {cashPct > 0 ? (
           <div
-            className="h-full bg-emerald-500/50 dark:bg-emerald-500/40"
-            style={{ width: `${posW}%` }}
+            className="h-full bg-amber-400 dark:bg-amber-400/90"
+            style={{ width: `${cashPct}%` }}
+            title={`Caja ${formatCop(cash)}`}
           />
         ) : null}
-        <div
-          className="h-full bg-red-400/80 dark:bg-red-500/65"
-          style={{ width: `${negW}%` }}
-        />
+        {transferPct > 0 ? (
+          <div
+            className="h-full bg-sky-400 dark:bg-sky-400/90"
+            style={{ width: `${transferPct}%` }}
+            title={`Cuentas ${formatCop(transfer)}`}
+          />
+        ) : null}
       </div>
-      <p className="mt-1 tabular-nums text-[10px] text-red-600/90 dark:text-red-400/85">
-        −{formatCop(egresosCents)} egresos
+      <p className="mt-1 flex flex-wrap gap-x-2 gap-y-0.5 text-[10px] tabular-nums text-zinc-500 dark:text-zinc-400">
+        {cash > 0 ? (
+          <span className="inline-flex items-center gap-1">
+            <span className="size-1.5 rounded-full bg-amber-400" aria-hidden />
+            Caja {formatCop(cash)}
+          </span>
+        ) : null}
+        {transfer > 0 ? (
+          <span className="inline-flex items-center gap-1">
+            <span className="size-1.5 rounded-full bg-sky-400" aria-hidden />
+            Cuentas {formatCop(transfer)}
+          </span>
+        ) : null}
       </p>
     </div>
   );
@@ -240,17 +257,7 @@ export async function ReportsDashboardBody({
   );
 
   const enCajaMesMetric = (
-    <Metric
-      label="En caja"
-      icon={Wallet}
-      staggerMs={30}
-      hint={
-        <EgresosOutHint
-          cobrosCents={efectivo}
-          egresosCents={egresosEfectivoCents}
-        />
-      }
-    >
+    <Metric label="En caja" icon={Wallet} staggerMs={30}>
       <StaticCopCents cents={efectivo} />
     </Metric>
   );
@@ -314,16 +321,11 @@ export async function ReportsDashboardBody({
             icon={ArrowLeftRight}
             staggerMs={60}
             hint={
-              isTienda ? (
-                <EgresosOutHint
-                  cobrosCents={transferencia}
-                  egresosCents={egresosTransferenciaBucketCents}
-                />
-              ) : transferPct != null ? (
-                <>{transferPct}% del cobrado</>
-              ) : (
-                <>Sin cobros en transferencia</>
-              )
+              isTienda
+                ? undefined
+                : transferPct != null
+                  ? <>{transferPct}% del cobrado</>
+                  : <>Sin cobros en transferencia</>
             }
           >
             <StaticCopCents
@@ -366,7 +368,12 @@ export async function ReportsDashboardBody({
             icon={ArrowDownLeft}
             staggerMs={120}
             hint={
-              isTienda ? undefined : (
+              isTienda ? (
+                <EgresosMixHint
+                  egresosEfectivoCents={egresosEfectivoCents}
+                  egresosTransferCents={egresosTransferenciaBucketCents}
+                />
+              ) : (
                 <>
                   {cantidadEgresosPeriod} registrado
                   {cantidadEgresosPeriod === 1 ? "" : "s"}
