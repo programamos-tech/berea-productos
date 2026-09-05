@@ -3,6 +3,10 @@ import {
   ReportActivityFeedSkeleton,
 } from "@/components/admin/ReportActivityFeed";
 import {
+  ReportDayCashCloseChip,
+  ReportDayCashCloseChipSkeleton,
+} from "@/components/admin/ReportDayCashCloseChip";
+import {
   ReportMonthlyChartsSection,
   ReportMonthlyChartsSkeleton,
 } from "@/components/admin/ReportMonthlyChartsSection";
@@ -231,6 +235,7 @@ export async function ReportsDashboardBody({
 
   const isTienda = vista === "tienda";
   const transferenciaShown = transferencia;
+  const isSingleDayPeriod = !isTienda && rangeFrom === rangeTo;
 
   const efectivoPct =
     totalCobradoPedidos > 0
@@ -246,6 +251,17 @@ export async function ReportsDashboardBody({
       key={`reports-body-${vista}-${rangeFrom}-${rangeTo}`}
       className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden"
     >
+      {isSingleDayPeriod ? (
+        <div className="flex shrink-0 flex-wrap items-center gap-2">
+          <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
+            Cierre de caja
+          </span>
+          <Suspense fallback={<ReportDayCashCloseChipSkeleton />}>
+            <ReportDayCashCloseChip dayYmd={rangeFrom} />
+          </Suspense>
+        </div>
+      ) : null}
+
       <div className="shrink-0">
         <div
           className={`grid grid-cols-2 gap-x-6 gap-y-5 sm:grid-cols-3 ${

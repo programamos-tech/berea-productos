@@ -1,26 +1,8 @@
 import Link from "next/link";
+import { TrendingDown, TrendingUp } from "lucide-react";
 import { formatCop, formatCopCompact } from "@/lib/money";
 import type { MonthlyPulsePoint } from "@/lib/admin-report-monthly-pulse";
 import { REPORT_CHART } from "@/components/admin/ReportSalesWeekTrendChart";
-
-function netaClass(n: number): string {
-  if (n > 0) return "text-emerald-600 dark:text-emerald-400";
-  if (n < 0) return "text-red-600 dark:text-red-400";
-  return "text-zinc-500";
-}
-
-function formatNeta(n: number): string {
-  const abs = Math.abs(n);
-  const body = formatCop(abs);
-  if (n < 0) return `−${body}`;
-  return body;
-}
-
-function formatNetaAxis(n: number): string {
-  if (n === 0) return "$0";
-  const sign = n < 0 ? "−" : "";
-  return `${sign}${formatCopCompact(Math.abs(n))}`;
-}
 
 function monthHref(yearMonth: string, isCurrent: boolean): string {
   if (isCurrent) return "/admin";
@@ -49,6 +31,15 @@ function smoothLine(pts: Array<{ x: number; y: number }>): string {
   return d;
 }
 
+function pctChange(current: number, prior: number): number | null {
+  if (prior <= 0) return null;
+  return Math.round(((current - prior) / prior) * 1000) / 10;
+}
+
+/**
+ * Ingresos vs egresos por mes: responde “¿la tienda vende más o gasta más?”
+ * (no repite la ganancia/pérdida de las métricas de arriba).
+ */
 export function ReportMonthlyResultChart({
   months,
   highlightYearMonth,
@@ -60,26 +51,32 @@ export function ReportMonthlyResultChart({
     return (
       <div className="flex h-full min-h-[12rem] flex-col justify-center">
         <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-          Resultado por mes
+          Ingresos vs egresos
         </h2>
         <p className="mt-2 text-sm text-zinc-500">
-          Cuando haya ventas, verás aquí en qué meses ganaste o perdiste.
+          Cuando haya ventas, verás si cada mes entra más de lo que sale.
         </p>
       </div>
     );
   }
 
-  const values = months.map((m) => m.gananciaNeta);
-  const brutas = months.map((m) => m.gananciaBruta);
-  const maxAbs = Math.max(
-    ...values.map((v) => Math.abs(v)),
-    ...brutas.map((v) => Math.abs(v)),
+  const latest = months.find((m) => m.isCurrent) ?? months[months.length - 1];
+  const latestIdx = months.findIndex((m) => m.yearMonth === latest.yearMonth);
+  const prior = latestIdx > 0 ? months[latestIdx - 1] : null;
+  const ingresosMom = prior
+    ? pctChange(latest.ingresosConIva, prior.ingresosConIva)
+    : null;
+  const egresosShare =
+    latest.ingresosConIva > 0
+      ? Math.round((latest.egresos / latest.ingresosConIva) * 1000) / 10
+      : null;
+  const gap = latest.ingresosConIva - latest.egresos;
+
+  const maxVal = Math.max(
+    ...months.map((m) => Math.max(m.ingresosConIva, m.egresos)),
     1,
   );
-  const yMax = maxAbs * 1.12;
-  const latest = months.find((m) => m.isCurrent) ?? months[months.length - 1];
-  const wins = months.filter((m) => m.gananciaNeta > 0).length;
-  const losses = months.filter((m) => m.gananciaNeta < 0).length;
+  const yMax = maxVal * 1.08;
 
   const chartW = 1000;
   const chartH = 260;
@@ -94,48 +91,87 @@ export function ReportMonthlyResultChart({
     if (months.length === 1) return padL + plotW / 2;
     return padL + (i / Math.max(1, months.length - 1)) * plotW;
   };
-  /** Escala simétrica: 0 en el centro. */
-  const yAt = (v: number) => padT + plotH / 2 - (v / yMax) * (plotH / 2);
-  const yZero = yAt(0);
+  const yAt = (v: number) => padT + plotH - (Math.max(0, v) / yMax) * plotH;
 
-  const netaPts = months.map((m, i) => ({ x: xAt(i), y: yAt(m.gananciaNeta) }));
-  const brutaPts = months.map((m, i) => ({ x: xAt(i), y: yAt(m.gananciaBruta) }));
-  const netaPath = smoothLine(netaPts);
-  const brutaPath = smoothLine(brutaPts);
+  const ingresosPts = months.map((m, i) => ({
+    x: xAt(i),
+    y: yAt(m.ingresosConIva),
+  }));
+  const egresosPts = months.map((m, i) => ({
+    x: xAt(i),
+    y: yAt(m.egresos),
+  }));
+  const ingresosPath = smoothLine(ingresosPts);
+  const egresosPath = smoothLine(egresosPts);
   const areaPath =
-    netaPts.length > 0
-      ? `${netaPath} L ${netaPts[netaPts.length - 1].x} ${yZero} L ${netaPts[0].x} ${yZero} Z`
+    ingresosPts.length > 0
+      ? `${ingresosPath} L ${ingresosPts[ingresosPts.length - 1].x} ${padT + plotH} L ${ingresosPts[0].x} ${padT + plotH} Z`
       : "";
 
   const gridSteps = 4;
   const yTicks: number[] = [];
-  for (let s = -gridSteps; s <= gridSteps; s += 1) {
-    yTicks.push((yMax * s) / gridSteps);
-  }
+  for (let s = 0; s <= gridSteps; s += 1) yTicks.push((yMax * s) / gridSteps);
 
-  const fillId = "reportsMonthlyResultFill";
+  const fillId = "reportsIncomeExpenseFill";
+  const momUp = ingresosMom != null && ingresosMom > 0;
+  const momDown = ingresosMom != null && ingresosMom < 0;
 
   return (
     <div className="reports-chart-reveal flex h-full min-h-0 w-full min-w-0 flex-col">
-      <div className="mb-2 flex shrink-0 flex-wrap items-end justify-between gap-2">
+      <div className="mb-2 flex shrink-0 flex-wrap items-end justify-between gap-3">
         <div className="min-w-0">
           <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-            Resultado por mes
+            Ingresos vs egresos
           </h2>
           <p className="mt-0.5 text-[11px] text-zinc-500">
-            {wins} en ganancia · {losses} en pérdida
+            Lo que entra a la caja de ventas vs lo que sale en gastos
           </p>
         </div>
-        <div className="text-right">
-          <p className="text-[10px] font-medium uppercase tracking-wider text-zinc-500">
-            {latest.shortLabel}
-            {latest.isPartial ? " · ahora" : ""}
-          </p>
-          <p
-            className={`text-base font-semibold tabular-nums sm:text-lg ${netaClass(latest.gananciaNeta)}`}
-          >
-            {formatNeta(latest.gananciaNeta)}
-          </p>
+        <div className="flex flex-wrap items-end gap-x-4 gap-y-1">
+          <div className="text-right">
+            <p className="text-[10px] font-medium uppercase tracking-wider text-zinc-500">
+              Brecha · {latest.shortLabel}
+              {latest.isPartial ? " · ahora" : ""}
+            </p>
+            <p
+              className={`text-base font-semibold tabular-nums sm:text-lg ${
+                gap >= 0
+                  ? "text-zinc-900 dark:text-zinc-50"
+                  : "text-red-600 dark:text-red-400"
+              }`}
+            >
+              {gap < 0 ? "−" : ""}
+              {formatCop(Math.abs(gap))}
+            </p>
+          </div>
+          {ingresosMom != null ? (
+            <div
+              className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold tabular-nums ${
+                momUp
+                  ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300"
+                  : momDown
+                    ? "bg-red-500/15 text-red-700 dark:text-red-300"
+                    : "bg-zinc-500/15 text-zinc-600 dark:text-zinc-300"
+              }`}
+              title="Cambio de ingresos vs el mes anterior"
+            >
+              {momUp ? (
+                <TrendingUp className="size-3" strokeWidth={2} aria-hidden />
+              ) : momDown ? (
+                <TrendingDown className="size-3" strokeWidth={2} aria-hidden />
+              ) : null}
+              Ingresos {momUp || momDown ? `${ingresosMom > 0 ? "+" : ""}${ingresosMom}%` : "igual"}
+            </div>
+          ) : null}
+          {egresosShare != null ? (
+            <p className="text-[11px] tabular-nums text-zinc-500">
+              Egresos ={" "}
+              <span className="font-semibold text-zinc-700 dark:text-zinc-300">
+                {egresosShare}%
+              </span>{" "}
+              de ingresos
+            </p>
+          ) : null}
         </div>
       </div>
 
@@ -144,34 +180,30 @@ export function ReportMonthlyResultChart({
         className="block min-h-0 w-full flex-1"
         preserveAspectRatio="xMidYMid meet"
         role="img"
-        aria-label="Ganancia neta por mes"
+        aria-label="Ingresos y egresos por mes"
       >
         <defs>
           <linearGradient id={fillId} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={REPORT_CHART.primary} stopOpacity="0.18" />
-            <stop offset="50%" stopColor={REPORT_CHART.primary} stopOpacity="0.06" />
-            <stop offset="100%" stopColor={REPORT_CHART.primary} stopOpacity="0.18" />
+            <stop offset="0%" stopColor={REPORT_CHART.primary} stopOpacity="0.2" />
+            <stop offset="100%" stopColor={REPORT_CHART.primary} stopOpacity="0" />
           </linearGradient>
         </defs>
 
         {yTicks.map((tick, idx) => {
           const y = yAt(tick);
-          const isZero = tick === 0;
           return (
             <g key={`g-${idx}`}>
-              <line
-                x1={padL}
-                y1={y}
-                x2={padL + plotW}
-                y2={y}
-                stroke="currentColor"
-                className={
-                  isZero
-                    ? "text-zinc-400 dark:text-zinc-600"
-                    : "text-zinc-200 dark:text-zinc-800"
-                }
-                strokeWidth={isZero ? 1.25 : 1}
-              />
+              {idx > 0 ? (
+                <line
+                  x1={padL}
+                  y1={y}
+                  x2={padL + plotW}
+                  y2={y}
+                  stroke="currentColor"
+                  className="text-zinc-200 dark:text-zinc-800"
+                  strokeWidth={1}
+                />
+              ) : null}
               <text
                 x={padL - 8}
                 y={y + 3}
@@ -179,7 +211,7 @@ export function ReportMonthlyResultChart({
                 className="fill-zinc-500"
                 style={{ fontSize: "10px" }}
               >
-                {formatNetaAxis(Math.round(tick))}
+                {tick === 0 ? "$0" : formatCopCompact(Math.round(tick))}
               </text>
             </g>
           );
@@ -187,7 +219,7 @@ export function ReportMonthlyResultChart({
 
         <path d={areaPath} fill={`url(#${fillId})`} />
         <path
-          d={brutaPath}
+          d={egresosPath}
           fill="none"
           stroke={REPORT_CHART.secondary}
           strokeWidth={1.75}
@@ -196,7 +228,7 @@ export function ReportMonthlyResultChart({
           strokeLinejoin="round"
         />
         <path
-          d={netaPath}
+          d={ingresosPath}
           fill="none"
           stroke={REPORT_CHART.primary}
           strokeWidth={2.25}
@@ -207,23 +239,17 @@ export function ReportMonthlyResultChart({
 
         {months.map((m, i) => {
           const selected = highlightYearMonth === m.yearMonth;
-          const up = m.gananciaNeta > 0;
-          const down = m.gananciaNeta < 0;
-          const dotStroke = up
-            ? REPORT_CHART.positive
-            : down
-              ? REPORT_CHART.negative
-              : REPORT_CHART.primary;
+          const spendsMore = m.egresos > m.ingresosConIva && m.ingresosConIva > 0;
           return (
             <g key={m.yearMonth}>
               <a
                 href={monthHref(m.yearMonth, m.isCurrent)}
-                aria-label={`${m.label}: ${formatNeta(m.gananciaNeta)}`}
+                aria-label={`${m.label}: ingresos ${formatCop(m.ingresosConIva)}, egresos ${formatCop(m.egresos)}`}
               >
                 {selected ? (
                   <circle
                     cx={xAt(i)}
-                    cy={yAt(m.gananciaNeta)}
+                    cy={yAt(m.ingresosConIva)}
                     r={10}
                     fill={REPORT_CHART.primary}
                     fillOpacity={0.12}
@@ -232,14 +258,27 @@ export function ReportMonthlyResultChart({
                 ) : null}
                 <circle
                   cx={xAt(i)}
-                  cy={yAt(m.gananciaNeta)}
+                  cy={yAt(m.ingresosConIva)}
                   r={selected ? 4.5 : 3.5}
                   fill="#09090b"
-                  stroke={dotStroke}
+                  stroke={REPORT_CHART.primary}
                   strokeWidth={1.75}
+                  className="dark:fill-zinc-950 dark:[stroke:#fda4af]"
+                />
+                <circle
+                  cx={xAt(i)}
+                  cy={yAt(m.egresos)}
+                  r={2.75}
+                  fill="#09090b"
+                  stroke={
+                    spendsMore ? REPORT_CHART.negative : REPORT_CHART.secondary
+                  }
+                  strokeWidth={1.5}
                   className="dark:fill-zinc-950"
                 />
-                <title>{`${m.label}: ${formatNeta(m.gananciaNeta)}`}</title>
+                <title>
+                  {`${m.label}\nIngresos ${formatCop(m.ingresosConIva)}\nEgresos ${formatCop(m.egresos)}`}
+                </title>
               </a>
               <text
                 x={xAt(i)}
@@ -250,7 +289,10 @@ export function ReportMonthlyResultChart({
                     ? "fill-zinc-800 dark:fill-zinc-200"
                     : "fill-zinc-500"
                 }
-                style={{ fontSize: "10px", fontWeight: selected || m.isCurrent ? 600 : 400 }}
+                style={{
+                  fontSize: "10px",
+                  fontWeight: selected || m.isCurrent ? 600 : 400,
+                }}
               >
                 {monthAbbrev(m.shortLabel)}
               </text>
@@ -266,7 +308,7 @@ export function ReportMonthlyResultChart({
             style={{ backgroundColor: REPORT_CHART.primary }}
             aria-hidden
           />
-          Resultado neto
+          Ingresos
         </span>
         <span className="inline-flex items-center gap-1.5">
           <span
@@ -274,15 +316,11 @@ export function ReportMonthlyResultChart({
             style={{ borderColor: REPORT_CHART.secondary }}
             aria-hidden
           />
-          Ganancia bruta
+          Egresos
         </span>
       </div>
 
-      {/* Acceso táctil / teclado a cada mes (complementa los puntos del SVG). */}
-      <nav
-        className="sr-only"
-        aria-label="Abrir resultado de un mes"
-      >
+      <nav className="sr-only" aria-label="Abrir un mes">
         {months.map((m) => (
           <Link key={m.yearMonth} href={monthHref(m.yearMonth, m.isCurrent)}>
             {m.label}
