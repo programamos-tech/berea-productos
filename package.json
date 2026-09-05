@@ -23,6 +23,7 @@
     "merge:customers-duplicates": "node scripts/merge-customers-duplicates.mjs"
   },
   "dependencies": {
+    "@dicebear/adventurer": "^9.4.2",
     "@dicebear/core": "^9.4.2",
     "@dicebear/notionists": "^9.4.2",
     "@supabase/ssr": "^0.10.2",

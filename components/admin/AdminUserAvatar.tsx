@@ -1,5 +1,5 @@
 import { createAvatar } from "@dicebear/core";
-import * as notionists from "@dicebear/notionists";
+import * as adventurer from "@dicebear/adventurer";
 
 /** Iniciales a partir del nombre visible (fallback / otros usos). */
 export function adminUserInitials(displayName: string): string {
@@ -22,7 +22,7 @@ type Props = {
 };
 
 /**
- * Avatar con personaje Notionists sobre teal Berea House (#0197b2).
+ * Avatar ilustrado Adventurer (DiceBear) sobre mist teal Berea House.
  */
 export function AdminUserAvatar({
   displayName,
@@ -35,16 +35,16 @@ export function AdminUserAvatar({
     displayName.trim().toLowerCase() ||
     "berea-house";
 
-  const svg = createAvatar(notionists, {
+  const svg = createAvatar(adventurer, {
     seed: safe,
     size,
-    backgroundColor: ["0197b2"],
+    backgroundColor: ["e6f6fa"],
     radius: 50,
   }).toString();
 
   return (
     <span
-      className={`pointer-events-none inline-flex shrink-0 select-none overflow-hidden rounded-full shadow-[0_0_0_1px_color-mix(in_srgb,#0197b2_35%,transparent)] dark:shadow-[0_0_0_1px_rgba(255,255,255,0.12)] [&_svg]:pointer-events-none [&_svg]:block [&_svg]:size-full [&_svg]:select-none ${className}`}
+      className={`pointer-events-none inline-flex shrink-0 select-none overflow-hidden rounded-full shadow-[0_0_0_1px_color-mix(in_srgb,#0197b2_28%,transparent)] dark:shadow-[0_0_0_1px_rgba(255,255,255,0.12)] [&_svg]:pointer-events-none [&_svg]:block [&_svg]:size-full [&_svg]:select-none ${className}`}
       style={{ width: size, height: size }}
       dangerouslySetInnerHTML={{ __html: svg }}
       role="img"
