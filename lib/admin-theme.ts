@@ -3,7 +3,7 @@
  *
  * Brand teal:  #0197b2
  * Sidebar light: zinc-50
- * Sidebar dark:  warm near-black
+ * Sidebar dark:  zinc-950 (mismo canvas que el panel)
  */
 export const ADMIN_CORAL = "#0197b2" as const;
 export const ADMIN_CORAL_HOVER = "#01829a" as const;
@@ -25,8 +25,8 @@ export const ADMIN_LOSS_DARK = "#e8959a" as const;
  */
 export const ADMIN_SIDEBAR_BG = "#FAFAFA" as const;
 
-/** Sidebar en modo oscuro: cálido, bajo contraste con el canvas zinc-950. */
-export const ADMIN_SIDEBAR_BG_DARK = "#1A1413" as const;
+/** Sidebar en modo oscuro: zinc-950, alineado al canvas Berea House. */
+export const ADMIN_SIDEBAR_BG_DARK = "#09090b" as const;
 
 /** Paneles suaves (cuenta, direcciones) — blanco, alineado al canvas. */
 export const STORE_CHROME_BG = "#ffffff" as const;

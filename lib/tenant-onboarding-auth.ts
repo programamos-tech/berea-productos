@@ -1,5 +1,4 @@
 import { loadAdminPermissions } from "@/lib/load-admin-permissions";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 function isPlatformAdminEmail(email: string | undefined | null): boolean {
   if (!email) return false;
@@ -27,11 +26,7 @@ export async function assertCanOnboardTenants(): Promise<
   const perm = await loadAdminPermissions();
   if (!perm) return { ok: false, error: "auth" };
 
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  const email = user?.email ?? undefined;
+  const email = perm.email || undefined;
 
   if (perm.jobRole === "owner" || isPlatformAdminEmail(email)) {
     return { ok: true, userId: perm.userId, email };

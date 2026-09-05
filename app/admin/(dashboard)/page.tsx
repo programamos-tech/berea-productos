@@ -37,9 +37,9 @@ type PageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
-/** TopBar h-14/h-16 + main padding. Mobile/tablet: scroll; desktop: viewport lock. */
+/** Mobile/iPad: scroll de página (sin lock). Desktop xl+: alto de viewport con scroll interno si hace falta. */
 const reportsViewportClass =
-  "flex min-h-0 flex-1 flex-col gap-3 overflow-x-hidden overflow-y-auto lg:h-[calc(100dvh-4rem-3rem)] lg:gap-2.5 lg:overflow-hidden";
+  "flex w-full min-w-0 flex-col gap-3 overflow-x-hidden pb-8 max-xl:overflow-visible xl:h-[calc(100dvh-4rem-3rem)] xl:min-h-0 xl:flex-1 xl:gap-2.5 xl:overflow-y-auto xl:overscroll-y-contain xl:pb-0";
 
 function ReportsKpisSkeleton() {
   return (
@@ -145,7 +145,7 @@ export default async function AdminHomePage({ searchParams }: PageProps) {
         </Suspense>
       </header>
 
-      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-visible lg:overflow-hidden">
+      <div className="flex min-h-0 flex-1 flex-col gap-4 max-xl:flex-none">
         {/* KPIs y gráfica en paralelo: la chart ya no espera al dashboard agg. */}
         <Suspense key={`kpis-${streamKey}`} fallback={<ReportsKpisSkeleton />}>
           <ReportsDashboardBody
@@ -165,8 +165,8 @@ export default async function AdminHomePage({ searchParams }: PageProps) {
           />
         </Suspense>
 
-        <div className="grid min-h-0 flex-1 grid-cols-1 gap-5 border-t border-zinc-200/70 pt-4 dark:border-zinc-800 lg:grid-cols-12 lg:gap-6">
-          <div className="flex min-h-0 min-w-0 flex-col lg:col-span-7">
+        <div className="grid min-h-0 flex-1 grid-cols-1 gap-5 border-t border-zinc-200/70 pt-4 dark:border-zinc-800 max-xl:flex-none lg:grid-cols-12 lg:gap-6">
+          <div className="flex min-h-0 min-w-0 flex-col lg:col-span-7 max-xl:min-h-0">
             <Suspense
               key={`chart-${streamKey}`}
               fallback={<ReportMonthlyChartsSkeleton />}

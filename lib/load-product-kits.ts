@@ -97,3 +97,44 @@ export async function fetchKitsWithItems(
     (items ?? []) as unknown as Array<KitComponentRow & { kit_id: string }>,
   );
 }
+
+/** Listado admin: columnas del kit + stock/precio mínimos (sin image_path de componentes). */
+const KIT_ADMIN_LIST_ITEMS_SELECT = `
+  product_id,
+  quantity,
+  products (
+    price_cents,
+    cost_cents,
+    stock_quantity,
+    stock_local,
+    is_published,
+    has_vat,
+    vat_percent
+  )
+`;
+
+const KIT_ADMIN_LIST_SELECT =
+  "id,name,image_path,is_published,pricing_mode,discount_percent,price_cents,sort_order";
+
+export async function fetchKitsForAdminList(
+  supabase: SupabaseClient,
+): Promise<ProductKitRow[]> {
+  const { data: kits } = await supabase
+    .from("product_kits")
+    .select(KIT_ADMIN_LIST_SELECT)
+    .order("sort_order", { ascending: true })
+    .order("name", { ascending: true });
+  if (!kits?.length) return [];
+
+  const ids = kits.map((k) => k.id as string);
+  const { data: items } = await supabase
+    .from("product_kit_items")
+    .select(`${KIT_ADMIN_LIST_ITEMS_SELECT}, kit_id`)
+    .in("kit_id", ids)
+    .order("sort_order", { ascending: true });
+
+  return attachKitItemsToRows(
+    kits as ProductKitRow[],
+    (items ?? []) as unknown as Array<KitComponentRow & { kit_id: string }>,
+  );
+}

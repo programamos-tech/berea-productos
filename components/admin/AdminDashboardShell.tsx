@@ -94,7 +94,7 @@ export function AdminDashboardShell({
             displayName={sessionUser.displayName}
             email={sessionUser.email}
           />
-          <main className="min-w-0 flex-1 overflow-x-hidden p-3 sm:p-4 md:p-6 print:bg-white print:p-8">
+          <main className="min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-visible p-3 sm:p-4 md:p-6 print:bg-white print:p-8">
             {children}
           </main>
         </div>

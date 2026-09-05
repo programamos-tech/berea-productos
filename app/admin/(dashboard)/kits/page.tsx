@@ -5,7 +5,7 @@ import {
   type KitsAdminTableRow,
 } from "@/components/admin/KitsAdminTable";
 import { storagePublicObjectUrl } from "@/lib/storage-public-url";
-import { fetchKitsWithItems } from "@/lib/load-product-kits";
+import { fetchKitsForAdminList } from "@/lib/load-product-kits";
 import {
   kitIsAvailable,
   maxKitsAvailableFromItems,
@@ -28,13 +28,15 @@ export default async function AdminKitsPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const supabase = await createSupabaseServerClient();
-  const perm = await loadAdminPermissions();
+  const [perm, kits] = await Promise.all([
+    loadAdminPermissions(),
+    createSupabaseServerClient().then((supabase) =>
+      fetchKitsForAdminList(supabase),
+    ),
+  ]);
   const canEdit = Boolean(perm?.permissions.kits_gestionar);
   const sp = await searchParams;
   const created = sp.created === "1";
-
-  const kits = await fetchKitsWithItems(supabase);
 
   const rows: KitsAdminTableRow[] = kits.map((kit) => {
     const items = kit.items ?? [];

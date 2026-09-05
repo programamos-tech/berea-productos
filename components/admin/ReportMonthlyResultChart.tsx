@@ -177,7 +177,7 @@ export function ReportMonthlyResultChart({
 
       <svg
         viewBox={`0 0 ${chartW} ${chartH}`}
-        className="block w-full shrink-0"
+        className="block w-full shrink-0 touch-pan-y"
         style={{ aspectRatio: `${chartW} / ${chartH}` }}
         preserveAspectRatio="xMidYMid meet"
         role="img"

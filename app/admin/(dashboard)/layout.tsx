@@ -23,7 +23,18 @@ export default async function AdminDashboardLayout({
   const perm = await loadAdminPermissions();
   if (!perm) redirect("/admin/login");
 
-  const showOnboarding = await canOnboardTenants();
+  const needsCashCheck =
+    perm.jobRole !== "owner" && Boolean(perm.permissions.caja_gestionar);
+
+  const [showOnboarding, todaySession] = await Promise.all([
+    canOnboardTenants(),
+    needsCashCheck
+      ? createSupabaseServerClient().then((supabase) =>
+          fetchCashSessionForBusinessDay(supabase, todayBusinessDayYmd()),
+        )
+      : Promise.resolve(null),
+  ]);
+
   let allowedNavHrefs = adminNavAllowedHrefList(perm.permissions, {
     jobRole: perm.jobRole,
     canOnboard: showOnboarding,
@@ -35,9 +46,6 @@ export default async function AdminDashboardLayout({
     suggestedOpeningFloatCents: number;
   } | null = null;
 
-  const supabase = await createSupabaseServerClient();
-  const today = todayBusinessDayYmd();
-  const todaySession = await fetchCashSessionForBusinessDay(supabase, today);
   const mustOpen = staffMustOpenCashRegister({
     jobRole: perm.jobRole,
     permissions: perm.permissions,
@@ -46,6 +54,8 @@ export default async function AdminDashboardLayout({
 
   if (mustOpen) {
     allowedNavHrefs = navHrefsForCashGate(allowedNavHrefs);
+    const supabase = await createSupabaseServerClient();
+    const today = todayBusinessDayYmd();
     const [{ data: profile }, suggestedOpeningFloatCents] = await Promise.all([
       supabase
         .from("profiles")

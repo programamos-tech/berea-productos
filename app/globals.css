@@ -5,7 +5,7 @@
 
 /* Sidebar + acentos de gráfica en oscuro (teal un poco más claro). */
 [data-admin-theme="dark"] {
-  --admin-sidebar-bg: var(--admin-sidebar-bg-dark, #1a1413);
+  --admin-sidebar-bg: var(--admin-sidebar-bg-dark, #09090b);
   --admin-chart-line: var(--admin-coral-soft, #7ecfe0);
 }
 

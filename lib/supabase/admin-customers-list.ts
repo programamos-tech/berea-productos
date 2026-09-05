@@ -162,16 +162,21 @@ async function fetchOrderStatsForCustomers(
   const customerIds = pageCustomers.map((c) => c.id);
 
   if (customerIds.length > 0) {
-    // Pedidos en lotes (PostgREST limita .in())
     const chunkSize = 80;
+    const chunks: string[][] = [];
     for (let i = 0; i < customerIds.length; i += chunkSize) {
-      const chunk = customerIds.slice(i, i + chunkSize);
-      const { data, error } = await supabase
-        .from("orders")
-        .select("id,customer_id,customer_email,total_cents,created_at")
-        .eq("status", "paid")
-        .in("customer_id", chunk);
-
+      chunks.push(customerIds.slice(i, i + chunkSize));
+    }
+    const results = await Promise.all(
+      chunks.map((chunk) =>
+        supabase
+          .from("orders")
+          .select("id,customer_id,customer_email,total_cents,created_at")
+          .eq("status", "paid")
+          .in("customer_id", chunk),
+      ),
+    );
+    for (const { data, error } of results) {
       if (!error && data?.length) {
         const maps = buildStatsMapsFromOrders(data as OrderStatRow[]);
         for (const [k, v] of maps.byCustomerId) byCustomerId.set(k, v);
@@ -188,15 +193,21 @@ async function fetchOrderStatsForCustomers(
 
   if (emailsForFallback.length > 0) {
     const chunkSize = 80;
+    const chunks: string[][] = [];
     for (let i = 0; i < emailsForFallback.length; i += chunkSize) {
-      const chunk = emailsForFallback.slice(i, i + chunkSize);
-      const { data, error } = await supabase
-        .from("orders")
-        .select("id,customer_id,customer_email,total_cents,created_at")
-        .eq("status", "paid")
-        .is("customer_id", null)
-        .in("customer_email", chunk);
-
+      chunks.push(emailsForFallback.slice(i, i + chunkSize));
+    }
+    const results = await Promise.all(
+      chunks.map((chunk) =>
+        supabase
+          .from("orders")
+          .select("id,customer_id,customer_email,total_cents,created_at")
+          .eq("status", "paid")
+          .is("customer_id", null)
+          .in("customer_email", chunk),
+      ),
+    );
+    for (const { data, error } of results) {
       if (!error && data?.length) {
         const maps = buildStatsMapsFromOrders(data as OrderStatRow[]);
         for (const [k, v] of maps.byEmail) byEmail.set(k, v);
@@ -205,12 +216,6 @@ async function fetchOrderStatsForCustomers(
   }
 
   return { byCustomerId, byEmail };
-}
-
-function sortByMostPurchases(a: AdminCustomerListRow, b: AdminCustomerListRow) {
-  if (b.purchases !== a.purchases) return b.purchases - a.purchases;
-  if (b.totalSpent !== a.totalSpent) return b.totalSpent - a.totalSpent;
-  return a.name.localeCompare(b.name, "es", { sensitivity: "base" });
 }
 
 export type FetchAdminCustomersPageOpts = {
@@ -226,7 +231,7 @@ export type FetchAdminCustomersPageOpts = {
 const ACTIVE_PURCHASE_MS = 90 * 24 * 60 * 60 * 1000;
 
 function matchesActivity(
-  row: AdminCustomerListRow,
+  row: Pick<AdminCustomerListRow, "purchases" | "lastPurchaseAt">,
   activity: "all" | "active" | "inactive" | "never",
   nowMs: number,
 ): boolean {
@@ -247,8 +252,39 @@ export type FetchAdminCustomersPageResult = {
   withoutShippingFields: boolean;
 };
 
+function applyCustomerFilters(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  query: any,
+  kind: "all" | "retail" | "wholesale",
+  q: string,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+): any {
+  let next = query;
+  if (kind === "wholesale") {
+    next = next.eq("customer_kind", "wholesale");
+  } else if (kind === "retail") {
+    next = next.or("customer_kind.eq.retail,customer_kind.is.null");
+  }
+  if (q) {
+    const pattern = `%${q}%`;
+    next = next.or(
+      [
+        `name.ilike.${pattern}`,
+        `email.ilike.${pattern}`,
+        `phone.ilike.${pattern}`,
+        `document_id.ilike.${pattern}`,
+        `shipping_address.ilike.${pattern}`,
+        `shipping_city.ilike.${pattern}`,
+      ].join(","),
+    );
+  }
+  return next;
+}
+
 /**
- * Listado admin paginado, ordenado por más compras (pedidos pagados).
+ * Listado admin paginado.
+ * - Sin filtro de actividad: paginación real en DB + stats solo de la página.
+ * - Con filtro de actividad: escaneo ligero (id/email) + stats, luego página.
  */
 export async function fetchAdminCustomersPage(
   supabase: SupabaseClient,
@@ -269,36 +305,62 @@ export async function fetchAdminCustomersPage(
   const from = (safePage - 1) * safeSize;
   const nowMs = Date.now();
 
-  const rawRows: Record<string, unknown>[] = [];
+  if (activity === "all") {
+    let query = supabase
+      .from("customers")
+      .select(CUSTOMER_SELECT, { count: "exact" })
+      .order("name", { ascending: true })
+      .range(from, from + safeSize - 1);
+
+    query = applyCustomerFilters(query, kind, q);
+
+    const { data: customerRows, error: cErr, count } = await query;
+
+    if (cErr) {
+      return {
+        rows: [],
+        total: 0,
+        error: cErr,
+        withoutShippingFields: false,
+      };
+    }
+
+    const rawRows = (customerRows ?? []) as Record<string, unknown>[];
+    const pageCustomers = rawRows.map((r) => {
+      const row = r as { id: string; email?: string | null };
+      return { id: String(row.id), email: row.email ?? null };
+    });
+
+    const { byCustomerId, byEmail } = await fetchOrderStatsForCustomers(
+      supabase,
+      pageCustomers,
+    );
+
+    const rows = rawRows.map((raw) =>
+      mapCustomerRow(raw, byCustomerId, byEmail),
+    );
+
+    return {
+      rows,
+      total: count ?? rows.length,
+      error: null,
+      withoutShippingFields: false,
+    };
+  }
+
+  // Filtro por actividad: necesita stats antes de paginar.
+  const idRows: { id: string; email: string | null }[] = [];
   const fetchChunk = 1000;
   let offset = 0;
 
   for (;;) {
     let query = supabase
       .from("customers")
-      .select(CUSTOMER_SELECT)
+      .select("id,email")
       .order("name", { ascending: true })
       .range(offset, offset + fetchChunk - 1);
 
-    if (kind === "wholesale") {
-      query = query.eq("customer_kind", "wholesale");
-    } else if (kind === "retail") {
-      query = query.or("customer_kind.eq.retail,customer_kind.is.null");
-    }
-
-    if (q) {
-      const pattern = `%${q}%`;
-      query = query.or(
-        [
-          `name.ilike.${pattern}`,
-          `email.ilike.${pattern}`,
-          `phone.ilike.${pattern}`,
-          `document_id.ilike.${pattern}`,
-          `shipping_address.ilike.${pattern}`,
-          `shipping_city.ilike.${pattern}`,
-        ].join(","),
-      );
-    }
+    query = applyCustomerFilters(query, kind, q);
 
     const { data: customerRows, error: cErr } = await query;
 
@@ -311,31 +373,76 @@ export async function fetchAdminCustomersPage(
       };
     }
 
-    const batch = (customerRows ?? []) as Record<string, unknown>[];
-    rawRows.push(...batch);
+    const batch = (customerRows ?? []) as { id: string; email: string | null }[];
+    idRows.push(
+      ...batch.map((r) => ({ id: String(r.id), email: r.email ?? null })),
+    );
     if (batch.length < fetchChunk) break;
     offset += fetchChunk;
-    // Tope de seguridad
     if (offset >= 20_000) break;
   }
 
-  const pageCustomers = rawRows.map((r) => {
-    const row = r as { id: string; email?: string | null };
-    return { id: String(row.id), email: row.email ?? null };
-  });
-
   const { byCustomerId, byEmail } = await fetchOrderStatsForCustomers(
     supabase,
-    pageCustomers,
+    idRows,
   );
 
-  const sorted = rawRows
-    .map((raw) => mapCustomerRow(raw, byCustomerId, byEmail))
+  const matching = idRows
+    .map((c) => {
+      const emailKey = c.email ? c.email.trim().toLowerCase() : "";
+      const st =
+        byCustomerId.get(c.id) ??
+        (emailKey ? byEmail.get(emailKey) : undefined);
+      return {
+        id: c.id,
+        purchases: st?.purchases ?? 0,
+        totalSpent: st?.totalSpent ?? 0,
+        lastPurchaseAt: st?.lastPurchaseAt ?? null,
+      };
+    })
     .filter((row) => matchesActivity(row, activity, nowMs))
-    .sort(sortByMostPurchases);
+    .sort((a, b) => {
+      if (b.purchases !== a.purchases) return b.purchases - a.purchases;
+      if (b.totalSpent !== a.totalSpent) return b.totalSpent - a.totalSpent;
+      return 0;
+    });
 
-  const total = sorted.length;
-  const rows = sorted.slice(from, from + safeSize);
+  const total = matching.length;
+  const pageIds = matching.slice(from, from + safeSize).map((r) => r.id);
+
+  if (pageIds.length === 0) {
+    return {
+      rows: [],
+      total,
+      error: null,
+      withoutShippingFields: false,
+    };
+  }
+
+  const { data: fullRows, error: fullErr } = await supabase
+    .from("customers")
+    .select(CUSTOMER_SELECT)
+    .in("id", pageIds);
+
+  if (fullErr) {
+    return {
+      rows: [],
+      total: 0,
+      error: fullErr,
+      withoutShippingFields: false,
+    };
+  }
+
+  const byId = new Map(
+    ((fullRows ?? []) as Record<string, unknown>[]).map((raw) => [
+      String((raw as { id: string }).id),
+      mapCustomerRow(raw, byCustomerId, byEmail),
+    ]),
+  );
+
+  const rows = pageIds
+    .map((id) => byId.get(id))
+    .filter((r): r is AdminCustomerListRow => Boolean(r));
 
   return {
     rows,

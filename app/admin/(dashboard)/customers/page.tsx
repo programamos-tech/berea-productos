@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { RefreshCw } from "lucide-react";
 import { Suspense } from "react";
+import { redirect } from "next/navigation";
 import {
   CustomersSearchBar,
   type CustomerActivityFilter,
@@ -147,8 +148,8 @@ export default async function AdminCustomersPage({
   const canCreateCustomer = Boolean(authPerm?.permissions.clientes_crear);
 
   const supabase = await createSupabaseServerClient();
-  let page = pageRequested;
-  let {
+  const page = pageRequested;
+  const {
     rows,
     total: totalFiltered,
     error,
@@ -166,19 +167,13 @@ export default async function AdminCustomersPage({
     Math.ceil(totalFiltered / CUSTOMERS_PAGE_SIZE),
   );
   if (page > totalPages && totalFiltered > 0) {
-    page = totalPages;
-    ({
-      rows,
-      total: totalFiltered,
-      error,
-      withoutShippingFields,
-    } = await fetchAdminCustomersPage(supabase, {
-      q,
-      kind,
-      activity,
-      page,
-      pageSize: CUSTOMERS_PAGE_SIZE,
-    }));
+    const params = new URLSearchParams();
+    if (q) params.set("q", q);
+    if (kind !== "all") params.set("kind", kind);
+    if (activity !== "all") params.set("activity", activity);
+    if (totalPages > 1) params.set("page", String(totalPages));
+    const qs = params.toString();
+    redirect(qs ? `/admin/customers?${qs}` : "/admin/customers");
   }
 
   const buildPageHref = (p: number) => {
