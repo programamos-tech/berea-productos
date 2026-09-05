@@ -14,6 +14,11 @@ import {
   adminTenantBrand,
   adminTenantLogoPath,
 } from "@/lib/brand";
+import {
+  ADMIN_NAV_UNAVAILABLE_BADGE,
+  ADMIN_NAV_UNAVAILABLE_HINT,
+  isAdminNavHrefInMaintenance,
+} from "@/lib/admin-nav-maintenance";
 
 function Icon(props: SVGProps<SVGSVGElement> & { children: React.ReactNode }) {
   const { children, className = "", ...rest } = props;
@@ -312,18 +317,19 @@ function SidebarTenantAccount({
   onNavigate: () => void;
 }) {
   const href = showStorefront ? STOREFRONT_HREF : CUENTA_HREF;
+  const cuentaBlocked =
+    !showStorefront && isAdminNavHrefInMaintenance(CUENTA_HREF);
   const title = showStorefront
     ? `Ver tienda · ${adminTenantBrand}`
-    : `Cuenta · ${adminTenantBrand}`;
+    : cuentaBlocked
+      ? `${adminTenantBrand} · ${ADMIN_NAV_UNAVAILABLE_HINT}`
+      : `Cuenta · ${adminTenantBrand}`;
 
-  return (
-    <Link
-      href={href}
-      prefetch
-      onClick={() => onNavigate()}
-      title={title}
-      className="group mt-3.5 flex w-full items-center gap-2.5 rounded-lg border border-[color-mix(in_srgb,var(--admin-coral-deep)_16%,transparent)] bg-white/55 px-2.5 py-2 text-left transition hover:border-[color-mix(in_srgb,var(--admin-coral)_35%,transparent)] hover:bg-white/80"
-    >
+  const cardClass =
+    "group mt-3.5 flex w-full items-center gap-2.5 rounded-lg border border-[color-mix(in_srgb,var(--admin-coral-deep)_16%,transparent)] bg-white/55 px-2.5 py-2 text-left transition";
+
+  const inner = (
+    <>
       <span className="relative flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-md bg-[#3d3d3f]">
         <Image
           src={adminTenantLogoPath}
@@ -343,6 +349,30 @@ function SidebarTenantAccount({
           <IconExternalStore className="size-4" />
         </span>
       ) : null}
+    </>
+  );
+
+  if (cuentaBlocked) {
+    return (
+      <div
+        className={`${cardClass} cursor-not-allowed opacity-55`}
+        title={title}
+        aria-disabled="true"
+      >
+        {inner}
+      </div>
+    );
+  }
+
+  return (
+    <Link
+      href={href}
+      prefetch
+      onClick={() => onNavigate()}
+      title={title}
+      className={`${cardClass} hover:border-[color-mix(in_srgb,var(--admin-coral)_35%,transparent)] hover:bg-white/80`}
+    >
+      {inner}
     </Link>
   );
 }
@@ -355,7 +385,7 @@ function SidebarHeader({
   onNavigate: () => void;
 }) {
   return (
-    <div className={`border-b px-3 py-4 ${sidebarBorder}`}>
+    <div className={`border-b px-3 py-3 ${sidebarBorder}`}>
       <div className="flex flex-col items-center text-center">
         <SidebarProductBrand />
       </div>
@@ -394,6 +424,9 @@ function AdminSidebarInner({
         : "text-[var(--admin-coral-deep)]/85 hover:bg-white/70 hover:text-[var(--admin-coral-deep)]",
     ].join(" ");
 
+  const maintenanceClass =
+    "flex cursor-not-allowed items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] font-medium text-[var(--admin-coral-deep)]/40 opacity-55 grayscale-[0.35]";
+
   const drawerTranslate =
     mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0";
 
@@ -425,6 +458,28 @@ function AdminSidebarInner({
             <ul className="mt-2 space-y-0.5">
               {section.items.map((item) => {
                 const active = navItemActive(pathname, item.href);
+                const maintenance = isAdminNavHrefInMaintenance(item.href);
+                if (maintenance) {
+                  return (
+                    <li key={`${section.title}-${item.label}`}>
+                      <span
+                        className={maintenanceClass}
+                        title={ADMIN_NAV_UNAVAILABLE_HINT}
+                        aria-disabled="true"
+                      >
+                        <span className="opacity-70" aria-hidden>
+                          {item.icon}
+                        </span>
+                        <span className="min-w-0 flex-1 truncate">
+                          {item.label}
+                        </span>
+                        <span className="shrink-0 rounded-md bg-[var(--admin-coral-deep)]/8 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.08em] text-[var(--admin-coral-deep)]/55">
+                          {ADMIN_NAV_UNAVAILABLE_BADGE}
+                        </span>
+                      </span>
+                    </li>
+                  );
+                }
                 return (
                   <li key={`${section.title}-${item.label}`}>
                     <Link
@@ -438,8 +493,7 @@ function AdminSidebarInner({
                     </Link>
                   </li>
                 );
-              })}
-            </ul>
+              })}            </ul>
           </div>
         ))}
       </nav>
@@ -452,7 +506,7 @@ function AdminSidebarFallback() {
     <aside
       className={`fixed inset-y-0 left-0 z-[45] hidden w-64 flex-col border-r bg-[var(--admin-sidebar-bg)] print:hidden lg:flex lg:flex-col ${sidebarBorder}`}
     >
-      <div className={`border-b px-3 py-4 ${sidebarBorder}`}>
+      <div className={`border-b px-3 py-3 ${sidebarBorder}`}>
         <div className="flex flex-col items-center text-center">
           <SidebarProductBrand />
         </div>

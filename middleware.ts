@@ -8,6 +8,7 @@ import {
   TENANT_KIND_HEADER,
   TENANT_SLUG_HEADER,
 } from "@/lib/tenancy";
+import { isAdminPathInMaintenance } from "@/lib/admin-nav-maintenance";
 
 const MIDDLEWARE_AUTH_TIMEOUT_MS = 8_000;
 
@@ -82,6 +83,12 @@ export async function middleware(request: NextRequest) {
       return withTenantHeaders(
         request,
         NextResponse.redirect(new URL("/admin/login", request.url)),
+      );
+    }
+    if (isAdminPathInMaintenance(path)) {
+      return withTenantHeaders(
+        request,
+        NextResponse.redirect(new URL("/admin", request.url)),
       );
     }
     return nextWithTenant(request);

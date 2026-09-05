@@ -32,8 +32,8 @@ export function ReportTopsCards({
   periodHint: string;
 }) {
   return (
-    <div className="grid min-h-0 grid-cols-1 gap-3 sm:grid-cols-2">
-      <section className="reports-chart-reveal flex min-h-0 flex-col">
+    <div className="grid min-h-0 grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-4">
+      <section className="flex min-h-0 min-w-0 flex-col">
         <div className="shrink-0">
           <h2 className={labelClass}>Clientes top</h2>
           <p className="mt-0.5 text-[11px] text-zinc-500">{periodHint}</p>
@@ -41,7 +41,7 @@ export function ReportTopsCards({
         {clients.length === 0 ? (
           <p className="mt-4 text-sm text-zinc-500">Sin ventas en este periodo.</p>
         ) : (
-          <ol className="mt-3 min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <ol className="mt-3 space-y-2">
             {clients.map((c, i) => {
               const body = (
                 <>
@@ -80,7 +80,7 @@ export function ReportTopsCards({
         )}
       </section>
 
-      <section className="reports-chart-reveal flex min-h-0 flex-col">
+      <section className="flex min-h-0 min-w-0 flex-col">
         <div className="shrink-0">
           <h2 className={labelClass}>Productos top</h2>
           <p className="mt-0.5 text-[11px] text-zinc-500">{periodHint}</p>
@@ -88,7 +88,7 @@ export function ReportTopsCards({
         {products.length === 0 ? (
           <p className="mt-4 text-sm text-zinc-500">Sin productos vendidos aún.</p>
         ) : (
-          <ol className="mt-3 min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <ol className="mt-3 space-y-2">
             {products.map((p, i) => {
               const body = (
                 <>
@@ -131,7 +131,7 @@ export function ReportTopsCards({
 
 export function ReportTopsCardsSkeleton() {
   return (
-    <div className="grid min-h-0 grid-cols-1 gap-3 sm:grid-cols-2" role="status">
+    <div className="grid min-h-0 grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-4" role="status">
       <div className="h-40 animate-pulse rounded-xl bg-zinc-100/40 dark:bg-zinc-900/40" />
       <div className="h-40 animate-pulse rounded-xl bg-zinc-100/40 dark:bg-zinc-900/40" />
       <span className="sr-only">Cargando tops…</span>

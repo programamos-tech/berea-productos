@@ -20,6 +20,7 @@ import {
 } from "@/lib/admin-report-range";
 import { adminLandingPath } from "@/lib/admin-landing";
 import { loadAdminPermissions } from "@/lib/load-admin-permissions";
+import { adminPageTitleClass } from "@/lib/admin-ui";
 import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
@@ -28,15 +29,15 @@ type PageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
-/** TopBar h-14/h-16 + main padding p-3/p-4/p-6 */
+/** TopBar h-14/h-16 + main padding. Mobile/tablet: scroll; desktop: viewport lock. */
 const reportsViewportClass =
-  "flex h-[calc(100dvh-3.5rem-1.5rem)] flex-col gap-2.5 overflow-x-hidden overflow-y-auto sm:h-[calc(100dvh-4rem-2rem)] md:h-[calc(100dvh-4rem-3rem)] lg:overflow-hidden";
+  "flex min-h-0 flex-1 flex-col gap-3 overflow-x-hidden overflow-y-auto lg:h-[calc(100dvh-4rem-3rem)] lg:gap-2.5 lg:overflow-hidden";
 
 function ReportsDashboardSkeleton() {
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4" role="status">
       <span className="sr-only">Cargando reportes…</span>
-      <div className="grid shrink-0 grid-cols-2 gap-x-6 gap-y-5 sm:grid-cols-3 xl:grid-cols-6">
+      <div className="grid shrink-0 grid-cols-2 gap-x-4 gap-y-4 sm:gap-x-6 sm:gap-y-5 md:grid-cols-3 xl:grid-cols-6">
         {Array.from({ length: 6 }).map((_, i) => (
           <div
             key={i}
@@ -44,10 +45,9 @@ function ReportsDashboardSkeleton() {
           />
         ))}
       </div>
-      <div className="grid min-h-0 flex-1 grid-cols-1 gap-5 border-t border-zinc-200/70 pt-4 dark:border-zinc-800 lg:grid-cols-12">
-        <div className="min-h-[12rem] animate-pulse rounded-lg bg-zinc-100/40 dark:bg-zinc-900/40 motion-reduce:animate-none lg:col-span-5" />
-        <div className="min-h-[12rem] animate-pulse rounded-lg bg-zinc-100/40 dark:bg-zinc-900/40 motion-reduce:animate-none lg:col-span-3" />
-        <div className="min-h-[12rem] animate-pulse rounded-lg bg-zinc-100/40 dark:bg-zinc-900/40 motion-reduce:animate-none lg:col-span-4" />
+      <div className="grid min-h-0 flex-1 grid-cols-1 gap-5 border-t border-zinc-200/70 pt-4 dark:border-zinc-800 lg:grid-cols-12 lg:gap-6">
+        <div className="min-h-[16rem] animate-pulse rounded-lg bg-zinc-100/40 dark:bg-zinc-900/40 motion-reduce:animate-none lg:col-span-7" />
+        <div className="min-h-[14rem] max-h-[min(24rem,60vh)] animate-pulse rounded-lg bg-zinc-100/40 dark:bg-zinc-900/40 motion-reduce:animate-none lg:col-span-5 lg:max-h-none" />
       </div>
     </div>
   );
@@ -56,8 +56,8 @@ function ReportsDashboardSkeleton() {
 function ReportsFiltersSkeleton() {
   return (
     <div className="flex flex-wrap items-center justify-end gap-2">
-      <div className="h-8 w-40 animate-pulse rounded-lg bg-zinc-200/80 dark:bg-zinc-800/90 motion-reduce:animate-none" />
-      <div className="h-8 w-28 animate-pulse rounded-lg bg-zinc-200/80 dark:bg-zinc-800/90 motion-reduce:animate-none" />
+      <div className="h-10 w-40 animate-pulse rounded-lg bg-zinc-200/80 dark:bg-zinc-800/90 motion-reduce:animate-none" />
+      <div className="h-10 w-28 animate-pulse rounded-lg bg-zinc-200/80 dark:bg-zinc-800/90 motion-reduce:animate-none" />
     </div>
   );
 }
@@ -103,9 +103,9 @@ export default async function AdminHomePage({ searchParams }: PageProps) {
 
   return (
     <div className={reportsViewportClass}>
-      <header className="flex shrink-0 flex-wrap items-center justify-between gap-2 gap-y-2">
+      <header className="flex w-full shrink-0 flex-wrap items-center justify-between gap-x-3 gap-y-2">
         <div className="min-w-0">
-          <h1 className="text-lg font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 sm:text-xl">
+          <h1 className={`whitespace-nowrap ${adminPageTitleClass}`}>
             Reportes
           </h1>
           <ReportsHeaderMeta
@@ -115,7 +115,7 @@ export default async function AdminHomePage({ searchParams }: PageProps) {
           />
         </div>
         <Suspense fallback={<ReportsFiltersSkeleton />}>
-          <div className="flex flex-wrap items-center justify-end gap-2">
+          <div className="flex min-w-0 flex-wrap items-center justify-end gap-2">
             <ReportsVistaFilter vista={vista} />
             {vista === "tienda" ? (
               <ReportsMonthFilter selectedYm={tiendaYm} currentYm={currentYm} />

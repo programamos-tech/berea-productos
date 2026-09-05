@@ -36,9 +36,18 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { ReportMetricInfoTip } from "@/components/admin/ReportProfitInfoTip";
+import {
+  adminCashNegativeTextClass,
+  adminCashOkTextClass,
+} from "@/lib/admin-ui";
 
 const labelClass =
   "text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500 dark:text-zinc-500";
+
+/** Mix egresos: coral (caja) + zinc (cuentas) — alineado al tema admin. */
+const egresoCajaBarClass = "bg-[var(--admin-coral)]";
+const egresoCuentasBarClass =
+  "bg-[color-mix(in_srgb,var(--admin-coral-deep)_28%,#a1a1aa)]";
 
 function Metric({
   label,
@@ -77,7 +86,7 @@ function Metric({
         </p>
         {labelExtra}
       </div>
-      <div className="mt-1.5 text-xl font-semibold tabular-nums tracking-tight text-zinc-900 dark:text-zinc-50 sm:text-2xl">
+      <div className="mt-1.5 text-lg font-semibold tabular-nums tracking-tight text-zinc-900 dark:text-zinc-50 sm:text-xl md:text-2xl">
         {children}
       </div>
       {hint ? (
@@ -89,7 +98,7 @@ function Metric({
   );
 }
 
-/** Barrita del mix de egresos: caja (amarillo) + transferencia (azul). Solo en vista tienda. */
+/** Barrita del mix de egresos: caja (coral) + cuentas (zinc suave). Solo en vista tienda. */
 function EgresosMixHint({
   egresosEfectivoCents,
   egresosTransferCents,
@@ -113,30 +122,36 @@ function EgresosMixHint({
       >
         {cashPct > 0 ? (
           <div
-            className="h-full bg-amber-400 dark:bg-amber-400/90"
+            className={`h-full ${egresoCajaBarClass}`}
             style={{ width: `${cashPct}%` }}
             title={`Caja ${formatCop(cash)}`}
           />
         ) : null}
         {transferPct > 0 ? (
           <div
-            className="h-full bg-sky-400 dark:bg-sky-400/90"
+            className={`h-full ${egresoCuentasBarClass}`}
             style={{ width: `${transferPct}%` }}
             title={`Cuentas ${formatCop(transfer)}`}
           />
         ) : null}
       </div>
-      <p className="mt-1 flex flex-nowrap items-center gap-x-2 overflow-hidden text-[10px] tabular-nums text-zinc-500 dark:text-zinc-400">
+      <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] tabular-nums text-zinc-500 dark:text-zinc-400">
         {cash > 0 ? (
-          <span className="inline-flex shrink-0 items-center gap-1">
-            <span className="size-1.5 rounded-full bg-amber-400" aria-hidden />
-            Caja {formatCop(cash)}
+          <span className="inline-flex min-w-0 items-center gap-1">
+            <span
+              className={`size-1.5 shrink-0 rounded-full ${egresoCajaBarClass}`}
+              aria-hidden
+            />
+            <span className="truncate">Caja {formatCop(cash)}</span>
           </span>
         ) : null}
         {transfer > 0 ? (
-          <span className="inline-flex shrink-0 items-center gap-1">
-            <span className="size-1.5 rounded-full bg-sky-400" aria-hidden />
-            Cuentas {formatCop(transfer)}
+          <span className="inline-flex min-w-0 items-center gap-1">
+            <span
+              className={`size-1.5 shrink-0 rounded-full ${egresoCuentasBarClass}`}
+              aria-hidden
+            />
+            <span className="truncate">Cuentas {formatCop(transfer)}</span>
           </span>
         ) : null}
       </p>
@@ -249,7 +264,7 @@ export async function ReportsDashboardBody({
   return (
     <div
       key={`reports-body-${vista}-${rangeFrom}-${rangeTo}`}
-      className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden"
+      className="flex min-h-0 flex-1 flex-col gap-4 overflow-visible lg:overflow-hidden"
     >
       {isSingleDayPeriod ? (
         <div className="flex shrink-0 flex-wrap items-center gap-2">
@@ -264,7 +279,7 @@ export async function ReportsDashboardBody({
 
       <div className="shrink-0">
         <div
-          className={`grid grid-cols-2 gap-x-6 gap-y-5 sm:grid-cols-3 ${
+          className={`grid grid-cols-2 gap-x-4 gap-y-4 sm:gap-x-6 sm:gap-y-5 md:grid-cols-3 ${
             isTienda ? "xl:grid-cols-7" : "xl:grid-cols-6"
           }`}
         >
@@ -309,7 +324,7 @@ export async function ReportsDashboardBody({
               <StaticCopCents
                 cents={efectivo}
                 className={
-                  efectivo < 0 ? "text-red-600 dark:text-red-400" : undefined
+                  efectivo < 0 ? adminCashNegativeTextClass : undefined
                 }
               />
             </Metric>
@@ -331,7 +346,7 @@ export async function ReportsDashboardBody({
               cents={transferenciaShown}
               className={
                 transferenciaShown < 0
-                  ? "text-red-600 dark:text-red-400"
+                  ? adminCashNegativeTextClass
                   : undefined
               }
             />
@@ -355,7 +370,7 @@ export async function ReportsDashboardBody({
                 cents={gananciaBruta}
                 className={
                   gananciaBruta < 0
-                    ? "text-red-600 dark:text-red-400"
+                    ? adminCashNegativeTextClass
                     : gananciaBruta > 0
                       ? undefined
                       : "text-zinc-500"
@@ -392,25 +407,25 @@ export async function ReportsDashboardBody({
               staggerMs={150}
               iconClassName={
                 gananciaNeta < 0
-                  ? "text-red-500 dark:text-red-400"
+                  ? adminCashNegativeTextClass
                   : gananciaNeta > 0
-                    ? "text-emerald-500 dark:text-emerald-400"
+                    ? adminCashOkTextClass
                     : "text-zinc-400 dark:text-zinc-500"
               }
               labelClassName={
                 gananciaNeta < 0
-                  ? "text-[10px] font-semibold uppercase tracking-[0.14em] text-red-600 dark:text-red-400"
+                  ? `text-[10px] font-semibold uppercase tracking-[0.14em] ${adminCashNegativeTextClass}`
                   : gananciaNeta > 0
-                    ? "text-[10px] font-semibold uppercase tracking-[0.14em] text-emerald-600 dark:text-emerald-400"
+                    ? `text-[10px] font-semibold uppercase tracking-[0.14em] ${adminCashOkTextClass}`
                     : labelClass
               }
             >
               <span
                 className={
                   gananciaNeta < 0
-                    ? "text-red-600 dark:text-red-400"
+                    ? adminCashNegativeTextClass
                     : gananciaNeta > 0
-                      ? "text-emerald-600 dark:text-emerald-400"
+                      ? adminCashOkTextClass
                       : "text-zinc-500"
                 }
               >
@@ -423,7 +438,7 @@ export async function ReportsDashboardBody({
                 cents={cajaHoyCents}
                 className={
                   cajaHoyCents < 0
-                    ? "text-red-600 dark:text-red-400"
+                    ? adminCashNegativeTextClass
                     : undefined
                 }
               />
@@ -440,9 +455,9 @@ export async function ReportsDashboardBody({
                   <span
                     className={
                       stockInvestmentTrend.changeNetPercent > 0
-                        ? "text-emerald-600 dark:text-emerald-400"
+                        ? adminCashOkTextClass
                         : stockInvestmentTrend.changeNetPercent < 0
-                          ? "text-red-600 dark:text-red-400"
+                          ? adminCashNegativeTextClass
                           : undefined
                     }
                   >
@@ -468,8 +483,8 @@ export async function ReportsDashboardBody({
         </div>
       </div>
 
-      <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 border-t border-zinc-200/70 pt-4 dark:border-zinc-800 lg:grid-cols-12 lg:gap-6">
-        <div className="flex min-h-0 flex-col lg:col-span-7">
+      <div className="grid min-h-0 flex-1 grid-cols-1 gap-5 border-t border-zinc-200/70 pt-4 dark:border-zinc-800 lg:grid-cols-12 lg:gap-6">
+        <div className="flex min-h-0 min-w-0 flex-col lg:col-span-7">
           <Suspense fallback={<ReportMonthlyChartsSkeleton />}>
             <ReportMonthlyChartsSection
               todayKey={todayKey}
@@ -481,7 +496,7 @@ export async function ReportsDashboardBody({
         </div>
 
         <section
-          className="reports-chart-reveal min-h-0 border-zinc-200/70 dark:border-zinc-800 lg:col-span-5 lg:border-l lg:pl-6"
+          className="reports-chart-reveal flex max-h-[min(24rem,60vh)] min-h-[14rem] flex-col border-t border-zinc-200/70 pt-4 dark:border-zinc-800 sm:min-h-[16rem] lg:col-span-5 lg:max-h-none lg:min-h-0 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0"
           style={{ ["--reports-chart-delay" as string]: "200ms" }}
         >
           <Suspense fallback={<ReportActivityFeedSkeleton />}>

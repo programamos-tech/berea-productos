@@ -4,15 +4,17 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { CashRegisterSessionModal } from "@/components/admin/CashRegisterSessionModal";
 import type { CashDayBlindSummary } from "@/lib/cash-register";
+import {
+  adminToolbarBtnBaseClass,
+  adminToolbarBtnIdleClass,
+  adminToolbarBtnPrimaryClass,
+  adminPageTitleClass,
+  adminPageSubtitleClass,
+} from "@/lib/admin-ui";
 
-const btnBase =
-  "inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-45";
-
-const btnIdle =
-  "border-zinc-300 bg-white text-zinc-800 hover:border-zinc-400 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200 dark:hover:border-zinc-600 dark:hover:bg-zinc-800";
-
-const btnPrimary =
-  "border-[var(--admin-coral)] bg-[var(--admin-coral)] text-white hover:border-[var(--admin-coral-hover)] hover:bg-[var(--admin-coral-hover)]";
+const btnBase = `${adminToolbarBtnBaseClass} disabled:cursor-not-allowed disabled:opacity-45`;
+const btnIdle = adminToolbarBtnIdleClass;
+const btnPrimary = adminToolbarBtnPrimaryClass;
 
 type Props = {
   canManage: boolean;
@@ -81,10 +83,10 @@ export function CashRegisterPageChrome({
     <>
       <header className="flex shrink-0 flex-wrap items-center justify-between gap-2 gap-y-2">
         <div className="min-w-0">
-          <h1 className="text-lg font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 sm:text-xl">
+          <h1 className={adminPageTitleClass}>
             Caja
           </h1>
-          <p className="mt-0.5 text-xs text-zinc-500">
+          <p className={adminPageSubtitleClass}>
             {todayAlreadyClosed
               ? `Cerrada · ${todayLabel}`
               : hasOpenSession

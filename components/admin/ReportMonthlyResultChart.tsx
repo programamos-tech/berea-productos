@@ -49,7 +49,7 @@ export function ReportMonthlyResultChart({
 }) {
   if (months.length === 0) {
     return (
-      <div className="flex h-full min-h-[12rem] flex-col justify-center">
+      <div className="flex min-h-[12rem] w-full flex-col justify-center">
         <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
           Ingresos vs egresos
         </h2>
@@ -117,18 +117,18 @@ export function ReportMonthlyResultChart({
   const momDown = ingresosMom != null && ingresosMom < 0;
 
   return (
-    <div className="reports-chart-reveal flex h-full min-h-0 w-full min-w-0 flex-col">
-      <div className="mb-2 flex shrink-0 flex-wrap items-end justify-between gap-3">
+    <div className="flex w-full min-w-0 flex-col">
+      <div className="mb-2 flex shrink-0 flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
         <div className="min-w-0">
           <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
             Ingresos vs egresos
           </h2>
-          <p className="mt-0.5 text-[11px] text-zinc-500">
+          <p className="mt-0.5 text-[11px] leading-snug text-zinc-500">
             Lo que entra a la caja de ventas vs lo que sale en gastos
           </p>
         </div>
-        <div className="flex flex-wrap items-end gap-x-4 gap-y-1">
-          <div className="text-right">
+        <div className="flex flex-wrap items-end gap-x-4 gap-y-2">
+          <div className="text-left sm:text-right">
             <p className="text-[10px] font-medium uppercase tracking-wider text-zinc-500">
               Brecha · {latest.shortLabel}
               {latest.isPartial ? " · ahora" : ""}
@@ -177,7 +177,8 @@ export function ReportMonthlyResultChart({
 
       <svg
         viewBox={`0 0 ${chartW} ${chartH}`}
-        className="block min-h-0 w-full flex-1"
+        className="block w-full shrink-0"
+        style={{ aspectRatio: `${chartW} / ${chartH}` }}
         preserveAspectRatio="xMidYMid meet"
         role="img"
         aria-label="Ingresos y egresos por mes"

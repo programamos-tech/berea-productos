@@ -16,17 +16,16 @@ import { fetchAdminCustomersPage } from "@/lib/supabase/admin-customers-list";
 import { loadAdminPermissions } from "@/lib/load-admin-permissions";
 import { formatStoreDateTime } from "@/lib/store-datetime-format";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import {
+  adminToolbarBtnBaseClass,
+  adminToolbarBtnPrimaryClass,
+  adminToolbarIconBtnClass,
+  adminPageTitleClass,
+} from "@/lib/admin-ui";
 
 export const dynamic = "force-dynamic";
 
 const CUSTOMERS_PAGE_SIZE = 20;
-
-const btnBase =
-  "inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition";
-const btnPrimary =
-  "border-red-700 bg-red-700 text-white hover:border-red-600 hover:bg-red-600 dark:border-red-600 dark:bg-red-600 dark:hover:border-red-500 dark:hover:bg-red-500";
-const btnIcon =
-  "inline-flex size-8 items-center justify-center rounded-lg border border-zinc-300 bg-white text-zinc-700 transition hover:border-zinc-400 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200 dark:hover:border-zinc-600 dark:hover:bg-zinc-800";
 
 const thClass =
   "pb-3 pr-5 text-left text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500";
@@ -200,19 +199,19 @@ export default async function AdminCustomersPage({
     <div className="flex w-full min-w-0 max-w-none flex-col gap-4">
       <header className="flex shrink-0 flex-wrap items-center justify-between gap-2 gap-y-2">
         <div className="min-w-0">
-          <h1 className="text-lg font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 sm:text-xl">
+          <h1 className={adminPageTitleClass}>
             Clientes
           </h1>
         </div>
         <div className="flex flex-wrap items-center justify-end gap-2">
           <Link
             href="/admin/customers"
-            className={btnIcon}
+            className={adminToolbarIconBtnClass}
             title="Recargar listado"
             aria-label="Actualizar"
           >
             <RefreshCw
-              className="size-3.5 shrink-0"
+              className="size-4 shrink-0"
               strokeWidth={2.25}
               aria-hidden
             />
@@ -220,7 +219,7 @@ export default async function AdminCustomersPage({
           {canCreateCustomer ? (
             <Link
               href="/admin/customers/new"
-              className={`${btnBase} ${btnPrimary}`}
+              className={`${adminToolbarBtnBaseClass} ${adminToolbarBtnPrimaryClass}`}
             >
               + Nuevo cliente
             </Link>

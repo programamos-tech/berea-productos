@@ -1,6 +1,11 @@
 "use client";
 
 import type { ReportVista } from "@/lib/admin-report-range";
+import {
+  adminToolbarBtnBaseClass,
+  adminToolbarBtnIdleClass,
+  adminToolbarBtnPrimaryClass,
+} from "@/lib/admin-ui";
 import { CalendarRange, Store } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 
@@ -24,15 +29,6 @@ const options: Array<{
   },
 ];
 
-const btnBase =
-  "inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium shadow-[0_1px_2px_0_rgb(220_38_38/0.06)] transition dark:shadow-none";
-
-const btnIdle =
-  "border-zinc-300 bg-white text-zinc-800 hover:border-zinc-400 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-400 dark:hover:border-zinc-600 dark:hover:bg-zinc-800 dark:hover:text-zinc-200";
-
-const btnActive =
-  "border-[var(--admin-coral)] bg-[var(--admin-coral)] text-white hover:bg-[var(--admin-coral-hover)]";
-
 export function ReportsVistaFilter({ vista }: { vista: ReportVista }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -54,10 +50,15 @@ export function ReportsVistaFilter({ vista }: { vista: ReportVista }) {
   }
 
   return (
-    <div className="inline-flex flex-wrap items-center gap-2" role="group" aria-label="Tipo de reporte">
+    <div
+      className="inline-flex flex-wrap items-center gap-2"
+      role="group"
+      aria-label="Tipo de reporte"
+    >
       {options.map((opt) => {
         const active = vista === opt.id;
         const Icon = opt.Icon;
+        const shortLabel = opt.id === "tienda" ? "Tienda" : "Periodo";
         return (
           <button
             key={opt.id}
@@ -65,10 +66,11 @@ export function ReportsVistaFilter({ vista }: { vista: ReportVista }) {
             onClick={() => select(opt.id)}
             aria-pressed={active}
             title={opt.hint}
-            className={`${btnBase} ${active ? btnActive : btnIdle}`}
+            className={`${adminToolbarBtnBaseClass} ${active ? adminToolbarBtnPrimaryClass : adminToolbarBtnIdleClass}`}
           >
-            <Icon className="size-3.5 shrink-0" strokeWidth={2.25} aria-hidden />
-            {opt.label}
+            <Icon className="size-4 shrink-0" strokeWidth={2.25} aria-hidden />
+            <span className="sm:hidden">{shortLabel}</span>
+            <span className="hidden sm:inline">{opt.label}</span>
           </button>
         );
       })}

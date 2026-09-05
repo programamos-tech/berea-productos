@@ -166,11 +166,11 @@ export function ReportActivityFeedLive({
       {items.length === 0 ? (
         <p className="mt-6 text-sm text-zinc-500">Todavía no hay actividades.</p>
       ) : (
-        <div className="relative mt-3 min-h-0 flex-1">
+        <div className="relative mt-3 min-h-0 flex-1 max-h-[20rem] lg:max-h-none">
           <ul
             ref={listRef}
             onScroll={updateMoreBelow}
-            className="reports-activity-scroll h-full space-y-0 overflow-y-auto overscroll-contain [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+            className="reports-activity-scroll max-h-[20rem] space-y-0 overflow-y-auto overscroll-contain lg:h-full lg:max-h-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
           >
             {items.map((row) => {
               const fresh = freshIds.has(row.id);

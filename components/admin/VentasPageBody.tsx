@@ -14,14 +14,15 @@ import {
 } from "@/lib/supabase/admin-ventas-list";
 import { buildAdminVentasListHref } from "@/lib/admin-ventas-list-url";
 import type { VentaEstadoFilter, VentaPagoFilter } from "@/lib/ventas-sales";
+import {
+  adminToolbarBtnBaseClass,
+  adminToolbarBtnPrimaryClass,
+  adminPageTitleClass,
+  adminPageSubtitleClass,
+} from "@/lib/admin-ui";
 
 const VENTAS_PAGE_SIZE = 20;
 const VENTAS_FETCH_TIMEOUT_MS = 15_000;
-
-const btnBase =
-  "inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition";
-const btnPrimary =
-  "border-[var(--admin-coral)] bg-[var(--admin-coral)] text-white hover:border-[var(--admin-coral-hover)] hover:bg-[var(--admin-coral-hover)]";
 
 function VentasTableSkeleton() {
   return (
@@ -207,10 +208,10 @@ export function VentasPageShell({
     <div className="flex w-full min-w-0 max-w-none flex-col gap-4">
       <header className="flex shrink-0 flex-wrap items-center justify-between gap-2 gap-y-2">
         <div className="min-w-0">
-          <h1 className="text-lg font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 sm:text-xl">
+          <h1 className={adminPageTitleClass}>
             Ventas
           </h1>
-          <p className="mt-0.5 text-xs text-zinc-500">
+          <p className={adminPageSubtitleClass}>
             {defaultMonthApplied && periodLabel
               ? `Mostrando ${periodLabel}`
               : "Facturas de mostrador y pedidos"}
@@ -218,7 +219,10 @@ export function VentasPageShell({
         </div>
         <div className="flex flex-wrap items-center justify-end gap-2">
           <VentasRefreshButton />
-          <Link href="/admin/ventas/nueva" className={`${btnBase} ${btnPrimary}`}>
+          <Link
+            href="/admin/ventas/nueva"
+            className={`${adminToolbarBtnBaseClass} ${adminToolbarBtnPrimaryClass}`}
+          >
             + Nueva factura
           </Link>
         </div>

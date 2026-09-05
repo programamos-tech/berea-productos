@@ -9,6 +9,7 @@ import {
 import {
   adminFilterInputClass,
   adminFilterLabelClass,
+  adminToolbarIconBtnClass,
 } from "@/lib/admin-ui";
 import type { VentaEstadoFilter, VentaPagoFilter } from "@/lib/ventas-sales";
 
@@ -227,20 +228,17 @@ export function VentasFiltersBar({
   );
 }
 
-const refreshBtnClass =
-  "inline-flex size-8 items-center justify-center rounded-lg border border-zinc-300 bg-white text-zinc-700 transition hover:border-zinc-400 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200 dark:hover:border-zinc-600 dark:hover:bg-zinc-800";
-
 export function VentasRefreshButton() {
   const router = useRouter();
   return (
     <button
       type="button"
       onClick={() => router.refresh()}
-      className={refreshBtnClass}
+      className={adminToolbarIconBtnClass}
       aria-label="Actualizar ventas"
       title="Actualizar"
     >
-      <RefreshCw className="size-3.5 shrink-0" strokeWidth={2.25} aria-hidden />
+      <RefreshCw className="size-4 shrink-0" strokeWidth={2.25} aria-hidden />
     </button>
   );
 }

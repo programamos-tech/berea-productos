@@ -7,6 +7,7 @@ import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { AdminTopBar } from "@/components/admin/AdminTopBar";
 import { CashRegisterMorningGateModal } from "@/components/admin/CashRegisterMorningGateModal";
 import { pathAllowedDuringCashGate } from "@/lib/cash-register-gate";
+import { isAdminPathInMaintenance } from "@/lib/admin-nav-maintenance";
 
 export function AdminDashboardShell({
   children,
@@ -35,6 +36,11 @@ export function AdminDashboardShell({
     if (pathAllowedDuringCashGate(pathname)) return;
     router.replace("/admin/caja");
   }, [mustOpen, pathname, router]);
+
+  useEffect(() => {
+    if (!isAdminPathInMaintenance(pathname)) return;
+    router.replace("/admin");
+  }, [pathname, router]);
 
   useEffect(() => {
     if (!mobileNavOpen) return;
@@ -80,7 +86,7 @@ export function AdminDashboardShell({
             onMenuClick={() => setMobileNavOpen(true)}
             showOrderNotifications={notifyNewWebOrders && !mustOpen}
           />
-          <main className="flex-1 p-3 sm:p-4 md:p-6 print:bg-white print:p-8">
+          <main className="min-w-0 flex-1 overflow-x-hidden p-3 sm:p-4 md:p-6 print:bg-white print:p-8">
             {children}
           </main>
         </div>

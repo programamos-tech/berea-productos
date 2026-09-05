@@ -1,6 +1,7 @@
 "use client";
 
 import { REPORT_STORE_TIME_ZONE, type ReportVista } from "@/lib/admin-report-range";
+import { adminPageSubtitleClass } from "@/lib/admin-ui";
 import { useEffect, useState } from "react";
 
 function formatTime(now: Date): string {
@@ -64,11 +65,12 @@ export function ReportsHeaderMeta({
         ? `Así va la tienda · a corte de ${formatCorteDate(now)}`
         : `Así le fue a la tienda · ${sentenceCase(periodLabel)}`
       : `Por periodo · ${periodLabel}`;
-
   return (
-    <p className="mt-0.5 text-xs text-zinc-500">
+    <p className={`truncate ${adminPageSubtitleClass}`}>
       <span>{lead}</span>
-      <span className="mx-1.5 text-zinc-400 dark:text-zinc-600">·</span>
+      <span className="mx-1.5 text-zinc-400 dark:text-zinc-600" aria-hidden>
+        ·
+      </span>
       <time dateTime={now.toISOString()} className="tabular-nums">
         {time}
       </time>

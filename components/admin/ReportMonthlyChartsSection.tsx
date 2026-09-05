@@ -9,9 +9,12 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export function ReportMonthlyChartsSkeleton() {
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-3" role="status">
-      <div className="min-h-[12rem] flex-1 animate-pulse rounded-2xl bg-zinc-100/40 dark:bg-zinc-900/40" />
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+    <div className="flex min-h-0 flex-1 flex-col gap-4" role="status">
+      <div
+        className="w-full animate-pulse rounded-2xl bg-zinc-100/40 dark:bg-zinc-900/40"
+        style={{ aspectRatio: "1000 / 260" }}
+      />
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-4">
         <div className="h-40 animate-pulse rounded-xl bg-zinc-100/40 dark:bg-zinc-900/40" />
         <div className="h-40 animate-pulse rounded-xl bg-zinc-100/40 dark:bg-zinc-900/40" />
       </div>
@@ -44,7 +47,7 @@ export async function ReportMonthlyChartsSection({
     return (
       <div className="flex min-h-0 flex-1 flex-col gap-4">
         <div
-          className="reports-chart-reveal min-h-0 flex-[1.2]"
+          className="reports-chart-reveal w-full min-w-0 shrink-0"
           style={{ ["--reports-chart-delay" as string]: "100ms" }}
         >
           <ReportMonthlyResultChart
@@ -56,10 +59,7 @@ export async function ReportMonthlyChartsSection({
             )}
           />
         </div>
-        <div
-          className="reports-chart-reveal min-h-0 shrink-0"
-          style={{ ["--reports-chart-delay" as string]: "160ms" }}
-        >
+        <div className="w-full min-w-0 shrink-0">
           <ReportTopsCards
             clients={tops.clients}
             products={tops.products}

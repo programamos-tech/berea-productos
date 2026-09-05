@@ -13,19 +13,18 @@ import { loadAdminPermissions } from "@/lib/load-admin-permissions";
 import { parseExpenseConceptFilter } from "@/lib/expense-concepts";
 import { fetchAdminExpensesPage } from "@/lib/supabase/admin-expenses-list";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import {
+  adminToolbarBtnBaseClass,
+  adminToolbarBtnPrimaryClass,
+  adminToolbarIconBtnClass,
+  adminPageTitleClass,
+} from "@/lib/admin-ui";
 
 export const dynamic = "force-dynamic";
 
 const EGRESOS_PAGE_SIZE = 20;
 
 const YMD_RE = /^\d{4}-\d{2}-\d{2}$/;
-
-const btnBase =
-  "inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition";
-const btnPrimary =
-  "border-[var(--admin-coral)] bg-[var(--admin-coral)] text-white hover:border-[var(--admin-coral-hover)] hover:bg-[var(--admin-coral-hover)]";
-const btnIdle =
-  "inline-flex size-8 items-center justify-center rounded-lg border border-[color-mix(in_srgb,var(--admin-coral)_35%,transparent)] bg-white text-[var(--admin-coral-deep)] transition hover:bg-[var(--admin-coral-mist)] dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200 dark:hover:border-zinc-600 dark:hover:bg-zinc-800";
 
 function searchParamFirst(
   v: string | string[] | undefined,
@@ -194,7 +193,7 @@ export default async function AdminEgresosPage({
 
       <header className="flex shrink-0 flex-wrap items-center justify-between gap-2 gap-y-2">
         <div className="min-w-0">
-          <h1 className="text-lg font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 sm:text-xl">
+          <h1 className={adminPageTitleClass}>
             Gastos y egresos
           </h1>
         </div>
@@ -203,13 +202,16 @@ export default async function AdminEgresosPage({
             defaultYearMonth={currentYearMonthInReportStore()}
           />
           {canCreate ? (
-            <Link href={nuevoHref} className={`${btnBase} ${btnPrimary}`}>
+            <Link
+              href={nuevoHref}
+              className={`${adminToolbarBtnBaseClass} ${adminToolbarBtnPrimaryClass}`}
+            >
               + Nuevo
             </Link>
           ) : null}
           <Link
             href="/admin"
-            className={btnIdle}
+            className={adminToolbarIconBtnClass}
             title="Volver a reportes"
             aria-label="Volver a reportes"
           >
