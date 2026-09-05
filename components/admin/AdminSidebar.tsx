@@ -388,7 +388,7 @@ function SidebarHeader({
     <div className={`border-b px-3 py-3 ${sidebarBorder}`}>
       <div className="flex flex-col items-center text-center">
         <SidebarProductBrand />
-        <p className={`mt-2 max-w-[11rem] text-[11px] font-medium leading-snug tracking-wide ${sidebarInkMuted}`}>
+        <p className={`mt-2 whitespace-nowrap text-[10px] font-medium tracking-wide ${sidebarInkMuted}`}>
           Gestiona tu tienda de productos
         </p>
       </div>
@@ -513,7 +513,7 @@ function AdminSidebarFallback() {
       <div className={`border-b px-3 py-3 ${sidebarBorder}`}>
         <div className="flex flex-col items-center text-center">
           <SidebarProductBrand />
-          <p className={`mt-2 max-w-[11rem] text-[11px] font-medium leading-snug tracking-wide ${sidebarInkMuted}`}>
+          <p className={`mt-2 whitespace-nowrap text-[10px] font-medium tracking-wide ${sidebarInkMuted}`}>
             Gestiona tu tienda de productos
           </p>
         </div>
