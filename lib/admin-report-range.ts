@@ -107,14 +107,17 @@ export type ReportVista = "dia" | "tienda";
 
 /**
  * Interpreta `vista` en la URL.
- * Por defecto `dia` (ventas del periodo elegido: día, semana, mes, etc.).
+ * Por defecto `tienda` (cómo va la tienda / mes en curso).
+ * `vista=dia` = por periodo (fechas libres).
  */
 export function parseReportVistaFromSearchParams(
   sp: Record<string, string | string[] | undefined>,
 ): ReportVista {
   const raw = typeof sp.vista === "string" ? sp.vista.trim().toLowerCase() : "";
-  if (raw === "tienda" || raw === "store") return "tienda";
-  return "dia";
+  if (raw === "dia" || raw === "periodo" || raw === "day" || raw === "period") {
+    return "dia";
+  }
+  return "tienda";
 }
 
 /**

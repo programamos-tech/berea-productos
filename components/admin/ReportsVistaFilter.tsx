@@ -11,16 +11,16 @@ const options: Array<{
   Icon: typeof CalendarRange;
 }> = [
   {
+    id: "tienda",
+    label: "Cómo va la tienda",
+    hint: "Mes en curso + caja y cuentas",
+    Icon: Store,
+  },
+  {
     id: "dia",
     label: "Por periodo",
     hint: "Ventas y cobros del día, semana, mes u otro rango",
     Icon: CalendarRange,
-  },
-  {
-    id: "tienda",
-    label: "Cómo va la tienda",
-    hint: "Mes en curso + caja de hoy (arrastre)",
-    Icon: Store,
   },
 ];
 
@@ -39,12 +39,13 @@ export function ReportsVistaFilter({ vista }: { vista: ReportVista }) {
 
   function select(next: ReportVista) {
     const params = new URLSearchParams(searchParams.toString());
-    if (next === "dia") {
+    if (next === "tienda") {
+      // Vista por defecto: sin param.
       params.delete("vista");
-    } else {
-      params.set("vista", next);
       params.delete("from");
       params.delete("to");
+    } else {
+      params.set("vista", "dia");
     }
     const qs = params.toString();
     router.push(qs ? `/admin?${qs}` : "/admin");

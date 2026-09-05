@@ -18,14 +18,34 @@ function sentenceCase(label: string): string {
   return t.charAt(0).toUpperCase() + t.slice(1);
 }
 
+/** «Viernes 4 de Septiembre de 2026» en zona de la tienda. */
+function formatCorteDate(now: Date): string {
+  const weekday = new Intl.DateTimeFormat("es-CO", {
+    timeZone: REPORT_STORE_TIME_ZONE,
+    weekday: "long",
+  }).format(now);
+  const day = new Intl.DateTimeFormat("es-CO", {
+    timeZone: REPORT_STORE_TIME_ZONE,
+    day: "numeric",
+  }).format(now);
+  const month = new Intl.DateTimeFormat("es-CO", {
+    timeZone: REPORT_STORE_TIME_ZONE,
+    month: "long",
+  }).format(now);
+  const year = new Intl.DateTimeFormat("es-CO", {
+    timeZone: REPORT_STORE_TIME_ZONE,
+    year: "numeric",
+  }).format(now);
+  return `${sentenceCase(weekday)} ${day} de ${sentenceCase(month)} de ${year}`;
+}
+
 /** Subtítulo contextual + hora en vivo (Bogotá). */
 export function ReportsHeaderMeta({
   vista,
-  monthLabel,
   periodLabel,
 }: {
   vista: ReportVista;
-  monthLabel: string;
+  monthLabel?: string;
   periodLabel: string;
 }) {
   const [now, setNow] = useState(() => new Date());
@@ -38,7 +58,7 @@ export function ReportsHeaderMeta({
   const time = formatTime(now);
   const lead =
     vista === "tienda"
-      ? `Así va la tienda · ${sentenceCase(monthLabel)}`
+      ? `Así va la tienda · a corte de ${formatCorteDate(now)}`
       : `Por periodo · ${periodLabel}`;
 
   return (
