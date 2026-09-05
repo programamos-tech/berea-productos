@@ -150,7 +150,7 @@ export function ReportMonthlyResultChart({
                 momUp
                   ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300"
                   : momDown
-                    ? "bg-red-500/15 text-red-700 dark:text-red-300"
+                    ? "bg-[color-mix(in_srgb,var(--admin-coral)_18%,transparent)] text-[var(--admin-coral-deep)] dark:text-[var(--admin-coral-soft)]"
                     : "bg-zinc-500/15 text-zinc-600 dark:text-zinc-300"
               }`}
               title="Cambio de ingresos vs el mes anterior"
@@ -185,8 +185,16 @@ export function ReportMonthlyResultChart({
       >
         <defs>
           <linearGradient id={fillId} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={REPORT_CHART.primary} stopOpacity="0.2" />
-            <stop offset="100%" stopColor={REPORT_CHART.primary} stopOpacity="0" />
+            <stop
+              offset="0%"
+              stopColor="var(--admin-chart-line, var(--admin-coral))"
+              stopOpacity="0.22"
+            />
+            <stop
+              offset="100%"
+              stopColor="var(--admin-chart-line, var(--admin-coral))"
+              stopOpacity="0"
+            />
           </linearGradient>
         </defs>
 
@@ -231,11 +239,10 @@ export function ReportMonthlyResultChart({
         <path
           d={ingresosPath}
           fill="none"
-          stroke={REPORT_CHART.primary}
+          stroke="var(--admin-chart-line, var(--admin-coral))"
           strokeWidth={2.25}
           strokeLinecap="round"
           strokeLinejoin="round"
-          className="dark:[stroke:#f87171]"
         />
 
         {months.map((m, i) => {
@@ -252,9 +259,8 @@ export function ReportMonthlyResultChart({
                     cx={xAt(i)}
                     cy={yAt(m.ingresosConIva)}
                     r={10}
-                    fill={REPORT_CHART.primary}
-                    fillOpacity={0.12}
-                    className="dark:[fill:#f87171] dark:[fill-opacity:0.18]"
+                    fill="var(--admin-chart-line, var(--admin-coral))"
+                    fillOpacity={0.14}
                   />
                 ) : null}
                 <circle
@@ -262,9 +268,9 @@ export function ReportMonthlyResultChart({
                   cy={yAt(m.ingresosConIva)}
                   r={selected ? 4.5 : 3.5}
                   fill="#09090b"
-                  stroke={REPORT_CHART.primary}
+                  stroke="var(--admin-chart-line, var(--admin-coral))"
                   strokeWidth={1.75}
-                  className="dark:fill-zinc-950 dark:[stroke:#f87171]"
+                  className="dark:fill-zinc-950"
                 />
                 <circle
                   cx={xAt(i)}
@@ -305,8 +311,7 @@ export function ReportMonthlyResultChart({
       <div className="mt-1 flex shrink-0 flex-wrap items-center justify-center gap-4 text-[11px] text-zinc-500">
         <span className="inline-flex items-center gap-1.5">
           <span
-            className="inline-block h-0.5 w-4 rounded-full"
-            style={{ backgroundColor: REPORT_CHART.primary }}
+            className="inline-block h-0.5 w-4 rounded-full bg-[var(--admin-chart-line,var(--admin-coral))]"
             aria-hidden
           />
           Ingresos

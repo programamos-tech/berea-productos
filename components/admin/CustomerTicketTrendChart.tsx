@@ -1,9 +1,9 @@
 import { formatCop, formatCopCompact } from "@/lib/money";
 import type { TicketTrendPoint } from "@/lib/customer-ticket-trend";
 
-/** Línea coral (ingresos) y ámbar (egresos); rejilla y ejes en zinc. */
+/** Línea marca Berea House (ingresos); egresos en zinc. */
 const chartPaletteClass =
-  "[--chart-line:#52525b] [--chart-grid:#f4f4f5] [--chart-axis:#a1a1aa] [--chart-point-fill:#ffffff] [--chart-point-stroke:#52525b] [--chart-expense-line:#a1a1aa] [--chart-expense-point-fill:#fafafa] [--chart-expense-point-stroke:#a1a1aa] dark:[--chart-line:#a1a1aa] dark:[--chart-grid:#3f3f46] dark:[--chart-axis:#71717a] dark:[--chart-point-fill:#27272a] dark:[--chart-point-stroke:#a1a1aa] dark:[--chart-expense-line:#71717a] dark:[--chart-expense-point-fill:#422006] dark:[--chart-expense-point-stroke:#71717a]";
+  "[--chart-line:#0197b2] [--chart-grid:#f4f4f5] [--chart-axis:#a1a1aa] [--chart-point-fill:#ffffff] [--chart-point-stroke:#0197b2] [--chart-expense-line:#a1a1aa] [--chart-expense-point-fill:#fafafa] [--chart-expense-point-stroke:#a1a1aa] dark:[--chart-line:#3eb8cc] dark:[--chart-grid:#3f3f46] dark:[--chart-axis:#71717a] dark:[--chart-point-fill:#18181b] dark:[--chart-point-stroke:#3eb8cc] dark:[--chart-expense-line:#71717a] dark:[--chart-expense-point-fill:#27272a] dark:[--chart-expense-point-stroke:#71717a]";
 
 function monthLabelEs(monthKey: string) {
   const [y, m] = monthKey.split("-").map(Number);

@@ -42,7 +42,7 @@ function dotClass(action: AdminActivityAction): string {
       return "bg-amber-500";
     case "cash_session_opened":
     case "cash_session_closed":
-      return "bg-red-600";
+      return "bg-[var(--admin-coral)]";
     case "product_created":
     case "product_updated":
       return "bg-sky-500";

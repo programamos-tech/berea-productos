@@ -3,10 +3,10 @@ import { formatCop, formatCopCompact } from "@/lib/money";
 import type { TicketTrendPoint } from "@/lib/customer-ticket-trend";
 import type { ReportSalesTrendComparison } from "@/lib/admin-reports-data";
 
-/** Shared report chart palette — zinc primary; emerald/red for pos/neg. */
+/** Shared report chart palette — acento Berea House (#0197b2). */
 export const REPORT_CHART = {
-  primary: "#52525b",
-  primaryDark: "#a1a1aa",
+  primary: "#0197b2",
+  primaryDark: "#3eb8cc",
   secondary: "#a1a1aa",
   secondaryDark: "#71717a",
   grid: "#27272a",
@@ -182,8 +182,16 @@ export function ReportSalesWeekTrendChart({
       >
         <defs>
           <linearGradient id={fillGradientId} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={REPORT_CHART.primary} stopOpacity="0.2" />
-            <stop offset="100%" stopColor={REPORT_CHART.primary} stopOpacity="0" />
+            <stop
+              offset="0%"
+              stopColor="var(--admin-chart-line, var(--admin-coral))"
+              stopOpacity="0.22"
+            />
+            <stop
+              offset="100%"
+              stopColor="var(--admin-chart-line, var(--admin-coral))"
+              stopOpacity="0"
+            />
           </linearGradient>
         </defs>
 
@@ -230,11 +238,10 @@ export function ReportSalesWeekTrendChart({
         <path
           d={currentPath}
           fill="none"
-          stroke={REPORT_CHART.primary}
+          stroke="var(--admin-chart-line, var(--admin-coral))"
           strokeWidth={2.25}
           strokeLinecap="round"
           strokeLinejoin="round"
-          className="dark:[stroke:#f87171]"
         />
 
         {trend.map((t, i) => (
@@ -244,9 +251,9 @@ export function ReportSalesWeekTrendChart({
               cy={yAt(t.currentValue)}
               r={mini ? 2.5 : 3.5}
               fill="#09090b"
-              stroke={REPORT_CHART.primary}
+              stroke="var(--admin-chart-line, var(--admin-coral))"
               strokeWidth={1.5}
-              className="dark:fill-zinc-950 dark:[stroke:#f87171]"
+              className="dark:fill-zinc-950"
             />
           </g>
         ))}

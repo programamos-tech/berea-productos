@@ -14,7 +14,7 @@ export default function AdminAppleIcon() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: "#ED7464",
+          background: "#0197b2",
           borderRadius: 36,
           color: "#ffffff",
           fontSize: 72,
