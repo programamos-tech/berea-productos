@@ -118,7 +118,13 @@ export function AdminTopBar({
           <AdminUserMenu
             displayName={displayName}
             email={email}
-            avatar={<AdminUserAvatar displayName={displayName} size={40} />}
+            avatar={
+              <AdminUserAvatar
+                displayName={displayName}
+                seed={email || displayName}
+                size={40}
+              />
+            }
           />
         </div>
       </div>
