@@ -1,10 +1,51 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
-function mayOfYearFromYm(ym: string): string {
-  const y = ym.slice(0, 4);
-  return /^\d{4}$/.test(y) ? `${y}-05` : "2026-05";
+const MONTH_LABELS = [
+  "Enero",
+  "Febrero",
+  "Marzo",
+  "Abril",
+  "Mayo",
+  "Junio",
+  "Julio",
+  "Agosto",
+  "Septiembre",
+  "Octubre",
+  "Noviembre",
+  "Diciembre",
+] as const;
+
+function parseYm(ym: string): { y: number; m: number } | null {
+  const m = /^(\d{4})-(\d{2})$/.exec(ym.trim());
+  if (!m) return null;
+  const y = Number(m[1]);
+  const mo = Number(m[2]);
+  if (!Number.isFinite(y) || mo < 1 || mo > 12) return null;
+  return { y, m: mo };
+}
+
+function formatYm(y: number, m: number): string {
+  return `${y}-${String(m).padStart(2, "0")}`;
+}
+
+function labelYm(ym: string): string {
+  const p = parseYm(ym);
+  if (!p) return ym;
+  return `${MONTH_LABELS[p.m - 1]} ${p.y}`;
+}
+
+/** Meses desde mayo del año del mes actual (o ene si aún no es mayo) hasta `endYm`. */
+function monthListEndingAt(endYm: string): string[] {
+  const end = parseYm(endYm);
+  if (!end) return endYm ? [endYm] : [];
+  const startM = end.m >= 5 ? 5 : 1;
+  const out: string[] = [];
+  for (let m = startM; m <= end.m; m++) {
+    out.push(formatYm(end.y, m));
+  }
+  return out.reverse(); // más reciente arriba
 }
 
 export function ReportsAleyaExportButton({
@@ -14,21 +55,12 @@ export function ReportsAleyaExportButton({
 }) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
-  const [fromMonth, setFromMonth] = useState(() =>
-    mayOfYearFromYm(defaultYearMonth),
-  );
-  const [toMonth, setToMonth] = useState(defaultYearMonth);
-  const [loading, setLoading] = useState(false);
+  const [loadingYm, setLoadingYm] = useState<string | null>(null);
 
-  useEffect(() => {
-    setToMonth(defaultYearMonth);
-    setFromMonth((prev) => {
-      const may = mayOfYearFromYm(defaultYearMonth);
-      // Si el “hasta” sigue en el mismo año que mayo sugerido, mantener mayo como desde.
-      if (prev.slice(0, 4) === defaultYearMonth.slice(0, 4)) return may;
-      return may;
-    });
-  }, [defaultYearMonth]);
+  const months = useMemo(
+    () => monthListEndingAt(defaultYearMonth),
+    [defaultYearMonth],
+  );
 
   useEffect(() => {
     if (!open) return;
@@ -39,13 +71,10 @@ export function ReportsAleyaExportButton({
     return () => document.removeEventListener("mousedown", onDown);
   }, [open]);
 
-  async function handleExport() {
-    if (!fromMonth || !toMonth) return;
-    const from = fromMonth <= toMonth ? fromMonth : toMonth;
-    const to = fromMonth <= toMonth ? toMonth : fromMonth;
-    setLoading(true);
+  async function handleExportMonth(ym: string) {
+    setLoadingYm(ym);
     try {
-      const params = new URLSearchParams({ from, to });
+      const params = new URLSearchParams({ from: ym, to: ym });
       const res = await fetch(
         `/api/admin/reports/aleya-export?${params.toString()}`,
       );
@@ -63,11 +92,7 @@ export function ReportsAleyaExportButton({
       const blob = await res.blob();
       const disposition = res.headers.get("Content-Disposition") ?? "";
       const match = disposition.match(/filename="([^"]+)"/);
-      const filename =
-        match?.[1] ??
-        (from === to
-          ? `ventas-aleya-${from}.csv`
-          : `ventas-aleya-${from}_a_${to}.csv`);
+      const filename = match?.[1] ?? `ventas-aleya-${ym}.csv`;
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -78,23 +103,25 @@ export function ReportsAleyaExportButton({
     } catch {
       window.alert("Error de red al exportar. Probá de nuevo.");
     } finally {
-      setLoading(false);
+      setLoadingYm(null);
     }
   }
+
+  const busy = loadingYm != null;
 
   return (
     <div ref={wrapRef} className="relative">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        disabled={loading}
-        className="inline-flex items-center gap-2 rounded-lg border border-red-200/70 bg-white px-2.5 py-1.5 text-xs font-medium text-red-950 shadow-[0_1px_2px_0_rgb(220_38_38/0.06)] transition hover:border-red-300/80 hover:bg-red-50/50 disabled:cursor-wait disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:shadow-none dark:hover:border-zinc-600 dark:hover:bg-zinc-800"
+        disabled={busy}
+        className="inline-flex items-center gap-2 rounded-lg border border-[color-mix(in_srgb,var(--admin-coral)_35%,transparent)] bg-white px-2.5 py-1.5 text-xs font-medium text-[var(--admin-coral-deep)] shadow-sm transition hover:border-[color-mix(in_srgb,var(--admin-coral)_55%,transparent)] hover:bg-[var(--admin-coral-mist)] disabled:cursor-wait disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:shadow-none dark:hover:border-zinc-600 dark:hover:bg-zinc-800"
         aria-expanded={open}
         aria-haspopup="dialog"
       >
         <svg
           viewBox="0 0 24 24"
-          className="size-4 shrink-0 text-red-900/50 dark:text-zinc-400"
+          className="size-4 shrink-0 text-[var(--admin-coral)]/70 dark:text-zinc-400"
           fill="none"
           stroke="currentColor"
           strokeWidth={2}
@@ -111,62 +138,35 @@ export function ReportsAleyaExportButton({
 
       {open ? (
         <div
-          className="absolute right-0 top-[calc(100%+0.35rem)] z-40 w-[min(100vw-1.5rem,20rem)] rounded-xl border border-red-200/60 bg-white p-4 shadow-[0_16px_48px_-24px_rgba(220,38,38,0.18)] dark:border-zinc-700 dark:bg-zinc-900"
+          className="absolute right-0 top-[calc(100%+0.35rem)] z-40 w-[min(100vw-1.5rem,16rem)] overflow-hidden rounded-xl border border-[color-mix(in_srgb,var(--admin-coral)_28%,transparent)] bg-white shadow-[0_16px_48px_-24px_color-mix(in_srgb,var(--admin-coral-deep)_28%,transparent)] dark:border-zinc-700 dark:bg-zinc-900"
           role="dialog"
-          aria-label="Exportar ventas mensuales"
+          aria-label="Exportar por mes"
         >
-          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-stone-400 dark:text-zinc-500">
-            Periodo a exportar
+          <p className="border-b border-[color-mix(in_srgb,var(--admin-coral)_18%,transparent)] px-3 py-2.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--admin-coral-deep)]/50 dark:border-zinc-700 dark:text-zinc-500">
+            Mes a exportar
           </p>
-          <p className="mt-1 text-xs leading-relaxed text-stone-500 dark:text-zinc-400">
-            <span className="font-medium text-stone-600 dark:text-zinc-300">
-              VENTA TOTAL
-            </span>{" "}
-            es lo cobrado (descuentos POS, mayorista y cupones). También incluye
-            venta a precio de lista y la columna DESCUENTO.
-          </p>
-          <div className="mt-3 grid grid-cols-2 gap-2">
-            <label className="block">
-              <span className="text-[10px] font-medium uppercase tracking-wide text-stone-400 dark:text-zinc-500">
-                Desde
-              </span>
-              <input
-                type="month"
-                value={fromMonth}
-                onChange={(e) => setFromMonth(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-red-200/70 bg-white px-2.5 py-2 text-sm text-red-950 dark:border-zinc-600 dark:bg-zinc-950 dark:text-zinc-100"
-              />
-            </label>
-            <label className="block">
-              <span className="text-[10px] font-medium uppercase tracking-wide text-stone-400 dark:text-zinc-500">
-                Hasta
-              </span>
-              <input
-                type="month"
-                value={toMonth}
-                onChange={(e) => setToMonth(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-red-200/70 bg-white px-2.5 py-2 text-sm text-red-950 dark:border-zinc-600 dark:bg-zinc-950 dark:text-zinc-100"
-              />
-            </label>
-          </div>
-          <button
-            type="button"
-            onClick={() => {
-              setFromMonth(mayOfYearFromYm(defaultYearMonth));
-              setToMonth(defaultYearMonth);
-            }}
-            className="mt-2 text-left text-[11px] font-medium text-red-800/80 underline-offset-2 hover:underline dark:text-zinc-300"
-          >
-            Usar mayo → mes actual
-          </button>
-          <button
-            type="button"
-            onClick={() => void handleExport()}
-            disabled={loading || !fromMonth || !toMonth}
-            className="mt-3 w-full rounded-lg bg-red-950 px-3 py-2.5 text-sm font-semibold text-white transition hover:bg-red-900 disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-white"
-          >
-            {loading ? "Generando…" : "Descargar CSV"}
-          </button>
+          <ul className="max-h-64 overflow-y-auto py-1">
+            {months.map((ym) => {
+              const loading = loadingYm === ym;
+              return (
+                <li key={ym}>
+                  <button
+                    type="button"
+                    onClick={() => void handleExportMonth(ym)}
+                    disabled={busy}
+                    className="flex w-full items-center justify-between gap-2 px-3 py-2.5 text-left text-sm font-medium text-[var(--admin-coral-deep)] transition hover:bg-[var(--admin-coral-mist)] disabled:opacity-60 dark:text-zinc-100 dark:hover:bg-zinc-800"
+                  >
+                    <span>{labelYm(ym)}</span>
+                    {loading ? (
+                      <span className="text-[11px] font-semibold text-[var(--admin-coral)]">
+                        …
+                      </span>
+                    ) : null}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
         </div>
       ) : null}
     </div>
