@@ -1,8 +1,13 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="Milagros">
-  <rect width="32" height="32" rx="7" fill="#FF76A1"/>
-  <!-- M tipográfica clara, legible a 16–32px -->
-  <path
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="Berea House">
+  <rect width="32" height="32" rx="7" fill="#0197b2"/>
+  <text
+    x="16"
+    y="21.5"
+    text-anchor="middle"
     fill="#ffffff"
-    d="M7.2 24.5V8.4h3.15l3.55 9.55L17.45 8.4H20.6v16.1h-2.7V13.35L14.55 24.5h-2.3L8.9 13.35V24.5H7.2z"
-  />
+    font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif"
+    font-size="13"
+    font-weight="700"
+    letter-spacing="-0.06em"
+  >bh</text>
 </svg>

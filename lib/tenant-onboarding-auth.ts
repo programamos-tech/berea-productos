@@ -1,4 +1,6 @@
 import { loadAdminPermissions } from "@/lib/load-admin-permissions";
+import { isPlatformProductHost } from "@/lib/tenancy";
+import { headers } from "next/headers";
 
 function isPlatformAdminEmail(email: string | undefined | null): boolean {
   if (!email) return false;
@@ -33,4 +35,28 @@ export async function assertCanOnboardTenants(): Promise<
   }
 
   return { ok: false, error: "forbidden" };
+}
+
+/**
+ * Alta de tienda: operadores autenticados, o self-serve en
+ * `productos.bereahouse.com` (sin sesión previa).
+ */
+export async function assertCanCreateTenant(): Promise<
+  | { ok: true; userId: string; email: string | undefined; selfServe: boolean }
+  | { ok: false; error: string }
+> {
+  const h = await headers();
+  const host = h.get("x-forwarded-host") ?? h.get("host");
+  if (isPlatformProductHost(host)) {
+    return {
+      ok: true,
+      userId: "platform-self-serve",
+      email: undefined,
+      selfServe: true,
+    };
+  }
+
+  const gate = await assertCanOnboardTenants();
+  if (!gate.ok) return gate;
+  return { ...gate, selfServe: false };
 }

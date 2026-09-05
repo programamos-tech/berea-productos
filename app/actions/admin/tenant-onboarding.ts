@@ -3,10 +3,10 @@
 /**
  * Tenant onboarding (Berea Productos).
  *
- * Authorization (v1):
+ * Authorization:
+ * - Self-serve on `productos.bereahouse.com` (no session required), OR
  * - Authenticated admin with `profiles.job_role === 'owner'`, OR
- * - Session email listed in `BEREA_PLATFORM_ADMIN_EMAILS` (comma-separated).
- * Aleya owners can create new store tenants as platform operators for now.
+ * - Session email listed in `BEREA_PLATFORM_ADMIN_EMAILS`.
  */
 
 import { defaultPermissionsOwner } from "@/lib/admin-permissions";
@@ -16,7 +16,7 @@ import {
   buildTenantBrandJson,
   isValidTenantSlug,
 } from "@/lib/tenant-brand";
-import { assertCanOnboardTenants } from "@/lib/tenant-onboarding-auth";
+import { assertCanCreateTenant } from "@/lib/tenant-onboarding-auth";
 import { tenantProductHost } from "@/lib/tenancy";
 import { revalidatePath } from "next/cache";
 
@@ -77,7 +77,7 @@ async function uploadTenantLogo(
 export async function createTenantOnboarding(
   formData: FormData,
 ): Promise<CreateTenantOnboardingResult> {
-  const gate = await assertCanOnboardTenants();
+  const gate = await assertCanCreateTenant();
   if (!gate.ok) return gate;
 
   let service: ReturnType<typeof createSupabaseServiceClient>;
@@ -93,7 +93,11 @@ export async function createTenantOnboarding(
   const name = String(formData.get("name") ?? "").trim();
   const statusRaw = String(formData.get("status") ?? "trial").trim();
   const status =
-    statusRaw === "active" || statusRaw === "trial" ? statusRaw : "trial";
+    gate.selfServe
+      ? "trial"
+      : statusRaw === "active" || statusRaw === "trial"
+        ? statusRaw
+        : "trial";
 
   const tradeName = String(formData.get("trade_name") ?? "").trim() || name;
   const legalName = String(formData.get("legal_name") ?? "").trim();

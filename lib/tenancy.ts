@@ -67,8 +67,8 @@ export function resolveTenantFromHost(hostHeader: string | null | undefined): Re
     };
   }
 
-  if (host === PLATFORM_PRODUCT_HOST) {
-    return { kind: "platform", slug: null, host };
+  if (host === PLATFORM_PRODUCT_HOST || host === `www.${PLATFORM_PRODUCT_HOST}`) {
+    return { kind: "platform", slug: null, host: PLATFORM_PRODUCT_HOST };
   }
 
   const suffix = `.${PLATFORM_PRODUCT_HOST}`;
@@ -86,6 +86,13 @@ export function resolveTenantFromHost(hostHeader: string | null | undefined): Re
   }
 
   return { kind: "unknown", slug: null, host };
+}
+
+/** Host canónico de la plataforma SaaS (entrada a onboarding). */
+export function isPlatformProductHost(
+  hostHeader: string | null | undefined,
+): boolean {
+  return resolveTenantFromHost(hostHeader).kind === "platform";
 }
 
 /** Build the canonical tenant hostname for a slug. */

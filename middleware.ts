@@ -37,6 +37,8 @@ function isPublicStorePath(path: string): boolean {
 /** Rutas sin getUser en edge (menos latencia / evita cuelgues de Auth). */
 function skipsMiddlewareAuth(path: string): boolean {
   return (
+    path === "/empezar" ||
+    path.startsWith("/empezar/") ||
     path.startsWith("/api/products/") ||
     path.startsWith("/api/webhooks/") ||
     // Auth en requireAdminApiSession (getSession local), no en edge.
@@ -71,6 +73,23 @@ function nextWithTenant(request: NextRequest): NextResponse {
 
 export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
+  const hostKind = resolveTenantFromHost(request.headers.get("host")).kind;
+
+  // productos.bereahouse.com = entrada SaaS (onboarding), no la tienda Aleya/Milagros.
+  if (hostKind === "platform") {
+    const platformOk =
+      path === "/empezar" ||
+      path.startsWith("/empezar/") ||
+      path.startsWith("/admin") ||
+      path.startsWith("/api/") ||
+      path === "/icon.svg" ||
+      path === "/apple-icon" ||
+      path.startsWith("/apple-icon");
+    if (!platformOk) {
+      const dest = new URL("/empezar", request.url);
+      return withTenantHeaders(request, NextResponse.redirect(dest));
+    }
+  }
 
   if (skipsMiddlewareAuth(path)) {
     return nextWithTenant(request);

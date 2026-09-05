@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
 import {
   createTenantOnboarding,
@@ -70,10 +69,10 @@ const INITIAL: FormState = {
 
 function errorMessage(code: string): string {
   switch (code) {
-    case "auth":
-      return "Debés iniciar sesión.";
     case "forbidden":
-      return "Solo owners (o emails de plataforma) pueden crear tiendas.";
+      return "Solo owners (o emails de plataforma) pueden crear tiendas desde el admin.";
+    case "auth":
+      return "Debés iniciar sesión o entrar desde productos.bereahouse.com.";
     case "no_service":
       return "Falta SUPABASE_SERVICE_ROLE_KEY en el entorno.";
     case "slug_invalid":
@@ -99,8 +98,12 @@ function errorMessage(code: string): string {
   }
 }
 
-export function TenantOnboardingWizard() {
-  const router = useRouter();
+export function TenantOnboardingWizard({
+  variant = "admin",
+}: {
+  /** `public` = self-serve en productos.bereahouse.com */
+  variant?: "admin" | "public";
+}) {
   const [step, setStep] = useState(1);
   const [form, setForm] = useState<FormState>(INITIAL);
   const [logoFile, setLogoFile] = useState<File | null>(null);
@@ -224,26 +227,35 @@ export function TenantOnboardingWizard() {
           Host canónico: {success.slug}.{PLATFORM_PRODUCT_HOST}
         </p>
         <div className="mt-5 flex flex-wrap gap-2">
-          <button
-            type="button"
-            className={adminPrimarySubmitButtonClass + " px-4 py-2.5"}
-            onClick={() => {
-              setSuccess(null);
-              setForm(INITIAL);
-              setLogoFile(null);
-              setLogoPreview(null);
-              setStep(1);
-            }}
+          {variant === "admin" ? (
+            <button
+              type="button"
+              className={adminPrimarySubmitButtonClass + " px-4 py-2.5"}
+              onClick={() => {
+                setSuccess(null);
+                setForm(INITIAL);
+                setLogoFile(null);
+                setLogoPreview(null);
+                setStep(1);
+              }}
+            >
+              Crear otra
+            </button>
+          ) : null}
+          <a
+            href={
+              variant === "public"
+                ? `https://${success.slug}.${PLATFORM_PRODUCT_HOST}/admin/login`
+                : "/admin"
+            }
+            className={
+              variant === "public"
+                ? `${adminPrimarySubmitButtonClass} px-4 py-2.5 no-underline`
+                : adminButtonCancelClass
+            }
           >
-            Crear otra
-          </button>
-          <button
-            type="button"
-            className={adminButtonCancelClass}
-            onClick={() => router.push("/admin")}
-          >
-            Ir a reportes
-          </button>
+            {variant === "public" ? "Entrar al panel" : "Ir a reportes"}
+          </a>
         </div>
       </div>
     );
@@ -317,34 +329,38 @@ export function TenantOnboardingWizard() {
                 placeholder="Mi Tienda"
               />
             </div>
-            <div>
-              <label className={productLabelClass} htmlFor="ob-status">
-                Estado
-              </label>
-              <select
-                id="ob-status"
-                className={productInputClass}
-                value={form.status}
-                onChange={(e) =>
-                  setField("status", e.target.value as "trial" | "active")
-                }
-              >
-                <option value="trial">Prueba (trial)</option>
-                <option value="active">Activa</option>
-              </select>
-            </div>
-            <div className="sm:col-span-2">
-              <label className={productLabelClass} htmlFor="ob-domains">
-                Dominios personalizados (opcional)
-              </label>
-              <input
-                id="ob-domains"
-                className={productInputClass}
-                value={form.custom_domains}
-                onChange={(e) => setField("custom_domains", e.target.value)}
-                placeholder="tienda.com, www.tienda.com"
-              />
-            </div>
+            {variant === "admin" ? (
+              <div>
+                <label className={productLabelClass} htmlFor="ob-status">
+                  Estado
+                </label>
+                <select
+                  id="ob-status"
+                  className={productInputClass}
+                  value={form.status}
+                  onChange={(e) =>
+                    setField("status", e.target.value as "trial" | "active")
+                  }
+                >
+                  <option value="trial">Prueba (trial)</option>
+                  <option value="active">Activa</option>
+                </select>
+              </div>
+            ) : null}
+            {variant === "admin" ? (
+              <div className="sm:col-span-2">
+                <label className={productLabelClass} htmlFor="ob-domains">
+                  Dominios personalizados (opcional)
+                </label>
+                <input
+                  id="ob-domains"
+                  className={productInputClass}
+                  value={form.custom_domains}
+                  onChange={(e) => setField("custom_domains", e.target.value)}
+                  placeholder="tienda.com, www.tienda.com"
+                />
+              </div>
+            ) : null}
           </div>
         )}
 

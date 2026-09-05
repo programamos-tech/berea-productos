@@ -43,7 +43,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: storeBrand,
   description: storeShortDescription,
-  /** Favicon tienda: `app/icon.svg` (rosa). Admin: `app/admin/icon.tsx` (teal bh). */
+  /** Favicon: `app/icon.svg` (Berea House teal bh). Admin: `app/admin/icon.tsx`. */
 };
 
 export default function RootLayout({
