@@ -39,6 +39,6 @@ export const ADMIN_BEREA_SIGNATURE_ON_SIDEBAR_CLASS =
 export const ADMIN_BEREA_MARK_IMG_CLASS =
   "block h-8 w-auto max-w-[9.5rem] object-contain object-center sm:h-9 sm:max-w-[10.5rem]";
 
-/** Logo producto Berea House (marino) en cabecera del sidebar. */
+/** Logo producto Berea House en cabecera del sidebar. */
 export const ADMIN_SIDEBAR_PRODUCT_LOGO_CLASS =
-  "block h-auto w-full max-w-[8.5rem] object-contain object-center sm:max-w-[9.25rem]";
+  "block h-auto w-full max-w-[6.75rem] object-contain object-center sm:max-w-[7.25rem]";
