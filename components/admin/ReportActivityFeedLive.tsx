@@ -170,7 +170,7 @@ export function ReportActivityFeedLive({
           <ul
             ref={listRef}
             onScroll={updateMoreBelow}
-            className="reports-activity-scroll h-full space-y-0 overflow-y-auto overscroll-contain"
+            className="reports-activity-scroll h-full space-y-0 overflow-y-auto overscroll-contain [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
           >
             {items.map((row) => {
               const fresh = freshIds.has(row.id);

@@ -105,7 +105,7 @@ function EgresosMixHint({
   const cashPct = (cash / total) * 100;
   const transferPct = (transfer / total) * 100;
   return (
-    <div className="w-full max-w-[9.5rem]">
+    <div className="w-full min-w-0 max-w-none sm:max-w-[14rem]">
       <div
         className="flex h-1.5 w-full overflow-hidden rounded-full bg-zinc-200/80 dark:bg-zinc-700/50"
         aria-hidden
@@ -125,15 +125,15 @@ function EgresosMixHint({
           />
         ) : null}
       </div>
-      <p className="mt-1 flex flex-wrap gap-x-2 gap-y-0.5 text-[10px] tabular-nums text-zinc-500 dark:text-zinc-400">
+      <p className="mt-1 flex flex-nowrap items-center gap-x-2 overflow-hidden text-[10px] tabular-nums text-zinc-500 dark:text-zinc-400">
         {cash > 0 ? (
-          <span className="inline-flex items-center gap-1">
+          <span className="inline-flex shrink-0 items-center gap-1">
             <span className="size-1.5 rounded-full bg-amber-400" aria-hidden />
             Caja {formatCop(cash)}
           </span>
         ) : null}
         {transfer > 0 ? (
-          <span className="inline-flex items-center gap-1">
+          <span className="inline-flex shrink-0 items-center gap-1">
             <span className="size-1.5 rounded-full bg-sky-400" aria-hidden />
             Cuentas {formatCop(transfer)}
           </span>
