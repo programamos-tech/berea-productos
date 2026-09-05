@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Berea Productos">
+  <rect width="512" height="512" rx="112" fill="#ED7464"/>
+  <text
+    x="256"
+    y="330"
+    text-anchor="middle"
+    fill="#ffffff"
+    font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif"
+    font-size="220"
+    font-weight="700"
+    letter-spacing="-0.06em"
+  >bp</text>
+</svg>

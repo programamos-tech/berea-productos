@@ -38,7 +38,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: storeBrand,
   description: storeShortDescription,
-  /** Favicon: `app/icon.svg` + `app/apple-icon.png` (marca Milagros). */
+  /** Favicon tienda: `app/icon.svg` (rosa). Admin: `app/admin/icon.tsx` (coral bp). */
 };
 
 export default function RootLayout({
