@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Suspense } from "react";
+import { ExpensesExportButton } from "@/components/admin/ExpensesExportButton";
 import { ExpensesFiltersBar } from "@/components/admin/ExpensesFiltersBar";
 import {
   ExpensesTable,
@@ -7,6 +8,7 @@ import {
 } from "@/components/admin/ExpensesTable";
 import { NewExpenseModalHost } from "@/components/admin/NewExpenseForm";
 import { VentasPagination } from "@/components/admin/VentasPagination";
+import { currentYearMonthInReportStore } from "@/lib/admin-report-range";
 import { loadAdminPermissions } from "@/lib/load-admin-permissions";
 import { parseExpenseConceptFilter } from "@/lib/expense-concepts";
 import { fetchAdminExpensesPage } from "@/lib/supabase/admin-expenses-list";
@@ -21,9 +23,9 @@ const YMD_RE = /^\d{4}-\d{2}-\d{2}$/;
 const btnBase =
   "inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition";
 const btnPrimary =
-  "border-red-700 bg-red-700 text-white hover:border-red-600 hover:bg-red-600 dark:border-red-600 dark:bg-red-600 dark:hover:border-red-500 dark:hover:bg-red-500";
+  "border-[var(--admin-coral)] bg-[var(--admin-coral)] text-white hover:border-[var(--admin-coral-hover)] hover:bg-[var(--admin-coral-hover)]";
 const btnIdle =
-  "inline-flex size-8 items-center justify-center rounded-lg border border-zinc-300 bg-white text-zinc-700 transition hover:border-zinc-400 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200 dark:hover:border-zinc-600 dark:hover:bg-zinc-800";
+  "inline-flex size-8 items-center justify-center rounded-lg border border-[color-mix(in_srgb,var(--admin-coral)_35%,transparent)] bg-white text-[var(--admin-coral-deep)] transition hover:bg-[var(--admin-coral-mist)] dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200 dark:hover:border-zinc-600 dark:hover:bg-zinc-800";
 
 function searchParamFirst(
   v: string | string[] | undefined,
@@ -197,6 +199,9 @@ export default async function AdminEgresosPage({
           </h1>
         </div>
         <div className="flex flex-wrap items-center justify-end gap-2">
+          <ExpensesExportButton
+            defaultYearMonth={currentYearMonthInReportStore()}
+          />
           {canCreate ? (
             <Link href={nuevoHref} className={`${btnBase} ${btnPrimary}`}>
               + Nuevo
