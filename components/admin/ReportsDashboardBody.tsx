@@ -121,29 +121,32 @@ export async function ReportsDashboardBody({
   let cajaHoyCents = 0;
   try {
     const supabase = await createSupabaseServerClient();
-    const [dashboard, arrastreHoy] = await Promise.all([
-      fetchAdminReportDashboardData(supabase, {
-        rangeFrom,
-        rangeTo,
-        chartFrom,
-        chartTo,
-        salesTrendCurrentFrom,
-        salesTrendCurrentTo,
-        salesTrendPriorFrom,
-        salesTrendPriorTo,
-        fetchFrom,
-        fetchTo,
-        periodLabel,
-      }),
-      fetchCashArrastreCentsForReportStart(supabase, todayKey),
-    ]);
+    const dashboard = await fetchAdminReportDashboardData(supabase, {
+      rangeFrom,
+      rangeTo,
+      chartFrom,
+      chartTo,
+      salesTrendCurrentFrom,
+      salesTrendCurrentTo,
+      salesTrendPriorFrom,
+      salesTrendPriorTo,
+      fetchFrom,
+      fetchTo,
+      periodLabel,
+    });
     report = dashboard;
-    const live = await fetchCashDayLiveTotals(
-      supabase,
-      todayKey,
-      arrastreHoy,
-    );
-    cajaHoyCents = live.expectedCashCents;
+    if (vista !== "tienda") {
+      const arrastreHoy = await fetchCashArrastreCentsForReportStart(
+        supabase,
+        todayKey,
+      );
+      const live = await fetchCashDayLiveTotals(
+        supabase,
+        todayKey,
+        arrastreHoy,
+      );
+      cajaHoyCents = live.expectedCashCents;
+    }
   } catch (err) {
     console.error("[admin reportes] body:", err);
     return (
@@ -165,6 +168,7 @@ export async function ReportsDashboardBody({
     transferencia,
     ventasPagadasPeriod,
     egresosPeriod,
+    egresosEfectivoCents,
     egresosTransferenciaBucketCents,
     cantidadEgresosPeriod,
     reportIncomeChartPoints,
@@ -178,6 +182,8 @@ export async function ReportsDashboardBody({
   const transferenciaShown = isTienda
     ? transferencia - egresosTransferenciaBucketCents
     : transferencia;
+  /** En tienda: efectivo del mes (cobros − egresos en efectivo). Caja hoy solo en Por periodo. */
+  const enCajaMesCents = efectivo - egresosEfectivoCents;
 
   const efectivoPct =
     totalCobradoPedidos > 0
@@ -189,15 +195,22 @@ export async function ReportsDashboardBody({
       : null;
 
   const cajaHoyMetric = (
-    <Metric
-      label="Caja hoy"
-      icon={Wallet}
-      staggerMs={isTienda ? 30 : 45}
-    >
+    <Metric label="Caja hoy" icon={Wallet} staggerMs={45}>
       <StaticCopCents
         cents={cajaHoyCents}
         className={
           cajaHoyCents < 0 ? "text-red-600 dark:text-red-400" : undefined
+        }
+      />
+    </Metric>
+  );
+
+  const enCajaMesMetric = (
+    <Metric label="En caja" icon={Wallet} staggerMs={30}>
+      <StaticCopCents
+        cents={enCajaMesCents}
+        className={
+          enCajaMesCents < 0 ? "text-red-600 dark:text-red-400" : undefined
         }
       />
     </Metric>
@@ -232,7 +245,7 @@ export async function ReportsDashboardBody({
           </Metric>
 
           {isTienda ? (
-            cajaHoyMetric
+            enCajaMesMetric
           ) : (
             <Metric
               label="Efectivo"
