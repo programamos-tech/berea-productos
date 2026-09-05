@@ -88,6 +88,44 @@ function Metric({
   );
 }
 
+/** Barrita de egresos vs cobros (vista tienda). */
+function EgresosOutHint({
+  cobrosCents,
+  egresosCents,
+}: {
+  cobrosCents: number;
+  egresosCents: number;
+}) {
+  if (egresosCents <= 0) {
+    return <span>Sin egresos</span>;
+  }
+  const base = Math.max(cobrosCents, egresosCents, 1);
+  const posW = Math.max(0, (Math.max(0, cobrosCents) / base) * 100);
+  const negW = Math.min(100, (egresosCents / base) * 100);
+  return (
+    <div className="w-full max-w-[8.5rem]">
+      <div
+        className="flex h-1 w-full overflow-hidden rounded-full bg-zinc-200/80 dark:bg-zinc-700/50"
+        aria-hidden
+      >
+        {posW > 0 ? (
+          <div
+            className="h-full bg-emerald-500/50 dark:bg-emerald-500/40"
+            style={{ width: `${posW}%` }}
+          />
+        ) : null}
+        <div
+          className="h-full bg-red-400/80 dark:bg-red-500/65"
+          style={{ width: `${negW}%` }}
+        />
+      </div>
+      <p className="mt-1 tabular-nums text-[10px] text-red-600/90 dark:text-red-400/85">
+        −{formatCop(egresosCents)} egresos
+      </p>
+    </div>
+  );
+}
+
 export async function ReportsDashboardBody({
   rangeFrom,
   rangeTo,
@@ -179,11 +217,7 @@ export async function ReportsDashboardBody({
   } = report;
 
   const isTienda = vista === "tienda";
-  const transferenciaShown = isTienda
-    ? transferencia - egresosTransferenciaBucketCents
-    : transferencia;
-  /** En tienda: efectivo del mes (cobros − egresos en efectivo). Caja hoy solo en Por periodo. */
-  const enCajaMesCents = efectivo - egresosEfectivoCents;
+  const transferenciaShown = transferencia;
 
   const efectivoPct =
     totalCobradoPedidos > 0
@@ -206,13 +240,18 @@ export async function ReportsDashboardBody({
   );
 
   const enCajaMesMetric = (
-    <Metric label="En caja" icon={Wallet} staggerMs={30}>
-      <StaticCopCents
-        cents={enCajaMesCents}
-        className={
-          enCajaMesCents < 0 ? "text-red-600 dark:text-red-400" : undefined
-        }
-      />
+    <Metric
+      label="En caja"
+      icon={Wallet}
+      staggerMs={30}
+      hint={
+        <EgresosOutHint
+          cobrosCents={efectivo}
+          egresosCents={egresosEfectivoCents}
+        />
+      }
+    >
+      <StaticCopCents cents={efectivo} />
     </Metric>
   );
 
@@ -275,11 +314,16 @@ export async function ReportsDashboardBody({
             icon={ArrowLeftRight}
             staggerMs={60}
             hint={
-              isTienda
-                ? undefined
-                : transferPct != null
-                  ? <>{transferPct}% del cobrado</>
-                  : <>Sin cobros en transferencia</>
+              isTienda ? (
+                <EgresosOutHint
+                  cobrosCents={transferencia}
+                  egresosCents={egresosTransferenciaBucketCents}
+                />
+              ) : transferPct != null ? (
+                <>{transferPct}% del cobrado</>
+              ) : (
+                <>Sin cobros en transferencia</>
+              )
             }
           >
             <StaticCopCents
