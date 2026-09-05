@@ -463,14 +463,15 @@ function AdminSidebarInner({
   const maintenanceClass =
     "flex cursor-not-allowed items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] font-medium text-zinc-400 opacity-55 grayscale-[0.35] dark:text-zinc-500 dark:opacity-45";
 
-  const drawerTranslate =
-    mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0";
+  const drawerTranslate = mobileOpen
+    ? "translate-x-0"
+    : // Cerrado en móvil: oculto de verdad (iOS a veces captura taps en drawers solo traducidos).
+      "-translate-x-full max-lg:hidden lg:translate-x-0";
 
   /** Drawer cerrado en móvil: sin foco ni clics; en lg siempre interactuable. */
-  const drawerHiddenMobile =
-    !mobileOpen
-      ? "max-lg:invisible max-lg:pointer-events-none lg:!visible lg:!pointer-events-auto"
-      : "";
+  const drawerHiddenMobile = !mobileOpen
+    ? "max-lg:pointer-events-none lg:!pointer-events-auto"
+    : "";
 
   return (
     <aside

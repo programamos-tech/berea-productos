@@ -8,6 +8,10 @@ import { AdminTopBar } from "@/components/admin/AdminTopBar";
 import { CashRegisterMorningGateModal } from "@/components/admin/CashRegisterMorningGateModal";
 import { pathAllowedDuringCashGate } from "@/lib/cash-register-gate";
 import { isAdminPathInMaintenance } from "@/lib/admin-nav-maintenance";
+import {
+  clearStoreCheckoutNavigation,
+  removeStoreCheckoutBootOverlay,
+} from "@/lib/store-checkout-nav";
 
 export function AdminDashboardShell({
   children,
@@ -36,6 +40,12 @@ export function AdminDashboardShell({
   const pathname = usePathname();
   const router = useRouter();
   const mustOpen = Boolean(cashGate?.mustOpen);
+
+  // Overlay de checkout de la tienda no debe tapar el admin (iPad / Safari).
+  useEffect(() => {
+    clearStoreCheckoutNavigation();
+    removeStoreCheckoutBootOverlay();
+  }, []);
 
   useEffect(() => {
     if (!mustOpen) return;
@@ -66,6 +76,17 @@ export function AdminDashboardShell({
     };
   }, [mobileNavOpen]);
 
+  // Al girar a landscape / desktop, cerrar drawer móvil.
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 1024px)");
+    const onChange = () => {
+      if (mq.matches) setMobileNavOpen(false);
+    };
+    onChange();
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
+
   const closeNav = () => setMobileNavOpen(false);
 
   return (
@@ -94,7 +115,7 @@ export function AdminDashboardShell({
             displayName={sessionUser.displayName}
             email={sessionUser.email}
           />
-          <main className="min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-visible p-3 sm:p-4 md:p-6 print:bg-white print:p-8">
+          <main className="relative z-0 min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-visible p-3 sm:p-4 md:p-6 print:bg-white print:p-8">
             {children}
           </main>
         </div>
