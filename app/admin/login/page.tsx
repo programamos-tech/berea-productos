@@ -19,9 +19,9 @@ export default function AdminLoginPage() {
               <Image
                 src={adminSidebarLogoPath}
                 alt={adminProductBrand}
-                width={728}
-                height={343}
-                className={`h-auto w-full max-w-[11rem] object-contain object-left sm:max-w-[13rem] lg:max-w-[15.5rem] ${ADMIN_BRAND_LOGO_ON_SIDEBAR_CLASS}`}
+                width={1200}
+                height={662}
+                className={`h-auto w-full max-w-[12rem] object-contain object-left sm:max-w-[14rem] lg:max-w-[16rem] ${ADMIN_BRAND_LOGO_ON_SIDEBAR_CLASS}`}
                 priority
               />
               <p className="mt-10 text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--admin-coral-deep)]/55">

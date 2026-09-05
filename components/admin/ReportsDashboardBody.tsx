@@ -36,10 +36,9 @@ import {
 const labelClass =
   "text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500 dark:text-zinc-500";
 
-/** Mix egresos: coral (caja) + zinc (cuentas) — alineado al tema admin. */
-const egresoCajaBarClass = "bg-[var(--admin-coral)]";
-const egresoCuentasBarClass =
-  "bg-[color-mix(in_srgb,var(--admin-coral-deep)_28%,#a1a1aa)]";
+/** Mix egresos: zinc (caja) + zinc suave (cuentas). */
+const egresoCajaBarClass = "bg-zinc-700 dark:bg-zinc-300";
+const egresoCuentasBarClass = "bg-zinc-300 dark:bg-zinc-600";
 
 function Metric({
   label,

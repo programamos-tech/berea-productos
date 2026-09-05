@@ -37,7 +37,7 @@ function visiblePageSlots(
 const pageBtn =
   "inline-flex h-8 min-w-8 items-center justify-center rounded-lg border border-zinc-300 px-2.5 text-xs font-medium tabular-nums text-zinc-800 transition hover:bg-zinc-50 dark:border-zinc-600 dark:text-zinc-100 dark:hover:bg-zinc-800";
 const pageBtnActive =
-  "inline-flex h-8 min-w-8 cursor-default items-center justify-center rounded-lg border border-[var(--admin-coral)] bg-[var(--admin-coral)] px-2.5 text-xs font-semibold tabular-nums text-white";
+  "inline-flex h-8 min-w-8 cursor-default items-center justify-center rounded-lg border border-zinc-900 bg-zinc-900 px-2.5 text-xs font-semibold tabular-nums text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900";
 const pageBtnDisabled =
   "inline-flex h-8 cursor-not-allowed items-center rounded-lg border border-zinc-200 px-3 text-xs font-medium text-zinc-400 opacity-50 dark:border-zinc-700";
 

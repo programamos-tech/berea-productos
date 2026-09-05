@@ -167,7 +167,7 @@ export function VentasSalesTable({
                   key={row.id}
                   tabIndex={0}
                   aria-label={`Ver factura ${ref}, pedido ${row.customer_name}`}
-                  className="cursor-pointer border-b border-zinc-100/80 last:border-0 transition hover:bg-zinc-50/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/40 dark:border-zinc-800/80 dark:hover:bg-zinc-900/40"
+                  className="cursor-pointer border-b border-zinc-100/80 last:border-0 transition hover:bg-zinc-50/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400/50 dark:border-zinc-800/80 dark:hover:bg-zinc-900/40"
                   onClick={() => {
                     router.push(href);
                   }}

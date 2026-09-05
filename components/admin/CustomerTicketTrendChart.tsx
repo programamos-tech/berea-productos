@@ -3,7 +3,7 @@ import type { TicketTrendPoint } from "@/lib/customer-ticket-trend";
 
 /** Línea coral (ingresos) y ámbar (egresos); rejilla y ejes en zinc. */
 const chartPaletteClass =
-  "[--chart-line:#ED7464] [--chart-grid:#f4f4f5] [--chart-axis:#a1a1aa] [--chart-point-fill:#ffffff] [--chart-point-stroke:#ED7464] [--chart-expense-line:#b45309] [--chart-expense-point-fill:#fffbeb] [--chart-expense-point-stroke:#b45309] dark:[--chart-line:#FFBDB5] dark:[--chart-grid:#3f3f46] dark:[--chart-axis:#71717a] dark:[--chart-point-fill:#27272a] dark:[--chart-point-stroke:#FFBDB5] dark:[--chart-expense-line:#fbbf24] dark:[--chart-expense-point-fill:#422006] dark:[--chart-expense-point-stroke:#fbbf24]";
+  "[--chart-line:#52525b] [--chart-grid:#f4f4f5] [--chart-axis:#a1a1aa] [--chart-point-fill:#ffffff] [--chart-point-stroke:#52525b] [--chart-expense-line:#a1a1aa] [--chart-expense-point-fill:#fafafa] [--chart-expense-point-stroke:#a1a1aa] dark:[--chart-line:#a1a1aa] dark:[--chart-grid:#3f3f46] dark:[--chart-axis:#71717a] dark:[--chart-point-fill:#27272a] dark:[--chart-point-stroke:#a1a1aa] dark:[--chart-expense-line:#71717a] dark:[--chart-expense-point-fill:#422006] dark:[--chart-expense-point-stroke:#71717a]";
 
 function monthLabelEs(monthKey: string) {
   const [y, m] = monthKey.split("-").map(Number);

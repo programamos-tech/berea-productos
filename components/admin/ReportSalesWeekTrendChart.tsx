@@ -3,10 +3,10 @@ import { formatCop, formatCopCompact } from "@/lib/money";
 import type { TicketTrendPoint } from "@/lib/customer-ticket-trend";
 import type { ReportSalesTrendComparison } from "@/lib/admin-reports-data";
 
-/** Shared report chart palette (rojo base, no rosa). */
+/** Shared report chart palette — zinc primary; emerald/red for pos/neg. */
 export const REPORT_CHART = {
-  primary: "#ED7464",
-  primaryDark: "#FFBDB5",
+  primary: "#52525b",
+  primaryDark: "#a1a1aa",
   secondary: "#a1a1aa",
   secondaryDark: "#71717a",
   grid: "#27272a",

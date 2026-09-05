@@ -8,7 +8,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 const panelClass =
-  "absolute left-0 right-0 top-[calc(100%+0.35rem)] z-40 w-full rounded-xl border border-[color-mix(in_srgb,var(--admin-coral)_28%,transparent)] bg-white p-2 shadow-[0_16px_48px_-24px_color-mix(in_srgb,var(--admin-coral-deep)_28%,transparent)] sm:left-auto sm:right-0 sm:w-[min(100vw-1.5rem,16rem)] dark:border-zinc-700 dark:bg-zinc-900 dark:shadow-[0_16px_48px_-24px_rgba(0,0,0,0.55)]";
+  "absolute left-0 right-0 top-[calc(100%+0.35rem)] z-40 w-full rounded-xl border border-zinc-200 bg-white p-2 shadow-[0_16px_48px_-24px_rgba(24,24,27,0.22)] sm:left-auto sm:right-0 sm:w-[min(100vw-1.5rem,16rem)] dark:border-zinc-700 dark:bg-zinc-900 dark:shadow-[0_16px_48px_-24px_rgba(0,0,0,0.55)]";
 
 function sentenceCase(label: string): string {
   const t = label.trim();
@@ -69,14 +69,14 @@ export function ReportsMonthFilter({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="inline-flex h-10 max-w-full items-center gap-2 rounded-lg border border-[color-mix(in_srgb,var(--admin-coral)_35%,transparent)] bg-white px-3 text-sm font-medium text-[var(--admin-coral-deep)] shadow-[0_1px_2px_0_color-mix(in_srgb,var(--admin-coral-deep)_12%,transparent)] transition hover:bg-[var(--admin-coral-mist)] dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:shadow-none dark:hover:border-zinc-600 dark:hover:bg-zinc-800"
+        className="inline-flex h-10 max-w-full items-center gap-2 rounded-lg border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-700 shadow-sm transition hover:border-zinc-400 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:shadow-none dark:hover:border-zinc-600 dark:hover:bg-zinc-800"
         aria-expanded={open}
         aria-haspopup="listbox"
       >
         <span className="min-w-0 truncate tabular-nums">{summary}</span>
         <svg
           viewBox="0 0 24 24"
-          className={`size-4 shrink-0 text-[var(--admin-coral-deep)]/45 transition dark:text-zinc-400 ${open ? "rotate-180" : ""}`}
+          className={`size-4 shrink-0 text-zinc-400 transition dark:text-zinc-400 ${open ? "rotate-180" : ""}`}
           fill="none"
           stroke="currentColor"
           strokeWidth={2}
@@ -104,8 +104,8 @@ export function ReportsMonthFilter({
                     onClick={() => selectMonth(ym)}
                     className={`w-full rounded-lg px-3 py-2 text-left text-sm transition ${
                       active
-                        ? "bg-[var(--admin-coral)] font-semibold text-white"
-                        : "font-medium text-zinc-800 hover:bg-[var(--admin-coral-mist)] dark:text-zinc-100 dark:hover:bg-zinc-800"
+                        ? "bg-zinc-900 font-semibold text-white dark:bg-zinc-100 dark:text-zinc-900"
+                        : "font-medium text-zinc-800 hover:bg-zinc-100 dark:text-zinc-100 dark:hover:bg-zinc-800"
                     }`}
                   >
                     {label}

@@ -577,22 +577,31 @@ export function OrderInvoiceDetailView(props: OrderInvoiceDetailViewProps) {
 
       {/* Pantalla: layout limpio estilo Reportes (impresión arriba en bloques hidden print:block) */}
       <div className="print:hidden">
-        <div className="flex flex-col gap-6 border-t border-zinc-200/70 pt-4 dark:border-zinc-800 lg:grid lg:grid-cols-[minmax(0,1fr)_15rem] lg:items-start lg:gap-8">
+        <div className="flex flex-col gap-6 border-t border-zinc-200/70 pt-4 dark:border-zinc-800 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(16rem,18rem)] lg:items-start lg:gap-10 xl:gap-12">
           <section className="reports-chart-reveal min-w-0">
             {lines.length === 0 ? (
               <p className="text-sm text-zinc-500 dark:text-zinc-400">
                 No hay ítems en este pedido.
               </p>
             ) : (
-              <div className="max-h-[min(52dvh,28rem)] overflow-x-auto overflow-y-auto lg:max-h-[calc(100dvh-14rem)]">
-                <table className="min-w-full text-left text-[13px] leading-snug sm:text-sm">
+              <div className="max-h-[min(56dvh,32rem)] overflow-x-auto overflow-y-auto lg:max-h-[calc(100dvh-13rem)]">
+                <table className="w-full min-w-[40rem] table-fixed text-left text-sm leading-relaxed sm:text-[15px]">
+                  <colgroup>
+                    <col className="w-auto" />
+                    <col className="w-14" />
+                    <col className="w-[7.5rem]" />
+                    <col className="w-[6.5rem]" />
+                    <col className="w-[9.5rem]" />
+                  </colgroup>
                   <thead className="sticky top-0 z-[1] bg-white dark:bg-zinc-950">
                     <tr className="border-b border-zinc-200/70 dark:border-zinc-800">
                       <th className={th}>Producto</th>
-                      <th className={`${th} w-12 text-right`}>Ud</th>
-                      <th className={`${th} w-28 text-right`}>P. unit.</th>
-                      <th className={`${th} w-24 text-right`}>Descuento</th>
-                      <th className={`${th} w-28 text-right pr-0`}>Subtotal</th>
+                      <th className={`${th} text-right`}>Ud</th>
+                      <th className={`${th} text-right`}>P. unit.</th>
+                      <th className={`${th} text-right`}>Descuento</th>
+                      <th className={`${th} !pr-6 text-right sm:!pr-8`}>
+                        Subtotal
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
@@ -605,30 +614,32 @@ export function OrderInvoiceDetailView(props: OrderInvoiceDetailViewProps) {
                           key={line.id}
                           className="border-b border-zinc-100/80 last:border-0 dark:border-zinc-800/80"
                         >
-                          <td className="max-w-[28rem] py-2 pr-4 align-middle text-zinc-800 dark:text-zinc-200">
-                            <span className="block leading-snug">{line.name}</span>
+                          <td className="py-3 pr-5 align-middle text-zinc-800 dark:text-zinc-200">
+                            <span className="block font-medium leading-snug">
+                              {line.name}
+                            </span>
                             {ref ? (
-                              <span className="mt-0.5 block font-mono text-[11px] text-zinc-500">
+                              <span className="mt-1 block font-mono text-xs text-zinc-500">
                                 Ref. {ref}
                               </span>
                             ) : null}
                           </td>
-                          <td className="py-2 pr-4 text-right tabular-nums text-zinc-700 dark:text-zinc-300">
+                          <td className="py-3 pr-4 text-right tabular-nums text-zinc-700 dark:text-zinc-300">
                             {line.quantity}
                           </td>
-                          <td className="whitespace-nowrap py-2 pr-4 text-right tabular-nums text-zinc-600 dark:text-zinc-400">
+                          <td className="whitespace-nowrap py-3 pr-4 text-right tabular-nums text-zinc-700 dark:text-zinc-300">
                             {formatCop(line.unitPriceCents)}
                           </td>
                           <td
-                            className={`whitespace-nowrap py-2 pr-4 text-right tabular-nums ${
+                            className={`whitespace-nowrap py-3 pr-4 text-right tabular-nums ${
                               disc
-                                ? "text-amber-700 dark:text-amber-400"
+                                ? "text-zinc-700 dark:text-zinc-300"
                                 : "text-zinc-400 dark:text-zinc-600"
                             }`}
                           >
                             {disc ?? "—"}
                           </td>
-                          <td className="whitespace-nowrap py-2 text-right tabular-nums text-zinc-800 dark:text-zinc-200">
+                          <td className="whitespace-nowrap py-3 pl-3 pr-6 text-right tabular-nums text-base font-semibold text-zinc-900 dark:text-zinc-100 sm:pr-8">
                             {formatCop(sub)}
                           </td>
                         </tr>
@@ -640,16 +651,16 @@ export function OrderInvoiceDetailView(props: OrderInvoiceDetailViewProps) {
             )}
           </section>
 
-          <aside className="reports-chart-reveal shrink-0 space-y-5 border-t border-zinc-200/70 pt-4 dark:border-zinc-800 lg:sticky lg:top-3 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0 dark:lg:border-zinc-800">
+          <aside className="reports-chart-reveal shrink-0 space-y-5 border-t border-zinc-200/70 pt-4 dark:border-zinc-800 lg:sticky lg:top-3 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0 xl:pl-10 dark:lg:border-zinc-800">
             {showShippingRow ? (
               <div className="space-y-2 text-sm">
-                <div className="flex justify-between gap-3">
+                <div className="flex justify-between gap-4">
                   <span className="text-zinc-500">Subtotal</span>
                   <span className="tabular-nums font-medium text-zinc-900 dark:text-zinc-100">
                     <StaticCopCents cents={subtotalLines} />
                   </span>
                 </div>
-                <div className="flex justify-between gap-3">
+                <div className="flex justify-between gap-4">
                   <span className="text-zinc-500">
                     Envío
                     {shippingCity?.trim() ? ` · ${shippingCity.trim()}` : ""}
@@ -662,11 +673,11 @@ export function OrderInvoiceDetailView(props: OrderInvoiceDetailViewProps) {
                     )}
                   </span>
                 </div>
-                <div className="flex justify-between gap-3 border-t border-zinc-200/70 pt-2 dark:border-zinc-800">
+                <div className="flex justify-between gap-4 border-t border-zinc-200/70 pt-3 dark:border-zinc-800">
                   <span className="font-semibold text-zinc-900 dark:text-zinc-100">
                     Total
                   </span>
-                  <span className="text-xl font-semibold tabular-nums tracking-tight text-zinc-900 dark:text-zinc-50">
+                  <span className="text-2xl font-semibold tabular-nums tracking-tight text-zinc-900 dark:text-zinc-50">
                     <StaticCopCents cents={totalCents} />
                   </span>
                 </div>
@@ -674,7 +685,7 @@ export function OrderInvoiceDetailView(props: OrderInvoiceDetailViewProps) {
             ) : (
               <div>
                 <p className={labelClass}>Total</p>
-                <p className="mt-1.5 text-2xl font-semibold tabular-nums tracking-tight text-zinc-900 dark:text-zinc-50">
+                <p className="mt-2 text-3xl font-semibold tabular-nums tracking-tight text-zinc-900 dark:text-zinc-50">
                   <StaticCopCents cents={totalCents} />
                 </p>
               </div>

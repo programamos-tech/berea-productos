@@ -2,9 +2,9 @@
 
 import type { ReportVista } from "@/lib/admin-report-range";
 import {
+  adminToolbarBtnActiveClass,
   adminToolbarBtnBaseClass,
   adminToolbarBtnIdleClass,
-  adminToolbarBtnPrimaryClass,
 } from "@/lib/admin-ui";
 import { CalendarRange, Store } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -66,7 +66,7 @@ export function ReportsVistaFilter({ vista }: { vista: ReportVista }) {
             onClick={() => select(opt.id)}
             aria-pressed={active}
             title={opt.hint}
-            className={`${adminToolbarBtnBaseClass} ${active ? adminToolbarBtnPrimaryClass : adminToolbarBtnIdleClass}`}
+            className={`${adminToolbarBtnBaseClass} ${active ? adminToolbarBtnActiveClass : adminToolbarBtnIdleClass}`}
           >
             <Icon className="size-4 shrink-0" strokeWidth={2.25} aria-hidden />
             <span className="sm:hidden">{shortLabel}</span>

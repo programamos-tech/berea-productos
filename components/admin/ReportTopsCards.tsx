@@ -13,7 +13,7 @@ function RankBadge({ n }: { n: number }) {
     <span
       className={`flex size-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold tabular-nums ${
         n === 1
-          ? "bg-[var(--admin-coral)] text-white"
+          ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
           : "bg-zinc-200 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
       }`}
     >

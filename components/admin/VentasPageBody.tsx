@@ -15,8 +15,8 @@ import {
 import { buildAdminVentasListHref } from "@/lib/admin-ventas-list-url";
 import type { VentaEstadoFilter, VentaPagoFilter } from "@/lib/ventas-sales";
 import {
+  adminToolbarBtnActiveClass,
   adminToolbarBtnBaseClass,
-  adminToolbarBtnPrimaryClass,
   adminPageTitleClass,
   adminPageSubtitleClass,
 } from "@/lib/admin-ui";
@@ -221,7 +221,7 @@ export function VentasPageShell({
           <VentasRefreshButton />
           <Link
             href="/admin/ventas/nueva"
-            className={`${adminToolbarBtnBaseClass} ${adminToolbarBtnPrimaryClass}`}
+            className={`${adminToolbarBtnBaseClass} ${adminToolbarBtnActiveClass}`}
           >
             + Nueva factura
           </Link>

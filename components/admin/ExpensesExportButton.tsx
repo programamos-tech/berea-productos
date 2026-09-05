@@ -114,13 +114,13 @@ export function ExpensesExportButton({
         type="button"
         onClick={() => setOpen((v) => !v)}
         disabled={busy}
-        className="inline-flex h-10 max-w-full items-center gap-2 rounded-lg border border-[color-mix(in_srgb,var(--admin-coral)_35%,transparent)] bg-white px-3 text-sm font-medium text-[var(--admin-coral-deep)] shadow-sm transition hover:border-[color-mix(in_srgb,var(--admin-coral)_55%,transparent)] hover:bg-[var(--admin-coral-mist)] disabled:cursor-wait disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:shadow-none dark:hover:border-zinc-600 dark:hover:bg-zinc-800"
+        className="inline-flex h-10 max-w-full items-center gap-2 rounded-lg border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-700 shadow-sm transition hover:border-zinc-400 hover:bg-zinc-50 disabled:cursor-wait disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:shadow-none dark:hover:border-zinc-600 dark:hover:bg-zinc-800"
         aria-expanded={open}
         aria-haspopup="dialog"
       >
         <svg
           viewBox="0 0 24 24"
-          className="size-4 shrink-0 text-[var(--admin-coral)]/70 dark:text-zinc-400"
+          className="size-4 shrink-0 text-zinc-400 dark:text-zinc-400"
           fill="none"
           stroke="currentColor"
           strokeWidth={2}
@@ -137,11 +137,11 @@ export function ExpensesExportButton({
 
       {open ? (
         <div
-          className="absolute right-0 top-[calc(100%+0.35rem)] z-40 w-[min(100vw-1.5rem,16rem)] overflow-hidden rounded-xl border border-[color-mix(in_srgb,var(--admin-coral)_28%,transparent)] bg-white shadow-[0_16px_48px_-24px_color-mix(in_srgb,var(--admin-coral-deep)_28%,transparent)] dark:border-zinc-700 dark:bg-zinc-900"
+          className="absolute right-0 top-[calc(100%+0.35rem)] z-40 w-[min(100vw-1.5rem,16rem)] overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-[0_16px_48px_-24px_rgba(24,24,27,0.22)] dark:border-zinc-700 dark:bg-zinc-900"
           role="dialog"
           aria-label="Exportar egresos por mes"
         >
-          <p className="border-b border-[color-mix(in_srgb,var(--admin-coral)_18%,transparent)] px-3 py-2.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--admin-coral-deep)]/50 dark:border-zinc-700 dark:text-zinc-500">
+          <p className="border-b border-zinc-200 px-3 py-2.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500 dark:border-zinc-700 dark:text-zinc-500">
             Mes a exportar
           </p>
           <ul className="max-h-64 overflow-y-auto py-1">
@@ -153,11 +153,11 @@ export function ExpensesExportButton({
                     type="button"
                     onClick={() => void handleExportMonth(ym)}
                     disabled={busy}
-                    className="flex w-full items-center justify-between gap-2 px-3 py-2.5 text-left text-sm font-medium text-[var(--admin-coral-deep)] transition hover:bg-[var(--admin-coral-mist)] disabled:opacity-60 dark:text-zinc-100 dark:hover:bg-zinc-800"
+                    className="flex w-full items-center justify-between gap-2 px-3 py-2.5 text-left text-sm font-medium text-zinc-800 transition hover:bg-zinc-50 disabled:opacity-60 dark:text-zinc-100 dark:hover:bg-zinc-800"
                   >
                     <span>{labelYm(ym)}</span>
                     {loading ? (
-                      <span className="text-[11px] font-semibold text-[var(--admin-coral)]">
+                      <span className="text-[11px] font-semibold text-zinc-500">
                         …
                       </span>
                     ) : null}

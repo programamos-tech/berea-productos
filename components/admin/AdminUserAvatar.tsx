@@ -17,7 +17,7 @@ type Props = {
 };
 
 /**
- * Avatar circular con iniciales sobre coral Berea (sin DiceBear / Notionists).
+ * Avatar de iniciales neutro (zinc) — el coral queda para CTAs, no chrome.
  */
 export function AdminUserAvatar({
   displayName,
@@ -25,11 +25,11 @@ export function AdminUserAvatar({
   className = "",
 }: Props) {
   const initials = adminUserInitials(displayName);
-  const fontSize = Math.round(size * 0.36);
+  const fontSize = Math.round(size * 0.34);
 
   return (
     <span
-      className={`pointer-events-none inline-flex shrink-0 select-none items-center justify-center rounded-full bg-[var(--admin-coral)] font-semibold tracking-wide text-white shadow-[0_0_0_1px_color-mix(in_srgb,var(--admin-coral-deep)_28%,transparent)] dark:shadow-[0_0_0_1px_rgba(255,255,255,0.12)] ${className}`}
+      className={`pointer-events-none inline-flex shrink-0 select-none items-center justify-center rounded-full border border-zinc-200 bg-zinc-100 font-semibold tracking-[0.04em] text-zinc-700 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-200 ${className}`}
       style={{ width: size, height: size, fontSize }}
       role="img"
       aria-label={`Avatar de ${displayName}`}

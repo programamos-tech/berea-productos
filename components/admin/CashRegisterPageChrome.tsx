@@ -5,16 +5,16 @@ import { useEffect, useState } from "react";
 import { CashRegisterSessionModal } from "@/components/admin/CashRegisterSessionModal";
 import type { CashDayBlindSummary } from "@/lib/cash-register";
 import {
+  adminToolbarBtnActiveClass,
   adminToolbarBtnBaseClass,
   adminToolbarBtnIdleClass,
-  adminToolbarBtnPrimaryClass,
   adminPageTitleClass,
   adminPageSubtitleClass,
 } from "@/lib/admin-ui";
 
 const btnBase = `${adminToolbarBtnBaseClass} disabled:cursor-not-allowed disabled:opacity-45`;
 const btnIdle = adminToolbarBtnIdleClass;
-const btnPrimary = adminToolbarBtnPrimaryClass;
+const btnPrimary = adminToolbarBtnActiveClass;
 
 type Props = {
   canManage: boolean;

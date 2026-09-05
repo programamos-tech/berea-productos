@@ -50,7 +50,7 @@ type AdminTopBarProps = {
 };
 
 const iconBtnClass =
-  "rounded-lg p-2 text-[var(--admin-coral-deep)]/45 transition hover:bg-[var(--admin-coral-mist)] hover:text-[var(--admin-coral-deep)] dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100";
+  "rounded-lg p-2 text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100";
 
 export function AdminTopBar({
   onMenuClick,
@@ -60,12 +60,12 @@ export function AdminTopBar({
   email,
 }: AdminTopBarProps) {
   return (
-    <header className="sticky top-0 z-50 w-full min-w-0 overflow-visible border-b border-[color-mix(in_srgb,var(--admin-coral)_22%,transparent)] bg-white/90 backdrop-blur-md print:hidden dark:border-zinc-800 dark:bg-zinc-900/90">
+    <header className="sticky top-0 z-50 w-full min-w-0 overflow-visible border-b border-zinc-200 bg-white/90 backdrop-blur-md print:hidden dark:border-zinc-800 dark:bg-zinc-900/90">
       <div className="flex h-14 min-w-0 items-center gap-2 overflow-visible px-3 sm:h-16 sm:gap-3 sm:px-6">
         <button
           type="button"
           onClick={onMenuClick}
-          className="flex size-10 shrink-0 items-center justify-center rounded-lg text-[var(--admin-coral-deep)] transition hover:bg-[var(--admin-coral-mist)] active:bg-[var(--admin-coral-soft)] dark:text-zinc-100 dark:hover:bg-zinc-800 dark:active:bg-zinc-700/80 lg:hidden"
+          className="flex size-10 shrink-0 items-center justify-center rounded-lg text-zinc-700 transition hover:bg-zinc-100 active:bg-zinc-200/80 dark:text-zinc-100 dark:hover:bg-zinc-800 dark:active:bg-zinc-700/80 lg:hidden"
           aria-label="Abrir menú"
           aria-expanded={menuOpen ?? false}
           aria-controls="admin-sidebar-nav"
@@ -93,7 +93,7 @@ export function AdminTopBar({
           {showOrderNotifications ? (
             <AdminNotificationBell className="lg:hidden" />
           ) : null}
-          <div className="ml-0.5 hidden items-center gap-0.5 border-l border-[color-mix(in_srgb,var(--admin-coral)_22%,transparent)] pl-2 dark:border-zinc-700 lg:flex">
+          <div className="ml-0.5 hidden items-center gap-0.5 border-l border-zinc-200 pl-2 dark:border-zinc-700 lg:flex">
             <AdminThemeToggle />
             <button type="button" className={iconBtnClass} title="Ayuda">
               <IconHelp />

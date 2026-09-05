@@ -287,23 +287,21 @@ function navItemActive(
   return isActive(pathname, href);
 }
 
-const sidebarInkMuted =
-  "text-[var(--admin-coral-deep)]/55 dark:text-zinc-500";
-const sidebarBorder =
-  "border-[color-mix(in_srgb,var(--admin-coral-deep)_14%,transparent)] dark:border-zinc-800/90";
+const sidebarInkMuted = "text-zinc-500 dark:text-zinc-500";
+const sidebarBorder = "border-zinc-200 dark:border-zinc-800/90";
 
 function SidebarProductBrand() {
   return (
     <Link
       href="/admin"
       prefetch
-      className="inline-block rounded-md outline-none transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-[var(--admin-coral)]/40 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--admin-sidebar-bg)]"
+      className="inline-block rounded-md outline-none transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-zinc-400/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--admin-sidebar-bg)]"
     >
       <Image
         src={adminSidebarLogoPath}
         alt={adminProductBrand}
-        width={728}
-        height={343}
+        width={1200}
+        height={662}
         className={`${ADMIN_SIDEBAR_PRODUCT_LOGO_CLASS} ${ADMIN_BRAND_LOGO_ON_SIDEBAR_CLASS}`}
         priority
       />
@@ -328,7 +326,7 @@ function SidebarTenantAccount({
       : `Cuenta · ${adminTenantBrand}`;
 
   const cardClass =
-    "group mt-3.5 flex w-full items-center gap-2.5 rounded-lg border border-[color-mix(in_srgb,var(--admin-coral-deep)_16%,transparent)] bg-white/55 px-2.5 py-2 text-left transition dark:border-zinc-700/70 dark:bg-zinc-900/55";
+    "group mt-3.5 flex w-full items-center gap-2.5 rounded-lg border border-zinc-200 bg-white px-2.5 py-2 text-left transition dark:border-zinc-700/70 dark:bg-zinc-900/55";
 
   const inner = (
     <>
@@ -342,7 +340,7 @@ function SidebarTenantAccount({
         />
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-[13px] font-medium text-[var(--admin-coral-deep)]/90 dark:text-zinc-200">
+        <span className="block truncate text-[13px] font-medium text-zinc-800 dark:text-zinc-200">
           {adminTenantBrand}
         </span>
       </span>
@@ -372,7 +370,7 @@ function SidebarTenantAccount({
       prefetch
       onClick={() => onNavigate()}
       title={title}
-      className={`${cardClass} hover:border-[color-mix(in_srgb,var(--admin-coral)_35%,transparent)] hover:bg-white/80 dark:hover:border-zinc-600 dark:hover:bg-zinc-900/80`}
+      className={`${cardClass} hover:border-zinc-300 hover:bg-zinc-50 dark:hover:border-zinc-600 dark:hover:bg-zinc-900/80`}
     >
       {inner}
     </Link>
@@ -422,12 +420,12 @@ function AdminSidebarInner({
     [
       "flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] font-medium transition",
       active
-        ? "bg-[var(--admin-coral)] text-white shadow-sm shadow-[color-mix(in_srgb,var(--admin-coral-deep)_18%,transparent)] dark:shadow-none"
-        : "text-[var(--admin-coral-deep)]/85 hover:bg-white/70 hover:text-[var(--admin-coral-deep)] dark:text-zinc-300 dark:hover:bg-white/[0.06] dark:hover:text-zinc-100",
+        ? "bg-zinc-900 text-white shadow-sm dark:bg-zinc-100 dark:text-zinc-900 dark:shadow-none"
+        : "text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-300 dark:hover:bg-white/[0.06] dark:hover:text-zinc-100",
     ].join(" ");
 
   const maintenanceClass =
-    "flex cursor-not-allowed items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] font-medium text-[var(--admin-coral-deep)]/40 opacity-55 grayscale-[0.35] dark:text-zinc-500 dark:opacity-45";
+    "flex cursor-not-allowed items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] font-medium text-zinc-400 opacity-55 grayscale-[0.35] dark:text-zinc-500 dark:opacity-45";
 
   const drawerTranslate =
     mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0";
@@ -475,7 +473,7 @@ function AdminSidebarInner({
                         <span className="min-w-0 flex-1 truncate">
                           {item.label}
                         </span>
-                        <span className="shrink-0 rounded-md bg-[var(--admin-coral-deep)]/8 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.08em] text-[var(--admin-coral-deep)]/55 dark:bg-zinc-800 dark:text-zinc-500">
+                        <span className="shrink-0 rounded-md bg-zinc-200/80 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.08em] text-zinc-500 dark:bg-zinc-800 dark:text-zinc-500">
                           {ADMIN_NAV_UNAVAILABLE_BADGE}
                         </span>
                       </span>
@@ -513,10 +511,10 @@ function AdminSidebarFallback() {
         <div className="flex flex-col items-center text-center">
           <SidebarProductBrand />
         </div>
-        <div className="mt-3.5 flex w-full items-center gap-2.5 rounded-lg border border-[color-mix(in_srgb,var(--admin-coral-deep)_16%,transparent)] bg-white/55 px-2.5 py-2 dark:border-zinc-700/70 dark:bg-zinc-900/55">
+        <div className="mt-3.5 flex w-full items-center gap-2.5 rounded-lg border border-zinc-200 bg-white px-2.5 py-2 dark:border-zinc-700/70 dark:bg-zinc-900/55">
           <span className="size-8 shrink-0 rounded-md bg-[#3d3d3f]" />
           <span className="min-w-0 flex-1">
-            <span className="block h-3 w-20 rounded bg-[var(--admin-coral-deep)]/15 dark:bg-zinc-700" />
+            <span className="block h-3 w-20 rounded bg-zinc-200 dark:bg-zinc-700" />
           </span>
         </div>
       </div>

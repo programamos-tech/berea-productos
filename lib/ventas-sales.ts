@@ -35,7 +35,7 @@ export function ventaFormaPagoLabel(
   return "En línea";
 }
 
-/** Pill de forma de pago (colores para escanear la tabla). */
+/** Pill de forma de pago (neutros — sin lluvia de ámbar/coral). */
 export function ventaFormaPagoBadge(
   wompiReference: string | null | undefined,
   opts?: VentaFormaPagoOpts,
@@ -45,28 +45,28 @@ export function ventaFormaPagoBadge(
     return {
       label: "Efectivo",
       className:
-        "bg-amber-50 text-amber-900 ring-1 ring-amber-200/90 dark:bg-amber-950/45 dark:text-amber-100 dark:ring-amber-700/50",
+        "bg-zinc-100 text-zinc-800 ring-1 ring-zinc-200/80 dark:bg-zinc-800/80 dark:text-zinc-100 dark:ring-zinc-600/70",
     };
   }
   if (r === "POS:transfer") {
     return {
       label: "Transferencia",
       className:
-        "bg-sky-50 text-sky-900 ring-1 ring-sky-200/90 dark:bg-sky-950/45 dark:text-sky-100 dark:ring-sky-700/50",
+        "bg-zinc-100 text-zinc-800 ring-1 ring-zinc-200/80 dark:bg-zinc-800/80 dark:text-zinc-100 dark:ring-zinc-600/70",
     };
   }
   if (r === "POS:mixed") {
     return {
       label: "Mixto",
       className:
-        "bg-violet-50 text-violet-900 ring-1 ring-violet-200/90 dark:bg-violet-950/45 dark:text-violet-100 dark:ring-violet-700/50",
+        "bg-zinc-100 text-zinc-800 ring-1 ring-zinc-200/80 dark:bg-zinc-800/80 dark:text-zinc-100 dark:ring-zinc-600/70",
     };
   }
   if (r === "POS:quotation") {
     return {
       label: "Cotización",
       className:
-        "bg-violet-50 text-violet-900 ring-1 ring-violet-200/90 dark:bg-violet-950/45 dark:text-violet-100 dark:ring-violet-700/50",
+        "bg-zinc-100 text-zinc-800 ring-1 ring-zinc-200/80 dark:bg-zinc-800/80 dark:text-zinc-100 dark:ring-zinc-600/70",
     };
   }
   if (r.startsWith("POS:")) {
@@ -80,36 +80,26 @@ export function ventaFormaPagoBadge(
     return {
       label: "Transferencia (web)",
       className:
-        "bg-sky-50 text-sky-900 ring-1 ring-sky-200/90 dark:bg-sky-950/45 dark:text-sky-100 dark:ring-sky-700/50",
+        "bg-zinc-100 text-zinc-800 ring-1 ring-zinc-200/80 dark:bg-zinc-800/80 dark:text-zinc-100 dark:ring-zinc-600/70",
     };
   }
   return {
     label: "En línea",
     className:
-      "bg-indigo-50 text-indigo-900 ring-1 ring-indigo-200/90 dark:bg-indigo-950/45 dark:text-indigo-100 dark:ring-indigo-700/50",
+      "bg-zinc-100 text-zinc-800 ring-1 ring-zinc-200/80 dark:bg-zinc-800/80 dark:text-zinc-100 dark:ring-zinc-600/70",
   };
 }
 
-/** Color de letra + bold (sin pastilla), para listados limpios. */
+/** Color de letra (sin pastilla), para listados limpios. */
 export function ventaFormaPagoTone(
   wompiReference: string | null | undefined,
   opts?: VentaFormaPagoOpts,
 ): { label: string; className: string } {
   const { label } = ventaFormaPagoBadge(wompiReference, opts);
-  const r = wompiReference?.trim() ?? "";
-  if (r === "POS:cash") {
-    return { label, className: "font-semibold text-amber-700 dark:text-amber-300" };
-  }
-  if (r === "POS:transfer" || opts?.checkoutPaymentMethod === "transfer") {
-    return { label, className: "font-semibold text-sky-700 dark:text-sky-300" };
-  }
-  if (r === "POS:mixed" || r === "POS:quotation") {
-    return { label, className: "font-semibold text-violet-700 dark:text-violet-300" };
-  }
-  if (r.startsWith("POS:")) {
-    return { label, className: "font-semibold text-zinc-700 dark:text-zinc-300" };
-  }
-  return { label, className: "font-semibold text-indigo-700 dark:text-indigo-300" };
+  return {
+    label,
+    className: "font-medium text-zinc-700 dark:text-zinc-300",
+  };
 }
 
 export type VentaPagoFilter = "all" | "cash" | "transfer" | "mixed" | "online";

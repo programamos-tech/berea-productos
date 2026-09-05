@@ -59,14 +59,15 @@ export const storeLogoPath =
   process.env.NEXT_PUBLIC_STORE_LOGO?.trim() || "/logo-finala.png";
 
 /**
- * Logo del producto Berea en el sidebar del backoffice (fondo transparente).
+ * Logo Berea House (letras #0197b2, fondo transparente) en el sidebar.
  * Override: `NEXT_PUBLIC_ADMIN_SIDEBAR_LOGO`.
  */
 export const adminSidebarLogoPath =
-  process.env.NEXT_PUBLIC_ADMIN_SIDEBAR_LOGO?.trim() || "/logo-berea-mark.png";
+  process.env.NEXT_PUBLIC_ADMIN_SIDEBAR_LOGO?.trim() ||
+  "/logo-berea-productos-v3.png";
 
 /** Nombre del producto / sistema en el backoffice (marca Berea). */
-export const adminProductBrand = "Berea";
+export const adminProductBrand = "Berea House";
 
 /**
  * Cuenta SaaS / workspace en el sidebar.
