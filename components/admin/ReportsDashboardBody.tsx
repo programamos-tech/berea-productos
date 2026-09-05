@@ -24,6 +24,7 @@ import {
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Suspense } from "react";
 import { formatCop } from "@/lib/money";
+import { ReportProfitInfoTip } from "@/components/admin/ReportProfitInfoTip";
 
 const labelClass =
   "text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500 dark:text-zinc-500";
@@ -34,19 +35,26 @@ function Metric({
   hint,
   staggerMs = 0,
   labelClassName,
+  labelExtra,
 }: {
   label: string;
   children: React.ReactNode;
   hint?: React.ReactNode;
   staggerMs?: number;
   labelClassName?: string;
+  labelExtra?: React.ReactNode;
 }) {
   return (
     <div
       className="reports-metric-card min-w-0"
       style={{ ["--reports-stagger" as string]: `${staggerMs}ms` }}
     >
-      <p className={labelClassName ?? labelClass}>{label}</p>
+      <p
+        className={`inline-flex items-center gap-1 ${(labelClassName ?? labelClass)}`}
+      >
+        <span>{label}</span>
+        {labelExtra}
+      </p>
       <div className="mt-1.5 text-xl font-semibold tabular-nums tracking-tight text-zinc-900 dark:text-zinc-50 sm:text-2xl">
         {children}
       </div>
@@ -233,13 +241,9 @@ export async function ReportsDashboardBody({
             />
           </Metric>
 
-          <Metric label="Facturas anuladas" staggerMs={90}>
-            <StaticInteger value={anuladas} />
-          </Metric>
-
           <Metric
             label="Egresos"
-            staggerMs={120}
+            staggerMs={90}
             hint={
               isTienda ? undefined : (
                 <>
@@ -254,13 +258,21 @@ export async function ReportsDashboardBody({
 
           <Metric
             label={gananciaShown < 0 ? "Pérdida" : "Ganancia"}
-            staggerMs={150}
+            staggerMs={120}
             labelClassName={
               gananciaShown < 0
                 ? "text-[10px] font-semibold uppercase tracking-[0.14em] text-red-600 dark:text-red-400"
                 : gananciaShown > 0
                   ? "text-[10px] font-semibold uppercase tracking-[0.14em] text-emerald-600 dark:text-emerald-400"
                   : labelClass
+            }
+            labelExtra={
+              <ReportProfitInfoTip
+                mode={isTienda ? "neta" : "bruta"}
+                margenCents={gananciaBruta}
+                egresosCents={egresosPeriod}
+                resultadoCents={gananciaShown}
+              />
             }
           >
             <span
@@ -278,7 +290,7 @@ export async function ReportsDashboardBody({
 
           <Metric
             label="Stock"
-            staggerMs={180}
+            staggerMs={150}
             hint={
               stockInvestmentTrend?.changeNetPercent != null ? (
                 <span
@@ -303,6 +315,10 @@ export async function ReportsDashboardBody({
             }
           >
             <StaticCopCents cents={stockInversionNet} />
+          </Metric>
+
+          <Metric label="Facturas anuladas" staggerMs={180}>
+            <StaticInteger value={anuladas} />
           </Metric>
         </div>
       </div>
