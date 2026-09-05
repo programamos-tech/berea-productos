@@ -14,6 +14,7 @@ export function AdminDashboardShell({
   allowedNavHrefs,
   notifyNewWebOrders = false,
   cashGate = null,
+  sessionUser,
 }: {
   children: React.ReactNode;
   /** Hrefs del menú lateral permitidos para esta sesión (incluye `/admin/cuenta` y `/`). */
@@ -25,6 +26,11 @@ export function AdminDashboardShell({
     displayName: string | null;
     suggestedOpeningFloatCents?: number;
   } | null;
+  /** Usuario autenticado para el menú superior (nombre + email). */
+  sessionUser: {
+    displayName: string;
+    email: string;
+  };
 }) {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const pathname = usePathname();
@@ -85,6 +91,8 @@ export function AdminDashboardShell({
             menuOpen={mobileNavOpen}
             onMenuClick={() => setMobileNavOpen(true)}
             showOrderNotifications={notifyNewWebOrders && !mustOpen}
+            displayName={sessionUser.displayName}
+            email={sessionUser.email}
           />
           <main className="min-w-0 flex-1 overflow-x-hidden p-3 sm:p-4 md:p-6 print:bg-white print:p-8">
             {children}

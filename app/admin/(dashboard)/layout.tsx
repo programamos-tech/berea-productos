@@ -70,6 +70,10 @@ export default async function AdminDashboardLayout({
       allowedNavHrefs={allowedNavHrefs}
       notifyNewWebOrders={perm.permissions.ventas_ver}
       cashGate={cashGate}
+      sessionUser={{
+        displayName: perm.displayName,
+        email: perm.email,
+      }}
     >
       {children}
     </AdminDashboardShell>

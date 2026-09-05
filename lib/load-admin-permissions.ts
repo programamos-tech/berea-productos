@@ -16,6 +16,8 @@ async function loadAdminPermissionsUncached(): Promise<{
   jobRole: CollaboratorJobRole;
   tenantId: string;
   tenantSlug: string;
+  displayName: string;
+  email: string;
 } | null> {
   const supabase = await createSupabaseServerClient();
   const authResult = (await withTimeout(
@@ -28,7 +30,9 @@ async function loadAdminPermissionsUncached(): Promise<{
   const profileResult = await withTimeout(
     supabase
       .from("profiles")
-      .select("permissions, job_role, tenant_id, tenants!inner(slug)")
+      .select(
+        "permissions, job_role, tenant_id, display_name, tenants!inner(slug)",
+      )
       .eq("id", user.id)
       .maybeSingle(),
     ADMIN_AUTH_TIMEOUT_MS,
@@ -68,12 +72,22 @@ async function loadAdminPermissionsUncached(): Promise<{
     jobRole,
   );
 
+  const email = (user.email ?? "").trim();
+  const profileName =
+    row.display_name != null ? String(row.display_name).trim() : "";
+  const displayName =
+    profileName ||
+    email.split("@")[0]?.trim() ||
+    "Administrador";
+
   return {
     userId: user.id,
     permissions,
     jobRole,
     tenantId,
     tenantSlug,
+    displayName,
+    email,
   };
 }
 

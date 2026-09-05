@@ -7,6 +7,14 @@ import { ReportsDashboardBody } from "@/components/admin/ReportsDashboardBody";
 import { ReportsHeaderMeta } from "@/components/admin/ReportsHeaderMeta";
 import { ReportsRefreshButton } from "@/components/admin/ReportsRefreshButton";
 import {
+  ReportActivityFeed,
+  ReportActivityFeedSkeleton,
+} from "@/components/admin/ReportActivityFeed";
+import {
+  ReportMonthlyChartsSection,
+  ReportMonthlyChartsSkeleton,
+} from "@/components/admin/ReportMonthlyChartsSection";
+import {
   currentYearMonthInReportStore,
   parseReportRangeFromSearchParams,
   parseReportTiendaMonthFromSearchParams,
@@ -33,22 +41,19 @@ type PageProps = {
 const reportsViewportClass =
   "flex min-h-0 flex-1 flex-col gap-3 overflow-x-hidden overflow-y-auto lg:h-[calc(100dvh-4rem-3rem)] lg:gap-2.5 lg:overflow-hidden";
 
-function ReportsDashboardSkeleton() {
+function ReportsKpisSkeleton() {
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-4" role="status">
-      <span className="sr-only">Cargando reportes…</span>
-      <div className="grid shrink-0 grid-cols-2 gap-x-4 gap-y-4 sm:gap-x-6 sm:gap-y-5 md:grid-cols-3 xl:grid-cols-6">
-        {Array.from({ length: 6 }).map((_, i) => (
-          <div
-            key={i}
-            className="h-16 animate-pulse rounded-lg bg-zinc-100/50 dark:bg-zinc-900/50 motion-reduce:animate-none"
-          />
-        ))}
-      </div>
-      <div className="grid min-h-0 flex-1 grid-cols-1 gap-5 border-t border-zinc-200/70 pt-4 dark:border-zinc-800 lg:grid-cols-12 lg:gap-6">
-        <div className="min-h-[16rem] animate-pulse rounded-lg bg-zinc-100/40 dark:bg-zinc-900/40 motion-reduce:animate-none lg:col-span-7" />
-        <div className="min-h-[14rem] max-h-[min(24rem,60vh)] animate-pulse rounded-lg bg-zinc-100/40 dark:bg-zinc-900/40 motion-reduce:animate-none lg:col-span-5 lg:max-h-none" />
-      </div>
+    <div
+      className="grid shrink-0 grid-cols-2 gap-x-4 gap-y-4 sm:gap-x-6 sm:gap-y-5 md:grid-cols-3 xl:grid-cols-6"
+      role="status"
+    >
+      <span className="sr-only">Cargando métricas…</span>
+      {Array.from({ length: 6 }).map((_, i) => (
+        <div
+          key={i}
+          className="h-16 animate-pulse rounded-lg bg-zinc-100/50 dark:bg-zinc-900/50 motion-reduce:animate-none"
+        />
+      ))}
     </div>
   );
 }
@@ -101,6 +106,8 @@ export default async function AdminHomePage({ searchParams }: PageProps) {
     chartTo,
   );
 
+  const streamKey = `${vista}-${rangeFrom}-${rangeTo}`;
+
   return (
     <div className={reportsViewportClass}>
       <header className="flex w-full shrink-0 flex-wrap items-center justify-between gap-x-3 gap-y-2">
@@ -138,26 +145,48 @@ export default async function AdminHomePage({ searchParams }: PageProps) {
         </Suspense>
       </header>
 
-      <Suspense
-        key={`${vista}-${rangeFrom}-${rangeTo}`}
-        fallback={<ReportsDashboardSkeleton />}
-      >
-        <ReportsDashboardBody
-          rangeFrom={rangeFrom}
-          rangeTo={rangeTo}
-          chartFrom={chartFrom}
-          chartTo={chartTo}
-          salesTrendCurrentFrom={salesTrendCurrentFrom}
-          salesTrendCurrentTo={salesTrendCurrentTo}
-          salesTrendPriorFrom={salesTrendPriorFrom}
-          salesTrendPriorTo={salesTrendPriorTo}
-          fetchFrom={fetchFrom}
-          fetchTo={fetchTo}
-          periodLabel={periodLabel}
-          todayKey={todayKey}
-          vista={vista}
-        />
-      </Suspense>
+      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-visible lg:overflow-hidden">
+        {/* KPIs y gráfica en paralelo: la chart ya no espera al dashboard agg. */}
+        <Suspense key={`kpis-${streamKey}`} fallback={<ReportsKpisSkeleton />}>
+          <ReportsDashboardBody
+            rangeFrom={rangeFrom}
+            rangeTo={rangeTo}
+            chartFrom={chartFrom}
+            chartTo={chartTo}
+            salesTrendCurrentFrom={salesTrendCurrentFrom}
+            salesTrendCurrentTo={salesTrendCurrentTo}
+            salesTrendPriorFrom={salesTrendPriorFrom}
+            salesTrendPriorTo={salesTrendPriorTo}
+            fetchFrom={fetchFrom}
+            fetchTo={fetchTo}
+            periodLabel={periodLabel}
+            todayKey={todayKey}
+            vista={vista}
+          />
+        </Suspense>
+
+        <div className="grid min-h-0 flex-1 grid-cols-1 gap-5 border-t border-zinc-200/70 pt-4 dark:border-zinc-800 lg:grid-cols-12 lg:gap-6">
+          <div className="flex min-h-0 min-w-0 flex-col lg:col-span-7">
+            <Suspense
+              key={`chart-${streamKey}`}
+              fallback={<ReportMonthlyChartsSkeleton />}
+            >
+              <ReportMonthlyChartsSection
+                todayKey={todayKey}
+                rangeFrom={rangeFrom}
+                rangeTo={rangeTo}
+                periodLabel={periodLabel}
+              />
+            </Suspense>
+          </div>
+
+          <section className="reports-chart-reveal flex max-h-[min(24rem,60vh)] min-h-[14rem] flex-col border-t border-zinc-200/70 pt-4 dark:border-zinc-800 sm:min-h-[16rem] lg:col-span-5 lg:max-h-none lg:min-h-0 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0">
+            <Suspense fallback={<ReportActivityFeedSkeleton />}>
+              <ReportActivityFeed />
+            </Suspense>
+          </section>
+        </div>
+      </div>
     </div>
   );
 }

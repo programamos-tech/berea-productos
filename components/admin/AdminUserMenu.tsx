@@ -8,7 +8,7 @@ import { useEffect, useRef, useState } from "react";
 type Props = {
   displayName: string;
   email: string;
-  /** Avatar renderizado en el servidor (p. ej. `CustomerAvatar`). */
+  /** Avatar renderizado en el servidor (p. ej. `AdminUserAvatar`). */
   avatar: ReactNode;
 };
 
@@ -72,18 +72,18 @@ export function AdminUserMenu({ displayName, email, avatar }: Props) {
           role="dialog"
           aria-modal="true"
           aria-labelledby="admin-logout-title"
-          className="absolute right-0 top-full z-[100] mt-2 w-[min(18rem,calc(100vw-2rem))] origin-top-right rounded-2xl border border-rose-200/60 bg-white p-4 shadow-[0_16px_48px_-16px_rgba(190,24,93,0.12)] ring-1 ring-rose-950/[0.06] dark:border-zinc-700 dark:bg-zinc-900 dark:shadow-[0_16px_48px_-16px_rgba(0,0,0,0.45)] dark:ring-white/[0.06] sm:w-80 sm:p-5"
+          className="absolute right-0 top-full z-[100] mt-2 w-[min(18rem,calc(100vw-2rem))] origin-top-right rounded-2xl border border-[color-mix(in_srgb,var(--admin-coral)_28%,transparent)] bg-white p-4 shadow-[0_16px_48px_-16px_color-mix(in_srgb,var(--admin-coral-deep)_22%,transparent)] ring-1 ring-[color-mix(in_srgb,var(--admin-coral-deep)_8%,transparent)] dark:border-zinc-700 dark:bg-zinc-900 dark:shadow-[0_16px_48px_-16px_rgba(0,0,0,0.45)] dark:ring-white/[0.06] sm:w-80 sm:p-5"
         >
           <Link
             href="/admin/cuenta"
             onClick={() => setOpen(false)}
-            className="block rounded-xl border border-rose-200/70 bg-rose-50/40 px-3.5 py-2.5 text-sm font-semibold text-rose-950 transition hover:border-rose-300/80 hover:bg-rose-50/70 dark:border-zinc-600 dark:bg-zinc-800/80 dark:text-zinc-100 dark:hover:bg-zinc-800"
+            className="block rounded-xl border border-[color-mix(in_srgb,var(--admin-coral)_32%,transparent)] bg-[var(--admin-coral-mist)]/50 px-3.5 py-2.5 text-sm font-semibold text-[var(--admin-coral-deep)] transition hover:border-[color-mix(in_srgb,var(--admin-coral)_48%,transparent)] hover:bg-[var(--admin-coral-mist)] dark:border-zinc-600 dark:bg-zinc-800/80 dark:text-zinc-100 dark:hover:bg-zinc-800"
           >
             Mi cuenta
           </Link>
           <h2
             id="admin-logout-title"
-            className="mt-4 text-base font-semibold text-rose-950 dark:text-zinc-100"
+            className="mt-4 text-base font-semibold text-[var(--admin-coral-deep)] dark:text-zinc-100"
           >
             Cerrar sesión
           </h2>
@@ -94,14 +94,14 @@ export function AdminUserMenu({ displayName, email, avatar }: Props) {
             <button
               type="button"
               onClick={() => setOpen(false)}
-              className="rounded-xl border border-rose-200/70 bg-white px-3.5 py-2.5 text-sm font-semibold text-rose-950 transition hover:border-rose-300/80 hover:bg-rose-50/60 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:bg-zinc-700"
+              className="rounded-xl border border-[color-mix(in_srgb,var(--admin-coral)_32%,transparent)] bg-white px-3.5 py-2.5 text-sm font-semibold text-[var(--admin-coral-deep)] transition hover:border-[color-mix(in_srgb,var(--admin-coral)_48%,transparent)] hover:bg-[var(--admin-coral-mist)]/60 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:bg-zinc-700"
             >
               Cancelar
             </button>
             <form action={signOutAdmin} className="sm:inline">
               <button
                 type="submit"
-                className="w-full rounded-xl border border-rose-950 bg-rose-950 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-rose-900 hover:border-rose-900 sm:w-auto"
+                className="w-full rounded-xl border border-[var(--admin-coral-deep)] bg-[var(--admin-coral-deep)] px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:border-[var(--admin-coral-hover)] hover:bg-[var(--admin-coral-hover)] sm:w-auto"
               >
                 Cerrar sesión
               </button>

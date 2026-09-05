@@ -1,15 +1,7 @@
 import {
-  ReportActivityFeed,
-  ReportActivityFeedSkeleton,
-} from "@/components/admin/ReportActivityFeed";
-import {
   ReportDayCashCloseChip,
   ReportDayCashCloseChipSkeleton,
 } from "@/components/admin/ReportDayCashCloseChip";
-import {
-  ReportMonthlyChartsSection,
-  ReportMonthlyChartsSkeleton,
-} from "@/components/admin/ReportMonthlyChartsSection";
 import {
   StaticCopCents,
   StaticInteger,
@@ -192,7 +184,7 @@ export async function ReportsDashboardBody({
   let cajaHoyCents = 0;
   try {
     const supabase = await createSupabaseServerClient();
-    const dashboard = await fetchAdminReportDashboardData(supabase, {
+    const dashboardPromise = fetchAdminReportDashboardData(supabase, {
       rangeFrom,
       rangeTo,
       chartFrom,
@@ -205,19 +197,27 @@ export async function ReportsDashboardBody({
       fetchTo,
       periodLabel,
     });
+    const cashPromise =
+      vista === "tienda"
+        ? Promise.resolve(0)
+        : (async () => {
+            const arrastreHoy = await fetchCashArrastreCentsForReportStart(
+              supabase,
+              todayKey,
+            );
+            const live = await fetchCashDayLiveTotals(
+              supabase,
+              todayKey,
+              arrastreHoy,
+            );
+            return live.expectedCashCents;
+          })();
+    const [dashboard, cash] = await Promise.all([
+      dashboardPromise,
+      cashPromise,
+    ]);
     report = dashboard;
-    if (vista !== "tienda") {
-      const arrastreHoy = await fetchCashArrastreCentsForReportStart(
-        supabase,
-        todayKey,
-      );
-      const live = await fetchCashDayLiveTotals(
-        supabase,
-        todayKey,
-        arrastreHoy,
-      );
-      cajaHoyCents = live.expectedCashCents;
-    }
+    cajaHoyCents = cash;
   } catch (err) {
     console.error("[admin reportes] body:", err);
     return (
@@ -263,11 +263,11 @@ export async function ReportsDashboardBody({
 
   return (
     <div
-      key={`reports-body-${vista}-${rangeFrom}-${rangeTo}`}
-      className="flex min-h-0 flex-1 flex-col gap-4 overflow-visible lg:overflow-hidden"
+      key={`reports-kpis-${vista}-${rangeFrom}-${rangeTo}`}
+      className="shrink-0 overflow-visible"
     >
       {isSingleDayPeriod ? (
-        <div className="flex shrink-0 flex-wrap items-center gap-2">
+        <div className="mb-4 flex flex-wrap items-center gap-2">
           <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
             Cierre de caja
           </span>
@@ -277,12 +277,11 @@ export async function ReportsDashboardBody({
         </div>
       ) : null}
 
-      <div className="shrink-0">
-        <div
-          className={`grid grid-cols-2 gap-x-4 gap-y-4 sm:gap-x-6 sm:gap-y-5 md:grid-cols-3 ${
-            isTienda ? "xl:grid-cols-7" : "xl:grid-cols-6"
-          }`}
-        >
+      <div
+        className={`grid grid-cols-2 gap-x-4 gap-y-4 sm:gap-x-6 sm:gap-y-5 md:grid-cols-3 ${
+          isTienda ? "xl:grid-cols-7" : "xl:grid-cols-6"
+        }`}
+      >
           <Metric
             label="Total ingresos"
             icon={CircleDollarSign}
@@ -305,14 +304,14 @@ export async function ReportsDashboardBody({
           </Metric>
 
           {isTienda ? (
-            <Metric label="En caja" icon={Wallet} staggerMs={30}>
+            <Metric label="En caja" icon={Wallet} staggerMs={20}>
               <StaticCopCents cents={efectivo} />
             </Metric>
           ) : (
             <Metric
               label="Efectivo"
               icon={Banknote}
-              staggerMs={30}
+              staggerMs={20}
               hint={
                 efectivoPct != null ? (
                   <>{efectivoPct}% del cobrado</>
@@ -333,7 +332,7 @@ export async function ReportsDashboardBody({
           <Metric
             label={isTienda ? "En cuentas" : "Transferencia"}
             icon={ArrowLeftRight}
-            staggerMs={60}
+            staggerMs={40}
             hint={
               isTienda
                 ? undefined
@@ -356,7 +355,7 @@ export async function ReportsDashboardBody({
             <Metric
               label="Ganancia bruta"
               icon={TrendingUp}
-              staggerMs={90}
+              staggerMs={50}
               labelExtra={
                 <ReportMetricInfoTip>
                   <p>
@@ -382,7 +381,7 @@ export async function ReportsDashboardBody({
           <Metric
             label="Egresos"
             icon={ArrowDownLeft}
-            staggerMs={isTienda ? 120 : 90}
+            staggerMs={isTienda ? 60 : 50}
             hint={
               isTienda ? (
                 <EgresosMixHint
@@ -404,7 +403,7 @@ export async function ReportsDashboardBody({
             <Metric
               label={gananciaNeta < 0 ? "Pérdida" : "Ganancia"}
               icon={gananciaNeta < 0 ? TrendingDown : TrendingUp}
-              staggerMs={150}
+              staggerMs={70}
               iconClassName={
                 gananciaNeta < 0
                   ? adminCashNegativeTextClass
@@ -433,7 +432,7 @@ export async function ReportsDashboardBody({
               </span>
             </Metric>
           ) : (
-            <Metric label="Dinero en caja" icon={Wallet} staggerMs={120}>
+            <Metric label="Dinero en caja" icon={Wallet} staggerMs={60}>
               <StaticCopCents
                 cents={cajaHoyCents}
                 className={
@@ -449,7 +448,7 @@ export async function ReportsDashboardBody({
             <Metric
               label="Stock"
               icon={Package}
-              staggerMs={180}
+              staggerMs={80}
               hint={
                 stockInvestmentTrend?.changeNetPercent != null ? (
                   <span
@@ -476,33 +475,10 @@ export async function ReportsDashboardBody({
               <StaticCopCents cents={stockInversionNet} />
             </Metric>
           ) : (
-            <Metric label="Facturas anuladas" icon={FileX2} staggerMs={150}>
+            <Metric label="Facturas anuladas" icon={FileX2} staggerMs={70}>
               <StaticInteger value={anuladas} />
             </Metric>
           )}
-        </div>
-      </div>
-
-      <div className="grid min-h-0 flex-1 grid-cols-1 gap-5 border-t border-zinc-200/70 pt-4 dark:border-zinc-800 lg:grid-cols-12 lg:gap-6">
-        <div className="flex min-h-0 min-w-0 flex-col lg:col-span-7">
-          <Suspense fallback={<ReportMonthlyChartsSkeleton />}>
-            <ReportMonthlyChartsSection
-              todayKey={todayKey}
-              rangeFrom={rangeFrom}
-              rangeTo={rangeTo}
-              periodLabel={periodLabel}
-            />
-          </Suspense>
-        </div>
-
-        <section
-          className="reports-chart-reveal flex max-h-[min(24rem,60vh)] min-h-[14rem] flex-col border-t border-zinc-200/70 pt-4 dark:border-zinc-800 sm:min-h-[16rem] lg:col-span-5 lg:max-h-none lg:min-h-0 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0"
-          style={{ ["--reports-chart-delay" as string]: "200ms" }}
-        >
-          <Suspense fallback={<ReportActivityFeedSkeleton />}>
-            <ReportActivityFeed />
-          </Suspense>
-        </section>
       </div>
     </div>
   );

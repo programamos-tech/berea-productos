@@ -2,13 +2,8 @@ import Link from "next/link";
 import { AdminGlobalSearch } from "@/components/admin/AdminGlobalSearch";
 import { AdminNotificationBell } from "@/components/admin/AdminNotificationBell";
 import { AdminThemeToggle } from "@/components/admin/AdminThemeToggle";
+import { AdminUserAvatar } from "@/components/admin/AdminUserAvatar";
 import { AdminUserMenu } from "@/components/admin/AdminUserMenu";
-import { CustomerAvatar } from "@/components/admin/CustomerAvatar";
-import {
-  adminOwnerAvatarSeed,
-  adminOwnerDisplayName,
-  adminOwnerEmail,
-} from "@/lib/admin-owner";
 
 function IconHelp() {
   return (
@@ -50,6 +45,8 @@ type AdminTopBarProps = {
   onMenuClick?: () => void;
   menuOpen?: boolean;
   showOrderNotifications?: boolean;
+  displayName: string;
+  email: string;
 };
 
 const iconBtnClass =
@@ -59,7 +56,9 @@ export function AdminTopBar({
   onMenuClick,
   menuOpen,
   showOrderNotifications = false,
-}: AdminTopBarProps = {}) {
+  displayName,
+  email,
+}: AdminTopBarProps) {
   return (
     <header className="sticky top-0 z-50 w-full min-w-0 overflow-visible border-b border-[color-mix(in_srgb,var(--admin-coral)_22%,transparent)] bg-white/90 backdrop-blur-md print:hidden dark:border-zinc-800 dark:bg-zinc-900/90">
       <div className="flex h-14 min-w-0 items-center gap-2 overflow-visible px-3 sm:h-16 sm:gap-3 sm:px-6">
@@ -117,15 +116,9 @@ export function AdminTopBar({
           </div>
 
           <AdminUserMenu
-            displayName={adminOwnerDisplayName}
-            email={adminOwnerEmail}
-            avatar={
-              <CustomerAvatar
-                seed={adminOwnerAvatarSeed}
-                size={40}
-                label={`Avatar de ${adminOwnerDisplayName}`}
-              />
-            }
+            displayName={displayName}
+            email={email}
+            avatar={<AdminUserAvatar displayName={displayName} size={40} />}
           />
         </div>
       </div>

@@ -6,6 +6,7 @@ import {
 } from "@/lib/admin-report-monthly-pulse";
 import { fetchAdminReportTops } from "@/lib/admin-report-tops";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { Suspense } from "react";
 
 export function ReportMonthlyChartsSkeleton() {
   return (
@@ -23,6 +24,46 @@ export function ReportMonthlyChartsSkeleton() {
   );
 }
 
+function ReportTopsSkeleton() {
+  return (
+    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-4" role="status">
+      <div className="h-40 animate-pulse rounded-xl bg-zinc-100/40 dark:bg-zinc-900/40" />
+      <div className="h-40 animate-pulse rounded-xl bg-zinc-100/40 dark:bg-zinc-900/40" />
+      <span className="sr-only">Cargando tops…</span>
+    </div>
+  );
+}
+
+async function ReportTopsSection({
+  rangeFrom,
+  rangeTo,
+  periodLabel,
+}: {
+  rangeFrom: string;
+  rangeTo: string;
+  periodLabel: string;
+}) {
+  try {
+    const supabase = await createSupabaseServerClient();
+    const tops = await fetchAdminReportTops(supabase, rangeFrom, rangeTo, 5);
+    const periodHint =
+      rangeFrom === rangeTo ? periodLabel : `En ${periodLabel}`;
+    return (
+      <ReportTopsCards
+        clients={tops.clients}
+        products={tops.products}
+        periodHint={periodHint}
+      />
+    );
+  } catch (err) {
+    console.error("[admin reportes] tops:", err);
+    return null;
+  }
+}
+
+/**
+ * Gráfica mensual (RPC rápido) + tops en Suspense aparte para no bloquear el chart.
+ */
 export async function ReportMonthlyChartsSection({
   todayKey,
   rangeFrom,
@@ -36,20 +77,13 @@ export async function ReportMonthlyChartsSection({
 }) {
   try {
     const supabase = await createSupabaseServerClient();
-    const [pulse, tops] = await Promise.all([
-      fetchAdminReportMonthlyPulse(supabase, { todayYmd: todayKey }),
-      fetchAdminReportTops(supabase, rangeFrom, rangeTo, 5),
-    ]);
-
-    const periodHint =
-      rangeFrom === rangeTo ? periodLabel : `En ${periodLabel}`;
+    const pulse = await fetchAdminReportMonthlyPulse(supabase, {
+      todayYmd: todayKey,
+    });
 
     return (
       <div className="flex min-h-0 flex-1 flex-col gap-4">
-        <div
-          className="reports-chart-reveal w-full min-w-0 shrink-0"
-          style={{ ["--reports-chart-delay" as string]: "100ms" }}
-        >
+        <div className="reports-chart-reveal w-full min-w-0 shrink-0">
           <ReportMonthlyResultChart
             months={pulse.months}
             highlightYearMonth={pulseHighlightYearMonth(
@@ -60,11 +94,13 @@ export async function ReportMonthlyChartsSection({
           />
         </div>
         <div className="w-full min-w-0 shrink-0">
-          <ReportTopsCards
-            clients={tops.clients}
-            products={tops.products}
-            periodHint={periodHint}
-          />
+          <Suspense fallback={<ReportTopsSkeleton />}>
+            <ReportTopsSection
+              rangeFrom={rangeFrom}
+              rangeTo={rangeTo}
+              periodLabel={periodLabel}
+            />
+          </Suspense>
         </div>
       </div>
     );

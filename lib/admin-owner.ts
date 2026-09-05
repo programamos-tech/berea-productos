@@ -1,6 +1,6 @@
-/** Nombre visible del propietario en el panel admin (sidebar, barra superior). */
+/** Fallback de marca si no hay perfil/sesión (p. ej. builds estáticos). */
 export const adminOwnerDisplayName =
-  process.env.NEXT_PUBLIC_ADMIN_OWNER_NAME ?? "Milagros Guacarí";
+  process.env.NEXT_PUBLIC_ADMIN_OWNER_NAME ?? "Berea Productos";
 
 /** Correo visible; por defecto el de la plataforma. */
 export const adminOwnerEmail = (
@@ -10,8 +10,7 @@ export const adminOwnerEmail = (
 ).trim();
 
 /**
- * Semilla estable para DiceBear Notionists (mismo correo → mismo personaje).
- * Opcional: `NEXT_PUBLIC_ADMIN_OWNER_AVATAR_SEED` para fijar un avatar concreto.
+ * Semilla legacy (DiceBear). El top bar usa `AdminUserAvatar` con iniciales.
  */
 export const adminOwnerAvatarSeed =
   process.env.NEXT_PUBLIC_ADMIN_OWNER_AVATAR_SEED?.trim() ||
