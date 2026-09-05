@@ -8,10 +8,8 @@ import { formatCop } from "@/lib/money";
 type Pos = { top: number; left: number; maxWidth: number };
 
 export function ReportProfitInfoTip({
-  mode,
   resultadoCents,
 }: {
-  mode: "neta" | "bruta";
   resultadoCents: number;
 }) {
   const [open, setOpen] = useState(false);
@@ -88,46 +86,23 @@ export function ReportProfitInfoTip({
             }}
             className="rounded-lg border border-zinc-200 bg-white px-3 py-2.5 text-left text-[11px] font-normal normal-case leading-snug tracking-normal text-zinc-600 shadow-[0_16px_40px_-12px_rgba(0,0,0,0.45)] dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-300"
           >
-            {mode === "neta" ? (
-              <>
-                <p className="text-zinc-600 dark:text-zinc-300">
-                  Es lo que queda después de cubrir los egresos con la ganancia
-                  bruta de las ventas.
-                </p>
-                <p
-                  className={`mt-2 font-semibold tabular-nums ${
-                    isLoss
-                      ? "text-red-600 dark:text-red-400"
-                      : "text-emerald-600 dark:text-emerald-400"
-                  }`}
-                >
-                  {isLoss
-                    ? `Por ahora, ${formatCop(Math.abs(resultadoCents))} en rojo.`
-                    : resultadoCents > 0
-                      ? `Por ahora, ${formatCop(resultadoCents)} en verde.`
-                      : "Por ahora, en cero."}
-                </p>
-              </>
-            ) : (
-              <>
-                <p className="text-zinc-600 dark:text-zinc-300">
-                  Es la ganancia bruta de las ventas del periodo.
-                </p>
-                <p
-                  className={`mt-2 font-semibold tabular-nums ${
-                    resultadoCents > 0
-                      ? "text-emerald-600 dark:text-emerald-400"
-                      : resultadoCents < 0
-                        ? "text-red-600 dark:text-red-400"
-                        : "text-zinc-500"
-                  }`}
-                >
-                  {resultadoCents > 0
-                    ? `Por ahora, ${formatCop(resultadoCents)} en verde.`
-                    : formatCop(Math.abs(resultadoCents))}
-                </p>
-              </>
-            )}
+            <p className="text-zinc-600 dark:text-zinc-300">
+              Es lo que queda después de cubrir los egresos con la ganancia
+              bruta de las ventas.
+            </p>
+            <p
+              className={`mt-2 font-semibold tabular-nums ${
+                isLoss
+                  ? "text-red-600 dark:text-red-400"
+                  : "text-emerald-600 dark:text-emerald-400"
+              }`}
+            >
+              {isLoss
+                ? `Por ahora, ${formatCop(Math.abs(resultadoCents))} en rojo.`
+                : resultadoCents > 0
+                  ? `Por ahora, ${formatCop(resultadoCents)} en verde.`
+                  : "Por ahora, en cero."}
+            </p>
           </div>,
           document.body,
         )

@@ -10,7 +10,6 @@ import { ReportPaymentDonut } from "@/components/admin/ReportPaymentDonut";
 import { ReportSalesWeekTrendChart } from "@/components/admin/ReportSalesWeekTrendChart";
 import {
   StaticCopCents,
-  StaticInteger,
 } from "@/components/admin/ReportsAnimatedFigures";
 import {
   prettyReportDayShortLabel,
@@ -29,7 +28,6 @@ import {
   ArrowLeftRight,
   Banknote,
   CircleDollarSign,
-  FileX2,
   Package,
   TrendingDown,
   TrendingUp,
@@ -165,7 +163,6 @@ export async function ReportsDashboardBody({
     totalCobradoPedidos,
     efectivo,
     transferencia,
-    anuladas,
     ventasPagadasPeriod,
     egresosPeriod,
     egresosTransferenciaBucketCents,
@@ -181,7 +178,6 @@ export async function ReportsDashboardBody({
   const transferenciaShown = isTienda
     ? transferencia - egresosTransferenciaBucketCents
     : transferencia;
-  const gananciaShown = isTienda ? gananciaNeta : gananciaBruta;
 
   const efectivoPct =
     totalCobradoPedidos > 0
@@ -299,41 +295,49 @@ export async function ReportsDashboardBody({
             <StaticCopCents cents={egresosPeriod} />
           </Metric>
 
+          <Metric label="Ganancia bruta" icon={TrendingUp} staggerMs={120}>
+            <StaticCopCents
+              cents={gananciaBruta}
+              className={
+                gananciaBruta < 0
+                  ? "text-red-600 dark:text-red-400"
+                  : gananciaBruta > 0
+                    ? undefined
+                    : "text-zinc-500"
+              }
+            />
+          </Metric>
+
           <Metric
-            label={gananciaShown < 0 ? "Pérdida" : "Ganancia"}
-            icon={gananciaShown < 0 ? TrendingDown : TrendingUp}
-            staggerMs={120}
+            label={gananciaNeta < 0 ? "Pérdida" : "Ganancia"}
+            icon={gananciaNeta < 0 ? TrendingDown : TrendingUp}
+            staggerMs={150}
             iconClassName={
-              gananciaShown < 0
+              gananciaNeta < 0
                 ? "text-red-500 dark:text-red-400"
-                : gananciaShown > 0
+                : gananciaNeta > 0
                   ? "text-emerald-500 dark:text-emerald-400"
                   : "text-zinc-400 dark:text-zinc-500"
             }
             labelClassName={
-              gananciaShown < 0
+              gananciaNeta < 0
                 ? "text-[10px] font-semibold uppercase tracking-[0.14em] text-red-600 dark:text-red-400"
-                : gananciaShown > 0
+                : gananciaNeta > 0
                   ? "text-[10px] font-semibold uppercase tracking-[0.14em] text-emerald-600 dark:text-emerald-400"
                   : labelClass
             }
-            labelExtra={
-              <ReportProfitInfoTip
-                mode={isTienda ? "neta" : "bruta"}
-                resultadoCents={gananciaShown}
-              />
-            }
+            labelExtra={<ReportProfitInfoTip resultadoCents={gananciaNeta} />}
           >
             <span
               className={
-                gananciaShown < 0
+                gananciaNeta < 0
                   ? "text-red-600 dark:text-red-400"
-                  : gananciaShown > 0
+                  : gananciaNeta > 0
                     ? "text-emerald-600 dark:text-emerald-400"
                     : "text-zinc-500"
               }
             >
-              <StaticCopCents cents={Math.abs(gananciaShown)} />
+              <StaticCopCents cents={Math.abs(gananciaNeta)} />
             </span>
           </Metric>
 
@@ -341,7 +345,7 @@ export async function ReportsDashboardBody({
             <Metric
               label="Stock"
               icon={Package}
-              staggerMs={150}
+              staggerMs={180}
               hint={
                 stockInvestmentTrend?.changeNetPercent != null ? (
                   <span
@@ -366,16 +370,6 @@ export async function ReportsDashboardBody({
               }
             >
               <StaticCopCents cents={stockInversionNet} />
-            </Metric>
-          ) : (
-            <Metric label="Facturas anuladas" icon={FileX2} staggerMs={150}>
-              <StaticInteger value={anuladas} />
-            </Metric>
-          )}
-
-          {isTienda ? (
-            <Metric label="Facturas anuladas" icon={FileX2} staggerMs={180}>
-              <StaticInteger value={anuladas} />
             </Metric>
           ) : null}
         </div>
