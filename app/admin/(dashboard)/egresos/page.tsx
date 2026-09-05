@@ -15,9 +15,10 @@ import { fetchAdminExpensesPage } from "@/lib/supabase/admin-expenses-list";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
   adminToolbarBtnBaseClass,
-  adminToolbarBtnPrimaryClass,
+  adminToolbarBtnActiveClass,
   adminToolbarIconBtnClass,
   adminPageTitleClass,
+  adminPageSubtitleClass,
 } from "@/lib/admin-ui";
 
 export const dynamic = "force-dynamic";
@@ -194,8 +195,11 @@ export default async function AdminEgresosPage({
       <header className="flex shrink-0 flex-wrap items-center justify-between gap-2 gap-y-2">
         <div className="min-w-0">
           <h1 className={adminPageTitleClass}>
-            Gastos y egresos
+            Gastos
           </h1>
+          <p className={adminPageSubtitleClass}>
+            Caja del turno, cuentas e impuestos del negocio
+          </p>
         </div>
         <div className="flex flex-wrap items-center justify-end gap-2">
           <ExpensesExportButton
@@ -204,7 +208,7 @@ export default async function AdminEgresosPage({
           {canCreate ? (
             <Link
               href={nuevoHref}
-              className={`${adminToolbarBtnBaseClass} ${adminToolbarBtnPrimaryClass}`}
+              className={`${adminToolbarBtnBaseClass} ${adminToolbarBtnActiveClass}`}
             >
               + Nuevo
             </Link>

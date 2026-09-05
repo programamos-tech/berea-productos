@@ -187,8 +187,6 @@ export function VentasPageShell({
   urlTo,
   dateFrom,
   dateTo,
-  defaultMonthApplied,
-  periodLabel,
   pageRequested,
 }: {
   qRaw: string;
@@ -198,8 +196,6 @@ export function VentasPageShell({
   urlTo: string | null;
   dateFrom: string | null;
   dateTo: string | null;
-  defaultMonthApplied: boolean;
-  periodLabel: string | null;
   pageRequested: number;
 }) {
   const suspenseKey = `${qRaw}|${status}|${payment}|${dateFrom ?? ""}|${dateTo ?? ""}|${pageRequested}`;
@@ -212,9 +208,7 @@ export function VentasPageShell({
             Ventas
           </h1>
           <p className={adminPageSubtitleClass}>
-            {defaultMonthApplied && periodLabel
-              ? `Mostrando ${periodLabel}`
-              : "Facturas de mostrador y pedidos"}
+            Facturas de mostrador y pedidos en línea
           </p>
         </div>
         <div className="flex flex-wrap items-center justify-end gap-2">

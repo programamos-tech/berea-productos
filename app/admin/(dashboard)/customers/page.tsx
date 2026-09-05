@@ -17,9 +17,10 @@ import { loadAdminPermissions } from "@/lib/load-admin-permissions";
 import { formatStoreDateTime } from "@/lib/store-datetime-format";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
+  adminToolbarBtnActiveClass,
   adminToolbarBtnBaseClass,
-  adminToolbarBtnPrimaryClass,
   adminToolbarIconBtnClass,
+  adminPageSubtitleClass,
   adminPageTitleClass,
 } from "@/lib/admin-ui";
 
@@ -202,6 +203,9 @@ export default async function AdminCustomersPage({
           <h1 className={adminPageTitleClass}>
             Clientes
           </h1>
+          <p className={adminPageSubtitleClass}>
+            Contactos, tipo de cliente y actividad de compra
+          </p>
         </div>
         <div className="flex flex-wrap items-center justify-end gap-2">
           <Link
@@ -219,7 +223,7 @@ export default async function AdminCustomersPage({
           {canCreateCustomer ? (
             <Link
               href="/admin/customers/new"
-              className={`${adminToolbarBtnBaseClass} ${adminToolbarBtnPrimaryClass}`}
+              className={`${adminToolbarBtnBaseClass} ${adminToolbarBtnActiveClass}`}
             >
               + Nuevo cliente
             </Link>

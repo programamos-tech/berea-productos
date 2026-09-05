@@ -81,10 +81,10 @@ export const PERMISSION_MODULES: PermissionModule[] = [
   },
   {
     id: "egresos",
-    label: "Gastos y egresos",
+    label: "Gastos",
     items: [
-      { key: "egresos_ver", label: "Ver gastos y egresos" },
-      { key: "egresos_crear", label: "Crear gastos y egresos" },
+      { key: "egresos_ver", label: "Ver gastos" },
+      { key: "egresos_crear", label: "Crear gastos" },
     ],
   },
   // Módulo Proveedores oculto del panel (permiso se conserva en DB por compatibilidad).
@@ -116,12 +116,12 @@ export const PERMISSION_MODULES: PermissionModule[] = [
       { key: "colaboradores_gestionar", label: "Gestionar colaboradores" },
       { key: "sucursales_ver", label: "Ver sucursales" },
       { key: "sucursales_gestionar", label: "Gestionar sucursales" },
-      { key: "actividades_ver", label: "Ver actividades", readOnly: true },
+      { key: "actividades_ver", label: "Ver registros", readOnly: true },
     ],
   },
   {
     id: "kits",
-    label: "Kits y combos",
+    label: "Kits",
     items: [
       { key: "kits_ver", label: "Ver kits" },
       { key: "kits_gestionar", label: "Crear y editar kits" },

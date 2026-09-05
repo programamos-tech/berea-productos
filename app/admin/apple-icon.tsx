@@ -3,7 +3,7 @@ import { ImageResponse } from "next/og";
 export const size = { width: 180, height: 180 };
 export const contentType = "image/png";
 
-/** Apple touch icon del backoffice Berea Productos. */
+/** Apple touch icon del backoffice Berea House. */
 export default function AdminAppleIcon() {
   return new ImageResponse(
     (
@@ -24,7 +24,7 @@ export default function AdminAppleIcon() {
             "ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif",
         }}
       >
-        bp
+        bh
       </div>
     ),
     { ...size },

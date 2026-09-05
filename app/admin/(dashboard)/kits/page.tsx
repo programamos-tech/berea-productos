@@ -1,4 +1,9 @@
 import Link from "next/link";
+import { RefreshCw } from "lucide-react";
+import {
+  KitsAdminTable,
+  type KitsAdminTableRow,
+} from "@/components/admin/KitsAdminTable";
 import { storagePublicObjectUrl } from "@/lib/storage-public-url";
 import { fetchKitsWithItems } from "@/lib/load-product-kits";
 import {
@@ -6,9 +11,15 @@ import {
   maxKitsAvailableFromItems,
   resolveKitSalePriceCents,
 } from "@/lib/product-kits";
-import { formatCop } from "@/lib/money";
 import { loadAdminPermissions } from "@/lib/load-admin-permissions";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import {
+  adminPageSubtitleClass,
+  adminPageTitleClass,
+  adminToolbarBtnActiveClass,
+  adminToolbarBtnBaseClass,
+  adminToolbarIconBtnClass,
+} from "@/lib/admin-ui";
 
 export const dynamic = "force-dynamic";
 
@@ -25,91 +36,79 @@ export default async function AdminKitsPage({
 
   const kits = await fetchKitsWithItems(supabase);
 
+  const rows: KitsAdminTableRow[] = kits.map((kit) => {
+    const items = kit.items ?? [];
+    return {
+      id: kit.id,
+      name: kit.name,
+      imageUrl: storagePublicObjectUrl(kit.image_path),
+      itemsCount: items.length,
+      priceCents: resolveKitSalePriceCents(kit, items, "pos"),
+      maxPos: maxKitsAvailableFromItems(items, "pos"),
+      maxStore: maxKitsAvailableFromItems(items, "storefront"),
+      available: kitIsAvailable(kit, "pos"),
+      published: Boolean(kit.is_published),
+    };
+  });
+
   return (
-    <div className="w-full min-w-0 space-y-6">
+    <div className="flex w-full min-w-0 max-w-none flex-col gap-4">
       {created ? (
-        <p className="rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm text-emerald-900 dark:border-emerald-900/50 dark:bg-emerald-950/35 dark:text-emerald-100">
+        <p className="rounded-lg border border-emerald-200/80 bg-emerald-50 px-3 py-2 text-sm text-emerald-900 dark:border-emerald-900/50 dark:bg-emerald-950/35 dark:text-emerald-100">
           Kit creado correctamente.
         </p>
       ) : null}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <p className="text-xs font-medium text-zinc-500">
-            <Link href="/admin" className="hover:text-zinc-800 dark:hover:text-zinc-200">
-              Reportes
-            </Link>
-            <span className="mx-1.5">/</span>
-            <span>Kits y combos</span>
-          </p>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
-            Kits y combos
-          </h1>
-          <p className="mt-2 max-w-2xl text-sm text-zinc-500">
-            Armá combos de varios productos. Solo se muestran en tienda y ventas si hay stock
-            suficiente para armarlos.
+
+      <header className="flex shrink-0 flex-wrap items-center justify-between gap-2 gap-y-2">
+        <div className="min-w-0">
+          <h1 className={adminPageTitleClass}>Kits</h1>
+          <p className={adminPageSubtitleClass}>
+            Combos de productos para tienda y mostrador
           </p>
         </div>
-        {canEdit ? (
+        <div className="flex flex-wrap items-center justify-end gap-2">
           <Link
-            href="/admin/kits/nuevo"
-            className="inline-flex rounded-lg border border-rose-950 bg-rose-950 px-4 py-2.5 text-sm font-semibold text-white hover:bg-rose-900"
+            href="/admin/kits"
+            className={adminToolbarIconBtnClass}
+            title="Recargar listado"
+            aria-label="Actualizar"
           >
-            + Nuevo kit
+            <RefreshCw
+              className="size-4 shrink-0"
+              strokeWidth={2.25}
+              aria-hidden
+            />
           </Link>
-        ) : null}
-      </div>
+          {canEdit ? (
+            <Link
+              href="/admin/kits/nuevo"
+              className={`${adminToolbarBtnBaseClass} ${adminToolbarBtnActiveClass}`}
+            >
+              + Nuevo kit
+            </Link>
+          ) : null}
+        </div>
+      </header>
 
-      {kits.length === 0 ? (
-        <p className="text-sm text-zinc-500">Todavía no hay kits. Creá el primero.</p>
-      ) : (
-        <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {kits.map((kit) => {
-            const items = kit.items ?? [];
-            const maxPos = maxKitsAvailableFromItems(items, "pos");
-            const maxStore = maxKitsAvailableFromItems(items, "storefront");
-            const available = kitIsAvailable(kit, "pos");
-            const price = resolveKitSalePriceCents(kit, items, "pos");
-            const img = storagePublicObjectUrl(kit.image_path);
-            return (
-              <li
-                key={kit.id}
-                className="rounded-xl border border-zinc-200/90 bg-white p-4 shadow-sm dark:border-zinc-700 dark:bg-zinc-900"
+      <section className="min-h-0 border-t border-zinc-200/70 pt-4 dark:border-zinc-800">
+        {rows.length === 0 ? (
+          <div className="py-8 text-center">
+            <p className="text-sm text-zinc-500 dark:text-zinc-400">
+              Todavía no hay kits.
+            </p>
+            {canEdit ? (
+              <Link
+                href="/admin/kits/nuevo"
+                className="mt-3 inline-block text-sm font-medium text-zinc-800 underline underline-offset-2 dark:text-zinc-200"
               >
-                {img ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={img} alt="" className="mb-3 h-28 w-full rounded-lg object-cover" />
-                ) : null}
-                <h2 className="font-semibold text-zinc-900 dark:text-zinc-100">{kit.name}</h2>
-                <p className="mt-1 text-sm text-zinc-500">
-                  {items.length} producto{items.length === 1 ? "" : "s"} · {formatCop(price)}
-                </p>
-                <p className="mt-2 text-xs">
-                  <span
-                    className={
-                      available
-                        ? "font-medium text-emerald-700"
-                        : "font-medium text-amber-800"
-                    }
-                  >
-                    {available ? "Disponible" : "Sin stock para armar"}
-                  </span>
-                  {" · "}
-                  POS: {maxPos} · Web: {maxStore}
-                </p>
-                <p className="mt-1 text-xs text-zinc-400">
-                  {kit.is_published ? "Publicado" : "Borrador"}
-                </p>
-                <Link
-                  href={`/admin/kits/${kit.id}/edit`}
-                  className="mt-3 inline-block text-sm font-medium text-rose-900 hover:underline dark:text-rose-300"
-                >
-                  {canEdit ? "Editar" : "Ver"}
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
-      )}
+                Crear el primero
+              </Link>
+            ) : null}
+          </div>
+        ) : (
+          <KitsAdminTable rows={rows} canEdit={canEdit} />
+        )}
+      </section>
     </div>
   );
 }

@@ -534,7 +534,7 @@ export function KitForm({
             </p>
           ) : null}
           <Link
-            href="/admin/kits"
+            href={mode === "edit" && kit ? `/admin/kits/${kit.id}` : "/admin/kits"}
             className="rounded-lg border border-zinc-200 px-5 py-2.5 text-sm font-medium text-zinc-700 dark:border-zinc-600 dark:text-zinc-200"
           >
             Cancelar

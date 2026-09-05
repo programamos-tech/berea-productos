@@ -27,10 +27,11 @@ import {
   StaticInteger,
 } from "@/components/admin/ReportsAnimatedFigures";
 import {
+  adminToolbarBtnActiveClass,
   adminToolbarBtnBaseClass,
   adminToolbarBtnIdleClass,
-  adminToolbarBtnPrimaryClass,
   adminToolbarIconBtnClass,
+  adminPageSubtitleClass,
   adminPageTitleClass,
 } from "@/lib/admin-ui";
 
@@ -244,8 +245,11 @@ export default async function AdminProductsPage({
         <header className="flex shrink-0 flex-wrap items-center justify-between gap-2 gap-y-2">
           <div className="min-w-0">
             <h1 className={adminPageTitleClass}>
-              Productos
+              Inventario
             </h1>
+            <p className={adminPageSubtitleClass}>
+              Catálogo, stock y precios de la tienda
+            </p>
           </div>
           <div className="flex flex-wrap items-center justify-end gap-2">
             {canManageCategories ? (
@@ -272,7 +276,7 @@ export default async function AdminProductsPage({
             {canCreateProduct ? (
               <Link
                 href="/admin/products/new"
-                className={`${adminToolbarBtnBaseClass} ${adminToolbarBtnPrimaryClass}`}
+                className={`${adminToolbarBtnBaseClass} ${adminToolbarBtnActiveClass}`}
               >
                 + Nuevo producto
               </Link>

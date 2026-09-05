@@ -256,7 +256,7 @@ export function AdminGlobalSearch() {
             <div className="p-1.5">
               {products.length > 0 ? (
                 <div>
-                  <p className={sectionTitle}>Productos</p>
+                  <p className={sectionTitle}>Inventario</p>
                   <ul className="space-y-0.5">
                     {products.map((p) => (
                       <li key={p.id}>

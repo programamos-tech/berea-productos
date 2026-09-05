@@ -3,10 +3,10 @@ import { AdminThemeProvider } from "@/components/admin/AdminThemeProvider";
 
 export const metadata: Metadata = {
   title: {
-    default: "Berea Productos",
-    template: "%s · Berea Productos",
+    default: "Berea House",
+    template: "%s · Berea House",
   },
-  applicationName: "Berea Productos",
+  applicationName: "Berea House",
 };
 
 export default function AdminRootLayout({

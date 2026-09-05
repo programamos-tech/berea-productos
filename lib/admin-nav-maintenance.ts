@@ -3,10 +3,6 @@
  * visibles en el menú (difuminadas) pero sin acceso.
  */
 export const ADMIN_NAV_MAINTENANCE_HREFS = [
-  "/admin/kits",
-  "/admin/cuenta",
-  "/admin/usuarios",
-  "/admin/actividades",
   "/admin/banners",
   "/admin/coupons",
   "/admin/envios",

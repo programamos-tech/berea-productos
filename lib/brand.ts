@@ -152,3 +152,21 @@ export const storeInstagramUrl =
 export const storeWhatsAppPrefilledText =
   process.env.NEXT_PUBLIC_WHATSAPP_TEXT ??
   "Hola, te escribo desde la tienda de Aleya Shop. Me gustaría recibir asesoría.";
+
+/**
+ * Soporte WhatsApp del backoffice Berea House (sidebar).
+ * Override: `NEXT_PUBLIC_ADMIN_SUPPORT_WHATSAPP` (solo dígitos o con formato).
+ */
+const adminSupportWhatsAppDigits =
+  process.env.NEXT_PUBLIC_ADMIN_SUPPORT_WHATSAPP?.replace(/\D/g, "") ||
+  "573001575829";
+
+export const adminSupportWhatsAppDisplay =
+  process.env.NEXT_PUBLIC_ADMIN_SUPPORT_WHATSAPP_LABEL?.trim() ||
+  "300 157 5829";
+
+export const adminSupportWhatsAppUrl = `https://wa.me/${adminSupportWhatsAppDigits}`;
+
+export const adminSupportWhatsAppPrefilledText =
+  process.env.NEXT_PUBLIC_ADMIN_SUPPORT_WHATSAPP_TEXT?.trim() ||
+  "Hola, escribo desde Berea House. Necesito ayuda con el panel.";

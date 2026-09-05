@@ -101,7 +101,7 @@ export function AdminTopBar({
             <Link
               href="/admin/actividades"
               className={iconBtnClass}
-              title="Registro de actividades"
+              title="Registros"
             >
               <IconPulse />
             </Link>

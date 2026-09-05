@@ -42,7 +42,6 @@ export function CashRegisterPageChrome({
   todayAlreadyClosed,
   hasOpenSession,
   todaySessionId,
-  todayLabel,
   modalMode,
   businessDayLabel,
   sessionId,
@@ -87,11 +86,7 @@ export function CashRegisterPageChrome({
             Caja
           </h1>
           <p className={adminPageSubtitleClass}>
-            {todayAlreadyClosed
-              ? `Cerrada · ${todayLabel}`
-              : hasOpenSession
-                ? `Abierta · ${businessDayLabel}`
-                : `Sin abrir · ${todayLabel}`}
+            Apertura, cierre y arqueo del efectivo del día
           </p>
         </div>
 

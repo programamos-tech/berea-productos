@@ -3,18 +3,20 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { updateStoreCustomer } from "@/app/actions/admin/store-customers";
-import { clampWholesaleDiscountPercent } from "@/lib/customer-wholesale-pricing";
+import { AdminFormSubmitButton } from "@/components/admin/AdminFormSubmitButton";
+import { CustomerAvatar } from "@/components/admin/CustomerAvatar";
 import {
   productInputClass as inputClass,
   productLabelClass as labelClass,
   productSectionTitle as sectionTitle,
 } from "@/components/admin/product-form-primitives";
+import { clampWholesaleDiscountPercent } from "@/lib/customer-wholesale-pricing";
+import { adminPanelLgClass } from "@/lib/admin-ui";
 
-const cardClass =
-  "rounded-xl border border-zinc-200 bg-white p-6 shadow-sm ring-1 ring-zinc-950/5 dark:border-zinc-700/90 dark:bg-zinc-900 dark:shadow-none dark:ring-white/[0.06]";
+const cardClass = `${adminPanelLgClass} p-4 sm:p-6`;
 
-const summaryInset =
-  "mt-4 rounded-lg border border-zinc-200/90 bg-white/60 p-4 text-sm dark:border-zinc-700 dark:bg-zinc-950/60";
+const radioClass =
+  "size-4 border-zinc-300 text-zinc-900 focus:ring-zinc-400/40 dark:border-zinc-600 dark:text-zinc-100";
 
 const LABEL_OPTIONS = ["Casa", "Oficina", "Negocio", "Otro"] as const;
 type LabelOption = (typeof LABEL_OPTIONS)[number];
@@ -111,11 +113,10 @@ export function EditCustomerHeader({
 }: {
   customerId: string;
   customerName: string;
-  avatarSeed?: string;
 }) {
   return (
-    <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-      <div>
+    <div className="mb-6 flex min-w-0 flex-col gap-4 sm:mb-8 sm:flex-row sm:items-start sm:justify-between">
+      <div className="min-w-0">
         <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
           <Link
             href="/admin/customers"
@@ -124,35 +125,18 @@ export function EditCustomerHeader({
             Clientes
           </Link>
           <span className="mx-1.5 text-zinc-300 dark:text-zinc-600">/</span>
-          <Link
-            href={`/admin/customers/${customerId}`}
-            className="text-zinc-600 hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-zinc-100"
-            title={customerName}
-          >
-            {customerName.length > 28
-              ? `${customerName.slice(0, 28)}…`
-              : customerName}
-          </Link>
-          <span className="mx-1.5 text-zinc-300 dark:text-zinc-600">/</span>
           <span className="text-zinc-700 dark:text-zinc-300">Editar</span>
         </p>
-        <h1 className="mt-2 text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 sm:text-3xl">
+        <h1 className="mt-2 text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 sm:text-2xl md:text-3xl">
           Editar cliente
         </h1>
-        <p className="mt-2 max-w-2xl text-sm text-zinc-500 dark:text-zinc-400">
-          Modifica los datos y direcciones. El historial de compras está en el{" "}
-          <Link
-            href={`/admin/customers/${customerId}`}
-            className="font-medium text-zinc-700 underline decoration-zinc-300 underline-offset-2 hover:text-zinc-900 dark:text-zinc-300 dark:decoration-zinc-600 dark:hover:text-zinc-100"
-          >
-            detalle del cliente
-          </Link>
-          .
+        <p className="mt-2 max-w-2xl break-words text-sm text-zinc-500 dark:text-zinc-400">
+          {customerName}
         </p>
       </div>
       <Link
         href={`/admin/customers/${customerId}`}
-        className="inline-flex size-10 shrink-0 items-center justify-center rounded-lg border border-zinc-200/90 bg-white text-zinc-600 transition hover:bg-zinc-50 hover:text-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+        className="inline-flex size-10 shrink-0 items-center justify-center self-start rounded-lg border border-zinc-200 bg-white text-zinc-600 shadow-sm transition hover:bg-zinc-50 hover:text-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300 dark:shadow-none dark:hover:bg-zinc-800 dark:hover:text-zinc-100 sm:self-auto"
         aria-label="Volver al detalle"
       >
         <span className="text-lg leading-none" aria-hidden>
@@ -189,6 +173,12 @@ export function EditCustomerForm(props: EditCustomerFormProps) {
   const [addresses, setAddresses] = useState<Addr[]>(() =>
     initialAddressesFromProps(addressRows, shippingFallback),
   );
+
+  const avatarSeed = (
+    email.trim() ||
+    phone.trim() ||
+    customerId
+  ).toLowerCase();
 
   const payload = useMemo(
     () =>
@@ -249,11 +239,29 @@ export function EditCustomerForm(props: EditCustomerFormProps) {
       />
       <input type="hidden" name="addresses_payload" value={payload} readOnly />
 
-      <div className="grid gap-6 lg:grid-cols-3 lg:gap-8">
-        <div className="space-y-6 lg:col-span-2">
+      <div className="grid gap-6 xl:grid-cols-3 xl:gap-8">
+        <div className="min-w-0 space-y-6 xl:col-span-2">
           <section className={cardClass}>
-            <h2 className={sectionTitle}>Datos personales</h2>
-            <div className="mt-5 grid gap-4 sm:grid-cols-2">
+            <h2 className={sectionTitle}>Datos del cliente</h2>
+
+            <div className="mt-6 flex items-center gap-4">
+              <CustomerAvatar
+                seed={avatarSeed}
+                size={72}
+                className="shadow-md ring-2 ring-zinc-200/90 dark:ring-zinc-600"
+                label={`Avatar de ${name.trim() || "cliente"}`}
+              />
+              <div className="min-w-0">
+                <p className="truncate text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                  {name.trim() || "Sin nombre"}
+                </p>
+                <p className="mt-0.5 truncate text-xs text-zinc-500 dark:text-zinc-400">
+                  {email.trim() || phone.trim() || "Sin contacto"}
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-8 grid gap-4 sm:grid-cols-2">
               <div className="sm:col-span-2">
                 <label htmlFor="ec-name" className={labelClass}>
                   Nombre completo{" "}
@@ -346,7 +354,7 @@ export function EditCustomerForm(props: EditCustomerFormProps) {
               <button
                 type="button"
                 onClick={addAddress}
-                className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-zinc-800 transition hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-zinc-800"
+                className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm font-medium text-zinc-800 transition hover:border-zinc-400 hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-zinc-800"
               >
                 <span aria-hidden>+</span> Añadir dirección
               </button>
@@ -356,10 +364,10 @@ export function EditCustomerForm(props: EditCustomerFormProps) {
               {addresses.map((a, i) => (
                 <div
                   key={a.key}
-                  className="rounded-lg border border-zinc-200 bg-zinc-50/80 p-4 sm:p-5 dark:border-zinc-700 dark:bg-zinc-950/50"
+                  className="rounded-xl border border-zinc-200 bg-zinc-50/80 p-4 sm:p-5 dark:border-zinc-700 dark:bg-zinc-950/50"
                 >
                   <div className="mb-4 flex items-center justify-between gap-2">
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-400 dark:text-zinc-500">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-500">
                       Dirección {i + 1}
                     </p>
                     {addresses.length > 1 ? (
@@ -458,7 +466,7 @@ export function EditCustomerForm(props: EditCustomerFormProps) {
           </section>
         </div>
 
-        <div className="space-y-6 lg:sticky lg:top-24 lg:col-span-1 lg:self-start">
+        <div className="min-w-0 space-y-6 xl:sticky xl:top-24 xl:col-span-1 xl:self-start">
           <section className={cardClass}>
             <h2 className={sectionTitle}>Tipo de cliente</h2>
             <div className="mt-5 space-y-4">
@@ -469,7 +477,7 @@ export function EditCustomerForm(props: EditCustomerFormProps) {
                     value="retail"
                     checked={customerKind === "retail"}
                     onChange={() => setCustomerKind("retail")}
-                    className="size-4 border-zinc-300 text-rose-950 focus:ring-rose-900/30 dark:border-zinc-600 dark:text-rose-300"
+                    className={radioClass}
                   />
                   Consumidor final
                 </label>
@@ -479,7 +487,7 @@ export function EditCustomerForm(props: EditCustomerFormProps) {
                     value="wholesale"
                     checked={customerKind === "wholesale"}
                     onChange={() => setCustomerKind("wholesale")}
-                    className="size-4 border-zinc-300 text-rose-950 focus:ring-rose-900/30 dark:border-zinc-600 dark:text-rose-300"
+                    className={radioClass}
                   />
                   Mayorista
                 </label>
@@ -522,70 +530,41 @@ export function EditCustomerForm(props: EditCustomerFormProps) {
           </section>
 
           <section className={cardClass}>
-            <h2 className={sectionTitle}>Resumen del cliente</h2>
-            <div className={summaryInset}>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-400 dark:text-zinc-500">
-                Cliente
-              </p>
-              <dl className="mt-3 space-y-2 text-zinc-700 dark:text-zinc-300">
-                <div className="flex justify-between gap-2">
-                  <dt className="text-zinc-500 dark:text-zinc-400">Nombre</dt>
-                  <dd className="max-w-[60%] truncate text-right text-zinc-900 dark:text-zinc-100">
-                    {name.trim() || "—"}
-                  </dd>
-                </div>
-                <div className="flex justify-between gap-2">
-                  <dt className="text-zinc-500 dark:text-zinc-400">Documento</dt>
-                  <dd className="max-w-[55%] truncate text-right font-mono text-xs text-zinc-900 dark:text-zinc-100">
-                    {documentId.trim() || "—"}
-                  </dd>
-                </div>
-                <div className="flex justify-between gap-2">
-                  <dt className="text-zinc-500 dark:text-zinc-400">Tipo</dt>
-                  <dd className="text-right text-zinc-800 dark:text-zinc-100">
-                    {customerKind === "wholesale" ? "Mayorista" : "Final"}
-                  </dd>
-                </div>
-              </dl>
-            </div>
-
-            <div className="mt-5 border-t border-zinc-200/70 pt-5 dark:border-zinc-800">
-              <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
-                {customerKind === "wholesale"
-                  ? "Descuento mayorista"
-                  : "Contacto"}
-              </p>
-              {customerKind === "wholesale" ? (
-                <p className="mt-1 text-2xl font-medium tabular-nums text-zinc-900 dark:text-zinc-100">
-                  {wholesalePct}%
-                </p>
-              ) : (
-                <p className="mt-1 truncate text-lg font-medium text-zinc-900 dark:text-zinc-100">
-                  {phone.trim() || email.trim() || "—"}
-                </p>
-              )}
-            </div>
-
-            <ul className="mt-4 space-y-1.5 border-t border-zinc-200/70 pt-4 text-sm dark:border-zinc-800">
-              <li className="flex justify-between text-zinc-600 dark:text-zinc-400">
-                <span>Teléfono</span>
-                <span className="max-w-[55%] truncate text-right text-zinc-900 dark:text-zinc-100">
+            <h2 className={sectionTitle}>Resumen</h2>
+            <dl className="mt-4 space-y-3 text-sm">
+              <div className="flex justify-between gap-2 border-b border-zinc-100 pb-2 dark:border-zinc-800">
+                <dt className="text-zinc-500 dark:text-zinc-400">Cliente</dt>
+                <dd className="max-w-[58%] truncate text-right font-medium text-zinc-900 dark:text-zinc-100">
+                  {name.trim() || "—"}
+                </dd>
+              </div>
+              <div className="flex justify-between gap-2 border-b border-zinc-100 pb-2 dark:border-zinc-800">
+                <dt className="text-zinc-500 dark:text-zinc-400">Documento</dt>
+                <dd className="max-w-[58%] truncate text-right font-mono text-xs font-medium text-zinc-900 dark:text-zinc-100">
+                  {documentId.trim() || "—"}
+                </dd>
+              </div>
+              <div className="flex justify-between gap-2 border-b border-zinc-100 pb-2 dark:border-zinc-800">
+                <dt className="text-zinc-500 dark:text-zinc-400">Tipo</dt>
+                <dd className="text-right font-medium text-zinc-900 dark:text-zinc-100">
+                  {customerKind === "wholesale"
+                    ? `Mayorista · ${wholesalePct}%`
+                    : "Consumidor final"}
+                </dd>
+              </div>
+              <div className="flex justify-between gap-2 border-b border-zinc-100 pb-2 dark:border-zinc-800">
+                <dt className="text-zinc-500 dark:text-zinc-400">Teléfono</dt>
+                <dd className="max-w-[58%] truncate text-right font-medium text-zinc-900 dark:text-zinc-100">
                   {phone.trim() || "—"}
-                </span>
-              </li>
-              <li className="flex justify-between text-zinc-600 dark:text-zinc-400">
-                <span>Correo</span>
-                <span className="max-w-[55%] truncate text-right text-zinc-900 dark:text-zinc-100">
-                  {email.trim() || "—"}
-                </span>
-              </li>
-              <li className="flex justify-between font-medium text-zinc-900 dark:text-zinc-100">
-                <span>Direcciones</span>
-                <span className="tabular-nums">
+                </dd>
+              </div>
+              <div className="flex justify-between gap-2">
+                <dt className="text-zinc-500 dark:text-zinc-400">Direcciones</dt>
+                <dd className="text-right font-medium tabular-nums text-zinc-900 dark:text-zinc-100">
                   {filledAddresses === 0 ? "Ninguna" : filledAddresses}
-                </span>
-              </li>
-            </ul>
+                </dd>
+              </div>
+            </dl>
 
             {wholesaleMissing.length > 0 ? (
               <p
@@ -594,20 +573,10 @@ export function EditCustomerForm(props: EditCustomerFormProps) {
               >
                 Completá {wholesaleMissing.join(", ")} para guardar.
               </p>
-            ) : (
-              <>
-                <p className="mt-5 text-xs font-medium text-zinc-500 dark:text-zinc-400">
-                  Guardar cambios
-                </p>
-                <p className="mt-1 text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
-                  Se actualizarán los datos del cliente. Las ventas previas no
-                  se modifican.
-                </p>
-              </>
-            )}
+            ) : null}
 
-            <button
-              type="submit"
+            <AdminFormSubmitButton
+              pendingLabel="Guardando…"
               disabled={!canSubmit}
               title={
                 !canSubmit
@@ -616,13 +585,12 @@ export function EditCustomerForm(props: EditCustomerFormProps) {
                     : "El nombre es obligatorio"
                   : undefined
               }
-              className="mt-4 w-full rounded-lg border border-rose-950 bg-rose-950 py-3.5 text-sm font-medium text-white transition hover:border-rose-900 hover:bg-rose-900 disabled:cursor-not-allowed disabled:border-zinc-200 disabled:bg-zinc-200 disabled:text-zinc-500 dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-white dark:disabled:border-zinc-700 dark:disabled:bg-zinc-800 dark:disabled:text-zinc-500"
             >
               Guardar cambios
-            </button>
+            </AdminFormSubmitButton>
             <Link
               href={`/admin/customers/${customerId}`}
-              className="mt-3 flex w-full items-center justify-center rounded-lg border border-zinc-200 bg-white py-3 text-sm font-medium text-zinc-800 transition hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-zinc-800"
+              className="mt-3 flex w-full items-center justify-center rounded-lg border border-zinc-300 bg-white py-3 text-sm font-medium text-zinc-800 transition hover:border-zinc-400 hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-zinc-800"
             >
               Cancelar
             </Link>

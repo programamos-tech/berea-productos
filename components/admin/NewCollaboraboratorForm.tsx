@@ -7,8 +7,7 @@ import {
   updateCollaboratorAction,
 } from "@/app/actions/admin/collaborators";
 import { AdminFormSubmitButton } from "@/components/admin/AdminFormSubmitButton";
-import { CustomerAvatar } from "@/components/admin/CustomerAvatar";
-import { useAdminTheme } from "@/components/admin/AdminThemeProvider";
+import { AdminUserAvatar } from "@/components/admin/AdminUserAvatar";
 import {
   productInputClass as inputClass,
   productLabelClass as labelClass,
@@ -22,16 +21,13 @@ import {
   type PermissionKey,
   type PermissionMap,
 } from "@/lib/admin-permissions";
+import { adminPanelLgClass } from "@/lib/admin-ui";
 import { slugUsername } from "@/lib/collaborator-utils";
 
-/** Superficie de formulario alineada con `data-admin-theme` (no solo `color-scheme`). */
-function collaboratorFormCardShell(resolved: "light" | "dark"): string {
-  return resolved === "dark"
-    ? "rounded-2xl border border-zinc-700/90 bg-zinc-900 shadow-none ring-1 ring-white/[0.06]"
-    : "rounded-2xl border border-zinc-200/90 bg-white shadow-sm ring-1 ring-zinc-950/5";
-}
+const cardClass = `${adminPanelLgClass} p-5 sm:p-6`;
 
-const AVATAR_VARIANTS = ["A", "B", "C", "D"] as const;
+const checkboxClass =
+  "mt-0.5 size-4 shrink-0 rounded border-zinc-300 text-zinc-900 focus:ring-zinc-400/40 disabled:cursor-not-allowed dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100";
 
 export type CollaboratorInitial = {
   profileId: string;
@@ -55,11 +51,11 @@ export function NewCollaboratorHeader() {
           <span className="mx-1.5 text-zinc-300 dark:text-zinc-600">/</span>
           <span className="text-zinc-700 dark:text-zinc-300">Nuevo colaborador</span>
         </p>
-        <h1 className="mt-2 text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 sm:text-2xl md:text-3xl">
+        <h1 className="mt-2 text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 sm:text-2xl">
           Nuevo colaborador
         </h1>
-        <p className="mt-2 max-w-2xl text-sm text-zinc-500 dark:text-zinc-400">
-          Registra un colaborador: foto, nombre y usuario corto para acceso al sistema.
+        <p className="mt-2 max-w-xl text-sm text-zinc-500 dark:text-zinc-400">
+          Nombre, acceso y permisos del panel.
         </p>
       </div>
       <Link
@@ -86,10 +82,10 @@ export function EditCollaboratorHeader({ name }: { name: string }) {
           <span className="mx-1.5 text-zinc-300 dark:text-zinc-600">/</span>
           <span className="text-zinc-700 dark:text-zinc-300">Editar</span>
         </p>
-        <h1 className="mt-2 text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 sm:text-2xl md:text-3xl">
+        <h1 className="mt-2 text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 sm:text-2xl">
           Editar colaborador
         </h1>
-        <p className="mt-2 max-w-2xl break-words text-sm text-zinc-500 dark:text-zinc-400">
+        <p className="mt-2 max-w-xl break-words text-sm text-zinc-500 dark:text-zinc-400">
           {name}
         </p>
       </div>
@@ -114,22 +110,18 @@ function roleLabel(role: CollaboratorJobRole) {
 
 type Props = {
   mode: "create" | "edit";
-  storeLabel: string;
+  storeLabel?: string;
   initial?: CollaboratorInitial;
 };
 
-export function NewCollaboraboratorForm({ mode, storeLabel, initial }: Props) {
-  const adminTheme = useAdminTheme();
-  const cardShell = collaboratorFormCardShell(adminTheme?.resolved ?? "light");
-
+export function NewCollaboraboratorForm({ mode, initial }: Props) {
   const [displayName, setDisplayName] = useState(initial?.display_name ?? "");
   const [loginUsername, setLoginUsername] = useState(initial?.login_username ?? "");
   const [usernameTouched, setUsernameTouched] = useState(mode === "edit");
   const [email, setEmail] = useState(initial?.public_email ?? "");
   const [password, setPassword] = useState("");
-  const [jobRole, setJobRole] = useState<CollaboratorJobRole>(initial?.job_role ?? "cashier");
-  const [avatarVariant, setAvatarVariant] = useState(
-    (initial?.avatar_variant ?? "A").slice(0, 1).toUpperCase() || "A",
+  const [jobRole, setJobRole] = useState<CollaboratorJobRole>(
+    initial?.job_role ?? "cashier",
   );
   const [isActive, setIsActive] = useState(initial?.is_active ?? true);
   const [permissions, setPermissions] = useState<PermissionMap>(() =>
@@ -144,16 +136,18 @@ export function NewCollaboraboratorForm({ mode, storeLabel, initial }: Props) {
     setLoginUsername(slugUsername(displayName));
   }, [displayName, mode, usernameTouched]);
 
-  const avatarSeed = useMemo(() => {
-    const base = (email || displayName || "nuevo").trim().toLowerCase();
-    return `${base}:av:${avatarVariant}`;
-  }, [email, displayName, avatarVariant]);
+  const avatarSeed = useMemo(
+    () => (email.trim() || displayName.trim() || "berea-house").toLowerCase(),
+    [email, displayName],
+  );
 
   const payloadJson = useMemo(() => JSON.stringify(permissions), [permissions]);
 
-  const summaryName = displayName.trim() || "—";
-  const summaryUser = loginUsername.trim() || "—";
   const summaryRole = roleLabel(jobRole);
+  const grantedCount = PERMISSION_MODULES.reduce(
+    (n, mod) => n + mod.items.filter((i) => Boolean(permissions[i.key])).length,
+    0,
+  );
 
   function togglePermission(key: PermissionKey, readOnly?: boolean) {
     if (readOnly) return;
@@ -186,48 +180,35 @@ export function NewCollaboraboratorForm({ mode, storeLabel, initial }: Props) {
         <input type="hidden" name="profile_id" value={initial.profileId} readOnly />
       ) : null}
       <input type="hidden" name="permissions_json" value={payloadJson} readOnly />
+      <input
+        type="hidden"
+        name="avatar_variant"
+        value={(initial?.avatar_variant ?? "A").slice(0, 1).toUpperCase() || "A"}
+        readOnly
+      />
 
-      <div className="grid gap-6 xl:grid-cols-3 xl:gap-8">
-        <div className="min-w-0 space-y-6 xl:col-span-2">
-          <section className={`${cardShell} p-4 sm:p-6`}>
+      <div className="grid gap-6 xl:grid-cols-2 xl:gap-8">
+        <div className="min-w-0">
+          <section className={cardClass}>
             <h2 className={sectionTitle}>Datos del colaborador</h2>
 
-            <div className="mt-6 flex flex-col gap-6 sm:flex-row sm:items-start">
-              <div className="min-w-0 shrink-0">
-                <p className={labelClass}>Avatar</p>
-                <div className="mt-2 flex flex-col items-start gap-4 sm:flex-row sm:items-center">
-                  <CustomerAvatar
-                    seed={avatarSeed}
-                    size={72}
-                    className="shadow-md ring-2 ring-zinc-200/90 dark:ring-zinc-600"
-                    label="Avatar del colaborador"
-                  />
-                  <div className="w-full min-w-0 sm:w-auto sm:flex-1">
-                    <label className="sr-only" htmlFor="avatar-variant">
-                      Variante de personaje
-                    </label>
-                    <select
-                      id="avatar-variant"
-                      name="avatar_variant"
-                      value={avatarVariant}
-                      onChange={(e) => setAvatarVariant(e.target.value.slice(0, 1).toUpperCase())}
-                      className={inputClass}
-                    >
-                      {AVATAR_VARIANTS.map((v) => (
-                        <option key={v} value={v}>
-                          Personaje {v}
-                        </option>
-                      ))}
-                    </select>
-                    <p className="mt-2 text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
-                      Personaje generado (DiceBear). Elige una variante; se guarda con la cuenta.
-                    </p>
-                  </div>
-                </div>
+            <div className="mt-5 flex items-center gap-4">
+              <AdminUserAvatar
+                displayName={displayName.trim() || "Colaborador"}
+                seed={avatarSeed}
+                size={64}
+              />
+              <div className="min-w-0">
+                <p className="truncate text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                  {displayName.trim() || "Sin nombre"}
+                </p>
+                <p className="mt-0.5 truncate text-xs text-zinc-500">
+                  {email.trim() || "Sin correo"}
+                </p>
               </div>
             </div>
 
-            <div className="mt-8 grid gap-4 sm:grid-cols-2">
+            <div className="mt-6 grid gap-4 sm:grid-cols-2">
               <div className="sm:col-span-2">
                 <label htmlFor="display_name" className={labelClass}>
                   Nombre completo <span className="text-red-600 dark:text-red-400">*</span>
@@ -242,7 +223,7 @@ export function NewCollaboraboratorForm({ mode, storeLabel, initial }: Props) {
                   className={inputClass}
                 />
               </div>
-              <div className="sm:col-span-2">
+              <div>
                 <label htmlFor="login_username" className={labelClass}>
                   Usuario (acceso) <span className="text-red-600 dark:text-red-400">*</span>
                 </label>
@@ -259,9 +240,22 @@ export function NewCollaboraboratorForm({ mode, storeLabel, initial }: Props) {
                   autoComplete="username"
                   className={inputClass}
                 />
-                <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
-                  Generado automáticamente desde el nombre. Corto y sin espacios.
-                </p>
+              </div>
+              <div>
+                <label htmlFor="job_role" className={labelClass}>
+                  Rol
+                </label>
+                <select
+                  id="job_role"
+                  name="job_role"
+                  value={jobRole}
+                  onChange={(e) => setJobRole(e.target.value as CollaboratorJobRole)}
+                  className={inputClass}
+                >
+                  <option value="owner">Dueño</option>
+                  <option value="cashier">Cajero</option>
+                  <option value="support">Apoyo</option>
+                </select>
               </div>
               <div className="sm:col-span-2">
                 <label htmlFor="email" className={labelClass}>
@@ -280,18 +274,13 @@ export function NewCollaboraboratorForm({ mode, storeLabel, initial }: Props) {
                     className={inputClass}
                   />
                 ) : (
-                  <>
-                    <input
-                      id="email"
-                      type="email"
-                      readOnly
-                      value={email}
-                      className={`${inputClass} bg-zinc-50 text-zinc-600 dark:bg-zinc-800/80 dark:text-zinc-300`}
-                    />
-                    <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
-                      El correo de acceso no se puede cambiar desde aquí.
-                    </p>
-                  </>
+                  <input
+                    id="email"
+                    type="email"
+                    readOnly
+                    value={email}
+                    className={`${inputClass} bg-zinc-50 text-zinc-600 dark:bg-zinc-800/80 dark:text-zinc-300`}
+                  />
                 )}
               </div>
               <div className="sm:col-span-2">
@@ -311,49 +300,33 @@ export function NewCollaboraboratorForm({ mode, storeLabel, initial }: Props) {
                   required={mode === "create"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder={mode === "create" ? "Mínimo 6 caracteres" : "Dejar vacío para no cambiar"}
+                  placeholder={
+                    mode === "create" ? "••••••••" : "•••••••• · vacío = no cambiar"
+                  }
                   autoComplete="new-password"
                   className={inputClass}
                   minLength={mode === "create" ? 6 : undefined}
                 />
-                <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
-                  {mode === "create"
-                    ? "El colaborador podrá cambiarla al iniciar sesión."
-                    : "Solo se actualiza si escribís al menos 6 caracteres."}
-                </p>
-              </div>
-              <div>
-                <label htmlFor="job_role" className={labelClass}>
-                  Rol
-                </label>
-                <select
-                  id="job_role"
-                  name="job_role"
-                  value={jobRole}
-                  onChange={(e) => setJobRole(e.target.value as CollaboratorJobRole)}
-                  className={inputClass}
-                >
-                  <option value="owner">Dueño</option>
-                  <option value="cashier">Cajero</option>
-                  <option value="support">Apoyo</option>
-                </select>
               </div>
               {mode === "edit" ? (
-                <div className="flex items-center gap-3 sm:col-span-2">
+                <div className="sm:col-span-2">
                   <input
                     type="hidden"
                     name="is_active"
                     value={isActive ? "true" : "false"}
                     readOnly
                   />
-                  <input
-                    id="is_active"
-                    type="checkbox"
-                    checked={isActive}
-                    onChange={(e) => setIsActive(e.target.checked)}
-                    className="size-4 rounded border-zinc-300 text-blue-600 focus:ring-blue-500 dark:border-zinc-600 dark:bg-zinc-900"
-                  />
-                  <label htmlFor="is_active" className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
+                  <label
+                    htmlFor="is_active"
+                    className="inline-flex cursor-pointer items-center gap-2.5 text-sm font-medium text-zinc-800 dark:text-zinc-200"
+                  >
+                    <input
+                      id="is_active"
+                      type="checkbox"
+                      checked={isActive}
+                      onChange={(e) => setIsActive(e.target.checked)}
+                      className={checkboxClass}
+                    />
                     Colaborador activo
                   </label>
                 </div>
@@ -362,38 +335,44 @@ export function NewCollaboraboratorForm({ mode, storeLabel, initial }: Props) {
           </section>
         </div>
 
-        <div className="min-w-0 space-y-6 xl:sticky xl:top-24 xl:col-span-1 xl:self-start">
-          <section className={`${cardShell} p-4 sm:p-6`}>
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
-              <h2 className={`${sectionTitle} min-w-0`}>Permisos</h2>
+        <div className="flex min-w-0 flex-col gap-6 xl:sticky xl:top-24 xl:self-start">
+          <section className={cardClass}>
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h2 className={sectionTitle}>Permisos</h2>
+                <p className="mt-1 text-xs tabular-nums text-zinc-500">
+                  {grantedCount} activos · {summaryRole}
+                </p>
+              </div>
               <button
                 type="button"
                 onClick={restoreByRole}
-                className="shrink-0 self-start text-xs font-semibold text-blue-700 hover:underline dark:text-blue-400 sm:self-auto"
+                className="shrink-0 text-xs font-semibold text-zinc-600 underline-offset-2 hover:underline dark:text-zinc-400"
               >
                 Restaurar por rol
               </button>
             </div>
-            <div className="mt-4 max-h-[min(28rem,55vh)] min-w-0 space-y-6 overflow-y-auto overflow-x-hidden overscroll-contain pr-1 [-webkit-overflow-scrolling:touch]">
+
+            <div className="mt-4 space-y-5">
               {PERMISSION_MODULES.map((mod) => (
                 <div key={mod.id}>
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-400 dark:text-zinc-500">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-500">
                     {mod.label}
                   </p>
-                  <div className="mt-3 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                  <div className="mt-2 grid gap-x-4 gap-y-1.5 sm:grid-cols-2">
                     {mod.items.map((item) => (
                       <label
                         key={item.key}
-                        className={`flex min-w-0 cursor-pointer items-start gap-2.5 rounded-lg border border-transparent px-1 py-1 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 ${item.readOnly ? "opacity-80" : ""}`}
+                        className={`flex cursor-pointer items-start gap-2.5 rounded-lg px-1 py-0.5 hover:bg-zinc-50 dark:hover:bg-zinc-800/40 ${item.readOnly ? "opacity-80" : ""}`}
                       >
                         <input
                           type="checkbox"
                           checked={Boolean(permissions[item.key])}
                           onChange={() => togglePermission(item.key, item.readOnly)}
                           disabled={item.readOnly}
-                          className="mt-0.5 size-4 shrink-0 rounded border-zinc-300 text-blue-600 focus:ring-blue-500 disabled:cursor-not-allowed dark:border-zinc-600 dark:bg-zinc-900"
+                          className={checkboxClass}
                         />
-                        <span className="min-w-0 break-words text-sm leading-snug text-zinc-800 dark:text-zinc-200">
+                        <span className="text-sm leading-snug text-zinc-800 dark:text-zinc-200">
                           {item.label}
                         </span>
                       </label>
@@ -402,36 +381,11 @@ export function NewCollaboraboratorForm({ mode, storeLabel, initial }: Props) {
                 </div>
               ))}
             </div>
-          </section>
 
-          <section className={`${cardShell} p-4 sm:p-6`}>
-            <h2 className={sectionTitle}>Resumen</h2>
-            <dl className="mt-4 space-y-3 text-sm">
-              <div className="flex justify-between gap-2 border-b border-zinc-100 pb-2 dark:border-zinc-800">
-                <dt className="text-zinc-500 dark:text-zinc-400">Colaborador</dt>
-                <dd className="max-w-[58%] truncate text-right font-medium text-zinc-900 dark:text-zinc-100">
-                  {summaryName}
-                </dd>
-              </div>
-              <div className="flex justify-between gap-2 border-b border-zinc-100 pb-2 dark:border-zinc-800">
-                <dt className="text-zinc-500 dark:text-zinc-400">Usuario</dt>
-                <dd className="max-w-[58%] truncate text-right font-medium text-zinc-900 dark:text-zinc-100">
-                  {summaryUser}
-                </dd>
-              </div>
-              <div className="flex justify-between gap-2">
-                <dt className="text-zinc-500 dark:text-zinc-400">Rol</dt>
-                <dd className="text-right font-medium text-zinc-900 dark:text-zinc-100">
-                  {summaryRole}
-                </dd>
-              </div>
-            </dl>
             <AdminFormSubmitButton pendingLabel="Guardando…" disabled={!canSubmit}>
               {mode === "create" ? "Crear colaborador" : "Guardar cambios"}
             </AdminFormSubmitButton>
           </section>
-
-          <p className="text-center text-xs text-zinc-400 dark:text-zinc-500">{storeLabel}</p>
         </div>
       </div>
     </form>

@@ -136,7 +136,7 @@ export default async function AdminEgresoDetailPage({ params }: Props) {
               href="/admin/egresos"
               className="hover:text-zinc-800 dark:hover:text-zinc-200"
             >
-              Gastos y egresos
+              Gastos
             </Link>
             <span className="mx-1.5 text-zinc-400">/</span>
             {docNoun}
@@ -212,38 +212,25 @@ export default async function AdminEgresoDetailPage({ params }: Props) {
       <div className="flex flex-col gap-6 border-t border-zinc-200/70 pt-4 dark:border-zinc-800 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(16rem,18rem)] lg:items-start lg:gap-10 xl:gap-12">
         <section className="min-w-0 space-y-8">
           <div>
-            <h2 className={labelClass}>Notas y descripción</h2>
-            <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-              Texto libre del registro (importación CSV, aclaraciones, etc.).
-            </p>
+            <h2 className={labelClass}>Notas adicionales</h2>
             {notes.length > 0 ? (
               <p className="mt-4 whitespace-pre-wrap text-sm leading-relaxed text-zinc-800 dark:text-zinc-200">
                 {notes}
               </p>
             ) : (
               <p className="mt-4 text-sm text-zinc-500 dark:text-zinc-400">
-                Sin notas adicionales. Este {kindLabel.toLowerCase()} solo tiene
-                concepto y monto.
+                Sin notas adicionales.
               </p>
             )}
           </div>
 
           <div>
             <h2 className={labelClass}>Trazabilidad</h2>
-            <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-              Auditoría del registro en el sistema.
-            </p>
             <dl className="mt-4 space-y-4 text-sm">
               <div>
                 <dt className={labelClass}>Registrado en el sistema</dt>
                 <dd className="mt-1 font-medium text-zinc-900 dark:text-zinc-100">
                   {prettyDateTime(createdAt)}
-                </dd>
-              </div>
-              <div>
-                <dt className={labelClass}>Identificador</dt>
-                <dd className="mt-1 break-all font-mono text-xs text-zinc-600 dark:text-zinc-400">
-                  {String(row.id)}
                 </dd>
               </div>
               <div>

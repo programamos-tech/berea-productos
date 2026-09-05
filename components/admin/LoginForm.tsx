@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 const labelClass =
-  "mb-2 block text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--admin-coral-deep)]/55 dark:text-zinc-400";
+  "mb-2 block text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500";
 
 const platformEmail = process.env.NEXT_PUBLIC_PLATFORM_EMAIL ?? "";
 
@@ -58,10 +58,10 @@ function IconEyeOff({ className }: { className?: string }) {
 }
 
 const iconInputWrap =
-  "flex items-center gap-2.5 rounded-lg border border-[color-mix(in_srgb,var(--admin-coral)_35%,transparent)] bg-white px-3 transition-[border-color,box-shadow] duration-200 focus-within:border-[var(--admin-coral)] focus-within:shadow-[0_0_0_1px_color-mix(in_srgb,var(--admin-coral)_40%,transparent)] dark:border-zinc-600 dark:bg-zinc-900/80 dark:focus-within:border-zinc-300 dark:focus-within:shadow-[0_0_0_1px_rgba(212,212,216,0.35)]";
+  "flex items-center gap-2.5 rounded-lg border border-zinc-300 bg-white px-3 transition-[border-color,box-shadow] duration-200 focus-within:border-zinc-400 focus-within:ring-1 focus-within:ring-zinc-300/50 dark:border-zinc-700 dark:bg-zinc-950 dark:focus-within:border-zinc-500 dark:focus-within:ring-zinc-600/40";
 
 const iconInputInner =
-  "min-w-0 flex-1 border-0 bg-transparent py-3 text-sm font-medium text-[var(--admin-coral-deep)] placeholder:text-[var(--admin-coral-deep)]/35 focus:outline-none focus:ring-0 dark:text-zinc-100 dark:placeholder:text-zinc-500";
+  "min-w-0 flex-1 border-0 bg-transparent py-3 text-sm font-medium text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-0 dark:text-zinc-100 dark:placeholder:text-zinc-500";
 
 /** Supabase suele responder en inglés; lo pasamos a español y damos contexto útil. */
 function friendlyAuthError(raw: string): string {
@@ -118,14 +118,14 @@ export function AdminLoginForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
       {error ? (
-        <p className="rounded-lg border border-[color-mix(in_srgb,var(--admin-coral)_40%,transparent)] border-l-[3px] border-l-[var(--admin-coral-deep)] bg-[var(--admin-coral-mist)]/80 px-3.5 py-3 text-sm font-medium leading-relaxed text-[var(--admin-coral-deep)] dark:border-zinc-700 dark:border-l-[var(--admin-coral)] dark:bg-zinc-900 dark:text-zinc-100">
+        <p className="rounded-lg border border-red-200 border-l-[3px] border-l-red-500 bg-red-50 px-3.5 py-3 text-sm font-medium leading-relaxed text-red-800 dark:border-red-900/60 dark:border-l-red-400 dark:bg-red-950/40 dark:text-red-200">
           {error}
         </p>
       ) : null}
       <label className="block">
         <span className={labelClass}>Correo electrónico</span>
         <div className={iconInputWrap}>
-          <IconMail className="size-[18px] shrink-0 text-[var(--admin-coral-deep)]/35 dark:text-zinc-500" />
+          <IconMail className="size-[18px] shrink-0 text-zinc-400 dark:text-zinc-500" />
           <input
             name="email"
             type="email"
@@ -140,7 +140,7 @@ export function AdminLoginForm() {
       <label className="block">
         <span className={labelClass}>Contraseña</span>
         <div className={iconInputWrap}>
-          <IconLock className="size-[18px] shrink-0 text-[var(--admin-coral-deep)]/35 dark:text-zinc-500" />
+          <IconLock className="size-[18px] shrink-0 text-zinc-400 dark:text-zinc-500" />
           <input
             name="password"
             type={showPassword ? "text" : "password"}
@@ -152,7 +152,7 @@ export function AdminLoginForm() {
           <button
             type="button"
             onClick={() => setShowPassword((v) => !v)}
-            className="-mr-0.5 flex size-8 shrink-0 items-center justify-center rounded-md text-[var(--admin-coral-deep)]/45 transition hover:bg-[var(--admin-coral-mist)] hover:text-[var(--admin-coral-deep)] dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+            className="-mr-0.5 flex size-8 shrink-0 items-center justify-center rounded-md text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
             aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
             aria-pressed={showPassword}
           >
@@ -167,7 +167,7 @@ export function AdminLoginForm() {
       <button
         type="submit"
         disabled={loading}
-        className="mt-2 w-full rounded-lg bg-[var(--admin-coral)] py-3.5 text-sm font-semibold tracking-wide text-white shadow-sm shadow-[color-mix(in_srgb,var(--admin-coral-deep)_18%,transparent)] transition-[background-color,opacity] duration-200 hover:bg-[var(--admin-coral-hover)] disabled:opacity-50 dark:shadow-none"
+        className="mt-2 w-full rounded-lg border border-zinc-900 bg-zinc-900 py-3.5 text-sm font-semibold tracking-wide text-white transition-[background-color,opacity] duration-200 hover:border-zinc-800 hover:bg-zinc-800 disabled:opacity-50 dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:border-white dark:hover:bg-white"
       >
         {loading ? "Entrando…" : "Iniciar sesión"}
       </button>

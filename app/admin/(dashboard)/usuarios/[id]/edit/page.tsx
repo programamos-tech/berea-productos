@@ -86,7 +86,7 @@ export default async function AdminEditColaboradorPage({ params, searchParams }:
     <div className="w-full min-w-0">
       <EditCollaboratorHeader name={title} />
       {errorMessage(err) ? (
-        <p className="mb-6 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-900 dark:border-red-900/50 dark:bg-red-950/35 dark:text-red-100">
+        <p className="mb-3 rounded-lg border border-red-100 bg-red-50 px-3 py-2 text-sm text-red-900 dark:border-red-900/50 dark:bg-red-950/35 dark:text-red-100">
           {errorMessage(err)}
         </p>
       ) : null}
