@@ -13,7 +13,7 @@ const options: Array<{
   {
     id: "tienda",
     label: "Cómo va la tienda",
-    hint: "Mes en curso + caja y cuentas",
+    hint: "Mes completo o en curso: caja, cuentas y resultado",
     Icon: Store,
   },
   {
@@ -44,8 +44,10 @@ export function ReportsVistaFilter({ vista }: { vista: ReportVista }) {
       params.delete("vista");
       params.delete("from");
       params.delete("to");
+      // Conserva `mes` si ya estaba eligiendo un mes histórico.
     } else {
       params.set("vista", "dia");
+      params.delete("mes");
     }
     const qs = params.toString();
     router.push(qs ? `/admin?${qs}` : "/admin");

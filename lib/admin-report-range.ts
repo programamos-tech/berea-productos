@@ -122,7 +122,7 @@ export function parseReportVistaFromSearchParams(
 
 /**
  * Mes en curso hasta hoy (calendario tienda).
- * Usado por la vista «Cómo va la tienda», que no sigue el filtro de fechas.
+ * Usado por la vista «Cómo va la tienda» cuando el mes seleccionado es el actual.
  */
 export function reportMonthToDateRange(todayYmd: string): {
   from: string;
@@ -132,6 +132,55 @@ export function reportMonthToDateRange(todayYmd: string): {
   const bounds = monthYmdBounds(ym);
   if (!bounds) return { from: todayYmd, to: todayYmd };
   return { from: bounds.from, to: todayYmd };
+}
+
+/**
+ * Interpreta `mes=YYYY-MM` en la URL (vista Cómo va la tienda).
+ * Por defecto el mes en curso; no permite meses futuros.
+ */
+export function parseReportTiendaMonthFromSearchParams(
+  sp: Record<string, string | string[] | undefined>,
+  todayYmd: string,
+): string {
+  const currentYm = todayYmd.slice(0, 7);
+  const raw = typeof sp.mes === "string" ? sp.mes.trim() : "";
+  if (!isValidYearMonth(raw) || raw > currentYm) return currentYm;
+  return raw;
+}
+
+/**
+ * Rango de «Cómo va la tienda» para un mes:
+ * - mes actual → del 1 hasta hoy
+ * - mes pasado → mes completo
+ */
+export function reportTiendaMonthRange(
+  yearMonth: string,
+  todayYmd: string,
+): { from: string; to: string } {
+  const currentYm = todayYmd.slice(0, 7);
+  const ym =
+    isValidYearMonth(yearMonth) && yearMonth <= currentYm
+      ? yearMonth
+      : currentYm;
+  if (ym === currentYm) return reportMonthToDateRange(todayYmd);
+  const bounds = monthYmdBounds(ym);
+  if (!bounds) return reportMonthToDateRange(todayYmd);
+  return bounds;
+}
+
+/** Últimos N meses inclusive hasta `endYm` (más reciente primero). */
+export function recentYearMonthsInclusive(
+  endYm: string,
+  count: number,
+): string[] {
+  if (!isValidYearMonth(endYm) || count < 1) return [];
+  const out: string[] = [];
+  for (let i = 0; i < count; i += 1) {
+    const ym = addYearMonths(endYm, -i);
+    if (!ym) break;
+    out.push(ym);
+  }
+  return out;
 }
 
 /** Etiqueta: «septiembre · hasta hoy». */

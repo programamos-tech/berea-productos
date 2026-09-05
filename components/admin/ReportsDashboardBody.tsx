@@ -10,6 +10,7 @@ import { ReportPaymentDonut } from "@/components/admin/ReportPaymentDonut";
 import { ReportSalesWeekTrendChart } from "@/components/admin/ReportSalesWeekTrendChart";
 import {
   StaticCopCents,
+  StaticInteger,
 } from "@/components/admin/ReportsAnimatedFigures";
 import {
   prettyReportDayShortLabel,
@@ -28,6 +29,7 @@ import {
   ArrowLeftRight,
   Banknote,
   CircleDollarSign,
+  FileX2,
   Package,
   TrendingDown,
   TrendingUp,
@@ -226,6 +228,7 @@ export async function ReportsDashboardBody({
     egresosEfectivoCents,
     egresosTransferenciaBucketCents,
     cantidadEgresosPeriod,
+    anuladas,
     reportIncomeChartPoints,
     salesTrendComparison,
     stockInversionNet,
@@ -245,30 +248,17 @@ export async function ReportsDashboardBody({
       ? Math.round((transferencia / totalCobradoPedidos) * 100)
       : null;
 
-  const cajaHoyMetric = (
-    <Metric label="Caja hoy" icon={Wallet} staggerMs={45}>
-      <StaticCopCents
-        cents={cajaHoyCents}
-        className={
-          cajaHoyCents < 0 ? "text-red-600 dark:text-red-400" : undefined
-        }
-      />
-    </Metric>
-  );
-
-  const enCajaMesMetric = (
-    <Metric label="En caja" icon={Wallet} staggerMs={30}>
-      <StaticCopCents cents={efectivo} />
-    </Metric>
-  );
-
   return (
     <div
       key={`reports-body-${vista}-${rangeFrom}-${rangeTo}`}
       className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden"
     >
       <div className="shrink-0">
-        <div className="grid grid-cols-2 gap-x-6 gap-y-5 sm:grid-cols-4 xl:grid-cols-7">
+        <div
+          className={`grid grid-cols-2 gap-x-6 gap-y-5 sm:grid-cols-3 ${
+            isTienda ? "xl:grid-cols-7" : "xl:grid-cols-6"
+          }`}
+        >
           <Metric
             label="Total ingresos"
             icon={CircleDollarSign}
@@ -291,7 +281,9 @@ export async function ReportsDashboardBody({
           </Metric>
 
           {isTienda ? (
-            enCajaMesMetric
+            <Metric label="En caja" icon={Wallet} staggerMs={30}>
+              <StaticCopCents cents={efectivo} />
+            </Metric>
           ) : (
             <Metric
               label="Efectivo"
@@ -313,8 +305,6 @@ export async function ReportsDashboardBody({
               />
             </Metric>
           )}
-
-          {!isTienda ? cajaHoyMetric : null}
 
           <Metric
             label={isTienda ? "En cuentas" : "Transferencia"}
@@ -338,35 +328,37 @@ export async function ReportsDashboardBody({
             />
           </Metric>
 
-          <Metric
-            label="Ganancia bruta"
-            icon={TrendingUp}
-            staggerMs={90}
-            labelExtra={
-              <ReportMetricInfoTip>
-                <p>
-                  Sale del precio de venta sin IVA, menos el costo de los
-                  productos.
-                </p>
-              </ReportMetricInfoTip>
-            }
-          >
-            <StaticCopCents
-              cents={gananciaBruta}
-              className={
-                gananciaBruta < 0
-                  ? "text-red-600 dark:text-red-400"
-                  : gananciaBruta > 0
-                    ? undefined
-                    : "text-zinc-500"
+          {isTienda ? (
+            <Metric
+              label="Ganancia bruta"
+              icon={TrendingUp}
+              staggerMs={90}
+              labelExtra={
+                <ReportMetricInfoTip>
+                  <p>
+                    Sale del precio de venta sin IVA, menos el costo de los
+                    productos.
+                  </p>
+                </ReportMetricInfoTip>
               }
-            />
-          </Metric>
+            >
+              <StaticCopCents
+                cents={gananciaBruta}
+                className={
+                  gananciaBruta < 0
+                    ? "text-red-600 dark:text-red-400"
+                    : gananciaBruta > 0
+                      ? undefined
+                      : "text-zinc-500"
+                }
+              />
+            </Metric>
+          ) : null}
 
           <Metric
             label="Egresos"
             icon={ArrowDownLeft}
-            staggerMs={120}
+            staggerMs={isTienda ? 120 : 90}
             hint={
               isTienda ? (
                 <EgresosMixHint
@@ -384,37 +376,50 @@ export async function ReportsDashboardBody({
             <StaticCopCents cents={egresosPeriod} />
           </Metric>
 
-          <Metric
-            label={gananciaNeta < 0 ? "Pérdida" : "Ganancia"}
-            icon={gananciaNeta < 0 ? TrendingDown : TrendingUp}
-            staggerMs={150}
-            iconClassName={
-              gananciaNeta < 0
-                ? "text-red-500 dark:text-red-400"
-                : gananciaNeta > 0
-                  ? "text-emerald-500 dark:text-emerald-400"
-                  : "text-zinc-400 dark:text-zinc-500"
-            }
-            labelClassName={
-              gananciaNeta < 0
-                ? "text-[10px] font-semibold uppercase tracking-[0.14em] text-red-600 dark:text-red-400"
-                : gananciaNeta > 0
-                  ? "text-[10px] font-semibold uppercase tracking-[0.14em] text-emerald-600 dark:text-emerald-400"
-                  : labelClass
-            }
-          >
-            <span
-              className={
+          {isTienda ? (
+            <Metric
+              label={gananciaNeta < 0 ? "Pérdida" : "Ganancia"}
+              icon={gananciaNeta < 0 ? TrendingDown : TrendingUp}
+              staggerMs={150}
+              iconClassName={
                 gananciaNeta < 0
-                  ? "text-red-600 dark:text-red-400"
+                  ? "text-red-500 dark:text-red-400"
                   : gananciaNeta > 0
-                    ? "text-emerald-600 dark:text-emerald-400"
-                    : "text-zinc-500"
+                    ? "text-emerald-500 dark:text-emerald-400"
+                    : "text-zinc-400 dark:text-zinc-500"
+              }
+              labelClassName={
+                gananciaNeta < 0
+                  ? "text-[10px] font-semibold uppercase tracking-[0.14em] text-red-600 dark:text-red-400"
+                  : gananciaNeta > 0
+                    ? "text-[10px] font-semibold uppercase tracking-[0.14em] text-emerald-600 dark:text-emerald-400"
+                    : labelClass
               }
             >
-              <StaticCopCents cents={Math.abs(gananciaNeta)} />
-            </span>
-          </Metric>
+              <span
+                className={
+                  gananciaNeta < 0
+                    ? "text-red-600 dark:text-red-400"
+                    : gananciaNeta > 0
+                      ? "text-emerald-600 dark:text-emerald-400"
+                      : "text-zinc-500"
+                }
+              >
+                <StaticCopCents cents={Math.abs(gananciaNeta)} />
+              </span>
+            </Metric>
+          ) : (
+            <Metric label="Dinero en caja" icon={Wallet} staggerMs={120}>
+              <StaticCopCents
+                cents={cajaHoyCents}
+                className={
+                  cajaHoyCents < 0
+                    ? "text-red-600 dark:text-red-400"
+                    : undefined
+                }
+              />
+            </Metric>
+          )}
 
           {isTienda ? (
             <Metric
@@ -446,7 +451,11 @@ export async function ReportsDashboardBody({
             >
               <StaticCopCents cents={stockInversionNet} />
             </Metric>
-          ) : null}
+          ) : (
+            <Metric label="Facturas anuladas" icon={FileX2} staggerMs={150}>
+              <StaticInteger value={anuladas} />
+            </Metric>
+          )}
         </div>
       </div>
 

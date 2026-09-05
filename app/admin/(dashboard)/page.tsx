@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { ReportsPeriodFilter } from "@/components/admin/ReportsPeriodFilter";
+import { ReportsMonthFilter } from "@/components/admin/ReportsMonthFilter";
 import { ReportsVistaFilter } from "@/components/admin/ReportsVistaFilter";
 import { ReportsAleyaExportButton } from "@/components/admin/ReportsAleyaExportButton";
 import { ReportsDashboardBody } from "@/components/admin/ReportsDashboardBody";
@@ -8,12 +9,13 @@ import { ReportsRefreshButton } from "@/components/admin/ReportsRefreshButton";
 import {
   currentYearMonthInReportStore,
   parseReportRangeFromSearchParams,
+  parseReportTiendaMonthFromSearchParams,
   parseReportVistaFromSearchParams,
   prettyReportPeriodLabel,
   prettyYearMonthLabel,
   reportDataFetchYmdRange,
-  reportMonthToDateRange,
   reportSalesTrendWeekRanges,
+  reportTiendaMonthRange,
   todayYmdInReportStore,
 } from "@/lib/admin-report-range";
 import { adminLandingPath } from "@/lib/admin-landing";
@@ -34,8 +36,8 @@ function ReportsDashboardSkeleton() {
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4" role="status">
       <span className="sr-only">Cargando reportes…</span>
-      <div className="grid shrink-0 grid-cols-2 gap-x-6 gap-y-5 sm:grid-cols-4 xl:grid-cols-7">
-        {Array.from({ length: 7 }).map((_, i) => (
+      <div className="grid shrink-0 grid-cols-2 gap-x-6 gap-y-5 sm:grid-cols-3 xl:grid-cols-6">
+        {Array.from({ length: 6 }).map((_, i) => (
           <div
             key={i}
             className="h-16 animate-pulse rounded-lg bg-zinc-100/50 dark:bg-zinc-900/50 motion-reduce:animate-none"
@@ -69,13 +71,20 @@ export default async function AdminHomePage({ searchParams }: PageProps) {
 
   const sp = await searchParams;
   const todayKey = todayYmdInReportStore();
+  const currentYm = currentYearMonthInReportStore();
   const vista = parseReportVistaFromSearchParams(sp);
+  const tiendaYm = parseReportTiendaMonthFromSearchParams(sp, todayKey);
   const urlRange = parseReportRangeFromSearchParams(sp, todayKey);
   const { from: rangeFrom, to: rangeTo } =
-    vista === "tienda" ? reportMonthToDateRange(todayKey) : urlRange;
+    vista === "tienda"
+      ? reportTiendaMonthRange(tiendaYm, todayKey)
+      : urlRange;
+  const isCurrentTiendaMonth = vista === "tienda" && tiendaYm === currentYm;
   const periodLabel =
     vista === "tienda"
-      ? prettyYearMonthLabel(rangeFrom.slice(0, 7))
+      ? isCurrentTiendaMonth
+        ? `${prettyYearMonthLabel(tiendaYm)} · hasta hoy`
+        : prettyYearMonthLabel(tiendaYm)
       : prettyReportPeriodLabel(rangeFrom, rangeTo, todayKey);
   const {
     currentFrom: salesTrendCurrentFrom,
@@ -99,12 +108,18 @@ export default async function AdminHomePage({ searchParams }: PageProps) {
           <h1 className="text-lg font-semibold tracking-tight text-rose-950 dark:text-zinc-100 sm:text-xl">
             Reportes
           </h1>
-          <ReportsHeaderMeta vista={vista} periodLabel={periodLabel} />
+          <ReportsHeaderMeta
+            vista={vista}
+            periodLabel={periodLabel}
+            isCurrentTiendaMonth={isCurrentTiendaMonth}
+          />
         </div>
         <Suspense fallback={<ReportsFiltersSkeleton />}>
           <div className="flex flex-wrap items-center justify-end gap-2">
             <ReportsVistaFilter vista={vista} />
-            {vista === "tienda" ? null : (
+            {vista === "tienda" ? (
+              <ReportsMonthFilter selectedYm={tiendaYm} currentYm={currentYm} />
+            ) : (
               <ReportsPeriodFilter
                 rangeFrom={rangeFrom}
                 rangeTo={rangeTo}
@@ -115,7 +130,7 @@ export default async function AdminHomePage({ searchParams }: PageProps) {
               defaultYearMonth={
                 rangeFrom.slice(0, 7) === rangeTo.slice(0, 7)
                   ? rangeFrom.slice(0, 7)
-                  : currentYearMonthInReportStore()
+                  : currentYm
               }
             />
             <ReportsRefreshButton />

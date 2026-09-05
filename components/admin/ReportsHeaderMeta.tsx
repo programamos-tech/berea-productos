@@ -43,10 +43,12 @@ function formatCorteDate(now: Date): string {
 export function ReportsHeaderMeta({
   vista,
   periodLabel,
+  isCurrentTiendaMonth = true,
 }: {
   vista: ReportVista;
   monthLabel?: string;
   periodLabel: string;
+  isCurrentTiendaMonth?: boolean;
 }) {
   const [now, setNow] = useState(() => new Date());
 
@@ -58,7 +60,9 @@ export function ReportsHeaderMeta({
   const time = formatTime(now);
   const lead =
     vista === "tienda"
-      ? `Así va la tienda · a corte de ${formatCorteDate(now)}`
+      ? isCurrentTiendaMonth
+        ? `Así va la tienda · a corte de ${formatCorteDate(now)}`
+        : `Así le fue a la tienda · ${sentenceCase(periodLabel)}`
       : `Por periodo · ${periodLabel}`;
 
   return (
