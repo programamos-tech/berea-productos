@@ -148,9 +148,9 @@ export function ReportMonthlyResultChart({
             <div
               className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold tabular-nums ${
                 momUp
-                  ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300"
+                  ? "bg-[color-mix(in_srgb,var(--admin-profit)_16%,transparent)] text-[var(--admin-profit)] dark:text-[var(--admin-profit-dark)]"
                   : momDown
-                    ? "bg-[color-mix(in_srgb,var(--admin-coral)_18%,transparent)] text-[var(--admin-coral-deep)] dark:text-[var(--admin-coral-soft)]"
+                    ? "bg-[color-mix(in_srgb,var(--admin-loss)_16%,transparent)] text-[var(--admin-loss)] dark:text-[var(--admin-loss-dark)]"
                     : "bg-zinc-500/15 text-zinc-600 dark:text-zinc-300"
               }`}
               title="Cambio de ingresos vs el mes anterior"

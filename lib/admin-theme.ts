@@ -11,6 +11,14 @@ export const ADMIN_CORAL_DEEP = "#015a6e" as const;
 export const ADMIN_CORAL_SOFT = "#7ecfe0" as const;
 export const ADMIN_CORAL_MIST = "#e6f6fa" as const;
 
+/** Ganancia / OK — verde fresco alineado al teal de marca. */
+export const ADMIN_PROFIT = "#2a9a7c" as const;
+export const ADMIN_PROFIT_DARK = "#5dceb0" as const;
+
+/** Pérdida / negativo — rojo suave que convive con el teal (no neón). */
+export const ADMIN_LOSS = "#c4565c" as const;
+export const ADMIN_LOSS_DARK = "#e8959a" as const;
+
 /**
  * Fondo del sidebar (`--admin-sidebar-bg`): neutro claro.
  * En oscuro se sobreescribe vía CSS (`ADMIN_SIDEBAR_BG_DARK`).

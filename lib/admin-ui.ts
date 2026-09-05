@@ -1,10 +1,10 @@
-/** Texto negativo de caja (faltante / contado bajo): coral de marca, no red-* genérico. */
+/** Texto negativo (pérdida / faltante): rojo suave armonizado con Berea House. */
 export const adminCashNegativeTextClass =
-  "text-[var(--admin-coral-deep)] dark:text-[var(--admin-coral)]";
+  "text-[var(--admin-loss)] dark:text-[var(--admin-loss-dark)]";
 
-/** Texto OK / positivo: verde suave, no neón. */
+/** Texto OK / ganancia: verde fresco alineado al teal de marca. */
 export const adminCashOkTextClass =
-  "text-[#5a7a62] dark:text-emerald-400/90";
+  "text-[var(--admin-profit)] dark:text-[var(--admin-profit-dark)]";
 
 /** Paneles del backoffice: borde zinc neutro. */
 export const adminPanelClass =
