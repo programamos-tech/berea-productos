@@ -40,7 +40,7 @@ function formatCorteDate(now: Date): string {
   return `${sentenceCase(weekday)} ${day} de ${sentenceCase(month)} de ${year}`;
 }
 
-/** Subtítulo contextual + hora en vivo (Bogotá). */
+/** Subtítulo contextual + hora en vivo (Bogotá). Hora solo en cliente (evita hydration mismatch). */
 export function ReportsHeaderMeta({
   vista,
   periodLabel,
@@ -51,29 +51,37 @@ export function ReportsHeaderMeta({
   periodLabel: string;
   isCurrentTiendaMonth?: boolean;
 }) {
-  const [now, setNow] = useState(() => new Date());
+  const [now, setNow] = useState<Date | null>(null);
 
   useEffect(() => {
-    const id = window.setInterval(() => setNow(new Date()), 15_000);
+    const tick = () => setNow(new Date());
+    tick();
+    const id = window.setInterval(tick, 15_000);
     return () => window.clearInterval(id);
   }, []);
 
-  const time = formatTime(now);
   const lead =
     vista === "tienda"
       ? isCurrentTiendaMonth
-        ? `Así va la tienda · a corte de ${formatCorteDate(now)}`
+        ? now
+          ? `Así va la tienda · a corte de ${formatCorteDate(now)}`
+          : "Así va la tienda"
         : `Así le fue a la tienda · ${sentenceCase(periodLabel)}`
       : `Por periodo · ${periodLabel}`;
+
   return (
     <p className={`truncate ${adminPageSubtitleClass}`}>
       <span>{lead}</span>
-      <span className="mx-1.5 text-zinc-400 dark:text-zinc-600" aria-hidden>
-        ·
-      </span>
-      <time dateTime={now.toISOString()} className="tabular-nums">
-        {time}
-      </time>
+      {now ? (
+        <>
+          <span className="mx-1.5 text-zinc-400 dark:text-zinc-600" aria-hidden>
+            ·
+          </span>
+          <time dateTime={now.toISOString()} className="tabular-nums">
+            {formatTime(now)}
+          </time>
+        </>
+      ) : null}
     </p>
   );
 }
