@@ -49,12 +49,10 @@ function Metric({
       className="reports-metric-card min-w-0"
       style={{ ["--reports-stagger" as string]: `${staggerMs}ms` }}
     >
-      <p
-        className={`inline-flex items-center gap-1 ${(labelClassName ?? labelClass)}`}
-      >
-        <span>{label}</span>
+      <div className="inline-flex items-center gap-1">
+        <p className={labelClassName ?? labelClass}>{label}</p>
         {labelExtra}
-      </p>
+      </div>
       <div className="mt-1.5 text-xl font-semibold tabular-nums tracking-tight text-zinc-900 dark:text-zinc-50 sm:text-2xl">
         {children}
       </div>
