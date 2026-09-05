@@ -1,23 +1,31 @@
 "use client";
 
 import type { ReportVista } from "@/lib/admin-report-range";
+import { CalendarRange, Store } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 
-const options: Array<{ id: ReportVista; label: string; hint: string }> = [
+const options: Array<{
+  id: ReportVista;
+  label: string;
+  hint: string;
+  Icon: typeof CalendarRange;
+}> = [
   {
     id: "dia",
     label: "Por periodo",
     hint: "Ventas y cobros del día, semana, mes u otro rango",
+    Icon: CalendarRange,
   },
   {
     id: "tienda",
     label: "Cómo va la tienda",
     hint: "Mes en curso + caja de hoy (arrastre)",
+    Icon: Store,
   },
 ];
 
 const btnBase =
-  "inline-flex items-center rounded-lg border px-2.5 py-1.5 text-xs font-medium shadow-[0_1px_2px_0_rgb(190_24_93/0.06)] transition dark:shadow-none";
+  "inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium shadow-[0_1px_2px_0_rgb(190_24_93/0.06)] transition dark:shadow-none";
 
 const btnIdle =
   "border-rose-200/70 bg-white text-rose-950/85 hover:border-rose-300/80 hover:bg-rose-50/50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-400 dark:hover:border-zinc-600 dark:hover:bg-zinc-800 dark:hover:text-zinc-200";
@@ -46,6 +54,7 @@ export function ReportsVistaFilter({ vista }: { vista: ReportVista }) {
     <div className="inline-flex flex-wrap items-center gap-2" role="group" aria-label="Tipo de reporte">
       {options.map((opt) => {
         const active = vista === opt.id;
+        const Icon = opt.Icon;
         return (
           <button
             key={opt.id}
@@ -55,6 +64,7 @@ export function ReportsVistaFilter({ vista }: { vista: ReportVista }) {
             title={opt.hint}
             className={`${btnBase} ${active ? btnActive : btnIdle}`}
           >
+            <Icon className="size-3.5 shrink-0" strokeWidth={2.25} aria-hidden />
             {opt.label}
           </button>
         );

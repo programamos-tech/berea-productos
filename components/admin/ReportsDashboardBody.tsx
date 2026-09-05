@@ -24,6 +24,18 @@ import {
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Suspense } from "react";
 import { formatCop } from "@/lib/money";
+import {
+  ArrowDownLeft,
+  ArrowLeftRight,
+  Banknote,
+  CircleDollarSign,
+  FileX2,
+  Package,
+  TrendingDown,
+  TrendingUp,
+  Wallet,
+  type LucideIcon,
+} from "lucide-react";
 import { ReportProfitInfoTip } from "@/components/admin/ReportProfitInfoTip";
 
 const labelClass =
@@ -36,6 +48,8 @@ function Metric({
   staggerMs = 0,
   labelClassName,
   labelExtra,
+  icon: Icon,
+  iconClassName,
 }: {
   label: string;
   children: React.ReactNode;
@@ -43,14 +57,25 @@ function Metric({
   staggerMs?: number;
   labelClassName?: string;
   labelExtra?: React.ReactNode;
+  icon?: LucideIcon;
+  iconClassName?: string;
 }) {
   return (
     <div
       className="reports-metric-card min-w-0"
       style={{ ["--reports-stagger" as string]: `${staggerMs}ms` }}
     >
-      <div className="inline-flex items-center gap-1">
-        <p className={labelClassName ?? labelClass}>{label}</p>
+      <div className="inline-flex min-w-0 items-center gap-1.5">
+        {Icon ? (
+          <Icon
+            className={`size-3.5 shrink-0 ${iconClassName ?? "text-zinc-400 dark:text-zinc-500"}`}
+            strokeWidth={2.25}
+            aria-hidden
+          />
+        ) : null}
+        <p className={`min-w-0 truncate ${labelClassName ?? labelClass}`}>
+          {label}
+        </p>
         {labelExtra}
       </div>
       <div className="mt-1.5 text-xl font-semibold tabular-nums tracking-tight text-zinc-900 dark:text-zinc-50 sm:text-2xl">
@@ -112,19 +137,15 @@ export async function ReportsDashboardBody({
         fetchTo,
         periodLabel,
       }),
-      vista === "tienda"
-        ? fetchCashArrastreCentsForReportStart(supabase, todayKey)
-        : Promise.resolve(0),
+      fetchCashArrastreCentsForReportStart(supabase, todayKey),
     ]);
     report = dashboard;
-    if (vista === "tienda") {
-      const live = await fetchCashDayLiveTotals(
-        supabase,
-        todayKey,
-        arrastreHoy,
-      );
-      cajaHoyCents = live.expectedCashCents;
-    }
+    const live = await fetchCashDayLiveTotals(
+      supabase,
+      todayKey,
+      arrastreHoy,
+    );
+    cajaHoyCents = live.expectedCashCents;
   } catch (err) {
     console.error("[admin reportes] body:", err);
     return (
@@ -157,7 +178,6 @@ export async function ReportsDashboardBody({
   } = report;
 
   const isTienda = vista === "tienda";
-  const efectivoShown = isTienda ? cajaHoyCents : efectivo;
   const transferenciaShown = isTienda
     ? transferencia - egresosTransferenciaBucketCents
     : transferencia;
@@ -172,6 +192,21 @@ export async function ReportsDashboardBody({
       ? Math.round((transferencia / totalCobradoPedidos) * 100)
       : null;
 
+  const cajaHoyMetric = (
+    <Metric
+      label="Caja hoy"
+      icon={Wallet}
+      staggerMs={isTienda ? 30 : 45}
+    >
+      <StaticCopCents
+        cents={cajaHoyCents}
+        className={
+          cajaHoyCents < 0 ? "text-red-600 dark:text-red-400" : undefined
+        }
+      />
+    </Metric>
+  );
+
   return (
     <div
       key={`reports-body-${vista}-${rangeFrom}-${rangeTo}`}
@@ -181,6 +216,7 @@ export async function ReportsDashboardBody({
         <div className="grid grid-cols-2 gap-x-6 gap-y-5 sm:grid-cols-4 xl:grid-cols-7">
           <Metric
             label="Total ingresos"
+            icon={CircleDollarSign}
             staggerMs={0}
             hint={
               <>
@@ -199,27 +235,35 @@ export async function ReportsDashboardBody({
             <StaticCopCents cents={ingresosConIvaPeriod} />
           </Metric>
 
-          <Metric
-            label={isTienda ? "Caja hoy" : "Efectivo"}
-            staggerMs={30}
-            hint={
-              isTienda ? undefined : efectivoPct != null ? (
-                <>{efectivoPct}% del cobrado</>
-              ) : (
-                <>Sin cobros POS en efectivo</>
-              )
-            }
-          >
-            <StaticCopCents
-              cents={efectivoShown}
-              className={
-                efectivoShown < 0 ? "text-red-600 dark:text-red-400" : undefined
+          {isTienda ? (
+            cajaHoyMetric
+          ) : (
+            <Metric
+              label="Efectivo"
+              icon={Banknote}
+              staggerMs={30}
+              hint={
+                efectivoPct != null ? (
+                  <>{efectivoPct}% del cobrado</>
+                ) : (
+                  <>Sin cobros POS en efectivo</>
+                )
               }
-            />
-          </Metric>
+            >
+              <StaticCopCents
+                cents={efectivo}
+                className={
+                  efectivo < 0 ? "text-red-600 dark:text-red-400" : undefined
+                }
+              />
+            </Metric>
+          )}
+
+          {!isTienda ? cajaHoyMetric : null}
 
           <Metric
             label={isTienda ? "En cuentas" : "Transferencia"}
+            icon={ArrowLeftRight}
             staggerMs={60}
             hint={
               isTienda
@@ -241,6 +285,7 @@ export async function ReportsDashboardBody({
 
           <Metric
             label="Egresos"
+            icon={ArrowDownLeft}
             staggerMs={90}
             hint={
               isTienda ? undefined : (
@@ -256,7 +301,15 @@ export async function ReportsDashboardBody({
 
           <Metric
             label={gananciaShown < 0 ? "Pérdida" : "Ganancia"}
+            icon={gananciaShown < 0 ? TrendingDown : TrendingUp}
             staggerMs={120}
+            iconClassName={
+              gananciaShown < 0
+                ? "text-red-500 dark:text-red-400"
+                : gananciaShown > 0
+                  ? "text-emerald-500 dark:text-emerald-400"
+                  : "text-zinc-400 dark:text-zinc-500"
+            }
             labelClassName={
               gananciaShown < 0
                 ? "text-[10px] font-semibold uppercase tracking-[0.14em] text-red-600 dark:text-red-400"
@@ -267,8 +320,6 @@ export async function ReportsDashboardBody({
             labelExtra={
               <ReportProfitInfoTip
                 mode={isTienda ? "neta" : "bruta"}
-                margenCents={gananciaBruta}
-                egresosCents={egresosPeriod}
                 resultadoCents={gananciaShown}
               />
             }
@@ -286,38 +337,47 @@ export async function ReportsDashboardBody({
             </span>
           </Metric>
 
-          <Metric
-            label="Stock"
-            staggerMs={150}
-            hint={
-              stockInvestmentTrend?.changeNetPercent != null ? (
-                <span
-                  className={
-                    stockInvestmentTrend.changeNetPercent > 0
-                      ? "text-emerald-600 dark:text-emerald-400"
-                      : stockInvestmentTrend.changeNetPercent < 0
-                        ? "text-red-600 dark:text-red-400"
-                        : undefined
-                  }
-                >
-                  {stockInvestmentTrend.changeNetPercent > 0 ? "+" : ""}
-                  {stockInvestmentTrend.changeNetPercent}% vs 7 días
-                </span>
-              ) : stockInversionGross > 0 ? (
-                <span className="tabular-nums">
-                  c/IVA {formatCop(stockInversionGross)}
-                </span>
-              ) : (
-                <>Inversión sin IVA</>
-              )
-            }
-          >
-            <StaticCopCents cents={stockInversionNet} />
-          </Metric>
+          {isTienda ? (
+            <Metric
+              label="Stock"
+              icon={Package}
+              staggerMs={150}
+              hint={
+                stockInvestmentTrend?.changeNetPercent != null ? (
+                  <span
+                    className={
+                      stockInvestmentTrend.changeNetPercent > 0
+                        ? "text-emerald-600 dark:text-emerald-400"
+                        : stockInvestmentTrend.changeNetPercent < 0
+                          ? "text-red-600 dark:text-red-400"
+                          : undefined
+                    }
+                  >
+                    {stockInvestmentTrend.changeNetPercent > 0 ? "+" : ""}
+                    {stockInvestmentTrend.changeNetPercent}% vs 7 días
+                  </span>
+                ) : stockInversionGross > 0 ? (
+                  <span className="tabular-nums">
+                    c/IVA {formatCop(stockInversionGross)}
+                  </span>
+                ) : (
+                  <>Inversión sin IVA</>
+                )
+              }
+            >
+              <StaticCopCents cents={stockInversionNet} />
+            </Metric>
+          ) : (
+            <Metric label="Facturas anuladas" icon={FileX2} staggerMs={150}>
+              <StaticInteger value={anuladas} />
+            </Metric>
+          )}
 
-          <Metric label="Facturas anuladas" staggerMs={180}>
-            <StaticInteger value={anuladas} />
-          </Metric>
+          {isTienda ? (
+            <Metric label="Facturas anuladas" icon={FileX2} staggerMs={180}>
+              <StaticInteger value={anuladas} />
+            </Metric>
+          ) : null}
         </div>
       </div>
 

@@ -114,6 +114,13 @@ export default async function AdminHomePage({ searchParams }: PageProps) {
         <Suspense fallback={<ReportsFiltersSkeleton />}>
           <div className="flex flex-wrap items-center justify-end gap-2">
             <ReportsVistaFilter vista={vista} />
+            {vista === "tienda" ? null : (
+              <ReportsPeriodFilter
+                rangeFrom={rangeFrom}
+                rangeTo={rangeTo}
+                todayKey={todayKey}
+              />
+            )}
             <ReportsAleyaExportButton
               defaultYearMonth={
                 rangeFrom.slice(0, 7) === rangeTo.slice(0, 7)
@@ -121,15 +128,7 @@ export default async function AdminHomePage({ searchParams }: PageProps) {
                   : currentYearMonthInReportStore()
               }
             />
-            {vista === "tienda" ? (
-              <ReportsRefreshButton />
-            ) : (
-              <ReportsPeriodFilter
-                rangeFrom={rangeFrom}
-                rangeTo={rangeTo}
-                todayKey={todayKey}
-              />
-            )}
+            <ReportsRefreshButton />
           </div>
         </Suspense>
       </header>

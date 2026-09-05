@@ -9,13 +9,9 @@ type Pos = { top: number; left: number; maxWidth: number };
 
 export function ReportProfitInfoTip({
   mode,
-  margenCents,
-  egresosCents,
   resultadoCents,
 }: {
   mode: "neta" | "bruta";
-  margenCents: number;
-  egresosCents: number;
   resultadoCents: number;
 }) {
   const [open, setOpen] = useState(false);
@@ -94,39 +90,41 @@ export function ReportProfitInfoTip({
           >
             {mode === "neta" ? (
               <>
-                <p className="font-semibold text-zinc-900 dark:text-zinc-50">
-                  Margen de lo vendido − egresos del mes
+                <p className="text-zinc-600 dark:text-zinc-300">
+                  Es lo que queda después de cubrir los egresos con la ganancia
+                  bruta de las ventas.
                 </p>
-                <p className="mt-1.5">
-                  El margen es precio sin IVA menos el costo del producto. No es
-                  el total de ingresos ni lo que hay en caja o en cuentas.
-                </p>
-                <p className="mt-2 tabular-nums text-zinc-500 dark:text-zinc-400">
-                  Margen {formatCop(margenCents)} − egresos{" "}
-                  {formatCop(egresosCents)} ={" "}
-                  <span
-                    className={
-                      isLoss
-                        ? "font-semibold text-red-600 dark:text-red-400"
-                        : "font-semibold text-emerald-600 dark:text-emerald-400"
-                    }
-                  >
-                    {isLoss ? "pérdida" : "ganancia"}{" "}
-                    {formatCop(Math.abs(resultadoCents))}
-                  </span>
+                <p
+                  className={`mt-2 font-semibold tabular-nums ${
+                    isLoss
+                      ? "text-red-600 dark:text-red-400"
+                      : "text-emerald-600 dark:text-emerald-400"
+                  }`}
+                >
+                  {isLoss
+                    ? `Por ahora, ${formatCop(Math.abs(resultadoCents))} en rojo.`
+                    : resultadoCents > 0
+                      ? `Por ahora, ${formatCop(resultadoCents)} en verde.`
+                      : "Por ahora, en cero."}
                 </p>
               </>
             ) : (
               <>
-                <p className="font-semibold text-zinc-900 dark:text-zinc-50">
-                  Margen de productos del periodo
+                <p className="text-zinc-600 dark:text-zinc-300">
+                  Es la ganancia bruta de las ventas del periodo.
                 </p>
-                <p className="mt-1.5">
-                  Precio sin IVA menos el costo. Acá no se restan egresos; para
-                  ver eso usá «Cómo va la tienda».
-                </p>
-                <p className="mt-2 tabular-nums text-zinc-500 dark:text-zinc-400">
-                  Margen {formatCop(margenCents)}
+                <p
+                  className={`mt-2 font-semibold tabular-nums ${
+                    resultadoCents > 0
+                      ? "text-emerald-600 dark:text-emerald-400"
+                      : resultadoCents < 0
+                        ? "text-red-600 dark:text-red-400"
+                        : "text-zinc-500"
+                  }`}
+                >
+                  {resultadoCents > 0
+                    ? `Por ahora, ${formatCop(resultadoCents)} en verde.`
+                    : formatCop(Math.abs(resultadoCents))}
                 </p>
               </>
             )}
