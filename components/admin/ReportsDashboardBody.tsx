@@ -195,6 +195,7 @@ export async function ReportsDashboardBody({
       fetchFrom,
       fetchTo,
       periodLabel,
+      skipStock: vista === "dia",
     });
     const cashPromise =
       vista === "tienda"

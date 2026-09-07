@@ -5,7 +5,7 @@ import {
   recentYearMonthsInclusive,
 } from "@/lib/admin-report-range";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 
 const panelClass =
   "absolute left-0 right-0 top-[calc(100%+0.35rem)] z-40 w-full rounded-xl border border-zinc-200 bg-white p-2 shadow-[0_16px_48px_-24px_rgba(24,24,27,0.22)] sm:left-auto sm:right-0 sm:w-[min(100vw-1.5rem,16rem)] dark:border-zinc-700 dark:bg-zinc-900 dark:shadow-[0_16px_48px_-24px_rgba(0,0,0,0.55)]";
@@ -29,6 +29,7 @@ export function ReportsMonthFilter({
   const searchParams = useSearchParams();
   const wrapRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
+  const [pending, startTransition] = useTransition();
 
   const months = useMemo(
     () => recentYearMonthsInclusive(currentYm, Math.max(1, monthsBack)),
@@ -45,6 +46,7 @@ export function ReportsMonthFilter({
   }, [open]);
 
   function selectMonth(ym: string) {
+    if (pending) return;
     const params = new URLSearchParams(searchParams.toString());
     params.delete("vista");
     params.delete("from");
@@ -55,8 +57,10 @@ export function ReportsMonthFilter({
       params.set("mes", ym);
     }
     const qs = params.toString();
-    router.push(qs ? `/admin?${qs}` : "/admin");
-    setOpen(false);
+    startTransition(() => {
+      router.push(qs ? `/admin?${qs}` : "/admin");
+      setOpen(false);
+    });
   }
 
   const summary =
@@ -65,11 +69,16 @@ export function ReportsMonthFilter({
       : sentenceCase(prettyYearMonthLabel(selectedYm));
 
   return (
-    <div ref={wrapRef} className="relative max-w-full">
+    <div
+      ref={wrapRef}
+      className={`relative max-w-full transition-opacity ${pending ? "opacity-70" : ""}`}
+      aria-busy={pending}
+    >
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="inline-flex h-10 max-w-full items-center gap-2 rounded-lg border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-700 shadow-sm transition hover:border-zinc-400 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:shadow-none dark:hover:border-zinc-600 dark:hover:bg-zinc-800"
+        disabled={pending}
+        className="inline-flex h-10 max-w-full items-center gap-2 rounded-lg border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-700 shadow-sm transition hover:border-zinc-400 hover:bg-zinc-50 disabled:cursor-wait dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:shadow-none dark:hover:border-zinc-600 dark:hover:bg-zinc-800"
         aria-expanded={open}
         aria-haspopup="listbox"
       >
@@ -101,8 +110,9 @@ export function ReportsMonthFilter({
                     type="button"
                     role="option"
                     aria-selected={active}
+                    disabled={pending}
                     onClick={() => selectMonth(ym)}
-                    className={`w-full rounded-lg px-3 py-2 text-left text-sm transition ${
+                    className={`w-full rounded-lg px-3 py-2 text-left text-sm transition disabled:cursor-wait ${
                       active
                         ? "bg-zinc-900 font-semibold text-white dark:bg-zinc-100 dark:text-zinc-900"
                         : "font-medium text-zinc-800 hover:bg-zinc-100 dark:text-zinc-100 dark:hover:bg-zinc-800"

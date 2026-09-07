@@ -6,7 +6,7 @@ import {
 } from "@/components/admin/product-form-primitives";
 import { prettyReportPeriodLabel } from "@/lib/admin-report-range";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 
 const panelClass =
   "absolute left-0 right-0 top-[calc(100%+0.35rem)] z-40 w-full rounded-xl border border-zinc-200 bg-white p-4 shadow-[0_16px_48px_-24px_rgba(24,24,27,0.22)] sm:left-auto sm:right-0 sm:w-[min(100vw-1.5rem,22rem)] dark:border-zinc-700 dark:bg-zinc-900 dark:shadow-[0_16px_48px_-24px_rgba(0,0,0,0.55)]";
@@ -15,10 +15,10 @@ const tabBtn =
   "flex-1 rounded-md px-3 py-2 text-xs font-semibold uppercase tracking-wide transition";
 
 const outlineBtn =
-  "w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-sm font-semibold text-zinc-800 transition hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-zinc-800";
+  "w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-sm font-semibold text-zinc-800 transition hover:bg-zinc-50 disabled:cursor-wait disabled:opacity-70 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-zinc-800";
 
 const primaryBtn =
-  "w-full rounded-lg bg-zinc-900 px-3 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white";
+  "w-full rounded-lg bg-zinc-900 px-3 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-zinc-800 disabled:cursor-wait disabled:opacity-70 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white";
 
 const labelClass =
   "text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500 dark:text-zinc-500";
@@ -40,6 +40,7 @@ export function ReportsPeriodFilter({
   const [singleDay, setSingleDay] = useState(todayKey);
   const [from, setFrom] = useState(rangeFrom);
   const [to, setTo] = useState(rangeTo);
+  const [pending, startTransition] = useTransition();
 
   useEffect(() => {
     setFrom(rangeFrom);
@@ -64,14 +65,18 @@ export function ReportsPeriodFilter({
   );
 
   function applyParams(nextFrom: string, nextTo: string) {
+    if (pending) return;
     let a = nextFrom;
     let b = nextTo;
     if (a > b) [a, b] = [b, a];
     const params = new URLSearchParams(searchParams.toString());
     params.set("from", a);
     params.set("to", b);
-    router.push(`/admin?${params.toString()}`);
-    setOpen(false);
+    if (!params.get("vista")) params.set("vista", "dia");
+    startTransition(() => {
+      router.push(`/admin?${params.toString()}`);
+      setOpen(false);
+    });
   }
 
   function applyToday() {
@@ -79,31 +84,45 @@ export function ReportsPeriodFilter({
   }
 
   return (
-    <div ref={wrapRef} className="relative flex max-w-full flex-wrap items-center gap-2">
+    <div
+      ref={wrapRef}
+      className={`relative flex max-w-full flex-wrap items-center gap-2 transition-opacity ${pending ? "opacity-70" : ""}`}
+      aria-busy={pending}
+    >
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="inline-flex h-10 max-w-full items-center gap-2 rounded-lg border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-700 shadow-sm transition hover:border-zinc-400 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:shadow-none dark:hover:border-zinc-600 dark:hover:bg-zinc-800"
+        disabled={pending}
+        className="inline-flex h-10 max-w-full items-center gap-2 rounded-lg border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-700 shadow-sm transition hover:border-zinc-400 hover:bg-zinc-50 disabled:cursor-wait dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:shadow-none dark:hover:border-zinc-600 dark:hover:bg-zinc-800"
         aria-expanded={open}
         aria-haspopup="dialog"
       >
         <span className="min-w-0 truncate tabular-nums">{summary}</span>
-        <svg
-          viewBox="0 0 24 24"
-          className={`size-4 shrink-0 text-zinc-400 transition dark:text-zinc-400 ${open ? "rotate-180" : ""}`}
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={2}
-          aria-hidden
-        >
-          <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
+        {pending ? (
+          <span className="text-xs font-medium text-zinc-400">…</span>
+        ) : (
+          <svg
+            viewBox="0 0 24 24"
+            className={`size-4 shrink-0 text-zinc-400 transition dark:text-zinc-400 ${open ? "rotate-180" : ""}`}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+            aria-hidden
+          >
+            <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        )}
       </button>
 
       {open ? (
         <div className={panelClass} role="dialog" aria-label="Filtro de periodo">
-          <button type="button" onClick={applyToday} className={primaryBtn}>
-            Solo hoy
+          <button
+            type="button"
+            onClick={applyToday}
+            disabled={pending}
+            className={primaryBtn}
+          >
+            {pending ? "Cargando…" : "Solo hoy"}
           </button>
 
           <div className="mt-3 flex gap-1 rounded-lg bg-zinc-100 p-1 dark:bg-zinc-800/80">
@@ -142,9 +161,10 @@ export function ReportsPeriodFilter({
               <button
                 type="button"
                 onClick={() => applyParams(singleDay, singleDay)}
+                disabled={pending}
                 className={outlineBtn}
               >
-                Aplicar
+                {pending ? "Cargando…" : "Aplicar"}
               </button>
             </div>
           ) : (
@@ -164,9 +184,10 @@ export function ReportsPeriodFilter({
               <button
                 type="button"
                 onClick={() => applyParams(from, to)}
+                disabled={pending}
                 className={outlineBtn}
               >
-                Aplicar rango
+                {pending ? "Cargando…" : "Aplicar rango"}
               </button>
             </div>
           )}

@@ -47,15 +47,26 @@ export async function fetchOrderItemsInChunks(
   select: string,
 ): Promise<{ rows: Record<string, unknown>[]; error: string | null }> {
   if (orderIds.length === 0) return { rows: [], error: null };
-  const out: Record<string, unknown>[] = [];
+  const chunks: string[][] = [];
   for (let i = 0; i < orderIds.length; i += ORDER_ITEMS_IN_CHUNK) {
-    const part = orderIds.slice(i, i + ORDER_ITEMS_IN_CHUNK);
-    const { data, error } = await supabase
-      .from("order_items")
-      .select(select)
-      .in("order_id", part);
-    if (error) return { rows: out, error: error.message };
-    out.push(...((data ?? []) as unknown as Record<string, unknown>[]));
+    chunks.push(orderIds.slice(i, i + ORDER_ITEMS_IN_CHUNK));
   }
-  return { rows: out, error: null };
+  const parts = await Promise.all(
+    chunks.map(async (part) => {
+      const { data, error } = await supabase
+        .from("order_items")
+        .select(select)
+        .in("order_id", part);
+      if (error) return { rows: [] as Record<string, unknown>[], error: error.message };
+      return {
+        rows: (data ?? []) as unknown as Record<string, unknown>[],
+        error: null as string | null,
+      };
+    }),
+  );
+  const firstErr = parts.find((p) => p.error)?.error ?? null;
+  return {
+    rows: parts.flatMap((p) => p.rows),
+    error: firstErr,
+  };
 }

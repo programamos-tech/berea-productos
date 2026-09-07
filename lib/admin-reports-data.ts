@@ -90,6 +90,8 @@ type ReportFetchOpts = {
   fetchFrom: string;
   fetchTo: string;
   periodLabel: string;
+  /** Vista "por periodo": no muestra stock; evita RPC + trend de 7 días. */
+  skipStock?: boolean;
 };
 
 function revenueNetGrossFromOrderTotals(orders: OrderRowRef[]): {
@@ -243,20 +245,24 @@ async function fetchPaidOrdersForRevenue(
   paidOrderIds: string[],
 ): Promise<OrderRowRef[]> {
   if (paidOrderIds.length === 0) return [];
-  const out: OrderRowRef[] = [];
+  const chunks: string[][] = [];
   for (let i = 0; i < paidOrderIds.length; i += 120) {
-    const part = paidOrderIds.slice(i, i + 120);
-    const { data, error } = await supabase
-      .from("orders")
-      .select("id,status,total_cents,created_at,wompi_reference")
-      .in("id", part);
-    if (error) {
-      console.error("[admin reportes] orders by id:", error.message);
-      break;
-    }
-    out.push(...((data ?? []) as OrderRowRef[]));
+    chunks.push(paidOrderIds.slice(i, i + 120));
   }
-  return out;
+  const parts = await Promise.all(
+    chunks.map(async (part) => {
+      const { data, error } = await supabase
+        .from("orders")
+        .select("id,status,total_cents,created_at,wompi_reference")
+        .in("id", part);
+      if (error) {
+        console.error("[admin reportes] orders by id:", error.message);
+        return [] as OrderRowRef[];
+      }
+      return (data ?? []) as OrderRowRef[];
+    }),
+  );
+  return parts.flat();
 }
 
 async function fetchLineDetailForOrders(
@@ -285,15 +291,21 @@ async function fetchLineDetailForOrders(
       orderItems.map((i) => i.product_id).filter((id): id is string => Boolean(id)),
     ),
   ];
+  const prodChunks: string[][] = [];
   for (let i = 0; i < pids.length; i += 120) {
-    const part = pids.slice(i, i + 120);
-    const { data: prodData } = await supabase
-      .from("products")
-      .select("id,price_cents,has_vat,vat_percent,cost_cents")
-      .in("id", part);
-    for (const p of prodData ?? []) {
-      productsById.set(p.id as string, p as ProductVatRow);
-    }
+    prodChunks.push(pids.slice(i, i + 120));
+  }
+  const prodParts = await Promise.all(
+    prodChunks.map(async (part) => {
+      const { data: prodData } = await supabase
+        .from("products")
+        .select("id,price_cents,has_vat,vat_percent,cost_cents")
+        .in("id", part);
+      return (prodData ?? []) as ProductVatRow[];
+    }),
+  );
+  for (const p of prodParts.flat()) {
+    productsById.set(p.id as string, p);
   }
 
   return { orderItems, productsById };
@@ -504,11 +516,25 @@ async function fetchAdminReportViaRpc(
   supabase: SupabaseClient,
   opts: ReportFetchOpts,
 ): Promise<AdminReportDashboardData | null> {
-  const { rangeFrom, rangeTo, chartFrom, chartTo, fetchFrom, fetchTo, periodLabel } =
-    opts;
+  const {
+    rangeFrom,
+    rangeTo,
+    chartFrom,
+    chartTo,
+    fetchFrom,
+    fetchTo,
+    periodLabel,
+    skipStock = false,
+  } = opts;
+
+  const emptyStock = {
+    netCents: 0,
+    grossCents: 0,
+    productCount: 0,
+  };
 
   const [stockTotals, rpcRes] = await Promise.all([
-    fetchStockInvestmentTotals(supabase),
+    skipStock ? Promise.resolve(emptyStock) : fetchStockInvestmentTotals(supabase),
     supabase.rpc("admin_report_dashboard_agg", {
       p_fetch_from: fetchFrom,
       p_fetch_to: fetchTo,
@@ -595,11 +621,13 @@ async function fetchAdminReportViaRpc(
       d.chartPoints,
     );
 
-  const stockInvestmentTrend = await loadStockInvestmentTrend(
-    supabase,
-    stockTotals.netCents,
-    stockTotals.grossCents,
-  );
+  const stockInvestmentTrend = skipStock
+    ? null
+    : await loadStockInvestmentTrend(
+        supabase,
+        stockTotals.netCents,
+        stockTotals.grossCents,
+      );
 
   return {
     periodLabel,
@@ -646,11 +674,25 @@ async function fetchAdminReportViaLegacy(
   supabase: SupabaseClient,
   opts: ReportFetchOpts,
 ): Promise<AdminReportDashboardData | null> {
-  const { rangeFrom, rangeTo, chartFrom, chartTo, fetchFrom, fetchTo, periodLabel } =
-    opts;
+  const {
+    rangeFrom,
+    rangeTo,
+    chartFrom,
+    chartTo,
+    fetchFrom,
+    fetchTo,
+    periodLabel,
+    skipStock = false,
+  } = opts;
+
+  const emptyStock = {
+    netCents: 0,
+    grossCents: 0,
+    productCount: 0,
+  };
 
   const [stockTotals, expensesRes, ordersResult] = await Promise.all([
-    fetchStockInvestmentTotals(supabase),
+    skipStock ? Promise.resolve(emptyStock) : fetchStockInvestmentTotals(supabase),
     fetchReportExpenses(supabase, fetchFrom, fetchTo),
     fetchOrdersCreatedInReportYmdWindow(
       supabase,
@@ -878,11 +920,13 @@ async function fetchAdminReportViaLegacy(
     opts.salesTrendPriorTo,
   );
 
-  const stockInvestmentTrend = await loadStockInvestmentTrend(
-    supabase,
-    stockTotals.netCents,
-    stockTotals.grossCents,
-  );
+  const stockInvestmentTrend = skipStock
+    ? null
+    : await loadStockInvestmentTrend(
+        supabase,
+        stockTotals.netCents,
+        stockTotals.grossCents,
+      );
 
   return {
     periodLabel,

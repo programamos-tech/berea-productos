@@ -99,12 +99,12 @@ export default async function AdminHomePage({ searchParams }: PageProps) {
     chartFrom,
     chartTo,
   } = reportSalesTrendWeekRanges(todayKey);
-  const { fetchFrom, fetchTo } = reportDataFetchYmdRange(
-    rangeFrom,
-    rangeTo,
-    chartFrom,
-    chartTo,
-  );
+  // Vista "por periodo": solo el rango elegido (antes se unía a 14 días hasta hoy
+  // por un gráfico de tendencia que ya no se muestra → escaneos enormes).
+  const { fetchFrom, fetchTo } =
+    vista === "dia"
+      ? { fetchFrom: rangeFrom, fetchTo: rangeTo }
+      : reportDataFetchYmdRange(rangeFrom, rangeTo, chartFrom, chartTo);
 
   const streamKey = `${vista}-${rangeFrom}-${rangeTo}`;
 
@@ -167,10 +167,7 @@ export default async function AdminHomePage({ searchParams }: PageProps) {
 
         <div className="grid min-h-0 flex-1 grid-cols-1 gap-5 border-t border-zinc-200/70 pt-4 dark:border-zinc-800 max-xl:flex-none lg:grid-cols-12 lg:gap-6">
           <div className="flex min-h-0 min-w-0 flex-col lg:col-span-7 max-xl:min-h-0">
-            <Suspense
-              key={`chart-${streamKey}`}
-              fallback={<ReportMonthlyChartsSkeleton />}
-            >
+            <Suspense fallback={<ReportMonthlyChartsSkeleton />}>
               <ReportMonthlyChartsSection
                 todayKey={todayKey}
                 rangeFrom={rangeFrom}

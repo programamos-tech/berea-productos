@@ -8,6 +8,7 @@ import {
 } from "@/lib/admin-ui";
 import { CalendarRange, Store } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useTransition } from "react";
 
 const options: Array<{
   id: ReportVista;
@@ -32,8 +33,10 @@ const options: Array<{
 export function ReportsVistaFilter({ vista }: { vista: ReportVista }) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [pending, startTransition] = useTransition();
 
   function select(next: ReportVista) {
+    if (next === vista || pending) return;
     const params = new URLSearchParams(searchParams.toString());
     if (next === "tienda") {
       // Vista por defecto: sin param.
@@ -46,14 +49,17 @@ export function ReportsVistaFilter({ vista }: { vista: ReportVista }) {
       params.delete("mes");
     }
     const qs = params.toString();
-    router.push(qs ? `/admin?${qs}` : "/admin");
+    startTransition(() => {
+      router.push(qs ? `/admin?${qs}` : "/admin");
+    });
   }
 
   return (
     <div
-      className="inline-flex flex-wrap items-center gap-2"
+      className={`inline-flex flex-wrap items-center gap-2 transition-opacity ${pending ? "opacity-70" : ""}`}
       role="group"
       aria-label="Tipo de reporte"
+      aria-busy={pending}
     >
       {options.map((opt) => {
         const active = vista === opt.id;
@@ -65,8 +71,9 @@ export function ReportsVistaFilter({ vista }: { vista: ReportVista }) {
             type="button"
             onClick={() => select(opt.id)}
             aria-pressed={active}
+            disabled={pending}
             title={opt.hint}
-            className={`${adminToolbarBtnBaseClass} ${active ? adminToolbarBtnActiveClass : adminToolbarBtnIdleClass}`}
+            className={`${adminToolbarBtnBaseClass} ${active ? adminToolbarBtnActiveClass : adminToolbarBtnIdleClass} disabled:cursor-wait`}
           >
             <Icon className="size-4 shrink-0" strokeWidth={2.25} aria-hidden />
             <span className="sm:hidden">{shortLabel}</span>

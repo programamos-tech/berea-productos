@@ -94,7 +94,10 @@ export async function ReportMonthlyChartsSection({
           />
         </div>
         <div className="w-full min-w-0 shrink-0">
-          <Suspense fallback={<ReportTopsSkeleton />}>
+          <Suspense
+            key={`tops-${rangeFrom}-${rangeTo}`}
+            fallback={<ReportTopsSkeleton />}
+          >
             <ReportTopsSection
               rangeFrom={rangeFrom}
               rangeTo={rangeTo}
