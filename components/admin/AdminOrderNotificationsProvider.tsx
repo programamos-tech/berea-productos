@@ -16,7 +16,9 @@ import {
   persistNotificationIds,
   rowToWebOrderNotification,
 } from "@/lib/admin-web-order-notifications";
+import { isDocumentVisible, trimSet } from "@/lib/document-visibility";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import type { RealtimeChannel } from "@supabase/supabase-js";
 
 type Ctx = {
   notifications: AdminWebOrderNotification[];
@@ -38,6 +40,9 @@ export function useAdminOrderNotifications() {
 }
 
 const POLL_MS = 30_000;
+const SEEN_IDS_CAP = 400;
+const ORDER_SELECT =
+  "id, status, customer_name, customer_email, total_cents, created_at, checkout_payment_method, wompi_reference";
 
 export function AdminOrderNotificationsProvider({
   enabled,
@@ -58,6 +63,7 @@ export function AdminOrderNotificationsProvider({
     const isNew = !seenIdsRef.current.has(item.id);
     if (isNew) {
       seenIdsRef.current.add(item.id);
+      trimSet(seenIdsRef.current, SEEN_IDS_CAP);
       persistNotificationIds(seenIdsRef.current);
     }
 
@@ -105,17 +111,81 @@ export function AdminOrderNotificationsProvider({
     seenIdsRef.current = loadPersistedNotificationIds();
     const supabase = createSupabaseBrowserClient();
 
+    let channel: RealtimeChannel | null = null;
+    let pollTimer: number | undefined;
+    let pollInFlight = false;
+    let cancelled = false;
+
+    const stopChannel = () => {
+      if (channel) {
+        void supabase.removeChannel(channel);
+        channel = null;
+      }
+    };
+
+    const stopPoll = () => {
+      if (pollTimer != null) {
+        window.clearInterval(pollTimer);
+        pollTimer = undefined;
+      }
+    };
+
+    const pollPending = async () => {
+      if (cancelled || pollInFlight || !isDocumentVisible()) return;
+      pollInFlight = true;
+      try {
+        const { data } = await supabase
+          .from("orders")
+          .select(ORDER_SELECT)
+          .eq("status", "pending")
+          .order("created_at", { ascending: false })
+          .limit(3);
+        if (cancelled) return;
+        for (const row of data ?? []) {
+          const item = rowToWebOrderNotification(row as Record<string, unknown>);
+          if (item) pushNotification(item, allowModalRef.current);
+        }
+      } finally {
+        pollInFlight = false;
+      }
+    };
+
+    const startChannel = () => {
+      if (cancelled || channel) return;
+      channel = supabase
+        .channel("admin-web-orders")
+        .on(
+          "postgres_changes",
+          { event: "INSERT", schema: "public", table: "orders" },
+          (payload) => {
+            if (!isDocumentVisible()) return;
+            const item = rowToWebOrderNotification(
+              payload.new as Record<string, unknown>,
+            );
+            if (item) pushNotification(item, allowModalRef.current);
+          },
+        )
+        .subscribe();
+    };
+
+    const startPoll = () => {
+      if (cancelled || pollTimer != null) return;
+      pollTimer = window.setInterval(() => {
+        void pollPending();
+      }, POLL_MS);
+    };
+
     const bootstrap = async () => {
       if (bootstrappedRef.current) return;
       bootstrappedRef.current = true;
       const { data } = await supabase
         .from("orders")
-        .select(
-          "id, status, customer_name, customer_email, total_cents, created_at, checkout_payment_method, wompi_reference",
-        )
+        .select(ORDER_SELECT)
         .eq("status", "pending")
         .order("created_at", { ascending: false })
         .limit(8);
+
+      if (cancelled) return;
 
       const items = (data ?? [])
         .map((row) => rowToWebOrderNotification(row as Record<string, unknown>))
@@ -129,42 +199,35 @@ export function AdminOrderNotificationsProvider({
       allowModalRef.current = true;
     };
 
-    void bootstrap();
+    const resume = () => {
+      if (cancelled || !isDocumentVisible()) return;
+      startChannel();
+      startPoll();
+      void pollPending();
+    };
 
-    const channel = supabase
-      .channel("admin-web-orders")
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "orders" },
-        (payload) => {
-          const item = rowToWebOrderNotification(
-            payload.new as Record<string, unknown>,
-          );
-          if (item) pushNotification(item, allowModalRef.current);
-        },
-      )
-      .subscribe();
+    const pause = () => {
+      stopPoll();
+      stopChannel();
+    };
 
-    const poll = window.setInterval(() => {
-      void (async () => {
-        const { data } = await supabase
-          .from("orders")
-          .select(
-            "id, status, customer_name, customer_email, total_cents, created_at, checkout_payment_method, wompi_reference",
-          )
-          .eq("status", "pending")
-          .order("created_at", { ascending: false })
-          .limit(3);
-        for (const row of data ?? []) {
-          const item = rowToWebOrderNotification(row as Record<string, unknown>);
-          if (item) pushNotification(item, allowModalRef.current);
-        }
-      })();
-    }, POLL_MS);
+    const onVisibility = () => {
+      if (isDocumentVisible()) resume();
+      else pause();
+    };
+
+    void (async () => {
+      await bootstrap();
+      if (cancelled) return;
+      if (isDocumentVisible()) resume();
+    })();
+
+    document.addEventListener("visibilitychange", onVisibility);
 
     return () => {
-      window.clearInterval(poll);
-      void supabase.removeChannel(channel);
+      cancelled = true;
+      document.removeEventListener("visibilitychange", onVisibility);
+      pause();
     };
   }, [enabled, pushNotification]);
 

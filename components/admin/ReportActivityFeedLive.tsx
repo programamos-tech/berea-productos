@@ -6,9 +6,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { actionTypeLabel, type AdminActivityAction } from "@/lib/admin-activity-log";
 import type { ActivityFeedItem } from "@/lib/admin-activity-feed";
 import { REPORT_STORE_TIME_ZONE } from "@/lib/admin-report-range";
+import { isDocumentVisible, trimSet } from "@/lib/document-visibility";
 
-const POLL_MS = 8_000;
+const POLL_MS = 15_000;
 const MAX_ITEMS = 18;
+const KNOWN_IDS_CAP = 200;
 
 function formatRelativeWhen(iso: string, nowMs: number): string {
   try {
@@ -90,11 +92,33 @@ export function ReportActivityFeedLive({
   useEffect(() => {
     let cancelled = false;
     let timer: number | undefined;
+    let abort: AbortController | undefined;
 
-    async function poll() {
+    const clearTimer = () => {
+      if (timer != null) {
+        window.clearTimeout(timer);
+        timer = undefined;
+      }
+    };
+
+    const schedule = (ms: number) => {
+      clearTimer();
+      if (cancelled) return;
+      timer = window.setTimeout(() => {
+        void runPoll();
+      }, ms);
+    };
+
+    async function runPoll() {
+      if (cancelled || !isDocumentVisible()) return;
+
+      abort?.abort();
+      abort = new AbortController();
+
       try {
         const res = await fetch("/api/admin/activity-feed", {
           cache: "no-store",
+          signal: abort.signal,
         });
         if (!res.ok || cancelled) return;
         const data = (await res.json()) as { items?: ActivityFeedItem[] };
@@ -104,6 +128,7 @@ export function ReportActivityFeedLive({
         const incoming = next.filter((row) => !knownIdsRef.current.has(row.id));
         if (incoming.length > 0) {
           for (const row of incoming) knownIdsRef.current.add(row.id);
+          trimSet(knownIdsRef.current, KNOWN_IDS_CAP);
           setFreshIds((prev) => {
             const s = new Set(prev);
             for (const row of incoming) s.add(row.id);
@@ -123,21 +148,39 @@ export function ReportActivityFeedLive({
           }
         } else {
           for (const row of next) knownIdsRef.current.add(row.id);
+          trimSet(knownIdsRef.current, KNOWN_IDS_CAP);
         }
         setItems(next);
-      } catch {
+      } catch (err) {
+        if (err instanceof DOMException && err.name === "AbortError") return;
         /* silencioso: reintenta en el siguiente ciclo */
       } finally {
-        if (!cancelled) {
-          timer = window.setTimeout(poll, POLL_MS);
+        if (!cancelled && isDocumentVisible()) {
+          schedule(POLL_MS);
         }
       }
     }
 
-    timer = window.setTimeout(poll, POLL_MS);
+    const onVisibility = () => {
+      if (cancelled) return;
+      if (isDocumentVisible()) {
+        void runPoll();
+      } else {
+        clearTimer();
+        abort?.abort();
+      }
+    };
+
+    document.addEventListener("visibilitychange", onVisibility);
+    if (isDocumentVisible()) {
+      schedule(POLL_MS);
+    }
+
     return () => {
       cancelled = true;
-      if (timer) window.clearTimeout(timer);
+      document.removeEventListener("visibilitychange", onVisibility);
+      clearTimer();
+      abort?.abort();
     };
   }, []);
 

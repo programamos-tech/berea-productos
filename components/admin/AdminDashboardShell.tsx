@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { AdminAuthVisibilityKeepAlive } from "@/components/admin/AdminAuthVisibilityKeepAlive";
 import { AdminOrderNotificationsProvider } from "@/components/admin/AdminOrderNotificationsProvider";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { AdminTopBar } from "@/components/admin/AdminTopBar";
@@ -91,6 +92,7 @@ export function AdminDashboardShell({
 
   return (
     <AdminOrderNotificationsProvider enabled={notifyNewWebOrders && !mustOpen}>
+      <AdminAuthVisibilityKeepAlive />
       <div className="isolate flex min-h-screen items-stretch antialiased">
         {mobileNavOpen ? (
           <button
