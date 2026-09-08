@@ -105,25 +105,46 @@ export default async function AdminHomePage({ searchParams }: PageProps) {
     vista === "dia"
       ? { fetchFrom: rangeFrom, fetchTo: rangeTo }
       : reportDataFetchYmdRange(rangeFrom, rangeTo, chartFrom, chartTo);
+  // En "por periodo" el RPC no necesita la ventana de tendencia semanal.
+  const dashChartFrom = vista === "dia" ? rangeFrom : chartFrom;
+  const dashChartTo = vista === "dia" ? rangeTo : chartTo;
+  const dashTrendCurrentFrom =
+    vista === "dia" ? rangeFrom : salesTrendCurrentFrom;
+  const dashTrendCurrentTo = vista === "dia" ? rangeTo : salesTrendCurrentTo;
+  const dashTrendPriorFrom = vista === "dia" ? rangeFrom : salesTrendPriorFrom;
+  const dashTrendPriorTo = vista === "dia" ? rangeTo : salesTrendPriorTo;
 
   const streamKey = `${vista}-${rangeFrom}-${rangeTo}`;
 
   return (
     <div className={reportsViewportClass}>
-      <header className="flex w-full shrink-0 flex-wrap items-center justify-between gap-x-3 gap-y-2">
-        <div className="min-w-0">
-          <h1 className={`whitespace-nowrap ${adminPageTitleClass}`}>
-            Reportes
-          </h1>
-          <ReportsHeaderMeta
-            vista={vista}
-            periodLabel={periodLabel}
-            isCurrentTiendaMonth={isCurrentTiendaMonth}
-          />
+      <header className="flex w-full shrink-0 flex-col gap-2">
+        <div className="flex w-full items-start justify-between gap-x-3 gap-y-2">
+          <div className="min-w-0 flex-1">
+            <h1 className={`whitespace-nowrap ${adminPageTitleClass}`}>
+              Reportes
+            </h1>
+            <ReportsHeaderMeta
+              vista={vista}
+              periodLabel={periodLabel}
+              isCurrentTiendaMonth={isCurrentTiendaMonth}
+            />
+          </div>
+          <div className="shrink-0 pt-0.5">
+            <Suspense
+              fallback={
+                <div className="flex gap-2">
+                  <div className="h-10 w-24 animate-pulse rounded-lg bg-zinc-200/80 dark:bg-zinc-800/90 motion-reduce:animate-none" />
+                  <div className="h-10 w-24 animate-pulse rounded-lg bg-zinc-200/80 dark:bg-zinc-800/90 motion-reduce:animate-none" />
+                </div>
+              }
+            >
+              <ReportsVistaFilter vista={vista} todayKey={todayKey} />
+            </Suspense>
+          </div>
         </div>
         <Suspense fallback={<ReportsFiltersSkeleton />}>
           <div className="flex min-w-0 flex-wrap items-center justify-end gap-2">
-            <ReportsVistaFilter vista={vista} />
             {vista === "tienda" ? (
               <ReportsMonthFilter selectedYm={tiendaYm} currentYm={currentYm} />
             ) : (
@@ -151,12 +172,12 @@ export default async function AdminHomePage({ searchParams }: PageProps) {
           <ReportsDashboardBody
             rangeFrom={rangeFrom}
             rangeTo={rangeTo}
-            chartFrom={chartFrom}
-            chartTo={chartTo}
-            salesTrendCurrentFrom={salesTrendCurrentFrom}
-            salesTrendCurrentTo={salesTrendCurrentTo}
-            salesTrendPriorFrom={salesTrendPriorFrom}
-            salesTrendPriorTo={salesTrendPriorTo}
+            chartFrom={dashChartFrom}
+            chartTo={dashChartTo}
+            salesTrendCurrentFrom={dashTrendCurrentFrom}
+            salesTrendCurrentTo={dashTrendCurrentTo}
+            salesTrendPriorFrom={dashTrendPriorFrom}
+            salesTrendPriorTo={dashTrendPriorTo}
             fetchFrom={fetchFrom}
             fetchTo={fetchTo}
             periodLabel={periodLabel}

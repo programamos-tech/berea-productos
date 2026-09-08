@@ -8,7 +8,7 @@ import {
 } from "@/lib/admin-ui";
 import { CalendarRange, Store } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useTransition } from "react";
+import { useEffect, useOptimistic, useTransition } from "react";
 
 const options: Array<{
   id: ReportVista;
@@ -30,39 +30,70 @@ const options: Array<{
   },
 ];
 
-export function ReportsVistaFilter({ vista }: { vista: ReportVista }) {
+function hrefForVista(
+  next: ReportVista,
+  searchParams: URLSearchParams,
+  todayKey?: string,
+): string {
+  const params = new URLSearchParams(searchParams.toString());
+  if (next === "tienda") {
+    params.delete("vista");
+    params.delete("from");
+    params.delete("to");
+  } else {
+    params.set("vista", "dia");
+    params.delete("mes");
+    // Rango por defecto = hoy → URL estable y prefetchable.
+    if (todayKey && !params.get("from") && !params.get("to")) {
+      params.set("from", todayKey);
+      params.set("to", todayKey);
+    }
+  }
+  const qs = params.toString();
+  return qs ? `/admin?${qs}` : "/admin";
+}
+
+export function ReportsVistaFilter({
+  vista,
+  todayKey,
+}: {
+  vista: ReportVista;
+  /** YYYY-MM-DD en zona de la tienda; acelera el salto a “Por periodo”. */
+  todayKey?: string;
+}) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [pending, startTransition] = useTransition();
+  const [optimisticVista, setOptimisticVista] = useOptimistic(vista);
+
+  useEffect(() => {
+    const base = new URLSearchParams(searchParams.toString());
+    router.prefetch(hrefForVista("dia", base, todayKey));
+    router.prefetch(hrefForVista("tienda", base));
+  }, [router, searchParams, todayKey]);
 
   function select(next: ReportVista) {
-    if (next === vista || pending) return;
-    const params = new URLSearchParams(searchParams.toString());
-    if (next === "tienda") {
-      // Vista por defecto: sin param.
-      params.delete("vista");
-      params.delete("from");
-      params.delete("to");
-      // Conserva `mes` si ya estaba eligiendo un mes histórico.
-    } else {
-      params.set("vista", "dia");
-      params.delete("mes");
-    }
-    const qs = params.toString();
+    if (next === optimisticVista) return;
+    const href = hrefForVista(
+      next,
+      new URLSearchParams(searchParams.toString()),
+      todayKey,
+    );
     startTransition(() => {
-      router.push(qs ? `/admin?${qs}` : "/admin");
+      setOptimisticVista(next);
+      router.push(href);
     });
   }
 
   return (
     <div
-      className={`inline-flex flex-wrap items-center gap-2 transition-opacity ${pending ? "opacity-70" : ""}`}
+      className={`inline-flex shrink-0 flex-nowrap items-center gap-2 ${pending ? "opacity-90" : ""}`}
       role="group"
       aria-label="Tipo de reporte"
       aria-busy={pending}
     >
       {options.map((opt) => {
-        const active = vista === opt.id;
+        const active = optimisticVista === opt.id;
         const Icon = opt.Icon;
         const shortLabel = opt.id === "tienda" ? "Tienda" : "Periodo";
         return (
@@ -70,10 +101,18 @@ export function ReportsVistaFilter({ vista }: { vista: ReportVista }) {
             key={opt.id}
             type="button"
             onClick={() => select(opt.id)}
+            onMouseEnter={() => {
+              router.prefetch(
+                hrefForVista(
+                  opt.id,
+                  new URLSearchParams(searchParams.toString()),
+                  todayKey,
+                ),
+              );
+            }}
             aria-pressed={active}
-            disabled={pending}
             title={opt.hint}
-            className={`${adminToolbarBtnBaseClass} ${active ? adminToolbarBtnActiveClass : adminToolbarBtnIdleClass} disabled:cursor-wait`}
+            className={`${adminToolbarBtnBaseClass} ${active ? adminToolbarBtnActiveClass : adminToolbarBtnIdleClass}`}
           >
             <Icon className="size-4 shrink-0" strokeWidth={2.25} aria-hidden />
             <span className="sm:hidden">{shortLabel}</span>

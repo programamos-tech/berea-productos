@@ -201,6 +201,7 @@ export async function ReportsDashboardBody({
       vista === "tienda"
         ? Promise.resolve(0)
         : (async () => {
+            // "Dinero en caja" es el esperado de hoy, no del rango del periodo.
             const arrastreHoy = await fetchCashArrastreCentsForReportStart(
               supabase,
               todayKey,

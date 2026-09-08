@@ -3,7 +3,7 @@ import { ImageResponse } from "next/og";
 export const size = { width: 32, height: 32 };
 export const contentType = "image/png";
 
-/** Favicon del backoffice Berea House (teal + bh). La tienda usa `app/icon.svg` rosa. */
+/** Favicon del backoffice Berea House (teal + bh). La tienda usa `app/icon.svg` (mismo teal bh). */
 export default function AdminIcon() {
   return new ImageResponse(
     (
