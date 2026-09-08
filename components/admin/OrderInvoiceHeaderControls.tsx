@@ -167,7 +167,7 @@ function CancelInvoiceModal({
                 {localError}
               </p>
             ) : null}
-            <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <div className="mt-6 flex flex-row items-center justify-end gap-2">
               <button
                 type="button"
                 disabled={pending}

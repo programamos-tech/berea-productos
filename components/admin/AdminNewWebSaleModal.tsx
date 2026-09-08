@@ -89,7 +89,7 @@ export function AdminNewWebSaleModal({
             </div>
           </dl>
 
-          <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end">
+          <div className="flex flex-row items-center justify-end gap-2 pt-2">
             <button
               type="button"
               onClick={onClose}

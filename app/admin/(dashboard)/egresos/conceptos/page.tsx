@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { ExpenseConceptsFlash } from "@/components/admin/ExpenseConceptsFlash";
@@ -6,11 +5,6 @@ import { ExpenseConceptsManager } from "@/components/admin/ExpenseConceptsManage
 import { loadAdminPermissions } from "@/lib/load-admin-permissions";
 import { fetchStoreExpenseConcepts } from "@/lib/store-expense-concepts";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import {
-  adminPageSubtitleClass,
-  adminPageTitleClass,
-  adminToolbarIconBtnClass,
-} from "@/lib/admin-ui";
 
 export const dynamic = "force-dynamic";
 
@@ -69,41 +63,24 @@ export default async function AdminExpenseConceptsPage({
 
   return (
     <div className="flex w-full min-w-0 flex-col gap-4">
-      <header className="flex shrink-0 flex-wrap items-center justify-between gap-2">
-        <div className="min-w-0">
-          <h1 className={adminPageTitleClass}>Conceptos</h1>
-          <p className={adminPageSubtitleClass}>
-            Catálogo de gastos y egresos
-          </p>
-        </div>
-        <Link
-          href="/admin/egresos"
-          className={adminToolbarIconBtnClass}
-          title="Volver a gastos"
-          aria-label="Volver a gastos"
-        >
-          ←
-        </Link>
-      </header>
-
-      <Suspense fallback={null}>
-        {okText ? (
-          <ExpenseConceptsFlash
-            message={okText}
-            variant="ok"
-            clearParam="ok"
-          />
-        ) : null}
-        {errText ? (
-          <ExpenseConceptsFlash
-            message={errText}
-            variant="error"
-            clearParam="error"
-          />
-        ) : null}
-      </Suspense>
-
-      <ExpenseConceptsManager rows={rows} />
+      <ExpenseConceptsManager rows={rows}>
+        <Suspense fallback={null}>
+          {okText ? (
+            <ExpenseConceptsFlash
+              message={okText}
+              variant="ok"
+              clearParam="ok"
+            />
+          ) : null}
+          {errText ? (
+            <ExpenseConceptsFlash
+              message={errText}
+              variant="error"
+              clearParam="error"
+            />
+          ) : null}
+        </Suspense>
+      </ExpenseConceptsManager>
     </div>
   );
 }

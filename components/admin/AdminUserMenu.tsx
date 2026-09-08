@@ -90,7 +90,7 @@ export function AdminUserMenu({ displayName, email, avatar }: Props) {
           <p className="mt-2 text-sm leading-relaxed text-stone-600 dark:text-zinc-400">
             ¿Seguro que quieres salir? Vas a tener que volver a iniciar sesión.
           </p>
-          <div className="mt-4 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          <div className="mt-4 flex flex-row items-center justify-end gap-2">
             <button
               type="button"
               onClick={() => setOpen(false)}
@@ -98,10 +98,10 @@ export function AdminUserMenu({ displayName, email, avatar }: Props) {
             >
               Cancelar
             </button>
-            <form action={signOutAdmin} className="sm:inline">
+            <form action={signOutAdmin}>
               <button
                 type="submit"
-                className="w-full rounded-xl border border-zinc-900 bg-zinc-900 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:border-zinc-800 hover:bg-zinc-800 sm:w-auto"
+                className="rounded-xl border border-zinc-900 bg-zinc-900 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:border-zinc-800 hover:bg-zinc-800"
               >
                 Cerrar sesión
               </button>

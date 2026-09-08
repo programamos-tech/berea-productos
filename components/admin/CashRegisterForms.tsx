@@ -526,22 +526,22 @@ export function CashRegisterClosePanel({
         </div>
       </div>
 
-      <div className="flex shrink-0 flex-col-reverse gap-2 border-t border-zinc-200/70 px-6 py-4 dark:border-zinc-800 sm:flex-row sm:items-center sm:justify-between sm:px-8">
+      <div className="flex shrink-0 flex-row items-center justify-between gap-2 border-t border-zinc-200/70 px-6 py-4 dark:border-zinc-800 sm:px-8">
         <button
           type="button"
           onClick={onDismiss}
-          className={`${adminButtonCancelClass} w-full sm:w-auto`}
+          className={adminButtonCancelClass}
         >
           {preview ? "Cerrar vista" : "Cerrar"}
         </button>
         {preview ? (
-          <span className="inline-flex w-full items-center justify-center rounded-lg border border-zinc-300 px-5 py-2.5 text-sm font-medium text-zinc-500 dark:border-zinc-700 sm:w-auto">
+          <span className="inline-flex items-center justify-center rounded-lg border border-zinc-300 px-5 py-2.5 text-sm font-medium text-zinc-500 dark:border-zinc-700">
             Solo vista previa
           </span>
         ) : (
           <AdminFormSubmitButton
             pendingLabel="Cerrando…"
-            className={`w-full px-5 py-2.5 sm:w-auto ${adminPrimarySubmitButtonClass}`}
+            className={`px-5 py-2.5 ${adminPrimarySubmitButtonClass}`}
           >
             Cerrar caja
           </AdminFormSubmitButton>

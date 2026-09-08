@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { Eye, EyeOff, Pencil, Trash2 } from "lucide-react";
 import {
@@ -14,10 +15,16 @@ import { AdminPortalRoot } from "@/components/admin/AdminPortalRoot";
 import type { StoreExpenseConceptRow } from "@/lib/store-expense-concepts";
 import {
   adminButtonCancelClass,
+  adminFilterInputClass,
+  adminFilterLabelClass,
+  adminPageSubtitleClass,
+  adminPageTitleClass,
   adminToolbarBtnActiveClass,
   adminToolbarBtnBaseClass,
+  adminToolbarIconBtnClass,
 } from "@/lib/admin-ui";
 import type { ExpensePaymentMethod } from "@/lib/expense-concepts";
+import { expensePaymentMethodLabel } from "@/lib/expenses-constants";
 
 const inputClass =
   "w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-sm text-zinc-900 outline-none focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100";
@@ -192,17 +199,20 @@ function ConceptModal({
                 </div>
               </div>
 
-              <div className="flex flex-wrap gap-2 border-t border-zinc-100 px-5 py-4 dark:border-zinc-800">
-                <AdminFormSubmitButton pendingLabel="Guardando…">
-                  {mode === "create" ? "Guardar" : "Guardar cambios"}
-                </AdminFormSubmitButton>
+              <div className="flex flex-row items-center justify-end gap-2 border-t border-zinc-100 px-5 py-4 dark:border-zinc-800">
                 <button
                   type="button"
                   onClick={onClose}
-                  className={adminButtonCancelClass}
+                  className={`${adminButtonCancelClass} flex-1 sm:flex-none`}
                 >
                   Cancelar
                 </button>
+                <AdminFormSubmitButton
+                  pendingLabel="Guardando…"
+                  className="flex-1 rounded-lg border border-zinc-900 bg-zinc-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:border-zinc-800 hover:bg-zinc-800 disabled:cursor-not-allowed disabled:border-zinc-200 disabled:bg-zinc-200 disabled:text-zinc-500 sm:flex-none dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:border-white dark:hover:bg-white dark:disabled:border-zinc-700 dark:disabled:bg-zinc-800 dark:disabled:text-zinc-500"
+                >
+                  {mode === "create" ? "Guardar" : "Guardar cambios"}
+                </AdminFormSubmitButton>
               </div>
             </form>
           </div>
@@ -215,28 +225,110 @@ function ConceptModal({
 
 export function ExpenseConceptsManager({
   rows,
+  children,
 }: {
   rows: StoreExpenseConceptRow[];
+  children?: ReactNode;
 }) {
   const [modal, setModal] = useState<
     null | { mode: "create" } | { mode: "edit"; id: string }
   >(null);
+  const [q, setQ] = useState("");
+  const [tipo, setTipo] = useState<"all" | ConceptRole>("all");
+  const [estado, setEstado] = useState<"all" | "active" | "inactive">("all");
 
   const editing = useMemo(() => {
     if (!modal || modal.mode !== "edit") return null;
     return rows.find((r) => r.id === modal.id) ?? null;
   }, [modal, rows]);
 
+  const filtered = useMemo(() => {
+    const needle = q.trim().toLowerCase();
+    return rows.filter((row) => {
+      if (needle && !row.name.toLowerCase().includes(needle)) return false;
+      if (tipo !== "all" && conceptRole(row) !== tipo) return false;
+      if (estado === "active" && !row.is_active) return false;
+      if (estado === "inactive" && row.is_active) return false;
+      return true;
+    });
+  }, [rows, q, tipo, estado]);
+
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center justify-end gap-2">
-        <button
-          type="button"
-          onClick={() => setModal({ mode: "create" })}
-          className={`${adminToolbarBtnBaseClass} ${adminToolbarBtnActiveClass}`}
-        >
-          + Nuevo concepto
-        </button>
+      <header className="flex shrink-0 flex-wrap items-center justify-between gap-2 gap-y-2">
+        <div className="min-w-0">
+          <h1 className={adminPageTitleClass}>Conceptos</h1>
+          <p className={adminPageSubtitleClass}>
+            Catálogo de gastos y egresos
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <button
+            type="button"
+            onClick={() => setModal({ mode: "create" })}
+            className={`${adminToolbarBtnBaseClass} ${adminToolbarBtnActiveClass}`}
+          >
+            + Nuevo concepto
+          </button>
+          <Link
+            href="/admin/egresos"
+            className={adminToolbarIconBtnClass}
+            title="Volver a gastos"
+            aria-label="Volver a gastos"
+          >
+            ←
+          </Link>
+        </div>
+      </header>
+
+      {children}
+
+      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-12 lg:items-end lg:gap-3">
+        <div className="min-w-0 sm:col-span-2 lg:col-span-6">
+          <label className={adminFilterLabelClass} htmlFor="concept_search">
+            Buscar
+          </label>
+          <input
+            id="concept_search"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Nombre del concepto…"
+            className={adminFilterInputClass}
+          />
+        </div>
+        <div className="min-w-0 lg:col-span-3">
+          <label className={adminFilterLabelClass} htmlFor="concept_tipo">
+            Tipo
+          </label>
+          <select
+            id="concept_tipo"
+            value={tipo}
+            onChange={(e) => setTipo(e.target.value as "all" | ConceptRole)}
+            className={adminFilterInputClass}
+          >
+            <option value="all">Todos</option>
+            <option value="gasto">Gasto</option>
+            <option value="egreso">Egreso</option>
+            <option value="otro">Otro</option>
+          </select>
+        </div>
+        <div className="min-w-0 lg:col-span-3">
+          <label className={adminFilterLabelClass} htmlFor="concept_estado">
+            Estado
+          </label>
+          <select
+            id="concept_estado"
+            value={estado}
+            onChange={(e) =>
+              setEstado(e.target.value as "all" | "active" | "inactive")
+            }
+            className={adminFilterInputClass}
+          >
+            <option value="all">Todos</option>
+            <option value="active">Activo</option>
+            <option value="inactive">Inactivo</option>
+          </select>
+        </div>
       </div>
 
       {modal?.mode === "create" ? (
@@ -256,12 +348,13 @@ export function ExpenseConceptsManager({
             <tr>
               <th className="px-3 py-2">Concepto</th>
               <th className="px-3 py-2">Tipo</th>
+              <th className="px-3 py-2">Medio por defecto</th>
               <th className="px-3 py-2">Estado</th>
               <th className="px-3 py-2 text-right">Acciones</th>
             </tr>
           </thead>
           <tbody>
-            {rows.map((row) => (
+            {filtered.map((row) => (
               <tr
                 key={row.id}
                 className="border-b border-zinc-100 last:border-0 dark:border-zinc-800/80"
@@ -273,6 +366,9 @@ export function ExpenseConceptsManager({
                 </td>
                 <td className="px-3 py-2.5 text-zinc-700 dark:text-zinc-300">
                   {roleLabel(row)}
+                </td>
+                <td className="px-3 py-2.5 text-zinc-700 dark:text-zinc-300">
+                  {expensePaymentMethodLabel(row.default_payment_method)}
                 </td>
                 <td className="px-3 py-2.5">
                   <span
@@ -350,13 +446,15 @@ export function ExpenseConceptsManager({
                 </td>
               </tr>
             ))}
-            {rows.length === 0 ? (
+            {filtered.length === 0 ? (
               <tr>
                 <td
-                  colSpan={4}
+                  colSpan={5}
                   className="px-3 py-8 text-center text-sm text-zinc-500"
                 >
-                  No hay conceptos todavía.
+                  {rows.length === 0
+                    ? "No hay conceptos todavía."
+                    : "Ningún concepto coincide con los filtros."}
                 </td>
               </tr>
             ) : null}

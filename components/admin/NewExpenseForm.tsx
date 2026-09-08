@@ -501,18 +501,18 @@ export function NewExpenseModal({
             </div>
           </div>
 
-          <div className="flex shrink-0 flex-col-reverse gap-2 border-t border-zinc-100 bg-zinc-50/80 px-5 py-4 dark:border-zinc-800 dark:bg-zinc-950/50 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+          <div className="flex shrink-0 flex-row items-center justify-between gap-2 border-t border-zinc-100 bg-zinc-50/80 px-5 py-4 dark:border-zinc-800 dark:bg-zinc-950/50 sm:px-6">
             <button
               type="button"
               onClick={onClose}
-              className={`${adminButtonCancelClass} w-full sm:w-auto`}
+              className={adminButtonCancelClass}
             >
               Cancelar
             </button>
             <AdminFormSubmitButton
               pendingLabel="Registrando…"
               disabled={submitBlocked}
-              className="w-full rounded-lg border border-[var(--admin-coral)] bg-[var(--admin-coral)] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:border-[var(--admin-coral-hover)] hover:bg-[var(--admin-coral-hover)] disabled:cursor-not-allowed disabled:border-zinc-200 disabled:bg-zinc-200 disabled:text-zinc-500 sm:w-auto dark:disabled:border-zinc-700 dark:disabled:bg-zinc-800 dark:disabled:text-zinc-500"
+              className="rounded-lg border border-[var(--admin-coral)] bg-[var(--admin-coral)] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:border-[var(--admin-coral-hover)] hover:bg-[var(--admin-coral-hover)] disabled:cursor-not-allowed disabled:border-zinc-200 disabled:bg-zinc-200 disabled:text-zinc-500 dark:disabled:border-zinc-700 dark:disabled:bg-zinc-800 dark:disabled:text-zinc-500"
             >
               {expenseKind === "egreso" ? "Registrar egreso" : "Registrar gasto"}
             </AdminFormSubmitButton>
