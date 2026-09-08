@@ -20,15 +20,35 @@ function redirectConceptError(code: string) {
   redirect(`/admin/egresos/conceptos?error=${encodeURIComponent(code)}`);
 }
 
-function parseKinds(formData: FormData): {
+function parseConceptRole(formData: FormData): {
   applies_to_gasto: boolean;
   applies_to_egreso: boolean;
+  allows_custom_text: boolean;
+  category: string;
 } {
-  const gasto = formData.get("applies_to_gasto") === "on" || formData.get("applies_to_gasto") === "1";
-  const egreso =
-    formData.get("applies_to_egreso") === "on" ||
-    formData.get("applies_to_egreso") === "1";
-  return { applies_to_gasto: gasto, applies_to_egreso: egreso };
+  const kind = String(formData.get("concept_kind") ?? "").trim();
+  if (kind === "egreso") {
+    return {
+      applies_to_gasto: false,
+      applies_to_egreso: true,
+      allows_custom_text: false,
+      category: "impuestos",
+    };
+  }
+  if (kind === "otro") {
+    return {
+      applies_to_gasto: true,
+      applies_to_egreso: false,
+      allows_custom_text: true,
+      category: "operativo",
+    };
+  }
+  return {
+    applies_to_gasto: true,
+    applies_to_egreso: false,
+    allows_custom_text: false,
+    category: "operativo",
+  };
 }
 
 export async function createExpenseConcept(formData: FormData) {
@@ -38,28 +58,20 @@ export async function createExpenseConcept(formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();
   if (name.length < 2) redirectConceptError("name");
 
-  const kinds = parseKinds(formData);
-  if (!kinds.applies_to_gasto && !kinds.applies_to_egreso) {
-    redirectConceptError("kinds");
-  }
-
-  const category = String(formData.get("category") ?? "").trim() || "operativo";
+  const role = parseConceptRole(formData);
   const payment = parseExpenseConceptPaymentMethod(
     formData.get("default_payment_method"),
   );
-  const allowsCustom = formData.get("allows_custom_text") === "on";
-  const sortRaw = Number(formData.get("sort_order") ?? 100);
-  const sort_order = Number.isFinite(sortRaw) ? Math.trunc(sortRaw) : 100;
 
   const { error } = await supabase.from("store_expense_concepts").insert({
     name,
-    category,
+    category: role.category,
     default_payment_method: payment,
-    applies_to_gasto: kinds.applies_to_gasto,
-    applies_to_egreso: kinds.applies_to_egreso,
-    allows_custom_text: allowsCustom,
-    sort_order,
-    is_active: true,
+    applies_to_gasto: role.applies_to_gasto,
+    applies_to_egreso: role.applies_to_egreso,
+    allows_custom_text: role.allows_custom_text,
+    sort_order: 100,
+    is_active: formData.get("is_active") !== "0",
     is_system: false,
     special_key: null,
   });
@@ -84,23 +96,15 @@ export async function updateExpenseConcept(formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();
   if (name.length < 2) redirectConceptError("name");
 
-  const kinds = parseKinds(formData);
-  if (!kinds.applies_to_gasto && !kinds.applies_to_egreso) {
-    redirectConceptError("kinds");
-  }
-
-  const category = String(formData.get("category") ?? "").trim() || "operativo";
+  const role = parseConceptRole(formData);
   const payment = parseExpenseConceptPaymentMethod(
     formData.get("default_payment_method"),
   );
-  const allowsCustom = formData.get("allows_custom_text") === "on";
   const isActive = formData.get("is_active") !== "0";
-  const sortRaw = Number(formData.get("sort_order") ?? 100);
-  const sort_order = Number.isFinite(sortRaw) ? Math.trunc(sortRaw) : 100;
 
   const { data: existing, error: loadErr } = await supabase
     .from("store_expense_concepts")
-    .select("id,is_system,special_key")
+    .select("id,is_system,special_key,sort_order,category")
     .eq("id", id)
     .maybeSingle();
 
@@ -110,22 +114,30 @@ export async function updateExpenseConcept(formData: FormData) {
   }
 
   const current = existing;
+  const special = String(current.special_key ?? "").trim();
 
   const patch: Record<string, unknown> = {
     name,
-    category,
+    category: role.category,
     default_payment_method: payment,
-    applies_to_gasto: kinds.applies_to_gasto,
-    applies_to_egreso: kinds.applies_to_egreso,
-    allows_custom_text: allowsCustom,
-    sort_order,
+    applies_to_gasto: role.applies_to_gasto,
+    applies_to_egreso: role.applies_to_egreso,
+    allows_custom_text: role.allows_custom_text,
     is_active: isActive,
+    sort_order: Number(current.sort_order ?? 100) || 100,
   };
 
-  // System specials keep their key; don't strip.
-  const special = String(current.special_key ?? "").trim();
-  if (special === "other_gasto" || special === "other_egreso") {
+  // Keep system “Otro impuesto” as egreso + free text.
+  if (special === "other_egreso") {
+    patch.applies_to_gasto = false;
+    patch.applies_to_egreso = true;
     patch.allows_custom_text = true;
+    patch.category = "impuestos";
+  } else if (special === "other_gasto") {
+    patch.applies_to_gasto = true;
+    patch.applies_to_egreso = false;
+    patch.allows_custom_text = true;
+    patch.category = "operativo";
   }
 
   const { error } = await supabase

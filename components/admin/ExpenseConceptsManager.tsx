@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { CircleSlash2, Pencil, Power, Trash2 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
+import { Eye, EyeOff, Pencil, Trash2 } from "lucide-react";
 import {
   createExpenseConcept,
   deleteExpenseConcept,
@@ -9,6 +10,7 @@ import {
   updateExpenseConcept,
 } from "@/app/actions/admin/expense-concepts";
 import { AdminFormSubmitButton } from "@/components/admin/AdminFormSubmitButton";
+import { AdminPortalRoot } from "@/components/admin/AdminPortalRoot";
 import type { StoreExpenseConceptRow } from "@/lib/store-expense-concepts";
 import {
   adminButtonCancelClass,
@@ -18,9 +20,9 @@ import {
 import type { ExpensePaymentMethod } from "@/lib/expense-concepts";
 
 const inputClass =
-  "w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100";
+  "w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-sm text-zinc-900 outline-none focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100";
 const labelClass =
-  "mb-1 block text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500";
+  "mb-1.5 block text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500";
 
 const iconBtnClass =
   "inline-flex size-8 items-center justify-center rounded-lg text-zinc-600 transition hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100";
@@ -35,128 +37,179 @@ const payOptions: { value: ExpensePaymentMethod; label: string }[] = [
   { value: "otro", label: "Otro" },
 ];
 
-function kindsLabel(row: StoreExpenseConceptRow): string {
-  const parts: string[] = [];
-  if (row.applies_to_gasto) parts.push("Gasto");
-  if (row.applies_to_egreso) parts.push("Egreso");
-  return parts.join(" · ") || "—";
+type ConceptRole = "gasto" | "egreso" | "otro";
+
+function conceptRole(row: StoreExpenseConceptRow): ConceptRole {
+  if (row.allows_custom_text || row.special_key === "other_gasto" || row.special_key === "other_egreso") {
+    return "otro";
+  }
+  if (row.applies_to_egreso) return "egreso";
+  return "gasto";
 }
 
-function ConceptFormFields({
+function roleLabel(row: StoreExpenseConceptRow): string {
+  const role = conceptRole(row);
+  if (role === "otro") return "Otro";
+  if (role === "egreso") return "Egreso";
+  return "Gasto";
+}
+
+function ConceptModal({
+  mode,
   row,
+  onClose,
 }: {
+  mode: "create" | "edit";
   row?: StoreExpenseConceptRow | null;
+  onClose: () => void;
 }) {
-  return (
-    <div className="grid gap-3 sm:grid-cols-2">
-      <div className="sm:col-span-2">
-        <label className={labelClass} htmlFor="concept_name">
-          Nombre
-        </label>
-        <input
-          id="concept_name"
-          name="name"
-          required
-          minLength={2}
-          maxLength={120}
-          defaultValue={row?.name ?? ""}
-          className={inputClass}
-          placeholder="Ej. Arriendo bodega"
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = prev;
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [onClose]);
+
+  if (!mounted) return null;
+
+  const title = mode === "create" ? "Nuevo concepto" : `Editar: ${row?.name ?? ""}`;
+  const action = mode === "create" ? createExpenseConcept : updateExpenseConcept;
+  const defaultRole: ConceptRole = row ? conceptRole(row) : "gasto";
+
+  return createPortal(
+    <AdminPortalRoot>
+      <>
+        <button
+          type="button"
+          className="fixed inset-x-0 bottom-0 top-14 z-[100] bg-zinc-950/25 backdrop-blur-[1px] dark:bg-black/35 sm:top-16 lg:left-64"
+          aria-label="Cerrar"
+          onClick={onClose}
         />
-      </div>
-      <div>
-        <label className={labelClass} htmlFor="concept_category">
-          Categoría
-        </label>
-        <input
-          id="concept_category"
-          name="category"
-          defaultValue={row?.category ?? "operativo"}
-          className={inputClass}
-          placeholder="operativo"
-        />
-      </div>
-      <div>
-        <label className={labelClass} htmlFor="concept_payment">
-          Medio por defecto
-        </label>
-        <select
-          id="concept_payment"
-          name="default_payment_method"
-          defaultValue={row?.default_payment_method ?? "transferencia"}
-          className={inputClass}
-        >
-          {payOptions.map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.label}
-            </option>
-          ))}
-        </select>
-      </div>
-      <div>
-        <label className={labelClass} htmlFor="concept_sort">
-          Orden
-        </label>
-        <input
-          id="concept_sort"
-          name="sort_order"
-          type="number"
-          defaultValue={row?.sort_order ?? 100}
-          className={inputClass}
-        />
-      </div>
-      <div className="flex flex-wrap items-center gap-4 sm:col-span-2">
-        <label className="inline-flex items-center gap-2 text-sm text-zinc-800 dark:text-zinc-100">
-          <input
-            type="checkbox"
-            name="applies_to_gasto"
-            value="1"
-            defaultChecked={row ? row.applies_to_gasto : true}
-            className="size-4 rounded border-zinc-300 text-[var(--admin-coral)]"
-          />
-          Usar como gasto
-        </label>
-        <label className="inline-flex items-center gap-2 text-sm text-zinc-800 dark:text-zinc-100">
-          <input
-            type="checkbox"
-            name="applies_to_egreso"
-            value="1"
-            defaultChecked={row ? row.applies_to_egreso : false}
-            className="size-4 rounded border-zinc-300 text-[var(--admin-coral)]"
-          />
-          Usar como egreso
-        </label>
-        <label className="inline-flex items-center gap-2 text-sm text-zinc-800 dark:text-zinc-100">
-          <input
-            type="checkbox"
-            name="allows_custom_text"
-            defaultChecked={row?.allows_custom_text ?? false}
-            disabled={
-              row?.special_key === "other_gasto" ||
-              row?.special_key === "other_egreso"
-            }
-            className="size-4 rounded border-zinc-300 text-[var(--admin-coral)]"
-          />
-          Permite texto libre (tipo “Otro”)
-        </label>
-      </div>
-      {row ? (
-        <div className="sm:col-span-2">
-          <label className={labelClass} htmlFor="concept_active">
-            Estado
-          </label>
-          <select
-            id="concept_active"
-            name="is_active"
-            defaultValue={row.is_active ? "1" : "0"}
-            className={inputClass}
+        <div className="pointer-events-none fixed inset-x-0 bottom-0 top-14 z-[101] flex items-center justify-center p-3 sm:top-16 sm:p-6 lg:left-64">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="concept-modal-title"
+            className="pointer-events-auto flex w-full max-w-md flex-col overflow-hidden rounded-2xl border border-zinc-200/90 bg-white shadow-2xl dark:border-zinc-700 dark:bg-zinc-900"
           >
-            <option value="1">Activo</option>
-            <option value="0">Inactivo</option>
-          </select>
+            <div className="flex shrink-0 items-start justify-between gap-3 border-b border-zinc-100 px-5 py-4 dark:border-zinc-800">
+              <h2
+                id="concept-modal-title"
+                className="text-lg font-semibold tracking-tight text-zinc-900 dark:text-zinc-100"
+              >
+                {title}
+              </h2>
+              <button
+                type="button"
+                onClick={onClose}
+                className="inline-flex size-9 shrink-0 items-center justify-center rounded-lg text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+                aria-label="Cerrar"
+              >
+                <span className="text-xl leading-none" aria-hidden>
+                  ×
+                </span>
+              </button>
+            </div>
+
+            <form action={action} className="flex flex-col">
+              {mode === "edit" && row ? (
+                <input type="hidden" name="id" value={row.id} />
+              ) : null}
+              <div className="space-y-4 px-5 py-4">
+                <div>
+                  <label className={labelClass} htmlFor="concept_name">
+                    Nombre
+                  </label>
+                  <input
+                    id="concept_name"
+                    name="name"
+                    required
+                    minLength={2}
+                    maxLength={120}
+                    defaultValue={row?.name ?? ""}
+                    className={inputClass}
+                    placeholder="Ej. Arriendo"
+                  />
+                </div>
+
+                <div>
+                  <label className={labelClass} htmlFor="concept_payment">
+                    Medio por defecto
+                  </label>
+                  <select
+                    id="concept_payment"
+                    name="default_payment_method"
+                    defaultValue={row?.default_payment_method ?? "transferencia"}
+                    className={inputClass}
+                  >
+                    {payOptions.map((o) => (
+                      <option key={o.value} value={o.value}>
+                        {o.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className={labelClass} htmlFor="concept_kind">
+                    Tipo
+                  </label>
+                  <select
+                    id="concept_kind"
+                    name="concept_kind"
+                    required
+                    defaultValue={defaultRole}
+                    className={inputClass}
+                  >
+                    <option value="gasto">Gasto</option>
+                    <option value="egreso">Egreso</option>
+                    <option value="otro">Otro (texto libre)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className={labelClass} htmlFor="concept_active">
+                    Estado
+                  </label>
+                  <select
+                    id="concept_active"
+                    name="is_active"
+                    defaultValue={row && !row.is_active ? "0" : "1"}
+                    className={inputClass}
+                  >
+                    <option value="1">Activo</option>
+                    <option value="0">Inactivo</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-2 border-t border-zinc-100 px-5 py-4 dark:border-zinc-800">
+                <AdminFormSubmitButton pendingLabel="Guardando…">
+                  {mode === "create" ? "Guardar" : "Guardar cambios"}
+                </AdminFormSubmitButton>
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className={adminButtonCancelClass}
+                >
+                  Cancelar
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
-      ) : null}
-    </div>
+      </>
+    </AdminPortalRoot>,
+    document.body,
   );
 }
 
@@ -165,78 +218,36 @@ export function ExpenseConceptsManager({
 }: {
   rows: StoreExpenseConceptRow[];
 }) {
-  const [creating, setCreating] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const editing = useMemo(
-    () => rows.find((r) => r.id === editingId) ?? null,
-    [rows, editingId],
-  );
+  const [modal, setModal] = useState<
+    null | { mode: "create" } | { mode: "edit"; id: string }
+  >(null);
+
+  const editing = useMemo(() => {
+    if (!modal || modal.mode !== "edit") return null;
+    return rows.find((r) => r.id === modal.id) ?? null;
+  }, [modal, rows]);
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-sm text-zinc-600 dark:text-zinc-400">
-          Definí qué conceptos salen al registrar un gasto o un egreso.
-        </p>
+      <div className="flex flex-wrap items-center justify-end gap-2">
         <button
           type="button"
-          onClick={() => {
-            setEditingId(null);
-            setCreating((v) => !v);
-          }}
+          onClick={() => setModal({ mode: "create" })}
           className={`${adminToolbarBtnBaseClass} ${adminToolbarBtnActiveClass}`}
         >
-          {creating ? "Cerrar" : "+ Nuevo concepto"}
+          + Nuevo concepto
         </button>
       </div>
 
-      {creating ? (
-        <form
-          action={createExpenseConcept}
-          className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950"
-        >
-          <h2 className="mb-3 text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-            Nuevo concepto
-          </h2>
-          <ConceptFormFields />
-          <div className="mt-4 flex flex-wrap gap-2">
-            <AdminFormSubmitButton pendingLabel="Guardando…">
-              Crear
-            </AdminFormSubmitButton>
-            <button
-              type="button"
-              onClick={() => setCreating(false)}
-              className={adminButtonCancelClass}
-            >
-              Cancelar
-            </button>
-          </div>
-        </form>
+      {modal?.mode === "create" ? (
+        <ConceptModal mode="create" onClose={() => setModal(null)} />
       ) : null}
-
-      {editing ? (
-        <form
-          action={updateExpenseConcept}
-          className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950"
-        >
-          <input type="hidden" name="id" value={editing.id} />
-          <h2 className="mb-3 text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-            Editar: {editing.name}
-          </h2>
-          <ConceptFormFields row={editing} />
-          <div className="mt-4 flex flex-wrap gap-2">
-            <AdminFormSubmitButton pendingLabel="Guardando…">
-              Guardar cambios
-            </AdminFormSubmitButton>
-            <button
-              type="button"
-              onClick={() => setEditingId(null)}
-              className={adminButtonCancelClass}
-            >
-              Cancelar
-            </button>
-          </div>
-        </form>
+      {modal?.mode === "edit" && editing ? (
+        <ConceptModal
+          mode="edit"
+          row={editing}
+          onClose={() => setModal(null)}
+        />
       ) : null}
 
       <div className="overflow-x-auto rounded-xl border border-zinc-200 dark:border-zinc-800">
@@ -259,14 +270,9 @@ export function ExpenseConceptsManager({
                   <div className="font-medium text-zinc-900 dark:text-zinc-100">
                     {row.name}
                   </div>
-                  <div className="text-[11px] text-zinc-500">
-                    {row.category}
-                    {row.allows_custom_text ? " · texto libre" : ""}
-                    {row.is_system ? " · sistema" : ""}
-                  </div>
                 </td>
                 <td className="px-3 py-2.5 text-zinc-700 dark:text-zinc-300">
-                  {kindsLabel(row)}
+                  {roleLabel(row)}
                 </td>
                 <td className="px-3 py-2.5">
                   <span
@@ -283,10 +289,7 @@ export function ExpenseConceptsManager({
                   <div className="flex flex-wrap items-center justify-end gap-0.5">
                     <button
                       type="button"
-                      onClick={() => {
-                        setCreating(false);
-                        setEditingId(row.id);
-                      }}
+                      onClick={() => setModal({ mode: "edit", id: row.id })}
                       className={iconBtnClass}
                       title="Editar"
                       aria-label={`Editar ${row.name}`}
@@ -311,13 +314,13 @@ export function ExpenseConceptsManager({
                         }
                       >
                         {row.is_active ? (
-                          <CircleSlash2
+                          <EyeOff
                             className="size-4"
                             strokeWidth={2}
                             aria-hidden
                           />
                         ) : (
-                          <Power className="size-4" strokeWidth={2} aria-hidden />
+                          <Eye className="size-4" strokeWidth={2} aria-hidden />
                         )}
                       </button>
                     </form>

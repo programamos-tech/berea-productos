@@ -22,8 +22,9 @@ create table if not exists public.store_expense_concepts (
   constraint store_expense_concepts_name_len check (
     char_length(trim(name)) between 2 and 120
   ),
-  constraint store_expense_concepts_kind_target check (
-    applies_to_gasto or applies_to_egreso
+  constraint store_expense_concepts_kind_xor check (
+    (applies_to_gasto and not applies_to_egreso)
+    or (applies_to_egreso and not applies_to_gasto)
   )
 );
 
@@ -132,10 +133,10 @@ begin
       (t, 'Pago a préstamo', 'financiero', 'transferencia', true, false, false, null, 180, true, false),
       (t, 'Prestaciones sociales', 'nomina', 'transferencia', true, false, false, null, 190, true, false),
       (t, 'Renovación Sigo nómina', 'nomina', 'transferencia', true, false, false, null, 200, true, false),
-      (t, 'Cámara de comercio', 'impuestos', 'transferencia', true, true, false, null, 210, true, false),
+      (t, 'Cámara de comercio', 'impuestos', 'transferencia', false, true, false, null, 210, true, false),
       (t, 'Pago por transacción Milagros', 'financiero', 'transferencia', true, false, false, null, 220, true, false),
       (t, 'Bolsas Milagros', 'insumos', 'efectivo', true, false, false, null, 230, true, false),
-      (t, 'Pago a proveedor', 'insumos', 'transferencia', true, true, false, 'supplier_payment', 240, true, true),
+      (t, 'Pago a proveedor', 'insumos', 'transferencia', false, true, false, 'supplier_payment', 240, true, true),
       (t, 'Seguro local y mercancía protegida', 'seguros', 'transferencia', true, false, false, null, 250, true, false),
       (t, 'Otro', 'operativo', 'transferencia', true, false, true, 'other_gasto', 900, true, true),
       (t, 'Impuesto de renta', 'impuestos', 'transferencia', false, true, false, null, 1010, true, false),

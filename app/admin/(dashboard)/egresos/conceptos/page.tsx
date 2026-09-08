@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
+import { ExpenseConceptsFlash } from "@/components/admin/ExpenseConceptsFlash";
 import { ExpenseConceptsManager } from "@/components/admin/ExpenseConceptsManager";
 import { loadAdminPermissions } from "@/lib/load-admin-permissions";
 import { fetchStoreExpenseConcepts } from "@/lib/store-expense-concepts";
@@ -32,7 +34,7 @@ function errorMessage(code: string | undefined): string | null {
     case "name":
       return "El nombre debe tener al menos 2 caracteres.";
     case "kinds":
-      return "Marcá al menos Gasto o Egreso.";
+      return "Elegí si es gasto o egreso.";
     case "duplicate":
       return "Ya existe un concepto con ese nombre.";
     case "system":
@@ -59,6 +61,8 @@ export default async function AdminExpenseConceptsPage({
   const sp = await searchParams;
   const ok = typeof sp.ok === "string" ? sp.ok : undefined;
   const error = typeof sp.error === "string" ? sp.error : undefined;
+  const okText = flashMessage(ok);
+  const errText = errorMessage(error);
 
   const supabase = await createSupabaseServerClient();
   const rows = await fetchStoreExpenseConcepts(supabase);
@@ -82,16 +86,22 @@ export default async function AdminExpenseConceptsPage({
         </Link>
       </header>
 
-      {flashMessage(ok) ? (
-        <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-900 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-100">
-          {flashMessage(ok)}
-        </p>
-      ) : null}
-      {errorMessage(error) ? (
-        <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-100">
-          {errorMessage(error)}
-        </p>
-      ) : null}
+      <Suspense fallback={null}>
+        {okText ? (
+          <ExpenseConceptsFlash
+            message={okText}
+            variant="ok"
+            clearParam="ok"
+          />
+        ) : null}
+        {errText ? (
+          <ExpenseConceptsFlash
+            message={errText}
+            variant="error"
+            clearParam="error"
+          />
+        ) : null}
+      </Suspense>
 
       <ExpenseConceptsManager rows={rows} />
     </div>
