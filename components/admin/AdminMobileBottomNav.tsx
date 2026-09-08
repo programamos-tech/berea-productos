@@ -42,7 +42,7 @@ export function AdminMobileBottomNav({
         className="admin-sidebar-nav-scroll flex snap-x snap-mandatory gap-0.5 overflow-x-auto overscroll-x-contain px-1.5 py-1.5"
       >
         {items.map((item) => {
-          const active = adminNavItemActive(pathname, item.href);
+          const active = adminNavItemActive(pathname, item.href, item);
           return (
             <Link
               key={item.href}

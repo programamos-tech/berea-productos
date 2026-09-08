@@ -237,17 +237,56 @@ function AdminSidebarInner({
             </p>
             <ul className="mt-2 space-y-0.5">
               {section.items.map((item) => {
-                const active = adminNavItemActive(pathname, item.href);
+                const active = adminNavItemActive(pathname, item.href, item);
+                const children = item.children ?? [];
                 return (
                   <li key={`${section.title}-${item.label}`}>
                     <Link
                       href={item.href}
                       prefetch
-                      className={linkClass(active)}
+                      className={linkClass(
+                        children.length > 0
+                          ? false
+                          : active,
+                      )}
                     >
                       {item.icon}
-                      {item.label}
+                      <span
+                        className={
+                          children.length > 0 && active
+                            ? "font-semibold text-zinc-900 dark:text-zinc-100"
+                            : undefined
+                        }
+                      >
+                        {item.label}
+                      </span>
                     </Link>
+                    {children.length > 0 ? (
+                      <ul className="mt-0.5 space-y-0.5 border-l border-zinc-200 py-0.5 pl-2 ml-[1.15rem] dark:border-zinc-800">
+                        {children.map((child) => {
+                          const childActive = adminNavItemActive(
+                            pathname,
+                            child.href,
+                          );
+                          return (
+                            <li key={child.href}>
+                              <Link
+                                href={child.href}
+                                prefetch
+                                className={[
+                                  "flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[12px] font-medium transition",
+                                  childActive
+                                    ? "bg-zinc-900 text-white shadow-sm dark:bg-zinc-100 dark:text-zinc-900 dark:shadow-none"
+                                    : "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-white/[0.06] dark:hover:text-zinc-100",
+                                ].join(" ")}
+                              >
+                                {child.label}
+                              </Link>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    ) : null}
                   </li>
                 );
               })}

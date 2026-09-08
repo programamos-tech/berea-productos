@@ -4,6 +4,7 @@ import {
   KitsAdminTable,
   type KitsAdminTableRow,
 } from "@/components/admin/KitsAdminTable";
+import { InventorySubnav } from "@/components/admin/InventorySubnav";
 import { storagePublicObjectUrl } from "@/lib/storage-public-url";
 import { fetchKitsForAdminList } from "@/lib/load-product-kits";
 import {
@@ -35,6 +36,7 @@ export default async function AdminKitsPage({
     ),
   ]);
   const canEdit = Boolean(perm?.permissions.kits_gestionar);
+  const canSeeProducts = Boolean(perm?.permissions.inventario_ver);
   const sp = await searchParams;
   const created = sp.created === "1";
 
@@ -63,7 +65,7 @@ export default async function AdminKitsPage({
 
       <header className="flex shrink-0 flex-wrap items-center justify-between gap-2 gap-y-2">
         <div className="min-w-0">
-          <h1 className={adminPageTitleClass}>Kits</h1>
+          <h1 className={adminPageTitleClass}>Inventario</h1>
           <p className={adminPageSubtitleClass}>
             Combos de productos para tienda y mostrador
           </p>
@@ -91,6 +93,12 @@ export default async function AdminKitsPage({
           ) : null}
         </div>
       </header>
+
+      <InventorySubnav
+        active="kits"
+        showProducts={canSeeProducts}
+        showKits
+      />
 
       <section className="min-h-0 border-t border-zinc-200/70 pt-4 dark:border-zinc-800">
         {rows.length === 0 ? (

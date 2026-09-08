@@ -23,6 +23,8 @@ export type AdminNavItem = {
   href: string;
   label: string;
   icon: ReactNode;
+  /** Submenú (p. ej. Productos / Kits bajo Inventario). */
+  children?: AdminNavItem[];
 };
 
 export type AdminNavSection = {
@@ -88,17 +90,29 @@ export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
             <path d="M3.3 7 12 12l8.7-5" />
           </Icon>
         ),
-      },
-      {
-        href: "/admin/kits",
-        label: "Kits",
-        icon: (
-          <Icon>
-            <path d="M16.5 9.4 12 12 7.5 9.4" />
-            <path d="M21 16V8l-9-5-9 5v8l9 5 9-5z" />
-            <path d="M12 12v9" />
-          </Icon>
-        ),
+        children: [
+          {
+            href: "/admin/products",
+            label: "Productos",
+            icon: (
+              <Icon>
+                <path d="M21 16V8l-9-5-9 5v8l9 5 9-5z" />
+                <path d="M3.3 7 12 12l8.7-5" />
+              </Icon>
+            ),
+          },
+          {
+            href: "/admin/kits",
+            label: "Kits",
+            icon: (
+              <Icon>
+                <path d="M16.5 9.4 12 12 7.5 9.4" />
+                <path d="M21 16V8l-9-5-9 5v8l9 5 9-5z" />
+                <path d="M12 12v9" />
+              </Icon>
+            ),
+          },
+        ],
       },
       {
         href: "/admin/customers",
@@ -170,7 +184,16 @@ function pathMatches(pathname: string, href: string) {
   return pathname === pathOnly || pathname.startsWith(`${pathOnly}/`);
 }
 
-export function adminNavItemActive(pathname: string, href: string): boolean {
+export function adminNavItemActive(
+  pathname: string,
+  href: string,
+  item?: AdminNavItem,
+): boolean {
+  if (item?.children?.length) {
+    return item.children.some((child) =>
+      adminNavItemActive(pathname, child.href),
+    );
+  }
   if (href === CUENTA_HREF) {
     return pathname === CUENTA_HREF || pathname.startsWith(`${CUENTA_HREF}/`);
   }
@@ -199,19 +222,47 @@ export function adminNavItemActive(pathname: string, href: string): boolean {
   return pathMatches(pathname, href);
 }
 
+function filterNavItem(
+  item: AdminNavItem,
+  allowed: Set<string>,
+): AdminNavItem | null {
+  if (item.children?.length) {
+    const children = item.children.filter((child) => allowed.has(child.href));
+    if (children.length === 0) return null;
+    return {
+      ...item,
+      href: children[0]!.href,
+      children,
+    };
+  }
+  if (!allowed.has(item.href)) return null;
+  return item;
+}
+
 export function filterAdminNavSections(
   allowedNavHrefs: string[],
 ): AdminNavSection[] {
   const allowed = new Set(allowedNavHrefs);
   return ADMIN_NAV_SECTIONS.map((section) => ({
     ...section,
-    items: section.items.filter((item) => allowed.has(item.href)),
+    items: section.items
+      .map((item) => filterNavItem(item, allowed))
+      .filter((item): item is AdminNavItem => item != null),
   })).filter((section) => section.items.length > 0);
 }
 
-/** Items planos para la barra inferior (comercial primero, luego config). */
+/** Items de primer nivel para la barra inferior (los hijos no se duplican como tabs). */
 export function flattenAdminNavItems(
   sections: AdminNavSection[],
 ): AdminNavItem[] {
   return sections.flatMap((section) => section.items);
+}
+
+export function isInventorySectionPath(pathname: string): boolean {
+  return (
+    pathname === PRODUCTS_HREF ||
+    pathname.startsWith(`${PRODUCTS_HREF}/`) ||
+    pathname === KITS_HREF ||
+    pathname.startsWith(`${KITS_HREF}/`)
+  );
 }

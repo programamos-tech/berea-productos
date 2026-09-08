@@ -22,6 +22,7 @@ import { loadAdminPermissions } from "@/lib/load-admin-permissions";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { unitPriceGrossCents } from "@/lib/product-vat-price";
 import { AdminProductsFlashToast } from "@/components/admin/AdminProductsFlashToast";
+import { InventorySubnav } from "@/components/admin/InventorySubnav";
 import {
   StaticCopCents,
   StaticInteger,
@@ -124,6 +125,7 @@ export default async function AdminProductsPage({
   const canManageCategories = Boolean(
     authPerm?.permissions.categorias_gestionar,
   );
+  const canSeeKits = Boolean(authPerm?.permissions.kits_ver);
 
   const spRecord = sp as Record<string, string | string[] | undefined>;
   const qParam = spRecord.q;
@@ -283,6 +285,12 @@ export default async function AdminProductsPage({
             ) : null}
           </div>
         </header>
+
+        <InventorySubnav
+          active="products"
+          showProducts
+          showKits={canSeeKits}
+        />
 
         <div className="flex min-h-0 flex-col gap-4">
           {queryError ? (
