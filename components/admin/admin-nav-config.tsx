@@ -1,0 +1,217 @@
+import type { ReactNode, SVGProps } from "react";
+
+function Icon(props: SVGProps<SVGSVGElement> & { children: ReactNode }) {
+  const { children, className = "", ...rest } = props;
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.65}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={`size-[18px] shrink-0 ${className}`}
+      aria-hidden
+      {...rest}
+    >
+      {children}
+    </svg>
+  );
+}
+
+export type AdminNavItem = {
+  href: string;
+  label: string;
+  icon: ReactNode;
+};
+
+export type AdminNavSection = {
+  title: string;
+  items: AdminNavItem[];
+};
+
+/**
+ * Menú admin visible. Rutas en mantenimiento (banners, cupones, envíos, ajustes)
+ * no se listan hasta reactivarlas.
+ */
+export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
+  {
+    title: "Comercial",
+    items: [
+      {
+        href: "/admin",
+        label: "Reportes",
+        icon: (
+          <Icon>
+            <path d="M4 11.5 12 5l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1v-8.5Z" />
+          </Icon>
+        ),
+      },
+      {
+        href: "/admin/caja",
+        label: "Caja",
+        icon: (
+          <Icon>
+            <rect x="2" y="6" width="20" height="12" rx="2" />
+            <circle cx="12" cy="12" r="3" />
+            <path d="M6 12h.01M18 12h.01" />
+          </Icon>
+        ),
+      },
+      {
+        href: "/admin/ventas",
+        label: "Ventas",
+        icon: (
+          <Icon>
+            <path d="M6 3h12v18l-2-1-2 1-2-1-2 1-2-1-2 1V3Z" />
+            <path d="M9 8h6M9 12h6M9 16h4" />
+          </Icon>
+        ),
+      },
+      {
+        href: "/admin/egresos",
+        label: "Gastos",
+        icon: (
+          <Icon>
+            <path d="M4 6h16v12H4z" />
+            <path d="M8 10h8" />
+            <path d="M8 14h5" />
+          </Icon>
+        ),
+      },
+      {
+        href: "/admin/products",
+        label: "Inventario",
+        icon: (
+          <Icon>
+            <path d="M21 16V8l-9-5-9 5v8l9 5 9-5z" />
+            <path d="M3.3 7 12 12l8.7-5" />
+          </Icon>
+        ),
+      },
+      {
+        href: "/admin/kits",
+        label: "Kits",
+        icon: (
+          <Icon>
+            <path d="M16.5 9.4 12 12 7.5 9.4" />
+            <path d="M21 16V8l-9-5-9 5v8l9 5 9-5z" />
+            <path d="M12 12v9" />
+          </Icon>
+        ),
+      },
+      {
+        href: "/admin/customers",
+        label: "Clientes",
+        icon: (
+          <Icon>
+            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+            <circle cx="9" cy="7" r="4" />
+            <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
+          </Icon>
+        ),
+      },
+    ],
+  },
+  {
+    title: "Configuración",
+    items: [
+      {
+        href: "/admin/cuenta",
+        label: "Mi cuenta",
+        icon: (
+          <Icon>
+            <circle cx="12" cy="8" r="4" />
+            <path d="M4 20v-1a7 7 0 0 1 7-7h2a7 7 0 0 1 7 7v1" />
+          </Icon>
+        ),
+      },
+      {
+        href: "/admin/usuarios",
+        label: "Equipo",
+        icon: (
+          <Icon>
+            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+            <circle cx="9" cy="7" r="4" />
+            <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+          </Icon>
+        ),
+      },
+      {
+        href: "/admin/actividades",
+        label: "Registros",
+        icon: (
+          <Icon>
+            <path d="M4 11h16" />
+            <path d="M4 7h10" />
+            <path d="M4 15h8" />
+            <path d="M18 15h2" />
+            <path d="M18 11h2" />
+            <circle cx="18" cy="7" r="2" />
+          </Icon>
+        ),
+      },
+    ],
+  },
+];
+
+const PRODUCTS_HREF = "/admin/products";
+const KITS_HREF = "/admin/kits";
+const VENTAS_HREF = "/admin/ventas";
+const ORDERS_HREF = "/admin/orders";
+const CUSTOMERS_HREF = "/admin/customers";
+const USUARIOS_HREF = "/admin/usuarios";
+const CUENTA_HREF = "/admin/cuenta";
+
+function pathMatches(pathname: string, href: string) {
+  if (href === "/admin") return pathname === "/admin";
+  const pathOnly = href.split("?")[0] ?? href;
+  return pathname === pathOnly || pathname.startsWith(`${pathOnly}/`);
+}
+
+export function adminNavItemActive(pathname: string, href: string): boolean {
+  if (href === CUENTA_HREF) {
+    return pathname === CUENTA_HREF || pathname.startsWith(`${CUENTA_HREF}/`);
+  }
+  if (href === USUARIOS_HREF) {
+    return pathname === USUARIOS_HREF || pathname.startsWith(`${USUARIOS_HREF}/`);
+  }
+  if (href === VENTAS_HREF) {
+    return (
+      pathname === VENTAS_HREF ||
+      pathname.startsWith(`${VENTAS_HREF}/`) ||
+      pathname === ORDERS_HREF ||
+      pathname.startsWith(`${ORDERS_HREF}/`)
+    );
+  }
+  if (href === PRODUCTS_HREF) {
+    return pathname === PRODUCTS_HREF || pathname.startsWith(`${PRODUCTS_HREF}/`);
+  }
+  if (href === KITS_HREF) {
+    return pathname === KITS_HREF || pathname.startsWith(`${KITS_HREF}/`);
+  }
+  if (href === CUSTOMERS_HREF) {
+    return (
+      pathname === CUSTOMERS_HREF || pathname.startsWith(`${CUSTOMERS_HREF}/`)
+    );
+  }
+  return pathMatches(pathname, href);
+}
+
+export function filterAdminNavSections(
+  allowedNavHrefs: string[],
+): AdminNavSection[] {
+  const allowed = new Set(allowedNavHrefs);
+  return ADMIN_NAV_SECTIONS.map((section) => ({
+    ...section,
+    items: section.items.filter((item) => allowed.has(item.href)),
+  })).filter((section) => section.items.length > 0);
+}
+
+/** Items planos para la barra inferior (comercial primero, luego config). */
+export function flattenAdminNavItems(
+  sections: AdminNavSection[],
+): AdminNavItem[] {
+  return sections.flatMap((section) => section.items);
+}

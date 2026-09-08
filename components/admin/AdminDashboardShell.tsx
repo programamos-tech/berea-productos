@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { AdminAuthVisibilityKeepAlive } from "@/components/admin/AdminAuthVisibilityKeepAlive";
+import { AdminMobileBottomNav } from "@/components/admin/AdminMobileBottomNav";
 import { AdminOrderNotificationsProvider } from "@/components/admin/AdminOrderNotificationsProvider";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { AdminTopBar } from "@/components/admin/AdminTopBar";
@@ -37,7 +38,6 @@ export function AdminDashboardShell({
     email: string;
   };
 }) {
-  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
   const mustOpen = Boolean(cashGate?.mustOpen);
@@ -59,68 +59,24 @@ export function AdminDashboardShell({
     router.replace("/admin");
   }, [pathname, router]);
 
-  useEffect(() => {
-    if (!mobileNavOpen) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setMobileNavOpen(false);
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [mobileNavOpen]);
-
-  useEffect(() => {
-    if (!mobileNavOpen) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = prev;
-    };
-  }, [mobileNavOpen]);
-
-  // Al girar a landscape / desktop, cerrar drawer móvil.
-  useEffect(() => {
-    const mq = window.matchMedia("(min-width: 1024px)");
-    const onChange = () => {
-      if (mq.matches) setMobileNavOpen(false);
-    };
-    onChange();
-    mq.addEventListener("change", onChange);
-    return () => mq.removeEventListener("change", onChange);
-  }, []);
-
-  const closeNav = () => setMobileNavOpen(false);
-
   return (
     <AdminOrderNotificationsProvider enabled={notifyNewWebOrders && !mustOpen}>
       <AdminAuthVisibilityKeepAlive />
       <div className="isolate flex min-h-screen items-stretch antialiased">
-        {mobileNavOpen ? (
-          <button
-            type="button"
-            className="fixed inset-0 z-[40] bg-black/40 backdrop-blur-[1px] lg:hidden"
-            aria-label="Cerrar menú"
-            onClick={closeNav}
-          />
-        ) : null}
-
-        <AdminSidebar
-          allowedNavHrefs={allowedNavHrefs}
-          mobileOpen={mobileNavOpen}
-          onNavigate={closeNav}
-        />
+        <AdminSidebar allowedNavHrefs={allowedNavHrefs} />
 
         <div className="relative z-10 flex min-h-screen min-w-0 flex-1 flex-col overflow-x-visible overflow-y-visible bg-white dark:bg-zinc-950 lg:ml-64 print:ml-0 print:bg-white">
           <AdminTopBar
-            menuOpen={mobileNavOpen}
-            onMenuClick={() => setMobileNavOpen(true)}
             showOrderNotifications={notifyNewWebOrders && !mustOpen}
             displayName={sessionUser.displayName}
             email={sessionUser.email}
           />
-          <main className="relative z-0 min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-visible p-3 sm:p-4 md:p-6 print:bg-white print:p-8">
+          <main className="relative z-0 min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-visible p-3 pb-[calc(4.75rem+env(safe-area-inset-bottom))] sm:p-4 md:p-6 lg:pb-6 print:bg-white print:p-8 print:pb-8">
             {children}
           </main>
         </div>
+
+        <AdminMobileBottomNav allowedNavHrefs={allowedNavHrefs} />
 
         {mustOpen && cashGate ? (
           <CashRegisterMorningGateModal

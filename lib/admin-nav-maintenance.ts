@@ -1,6 +1,6 @@
 /**
  * Secciones del admin temporalmente no disponibles:
- * visibles en el menú (difuminadas) pero sin acceso.
+ * no aparecen en el menú; al visitar la URL se redirige a reportes.
  */
 export const ADMIN_NAV_MAINTENANCE_HREFS = [
   "/admin/banners",

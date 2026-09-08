@@ -1,9 +1,14 @@
+import Image from "next/image";
 import Link from "next/link";
 import { AdminGlobalSearch } from "@/components/admin/AdminGlobalSearch";
 import { AdminNotificationBell } from "@/components/admin/AdminNotificationBell";
 import { AdminThemeToggle } from "@/components/admin/AdminThemeToggle";
 import { AdminUserAvatar } from "@/components/admin/AdminUserAvatar";
 import { AdminUserMenu } from "@/components/admin/AdminUserMenu";
+import {
+  ADMIN_BRAND_LOGO_ON_SIDEBAR_CLASS,
+} from "@/lib/admin-theme";
+import { adminProductBrand, adminSidebarLogoPath } from "@/lib/brand";
 
 function IconHelp() {
   return (
@@ -23,27 +28,7 @@ function IconPulse() {
   );
 }
 
-function IconSliders() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.65} strokeLinecap="round" className="size-5" aria-hidden>
-      <path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M9 17h6M7 13H5m14-4h-4" />
-    </svg>
-  );
-}
-
-function IconMenu() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" className="size-6" aria-hidden>
-      <path d="M4 6h16" />
-      <path d="M4 12h16" />
-      <path d="M4 18h16" />
-    </svg>
-  );
-}
-
 type AdminTopBarProps = {
-  onMenuClick?: () => void;
-  menuOpen?: boolean;
   showOrderNotifications?: boolean;
   displayName: string;
   email: string;
@@ -53,8 +38,6 @@ const iconBtnClass =
   "rounded-lg p-2 text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100";
 
 export function AdminTopBar({
-  onMenuClick,
-  menuOpen,
   showOrderNotifications = false,
   displayName,
   email,
@@ -62,16 +45,21 @@ export function AdminTopBar({
   return (
     <header className="sticky top-0 z-50 w-full min-w-0 overflow-visible border-b border-zinc-200 bg-white/90 backdrop-blur-md print:hidden dark:border-zinc-800 dark:bg-zinc-900/90">
       <div className="flex h-14 min-w-0 items-center gap-2 overflow-visible px-3 sm:h-16 sm:gap-3 sm:px-6">
-        <button
-          type="button"
-          onClick={onMenuClick}
-          className="flex size-10 shrink-0 items-center justify-center rounded-lg text-zinc-700 transition hover:bg-zinc-100 active:bg-zinc-200/80 dark:text-zinc-100 dark:hover:bg-zinc-800 dark:active:bg-zinc-700/80 lg:hidden"
-          aria-label="Abrir menú"
-          aria-expanded={menuOpen ?? false}
-          aria-controls="admin-sidebar-nav"
+        <Link
+          href="/admin"
+          prefetch
+          className="flex shrink-0 items-center rounded-md outline-none transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-zinc-400/50 lg:hidden"
+          title={adminProductBrand}
         >
-          <IconMenu />
-        </button>
+          <Image
+            src={adminSidebarLogoPath}
+            alt={adminProductBrand}
+            width={480}
+            height={265}
+            className={`h-7 w-auto max-w-[7.5rem] object-contain object-left sm:h-8 sm:max-w-[8.5rem] ${ADMIN_BRAND_LOGO_ON_SIDEBAR_CLASS}`}
+            priority
+          />
+        </Link>
 
         <div className="flex min-w-0 flex-1 basis-0 items-center overflow-visible">
           <div className="w-full min-w-0 overflow-visible pl-0.5">
@@ -104,13 +92,6 @@ export function AdminTopBar({
               title="Registros"
             >
               <IconPulse />
-            </Link>
-            <Link
-              href="/admin/settings"
-              className={iconBtnClass}
-              title="Ajustes"
-            >
-              <IconSliders />
             </Link>
             {showOrderNotifications ? <AdminNotificationBell /> : null}
           </div>
