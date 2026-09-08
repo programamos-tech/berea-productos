@@ -77,7 +77,7 @@ function Metric({
         </p>
         {labelExtra}
       </div>
-      <div className="mt-1.5 text-lg font-semibold tabular-nums tracking-tight text-zinc-900 dark:text-zinc-50 sm:text-xl md:text-2xl">
+      <div className="mt-1 text-base font-semibold tabular-nums tracking-tight text-zinc-900 dark:text-zinc-50 sm:text-lg lg:text-xl">
         {children}
       </div>
       {hint ? (

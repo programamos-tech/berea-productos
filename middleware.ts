@@ -43,7 +43,9 @@ function skipsMiddlewareAuth(path: string): boolean {
     path.startsWith("/api/webhooks/") ||
     // Auth en requireAdminApiSession (getSession local), no en edge.
     path.startsWith("/api/admin/") ||
-    path === "/icon.svg" ||
+    path === "/icon.png" ||
+    path === "/icon" ||
+    path.startsWith("/icon?") ||
     isPublicStorePath(path)
   );
 }
@@ -82,7 +84,10 @@ export async function middleware(request: NextRequest) {
       path.startsWith("/empezar/") ||
       path.startsWith("/admin") ||
       path.startsWith("/api/") ||
-      path === "/icon.svg" ||
+      path === "/icon.png" ||
+      path === "/icon" ||
+      path.startsWith("/icon?") ||
+      path === "/favicon.ico" ||
       path === "/apple-icon" ||
       path.startsWith("/apple-icon");
     if (!platformOk) {
