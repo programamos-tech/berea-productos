@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { CircleSlash2, Pencil, Power, Trash2 } from "lucide-react";
 import {
   createExpenseConcept,
   deleteExpenseConcept,
@@ -20,6 +21,11 @@ const inputClass =
   "w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100";
 const labelClass =
   "mb-1 block text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500";
+
+const iconBtnClass =
+  "inline-flex size-8 items-center justify-center rounded-lg text-zinc-600 transition hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100";
+const iconDangerBtnClass =
+  "inline-flex size-8 items-center justify-center rounded-lg text-red-600 transition hover:bg-red-50 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-950/40 dark:hover:text-red-300";
 
 const payOptions: { value: ExpensePaymentMethod; label: string }[] = [
   { value: "transferencia", label: "Transferencia" },
@@ -274,16 +280,18 @@ export function ExpenseConceptsManager({
                   </span>
                 </td>
                 <td className="px-3 py-2.5">
-                  <div className="flex flex-wrap justify-end gap-2">
+                  <div className="flex flex-wrap items-center justify-end gap-0.5">
                     <button
                       type="button"
                       onClick={() => {
                         setCreating(false);
                         setEditingId(row.id);
                       }}
-                      className="text-xs font-semibold text-zinc-700 underline-offset-2 hover:underline dark:text-zinc-200"
+                      className={iconBtnClass}
+                      title="Editar"
+                      aria-label={`Editar ${row.name}`}
                     >
-                      Editar
+                      <Pencil className="size-4" strokeWidth={2} aria-hidden />
                     </button>
                     <form action={toggleExpenseConceptActive}>
                       <input type="hidden" name="id" value={row.id} />
@@ -294,9 +302,23 @@ export function ExpenseConceptsManager({
                       />
                       <button
                         type="submit"
-                        className="text-xs font-semibold text-zinc-700 underline-offset-2 hover:underline dark:text-zinc-200"
+                        className={iconBtnClass}
+                        title={row.is_active ? "Desactivar" : "Activar"}
+                        aria-label={
+                          row.is_active
+                            ? `Desactivar ${row.name}`
+                            : `Activar ${row.name}`
+                        }
                       >
-                        {row.is_active ? "Desactivar" : "Activar"}
+                        {row.is_active ? (
+                          <CircleSlash2
+                            className="size-4"
+                            strokeWidth={2}
+                            aria-hidden
+                          />
+                        ) : (
+                          <Power className="size-4" strokeWidth={2} aria-hidden />
+                        )}
                       </button>
                     </form>
                     {!row.is_system ? (
@@ -304,7 +326,9 @@ export function ExpenseConceptsManager({
                         <input type="hidden" name="id" value={row.id} />
                         <button
                           type="submit"
-                          className="text-xs font-semibold text-red-600 underline-offset-2 hover:underline dark:text-red-400"
+                          className={iconDangerBtnClass}
+                          title="Eliminar"
+                          aria-label={`Eliminar ${row.name}`}
                           onClick={(e) => {
                             if (
                               !window.confirm(
@@ -315,7 +339,7 @@ export function ExpenseConceptsManager({
                             }
                           }}
                         >
-                          Eliminar
+                          <Trash2 className="size-4" strokeWidth={2} aria-hidden />
                         </button>
                       </form>
                     ) : null}
