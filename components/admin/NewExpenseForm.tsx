@@ -31,6 +31,7 @@ import {
   EXPENSE_EGRESO_TAX_OPTIONS,
   type ExpensePaymentMethod,
 } from "@/lib/expense-concepts";
+import type { ExpenseConceptSelectOption } from "@/lib/store-expense-concepts";
 
 export type TurnWorkerOption = { id: string; label: string };
 
@@ -80,20 +81,62 @@ export function NewExpenseModal({
   onClose,
   initialError,
   turnWorkers = [],
+  gastoConcepts,
+  egresoConcepts,
 }: {
   open: boolean;
   onClose: () => void;
   initialError?: string;
   turnWorkers?: TurnWorkerOption[];
+  gastoConcepts?: ExpenseConceptSelectOption[];
+  egresoConcepts?: ExpenseConceptSelectOption[];
 }) {
-  const gastoConceptOptions = useMemo(
+  const fallbackGasto = useMemo(
     () =>
-      turnWorkers.length > 0
-        ? EXPENSE_CONCEPT_OPTIONS
-        : EXPENSE_CONCEPT_OPTIONS.filter(
-            (o) => o.concept !== EXPENSE_CONCEPT_PERSONAL_TURNOS,
-          ),
-    [turnWorkers.length],
+      EXPENSE_CONCEPT_OPTIONS.map((o) => ({
+        id: o.concept,
+        concept: o.concept,
+        category: o.category,
+        paymentMethod: o.paymentMethod,
+        allowsCustomText: o.concept === EXPENSE_CONCEPT_OTHER,
+        specialKey:
+          o.concept === EXPENSE_CONCEPT_PERSONAL_TURNOS
+            ? ("personal_turnos" as const)
+            : o.concept === EXPENSE_CONCEPT_OTHER
+              ? ("other_gasto" as const)
+              : null,
+      })),
+    [],
+  );
+  const fallbackEgreso = useMemo(
+    () =>
+      EXPENSE_EGRESO_TAX_OPTIONS.map((o) => ({
+        id: o.concept,
+        concept: o.concept,
+        category: o.category,
+        paymentMethod: o.paymentMethod,
+        allowsCustomText: o.concept === EXPENSE_CONCEPT_OTHER_TAX,
+        specialKey:
+          o.concept === EXPENSE_CONCEPT_OTHER_TAX
+            ? ("other_egreso" as const)
+            : null,
+      })),
+    [],
+  );
+
+  const gastoConceptOptions = useMemo(() => {
+    const base =
+      gastoConcepts && gastoConcepts.length > 0 ? gastoConcepts : fallbackGasto;
+    if (turnWorkers.length > 0) return base;
+    return base.filter((o) => o.specialKey !== "personal_turnos");
+  }, [gastoConcepts, fallbackGasto, turnWorkers.length]);
+
+  const egresoConceptOptions = useMemo(
+    () =>
+      egresoConcepts && egresoConcepts.length > 0
+        ? egresoConcepts
+        : fallbackEgreso,
+    [egresoConcepts, fallbackEgreso],
   );
 
   const [expenseKind, setExpenseKind] = useState<ExpenseKind>("gasto");
@@ -101,8 +144,8 @@ export function NewExpenseModal({
 
   const conceptOptionsForSelect = useMemo(
     () =>
-      expenseKind === "egreso" ? EXPENSE_EGRESO_TAX_OPTIONS : gastoConceptOptions,
-    [expenseKind, gastoConceptOptions],
+      expenseKind === "egreso" ? egresoConceptOptions : gastoConceptOptions,
+    [expenseKind, egresoConceptOptions, gastoConceptOptions],
   );
 
   const [conceptSelection, setConceptSelection] = useState(
@@ -159,27 +202,35 @@ export function NewExpenseModal({
     }
   }, [conceptOptionsForSelect, conceptSelection, expenseScope]);
 
+  const selectedConcept = useMemo(
+    () =>
+      conceptOptionsForSelect.find((o) => o.concept === conceptSelection) ??
+      null,
+    [conceptOptionsForSelect, conceptSelection],
+  );
+
   const err = useMemo(() => errorMessage(initialError), [initialError]);
   const conceptValue = useMemo(() => {
-    if (
-      conceptSelection === EXPENSE_CONCEPT_OTHER ||
-      conceptSelection === EXPENSE_CONCEPT_OTHER_TAX
-    ) {
+    if (selectedConcept?.allowsCustomText) {
       return conceptOther.trim();
     }
-    if (conceptSelection === EXPENSE_CONCEPT_PERSONAL_TURNOS) {
+    if (selectedConcept?.specialKey === "personal_turnos") {
       const w = turnWorkers.find((t) => t.id === turnWorkerId);
-      return w ? `${EXPENSE_CONCEPT_PERSONAL_TURNOS} — ${w.label}` : "";
+      return w ? `Personal Turnos — ${w.label}` : "";
     }
     return conceptSelection;
-  }, [conceptSelection, conceptOther, turnWorkerId, turnWorkers]);
+  }, [
+    selectedConcept,
+    conceptOther,
+    turnWorkerId,
+    turnWorkers,
+    conceptSelection,
+  ]);
 
   const otroIncomplete =
-    (conceptSelection === EXPENSE_CONCEPT_OTHER ||
-      conceptSelection === EXPENSE_CONCEPT_OTHER_TAX) &&
-    !conceptOther.trim();
+    Boolean(selectedConcept?.allowsCustomText) && !conceptOther.trim();
   const turnoIncomplete =
-    conceptSelection === EXPENSE_CONCEPT_PERSONAL_TURNOS &&
+    selectedConcept?.specialKey === "personal_turnos" &&
     (!turnWorkerId || !turnWorkers.some((t) => t.id === turnWorkerId));
   const amountIncomplete = amountCents <= 0;
   const submitBlocked = otroIncomplete || turnoIncomplete || amountIncomplete;
@@ -361,12 +412,12 @@ export function NewExpenseModal({
                 className={`${inputClass} mt-1.5`}
               >
                 {conceptOptionsForSelect.map((opt) => (
-                  <option key={opt.concept} value={opt.concept}>
+                  <option key={opt.id} value={opt.concept}>
                     {opt.concept}
                   </option>
                 ))}
               </select>
-              {conceptSelection === EXPENSE_CONCEPT_PERSONAL_TURNOS ? (
+              {selectedConcept?.specialKey === "personal_turnos" ? (
                 <select
                   value={turnWorkerId}
                   onChange={(e) => setTurnWorkerId(e.target.value)}
@@ -382,13 +433,12 @@ export function NewExpenseModal({
                   ))}
                 </select>
               ) : null}
-              {conceptSelection === EXPENSE_CONCEPT_OTHER ||
-              conceptSelection === EXPENSE_CONCEPT_OTHER_TAX ? (
+              {selectedConcept?.allowsCustomText ? (
                 <input
                   value={conceptOther}
                   onChange={(e) => setConceptOther(e.target.value)}
                   placeholder={
-                    conceptSelection === EXPENSE_CONCEPT_OTHER_TAX
+                    expenseKind === "egreso"
                       ? "Escribe el impuesto"
                       : "Escribe el concepto"
                   }
@@ -481,10 +531,14 @@ export function NewExpenseModalHost({
   open,
   initialError,
   turnWorkers = [],
+  gastoConcepts,
+  egresoConcepts,
 }: {
   open: boolean;
   initialError?: string;
   turnWorkers?: TurnWorkerOption[];
+  gastoConcepts?: ExpenseConceptSelectOption[];
+  egresoConcepts?: ExpenseConceptSelectOption[];
 }) {
   const router = useRouter();
 
@@ -502,6 +556,8 @@ export function NewExpenseModalHost({
       onClose={close}
       initialError={initialError}
       turnWorkers={turnWorkers}
+      gastoConcepts={gastoConcepts}
+      egresoConcepts={egresoConcepts}
     />
   );
 }

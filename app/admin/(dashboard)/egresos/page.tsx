@@ -11,11 +11,17 @@ import { VentasPagination } from "@/components/admin/VentasPagination";
 import { currentYearMonthInReportStore } from "@/lib/admin-report-range";
 import { loadAdminPermissions } from "@/lib/load-admin-permissions";
 import { parseExpenseConceptFilter } from "@/lib/expense-concepts";
+import {
+  conceptRowToSelectOption,
+  fetchExpenseConceptFilterNames,
+  fetchStoreExpenseConcepts,
+} from "@/lib/store-expense-concepts";
 import { fetchAdminExpensesPage } from "@/lib/supabase/admin-expenses-list";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
   adminToolbarBtnBaseClass,
   adminToolbarBtnActiveClass,
+  adminToolbarBtnIdleClass,
   adminToolbarIconBtnClass,
   adminPageTitleClass,
   adminPageSubtitleClass,
@@ -56,7 +62,6 @@ export default async function AdminEgresosPage({
 }) {
   const sp = await searchParams;
   const qRaw = (searchParamFirst(sp.q) ?? "").trim();
-  const conceptRaw = parseExpenseConceptFilter(searchParamFirst(sp.concept));
   const { from: dateFrom, to: dateTo } = normalizeDateRange(
     searchParamFirst(sp.from),
     searchParamFirst(sp.to),
@@ -68,7 +73,7 @@ export default async function AdminEgresosPage({
 
   const hasExplicitFilters =
     qRaw.length > 0 ||
-    Boolean(conceptRaw) ||
+    Boolean(searchParamFirst(sp.concept)) ||
     Boolean(dateFrom) ||
     Boolean(dateTo);
 
@@ -76,6 +81,12 @@ export default async function AdminEgresosPage({
   const perm = await loadAdminPermissions();
   const canCancel = Boolean(perm?.permissions.egresos_crear);
   const canCreate = Boolean(perm?.permissions.egresos_crear);
+
+  const conceptFilterNames = await fetchExpenseConceptFilterNames(supabase);
+  const conceptRaw = parseExpenseConceptFilter(
+    searchParamFirst(sp.concept),
+    conceptFilterNames,
+  );
 
   const openNuevo =
     searchParamFirst(sp.nuevo) === "1" ||
@@ -91,7 +102,7 @@ export default async function AdminEgresosPage({
   };
   let expensesError: string | null = null;
 
-  const [fetched, profilesRes] = await Promise.all([
+  const [fetched, profilesRes, conceptRows] = await Promise.all([
     fetchAdminExpensesPage(supabase, {
       q: qRaw,
       concept: conceptRaw,
@@ -107,6 +118,7 @@ export default async function AdminEgresosPage({
           .eq("is_active", true)
           .order("display_name", { ascending: true })
       : Promise.resolve({ data: null }),
+    fetchStoreExpenseConcepts(supabase, { activeOnly: true }),
   ]);
 
   rows = fetched.rows;
@@ -137,6 +149,13 @@ export default async function AdminEgresosPage({
       label: display || login || "Colaborador",
     };
   });
+
+  const gastoConcepts = conceptRows
+    .filter((r) => r.applies_to_gasto)
+    .map(conceptRowToSelectOption);
+  const egresoConcepts = conceptRows
+    .filter((r) => r.applies_to_egreso)
+    .map(conceptRowToSelectOption);
 
   const { total } = stats;
 
@@ -189,6 +208,8 @@ export default async function AdminEgresosPage({
           open={openNuevo}
           initialError={expenseErrorCode}
           turnWorkers={turnWorkers}
+          gastoConcepts={gastoConcepts}
+          egresoConcepts={egresoConcepts}
         />
       ) : null}
 
@@ -202,6 +223,14 @@ export default async function AdminEgresosPage({
           </p>
         </div>
         <div className="flex flex-wrap items-center justify-end gap-2">
+          {canCreate ? (
+            <Link
+              href="/admin/egresos/conceptos"
+              className={`${adminToolbarBtnBaseClass} ${adminToolbarBtnIdleClass}`}
+            >
+              Conceptos
+            </Link>
+          ) : null}
           <ExpensesExportButton
             defaultYearMonth={currentYearMonthInReportStore()}
           />
@@ -253,6 +282,7 @@ export default async function AdminEgresosPage({
             initialConcept={conceptRaw ?? ""}
             initialFrom={dateFrom ?? ""}
             initialTo={dateTo ?? ""}
+            conceptOptions={conceptFilterNames}
           />
         </Suspense>
 

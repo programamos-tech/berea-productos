@@ -26,13 +26,12 @@ function buildExpensesQuery(
   return qs ? `${pathname}?${qs}` : pathname;
 }
 
-const CONCEPT_OPTIONS = expenseConceptFilterOptions();
-
 type Props = {
   initialQ: string;
   initialConcept: string;
   initialFrom: string;
   initialTo: string;
+  conceptOptions?: string[];
 };
 
 export function ExpensesFiltersBar({
@@ -40,10 +39,15 @@ export function ExpensesFiltersBar({
   initialConcept,
   initialFrom,
   initialTo,
+  conceptOptions,
 }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const CONCEPT_OPTIONS =
+    conceptOptions && conceptOptions.length > 0
+      ? conceptOptions
+      : expenseConceptFilterOptions();
 
   const [q, setQ] = useState(initialQ);
   const [from, setFrom] = useState(initialFrom);

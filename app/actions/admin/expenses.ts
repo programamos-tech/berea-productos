@@ -9,7 +9,10 @@ import {
   parseExpenseKind,
   parseExpenseScope,
 } from "@/lib/expenses-constants";
-import { isValidEgresoTaxConcept } from "@/lib/expense-concepts";
+import {
+  fetchStoreExpenseConcepts,
+  isConceptAllowedForKind,
+} from "@/lib/store-expense-concepts";
 import { loadAdminPermissions } from "@/lib/load-admin-permissions";
 import {
   assertCashRegisterOpenForStaff,
@@ -44,7 +47,19 @@ export async function createStoreExpense(formData: FormData) {
   }
   const expenseKind = parseExpenseKind(expenseKindRaw);
 
-  if (expenseKind === "egreso" && !isValidEgresoTaxConcept(concept)) {
+  const catalog = await fetchStoreExpenseConcepts(supabase, { activeOnly: true });
+  const forKind = catalog.filter((c) => isConceptAllowedForKind(c, expenseKind));
+  const exact = forKind.find((c) => c.name === concept);
+  const personalTurnosOk =
+    concept.startsWith("Personal Turnos — ") &&
+    forKind.some((c) => c.special_key === "personal_turnos");
+  const customOk =
+    !exact &&
+    !personalTurnosOk &&
+    concept.length >= 2 &&
+    forKind.some((c) => c.allows_custom_text);
+
+  if (!exact && !personalTurnosOk && !customOk) {
     redirect("/admin/egresos?nuevo=1&expense_error=concept");
   }
 
@@ -60,9 +75,13 @@ export async function createStoreExpense(formData: FormData) {
   }
 
   const categoryRaw = String(formData.get("category") ?? "").trim();
-  const category = categoryRaw || (expenseKind === "egreso" ? "impuestos" : "operativo");
+  const category =
+    categoryRaw ||
+    exact?.category ||
+    (expenseKind === "egreso" ? "impuestos" : "operativo");
   const paymentMethodRaw = String(formData.get("payment_method") ?? "").trim();
-  let paymentMethod = paymentMethodRaw || "transferencia";
+  let paymentMethod =
+    paymentMethodRaw || exact?.default_payment_method || "transferencia";
   if (expenseScope === "mensual") {
     if (!isMensualPaymentMethod(paymentMethod)) {
       redirect("/admin/egresos?nuevo=1&expense_error=payment");

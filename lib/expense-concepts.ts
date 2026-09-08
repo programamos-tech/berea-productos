@@ -138,7 +138,12 @@ export function isValidEgresoTaxConcept(concept: string): boolean {
 }
 
 /** Conceptos fijos para el filtro del listado (sin “Otro…” de texto libre). */
-export function expenseConceptFilterOptions(): string[] {
+export function expenseConceptFilterOptions(
+  dynamicNames?: string[] | null,
+): string[] {
+  if (dynamicNames && dynamicNames.length > 0) {
+    return [...dynamicNames];
+  }
   const seen = new Set<string>();
   const out: string[] = [];
   for (const o of [
@@ -161,10 +166,11 @@ export function expenseConceptFilterOptions(): string[] {
 /** Valida un concepto de filtro contra el catálogo. */
 export function parseExpenseConceptFilter(
   raw: string | null | undefined,
+  dynamicNames?: string[] | null,
 ): string | null {
   const t = String(raw ?? "").trim();
   if (!t || t === "all") return null;
-  return expenseConceptFilterOptions().includes(t) ? t : null;
+  return expenseConceptFilterOptions(dynamicNames).includes(t) ? t : null;
 }
 
 /** Concepto espejo al registrar un abono en Proveedores. */
