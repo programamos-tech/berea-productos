@@ -60,9 +60,12 @@ function ReportsKpisSkeleton() {
 
 function ReportsFiltersSkeleton() {
   return (
-    <div className="flex flex-wrap items-center justify-end gap-2">
-      <div className="h-10 w-40 animate-pulse rounded-lg bg-zinc-200/80 dark:bg-zinc-800/90 motion-reduce:animate-none" />
-      <div className="h-10 w-28 animate-pulse rounded-lg bg-zinc-200/80 dark:bg-zinc-800/90 motion-reduce:animate-none" />
+    <div className="flex w-full flex-nowrap items-center gap-2 overflow-x-auto xl:w-auto xl:justify-end">
+      <div className="h-9 w-24 shrink-0 animate-pulse rounded-lg bg-zinc-200/80 dark:bg-zinc-800/90 motion-reduce:animate-none sm:w-32" />
+      <div className="h-9 w-20 shrink-0 animate-pulse rounded-lg bg-zinc-200/80 dark:bg-zinc-800/90 motion-reduce:animate-none sm:w-24" />
+      <div className="h-9 w-36 shrink-0 animate-pulse rounded-lg bg-zinc-200/80 dark:bg-zinc-800/90 motion-reduce:animate-none" />
+      <div className="h-9 w-20 shrink-0 animate-pulse rounded-lg bg-zinc-200/80 dark:bg-zinc-800/90 motion-reduce:animate-none sm:w-24" />
+      <div className="size-9 shrink-0 animate-pulse rounded-lg bg-zinc-200/80 dark:bg-zinc-800/90 motion-reduce:animate-none" />
     </div>
   );
 }
@@ -118,33 +121,18 @@ export default async function AdminHomePage({ searchParams }: PageProps) {
 
   return (
     <div className={reportsViewportClass}>
-      <header className="flex w-full shrink-0 flex-col gap-2">
-        <div className="flex w-full items-start justify-between gap-x-3 gap-y-2">
-          <div className="min-w-0 flex-1">
-            <h1 className={`whitespace-nowrap ${adminPageTitleClass}`}>
-              Reportes
-            </h1>
-            <ReportsHeaderMeta
-              vista={vista}
-              periodLabel={periodLabel}
-              isCurrentTiendaMonth={isCurrentTiendaMonth}
-            />
-          </div>
-          <div className="shrink-0 pt-0.5">
-            <Suspense
-              fallback={
-                <div className="flex gap-2">
-                  <div className="h-10 w-24 animate-pulse rounded-lg bg-zinc-200/80 dark:bg-zinc-800/90 motion-reduce:animate-none" />
-                  <div className="h-10 w-24 animate-pulse rounded-lg bg-zinc-200/80 dark:bg-zinc-800/90 motion-reduce:animate-none" />
-                </div>
-              }
-            >
-              <ReportsVistaFilter vista={vista} todayKey={todayKey} />
-            </Suspense>
-          </div>
+      <header className="flex w-full shrink-0 flex-col gap-3 xl:flex-row xl:items-start xl:justify-between xl:gap-6">
+        <div className="min-w-0 xl:max-w-md 2xl:max-w-lg">
+          <h1 className={`leading-none ${adminPageTitleClass}`}>Reportes</h1>
+          <ReportsHeaderMeta
+            vista={vista}
+            periodLabel={periodLabel}
+            isCurrentTiendaMonth={isCurrentTiendaMonth}
+          />
         </div>
         <Suspense fallback={<ReportsFiltersSkeleton />}>
-          <div className="flex min-w-0 flex-wrap items-center justify-end gap-2">
+          <div className="flex w-full min-w-0 flex-nowrap items-center gap-2 overflow-x-auto overscroll-x-contain pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] xl:w-auto xl:flex-1 xl:justify-end xl:overflow-visible [&::-webkit-scrollbar]:hidden">
+            <ReportsVistaFilter vista={vista} todayKey={todayKey} />
             {vista === "tienda" ? (
               <ReportsMonthFilter selectedYm={tiendaYm} currentYm={currentYm} />
             ) : (

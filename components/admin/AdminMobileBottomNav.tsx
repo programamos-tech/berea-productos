@@ -39,39 +39,41 @@ export function AdminMobileBottomNav({
     >
       <div
         ref={scrollerRef}
-        className="admin-sidebar-nav-scroll flex snap-x snap-mandatory gap-0.5 overflow-x-auto overscroll-x-contain px-1.5 py-1.5"
+        className="admin-sidebar-nav-scroll overflow-x-auto overscroll-x-contain [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
       >
-        {items.map((item) => {
-          const active = adminNavItemActive(pathname, item.href, item);
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              prefetch
-              data-active={active ? "true" : "false"}
-              aria-current={active ? "page" : undefined}
-              className={[
-                "flex min-w-[4.5rem] max-w-[5.5rem] shrink-0 snap-center flex-col items-center gap-0.5 rounded-xl px-2 py-1.5 text-center transition",
-                active
-                  ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
-                  : "text-zinc-500 hover:bg-zinc-100 hover:text-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-zinc-100",
-              ].join(" ")}
-            >
-              <span
+        <div className="mx-auto flex w-max min-w-full snap-x snap-mandatory justify-center gap-0.5 px-1.5 py-1.5">
+          {items.map((item) => {
+            const active = adminNavItemActive(pathname, item.href, item);
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                prefetch
+                data-active={active ? "true" : "false"}
+                aria-current={active ? "page" : undefined}
                 className={[
-                  "flex size-6 items-center justify-center [&>svg]:size-[18px]",
-                  active ? "opacity-100" : "opacity-80",
+                  "flex min-w-[4.5rem] max-w-[5.5rem] shrink-0 snap-center flex-col items-center gap-0.5 rounded-xl px-2 py-1.5 text-center transition",
+                  active
+                    ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
+                    : "text-zinc-500 hover:bg-zinc-100 hover:text-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-zinc-100",
                 ].join(" ")}
-                aria-hidden
               >
-                {item.icon}
-              </span>
-              <span className="w-full truncate text-[10px] font-semibold leading-tight tracking-wide">
-                {item.label}
-              </span>
-            </Link>
-          );
-        })}
+                <span
+                  className={[
+                    "flex size-6 items-center justify-center [&>svg]:size-[18px]",
+                    active ? "opacity-100" : "opacity-80",
+                  ].join(" ")}
+                  aria-hidden
+                >
+                  {item.icon}
+                </span>
+                <span className="w-full truncate text-[10px] font-semibold leading-tight tracking-wide">
+                  {item.label}
+                </span>
+              </Link>
+            );
+          })}
+        </div>
       </div>
     </nav>
   );

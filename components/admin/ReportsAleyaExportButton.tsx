@@ -1,6 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  adminToolbarBtnBaseClass,
+  adminToolbarBtnIdleClass,
+} from "@/lib/admin-ui";
 
 const MONTH_LABELS = [
   "Enero",
@@ -110,18 +114,18 @@ export function ReportsAleyaExportButton({
   const busy = loadingYm != null;
 
   return (
-    <div ref={wrapRef} className="relative max-w-full">
+    <div ref={wrapRef} className="relative max-w-full shrink-0">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
         disabled={busy}
-        className="inline-flex h-10 max-w-full items-center gap-2 rounded-lg border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-700 shadow-sm transition hover:border-zinc-400 hover:bg-zinc-50 disabled:cursor-wait disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:shadow-none dark:hover:border-zinc-600 dark:hover:bg-zinc-800"
+        className={`${adminToolbarBtnBaseClass} ${adminToolbarBtnIdleClass} disabled:cursor-wait disabled:opacity-60`}
         aria-expanded={open}
         aria-haspopup="dialog"
       >
         <svg
           viewBox="0 0 24 24"
-          className="size-4 shrink-0 text-zinc-400 dark:text-zinc-400"
+          className="size-4 shrink-0 opacity-70"
           fill="none"
           stroke="currentColor"
           strokeWidth={2}
@@ -133,7 +137,8 @@ export function ReportsAleyaExportButton({
             strokeLinejoin="round"
           />
         </svg>
-        Exportar CSV
+        <span className="xl:hidden">CSV</span>
+        <span className="hidden xl:inline">Exportar CSV</span>
       </button>
 
       {open ? (

@@ -5,6 +5,10 @@ import {
   ADMIN_DATE_PORTAL_SELECTOR,
 } from "@/components/admin/product-form-primitives";
 import { prettyReportPeriodLabel } from "@/lib/admin-report-range";
+import {
+  adminToolbarBtnBaseClass,
+  adminToolbarBtnIdleClass,
+} from "@/lib/admin-ui";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 
@@ -86,23 +90,24 @@ export function ReportsPeriodFilter({
   return (
     <div
       ref={wrapRef}
-      className={`relative flex max-w-full flex-wrap items-center gap-2 transition-opacity ${pending ? "opacity-70" : ""}`}
+      className={`relative shrink-0 transition-opacity ${pending ? "opacity-70" : ""}`}
       aria-busy={pending}
     >
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="inline-flex h-10 max-w-full items-center gap-2 rounded-lg border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-700 shadow-sm transition hover:border-zinc-400 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:shadow-none dark:hover:border-zinc-600 dark:hover:bg-zinc-800"
+        className={`${adminToolbarBtnBaseClass} max-w-[9rem] ${adminToolbarBtnIdleClass}`}
         aria-expanded={open}
         aria-haspopup="dialog"
+        title={summary}
       >
-        <span className="min-w-0 truncate tabular-nums">{summary}</span>
+        <span className="min-w-0 truncate">{summary}</span>
         {pending ? (
-          <span className="text-xs font-medium text-zinc-400">…</span>
+          <span className="text-xs font-medium opacity-60">…</span>
         ) : (
           <svg
             viewBox="0 0 24 24"
-            className={`size-4 shrink-0 text-zinc-400 transition dark:text-zinc-400 ${open ? "rotate-180" : ""}`}
+            className={`size-4 shrink-0 opacity-70 transition ${open ? "rotate-180" : ""}`}
             fill="none"
             stroke="currentColor"
             strokeWidth={2}

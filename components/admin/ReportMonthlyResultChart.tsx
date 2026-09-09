@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { TrendingDown, TrendingUp } from "lucide-react";
 import { formatCop, formatCopCompact } from "@/lib/money";
 import type { MonthlyPulsePoint } from "@/lib/admin-report-monthly-pulse";
 import { REPORT_CHART } from "@/components/admin/ReportSalesWeekTrendChart";
@@ -31,11 +30,6 @@ function smoothLine(pts: Array<{ x: number; y: number }>): string {
   return d;
 }
 
-function pctChange(current: number, prior: number): number | null {
-  if (prior <= 0) return null;
-  return Math.round(((current - prior) / prior) * 1000) / 10;
-}
-
 /**
  * Ingresos vs egresos por mes: responde “¿la tienda vende más o gasta más?”
  * (no repite la ganancia/pérdida de las métricas de arriba).
@@ -59,18 +53,6 @@ export function ReportMonthlyResultChart({
       </div>
     );
   }
-
-  const latest = months.find((m) => m.isCurrent) ?? months[months.length - 1];
-  const latestIdx = months.findIndex((m) => m.yearMonth === latest.yearMonth);
-  const prior = latestIdx > 0 ? months[latestIdx - 1] : null;
-  const ingresosMom = prior
-    ? pctChange(latest.ingresosConIva, prior.ingresosConIva)
-    : null;
-  const egresosShare =
-    latest.ingresosConIva > 0
-      ? Math.round((latest.egresos / latest.ingresosConIva) * 1000) / 10
-      : null;
-  const gap = latest.ingresosConIva - latest.egresos;
 
   const maxVal = Math.max(
     ...months.map((m) => Math.max(m.ingresosConIva, m.egresos)),
@@ -113,66 +95,16 @@ export function ReportMonthlyResultChart({
   for (let s = 0; s <= gridSteps; s += 1) yTicks.push((yMax * s) / gridSteps);
 
   const fillId = "reportsIncomeExpenseFill";
-  const momUp = ingresosMom != null && ingresosMom > 0;
-  const momDown = ingresosMom != null && ingresosMom < 0;
 
   return (
     <div className="flex w-full min-w-0 flex-col">
-      <div className="mb-2 flex shrink-0 flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
-        <div className="min-w-0">
-          <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-            Ingresos vs egresos
-          </h2>
-          <p className="mt-0.5 text-[11px] leading-snug text-zinc-500">
-            Lo que entra a la caja de ventas vs lo que sale en gastos
-          </p>
-        </div>
-        <div className="flex flex-wrap items-end gap-x-4 gap-y-2">
-          <div className="text-left sm:text-right">
-            <p className="text-[10px] font-medium uppercase tracking-wider text-zinc-500">
-              Brecha · {latest.shortLabel}
-              {latest.isPartial ? " · ahora" : ""}
-            </p>
-            <p
-              className={`text-base font-semibold tabular-nums sm:text-lg ${
-                gap >= 0
-                  ? "text-zinc-900 dark:text-zinc-50"
-                  : "text-red-600 dark:text-red-400"
-              }`}
-            >
-              {gap < 0 ? "−" : ""}
-              {formatCop(Math.abs(gap))}
-            </p>
-          </div>
-          {ingresosMom != null ? (
-            <div
-              className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold tabular-nums ${
-                momUp
-                  ? "bg-[color-mix(in_srgb,var(--admin-profit)_16%,transparent)] text-[var(--admin-profit)] dark:text-[var(--admin-profit-dark)]"
-                  : momDown
-                    ? "bg-[color-mix(in_srgb,var(--admin-loss)_16%,transparent)] text-[var(--admin-loss)] dark:text-[var(--admin-loss-dark)]"
-                    : "bg-zinc-500/15 text-zinc-600 dark:text-zinc-300"
-              }`}
-              title="Cambio de ingresos vs el mes anterior"
-            >
-              {momUp ? (
-                <TrendingUp className="size-3" strokeWidth={2} aria-hidden />
-              ) : momDown ? (
-                <TrendingDown className="size-3" strokeWidth={2} aria-hidden />
-              ) : null}
-              Ingresos {momUp || momDown ? `${ingresosMom > 0 ? "+" : ""}${ingresosMom}%` : "igual"}
-            </div>
-          ) : null}
-          {egresosShare != null ? (
-            <p className="text-[11px] tabular-nums text-zinc-500">
-              Egresos ={" "}
-              <span className="font-semibold text-zinc-700 dark:text-zinc-300">
-                {egresosShare}%
-              </span>{" "}
-              de ingresos
-            </p>
-          ) : null}
-        </div>
+      <div className="mb-2 min-w-0 shrink-0">
+        <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+          Ingresos vs egresos
+        </h2>
+        <p className="mt-0.5 text-[11px] leading-snug text-zinc-500">
+          Lo que entra a la caja de ventas vs lo que sale en gastos
+        </p>
       </div>
 
       <svg

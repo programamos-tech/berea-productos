@@ -36,7 +36,7 @@ export const adminPageTitleClass =
 
 /** Subtítulo bajo el título de listado. */
 export const adminPageSubtitleClass =
-  "mt-1 text-sm leading-normal text-zinc-500";
+  "mt-1.5 text-sm leading-snug text-zinc-500";
 
 /** Label de filtros de listados (misma escala que headers densos). */
 export const adminFilterLabelClass =
@@ -48,9 +48,9 @@ export const adminFilterLabelClass =
 export const adminFilterInputClass =
   "box-border h-10 w-full min-w-0 rounded-lg border border-zinc-300 bg-white px-3 text-sm text-zinc-900 placeholder:text-zinc-400 transition focus:border-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-300/50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:focus:border-zinc-500 dark:focus:ring-zinc-600/40";
 
-/** Base de botones de cabecera de listados (Ventas, Productos, etc.). */
+/** Base de botones de cabecera / filtros — misma escala tipográfica que el nav del sidebar. */
 export const adminToolbarBtnBaseClass =
-  "inline-flex h-10 items-center justify-center gap-2 rounded-lg border px-3 text-sm font-medium transition";
+  "inline-flex h-9 items-center justify-center gap-2 rounded-lg border px-2.5 text-[13px] font-medium transition";
 
 export const adminToolbarBtnPrimaryClass =
   "border-[var(--admin-coral)] bg-[var(--admin-coral)] text-white hover:border-[var(--admin-coral-hover)] hover:bg-[var(--admin-coral-hover)]";
@@ -62,6 +62,6 @@ export const adminToolbarBtnActiveClass =
 export const adminToolbarBtnIdleClass =
   "border-zinc-300 bg-white text-zinc-700 hover:border-zinc-400 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200 dark:hover:border-zinc-600 dark:hover:bg-zinc-800";
 
-/** Botón ícono (refresh) — mismo alto que inputs y CTA. */
+/** Botón ícono (refresh) — mismo alto que los botones de toolbar. */
 export const adminToolbarIconBtnClass =
-  "inline-flex size-10 shrink-0 items-center justify-center rounded-lg border border-zinc-300 bg-white text-zinc-700 transition hover:border-zinc-400 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200 dark:hover:border-zinc-600 dark:hover:bg-zinc-800";
+  "inline-flex size-9 shrink-0 items-center justify-center rounded-lg border border-zinc-300 bg-white text-zinc-700 transition hover:border-zinc-400 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200 dark:hover:border-zinc-600 dark:hover:bg-zinc-800";
