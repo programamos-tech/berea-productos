@@ -6,7 +6,7 @@ import {
 } from "@/lib/admin-report-monthly-pulse";
 import { fetchAdminReportTops } from "@/lib/admin-report-tops";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { Suspense } from "react";
+import { cache, Suspense } from "react";
 
 export function ReportMonthlyChartsSkeleton() {
   return (
@@ -24,6 +24,18 @@ export function ReportMonthlyChartsSkeleton() {
   );
 }
 
+function ReportPulseChartSkeleton() {
+  return (
+    <div
+      className="w-full animate-pulse rounded-2xl bg-zinc-100/40 dark:bg-zinc-900/40"
+      style={{ aspectRatio: "1000 / 260" }}
+      role="status"
+    >
+      <span className="sr-only">Cargando gráfica mensual…</span>
+    </div>
+  );
+}
+
 function ReportTopsSkeleton() {
   return (
     <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-4" role="status">
@@ -32,6 +44,45 @@ function ReportTopsSkeleton() {
       <span className="sr-only">Cargando tops…</span>
     </div>
   );
+}
+
+/** Deduplica el pulso si chart + otra sección lo piden en el mismo request. */
+const getMonthlyPulse = cache(async (todayKey: string) => {
+  const supabase = await createSupabaseServerClient();
+  return fetchAdminReportMonthlyPulse(supabase, { todayYmd: todayKey });
+});
+
+async function ReportPulseChart({
+  todayKey,
+  rangeFrom,
+  rangeTo,
+}: {
+  todayKey: string;
+  rangeFrom: string;
+  rangeTo: string;
+}) {
+  try {
+    const pulse = await getMonthlyPulse(todayKey);
+    return (
+      <div className="reports-chart-reveal w-full min-w-0 shrink-0">
+        <ReportMonthlyResultChart
+          months={pulse.months}
+          highlightYearMonth={pulseHighlightYearMonth(
+            rangeFrom,
+            rangeTo,
+            todayKey,
+          )}
+        />
+      </div>
+    );
+  } catch (err) {
+    console.error("[admin reportes] monthly pulse:", err);
+    return (
+      <p className="text-sm text-amber-700 dark:text-amber-300">
+        No se pudo cargar la gráfica mensual.
+      </p>
+    );
+  }
 }
 
 async function ReportTopsSection({
@@ -62,9 +113,10 @@ async function ReportTopsSection({
 }
 
 /**
- * Gráfica mensual (RPC rápido) + tops en Suspense aparte para no bloquear el chart.
+ * Gráfica mensual (RPC rápido) + tops en Suspense aparte.
+ * No await aquí: el chart y los tops streamean por separado.
  */
-export async function ReportMonthlyChartsSection({
+export function ReportMonthlyChartsSection({
   todayKey,
   rangeFrom,
   rangeTo,
@@ -75,44 +127,27 @@ export async function ReportMonthlyChartsSection({
   rangeTo: string;
   periodLabel: string;
 }) {
-  try {
-    const supabase = await createSupabaseServerClient();
-    const pulse = await fetchAdminReportMonthlyPulse(supabase, {
-      todayYmd: todayKey,
-    });
-
-    return (
-      <div className="flex min-h-0 flex-1 flex-col gap-4">
-        <div className="reports-chart-reveal w-full min-w-0 shrink-0">
-          <ReportMonthlyResultChart
-            months={pulse.months}
-            highlightYearMonth={pulseHighlightYearMonth(
-              rangeFrom,
-              rangeTo,
-              todayKey,
-            )}
+  return (
+    <div className="flex min-h-0 flex-1 flex-col gap-4">
+      <Suspense fallback={<ReportPulseChartSkeleton />}>
+        <ReportPulseChart
+          todayKey={todayKey}
+          rangeFrom={rangeFrom}
+          rangeTo={rangeTo}
+        />
+      </Suspense>
+      <div className="w-full min-w-0 shrink-0">
+        <Suspense
+          key={`tops-${rangeFrom}-${rangeTo}`}
+          fallback={<ReportTopsSkeleton />}
+        >
+          <ReportTopsSection
+            rangeFrom={rangeFrom}
+            rangeTo={rangeTo}
+            periodLabel={periodLabel}
           />
-        </div>
-        <div className="w-full min-w-0 shrink-0">
-          <Suspense
-            key={`tops-${rangeFrom}-${rangeTo}`}
-            fallback={<ReportTopsSkeleton />}
-          >
-            <ReportTopsSection
-              rangeFrom={rangeFrom}
-              rangeTo={rangeTo}
-              periodLabel={periodLabel}
-            />
-          </Suspense>
-        </div>
+        </Suspense>
       </div>
-    );
-  } catch (err) {
-    console.error("[admin reportes] monthly charts:", err);
-    return (
-      <p className="text-sm text-amber-700 dark:text-amber-300">
-        No se pudieron cargar las gráficas del periodo.
-      </p>
-    );
-  }
+    </div>
+  );
 }

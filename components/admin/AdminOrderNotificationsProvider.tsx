@@ -9,7 +9,6 @@ import {
   useRef,
   useState,
 } from "react";
-import { AdminNewWebSaleModal } from "@/components/admin/AdminNewWebSaleModal";
 import {
   type AdminWebOrderNotification,
   loadPersistedNotificationIds,
@@ -53,13 +52,10 @@ export function AdminOrderNotificationsProvider({
 }) {
   const [notifications, setNotifications] = useState<AdminWebOrderNotification[]>([]);
   const [panelOpen, setPanelOpen] = useState(false);
-  const [modalOrder, setModalOrder] = useState<AdminWebOrderNotification | null>(null);
   const seenIdsRef = useRef<Set<string>>(new Set());
-  const modalQueueRef = useRef<AdminWebOrderNotification[]>([]);
   const bootstrappedRef = useRef(false);
-  const allowModalRef = useRef(false);
 
-  const pushNotification = useCallback((item: AdminWebOrderNotification, showModal: boolean) => {
+  const pushNotification = useCallback((item: AdminWebOrderNotification) => {
     const isNew = !seenIdsRef.current.has(item.id);
     if (isNew) {
       seenIdsRef.current.add(item.id);
@@ -72,26 +68,6 @@ export function AdminOrderNotificationsProvider({
         return prev.map((n) => (n.id === item.id ? { ...n, ...item } : n));
       }
       return [{ ...item, read: false }, ...prev].slice(0, 30);
-    });
-
-    if (!showModal || !isNew) return;
-
-    setModalOrder((current) => {
-      if (!current) return item;
-      modalQueueRef.current.push(item);
-      return current;
-    });
-  }, []);
-
-  const closeModal = useCallback(() => {
-    setModalOrder((current) => {
-      if (current) {
-        setNotifications((prev) =>
-          prev.map((n) => (n.id === current.id ? { ...n, read: true } : n)),
-        );
-      }
-      const next = modalQueueRef.current.shift() ?? null;
-      return next;
     });
   }, []);
 
@@ -143,7 +119,7 @@ export function AdminOrderNotificationsProvider({
         if (cancelled) return;
         for (const row of data ?? []) {
           const item = rowToWebOrderNotification(row as Record<string, unknown>);
-          if (item) pushNotification(item, allowModalRef.current);
+          if (item) pushNotification(item);
         }
       } finally {
         pollInFlight = false;
@@ -162,7 +138,7 @@ export function AdminOrderNotificationsProvider({
             const item = rowToWebOrderNotification(
               payload.new as Record<string, unknown>,
             );
-            if (item) pushNotification(item, allowModalRef.current);
+            if (item) pushNotification(item);
           },
         )
         .subscribe();
@@ -196,7 +172,6 @@ export function AdminOrderNotificationsProvider({
         }));
 
       setNotifications(items);
-      allowModalRef.current = true;
     };
 
     const resume = () => {
@@ -255,7 +230,6 @@ export function AdminOrderNotificationsProvider({
   return (
     <AdminOrderNotificationsContext.Provider value={value}>
       {children}
-      {modalOrder ? <AdminNewWebSaleModal order={modalOrder} onClose={closeModal} /> : null}
     </AdminOrderNotificationsContext.Provider>
   );
 }

@@ -246,7 +246,6 @@ export async function ReportsDashboardBody({
     anuladas,
     stockInversionNet,
     stockInversionGross,
-    stockInvestmentTrend,
   } = report;
 
   const isTienda = vista === "tienda";
@@ -451,20 +450,7 @@ export async function ReportsDashboardBody({
               icon={Package}
               staggerMs={80}
               hint={
-                stockInvestmentTrend?.changeNetPercent != null ? (
-                  <span
-                    className={
-                      stockInvestmentTrend.changeNetPercent > 0
-                        ? adminCashOkTextClass
-                        : stockInvestmentTrend.changeNetPercent < 0
-                          ? adminCashNegativeTextClass
-                          : undefined
-                    }
-                  >
-                    {stockInvestmentTrend.changeNetPercent > 0 ? "+" : ""}
-                    {stockInvestmentTrend.changeNetPercent}% vs 7 días
-                  </span>
-                ) : stockInversionGross > 0 ? (
+                stockInversionGross > 0 ? (
                   <span className="tabular-nums">
                     c/IVA {formatCop(stockInversionGross)}
                   </span>

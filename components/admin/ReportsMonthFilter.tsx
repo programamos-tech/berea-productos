@@ -8,6 +8,7 @@ import {
   adminToolbarBtnBaseClass,
   adminToolbarBtnIdleClass,
 } from "@/lib/admin-ui";
+import { useReportsNavPending } from "@/components/admin/ReportsNavPending";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 
@@ -31,26 +32,18 @@ export function ReportsMonthFilter({
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { markNav, isPending: navPending } = useReportsNavPending();
   const wrapRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
+  const busy = pending || navPending;
 
   const months = useMemo(
     () => recentYearMonthsInclusive(currentYm, Math.max(1, monthsBack)),
     [currentYm, monthsBack],
   );
 
-  useEffect(() => {
-    if (!open) return;
-    const onDown = (ev: MouseEvent) => {
-      if (!wrapRef.current?.contains(ev.target as Node)) setOpen(false);
-    };
-    document.addEventListener("mousedown", onDown);
-    return () => document.removeEventListener("mousedown", onDown);
-  }, [open]);
-
-  function selectMonth(ym: string) {
-    if (pending) return;
+  function hrefForMonth(ym: string): string {
     const params = new URLSearchParams(searchParams.toString());
     params.delete("vista");
     params.delete("from");
@@ -61,8 +54,28 @@ export function ReportsMonthFilter({
       params.set("mes", ym);
     }
     const qs = params.toString();
+    return qs ? `/admin?${qs}` : "/admin";
+  }
+
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (ev: MouseEvent) => {
+      if (!wrapRef.current?.contains(ev.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", onDown);
+    // Prefetch meses cercanos mientras el panel está abierto.
+    for (const ym of months.slice(0, 4)) {
+      router.prefetch(hrefForMonth(ym));
+    }
+    return () => document.removeEventListener("mousedown", onDown);
+  }, [open, months, router, searchParams, currentYm]);
+
+  function selectMonth(ym: string) {
+    if (busy) return;
+    const href = hrefForMonth(ym);
+    markNav(href);
     startTransition(() => {
-      router.push(qs ? `/admin?${qs}` : "/admin");
+      router.push(href);
       setOpen(false);
     });
   }
@@ -76,8 +89,8 @@ export function ReportsMonthFilter({
   return (
     <div
       ref={wrapRef}
-      className={`relative shrink-0 transition-opacity ${pending ? "opacity-70" : ""}`}
-      aria-busy={pending}
+      className={`relative shrink-0 transition-opacity ${busy ? "opacity-70" : ""}`}
+      aria-busy={busy}
     >
       <button
         type="button"
@@ -115,7 +128,8 @@ export function ReportsMonthFilter({
                     type="button"
                     role="option"
                     aria-selected={active}
-                    disabled={pending}
+                    disabled={busy}
+                    onMouseEnter={() => router.prefetch(hrefForMonth(ym))}
                     onClick={() => selectMonth(ym)}
                     className={`w-full rounded-lg px-3 py-2 text-left text-sm transition disabled:cursor-wait ${
                       active

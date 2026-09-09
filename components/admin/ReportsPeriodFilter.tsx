@@ -9,6 +9,7 @@ import {
   adminToolbarBtnBaseClass,
   adminToolbarBtnIdleClass,
 } from "@/lib/admin-ui";
+import { useReportsNavPending } from "@/components/admin/ReportsNavPending";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 
@@ -38,6 +39,7 @@ export function ReportsPeriodFilter({
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { markNav, isPending: navPending } = useReportsNavPending();
   const wrapRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<"day" | "range">("day");
@@ -45,6 +47,7 @@ export function ReportsPeriodFilter({
   const [from, setFrom] = useState(rangeFrom);
   const [to, setTo] = useState(rangeTo);
   const [pending, startTransition] = useTransition();
+  const busy = pending || navPending;
 
   useEffect(() => {
     setFrom(rangeFrom);
@@ -69,7 +72,7 @@ export function ReportsPeriodFilter({
   );
 
   function applyParams(nextFrom: string, nextTo: string) {
-    if (pending) return;
+    if (busy) return;
     let a = nextFrom;
     let b = nextTo;
     if (a > b) [a, b] = [b, a];
@@ -77,8 +80,10 @@ export function ReportsPeriodFilter({
     params.set("from", a);
     params.set("to", b);
     if (!params.get("vista")) params.set("vista", "dia");
+    const href = `/admin?${params.toString()}`;
+    markNav(href);
     startTransition(() => {
-      router.push(`/admin?${params.toString()}`);
+      router.push(href);
       setOpen(false);
     });
   }
@@ -90,8 +95,8 @@ export function ReportsPeriodFilter({
   return (
     <div
       ref={wrapRef}
-      className={`relative shrink-0 transition-opacity ${pending ? "opacity-70" : ""}`}
-      aria-busy={pending}
+      className={`relative shrink-0 transition-opacity ${busy ? "opacity-70" : ""}`}
+      aria-busy={busy}
     >
       <button
         type="button"
@@ -102,7 +107,7 @@ export function ReportsPeriodFilter({
         title={summary}
       >
         <span className="min-w-0 truncate">{summary}</span>
-        {pending ? (
+        {busy ? (
           <span className="text-xs font-medium opacity-60">…</span>
         ) : (
           <svg
@@ -123,10 +128,10 @@ export function ReportsPeriodFilter({
           <button
             type="button"
             onClick={applyToday}
-            disabled={pending}
+            disabled={busy}
             className={primaryBtn}
           >
-            {pending ? "Cargando…" : "Solo hoy"}
+            {busy ? "Cargando…" : "Solo hoy"}
           </button>
 
           <div className="mt-3 flex gap-1 rounded-lg bg-zinc-100 p-1 dark:bg-zinc-800/80">
@@ -165,10 +170,10 @@ export function ReportsPeriodFilter({
               <button
                 type="button"
                 onClick={() => applyParams(singleDay, singleDay)}
-                disabled={pending}
+                disabled={busy}
                 className={outlineBtn}
               >
-                {pending ? "Cargando…" : "Aplicar"}
+                {busy ? "Cargando…" : "Aplicar"}
               </button>
             </div>
           ) : (
@@ -188,10 +193,10 @@ export function ReportsPeriodFilter({
               <button
                 type="button"
                 onClick={() => applyParams(from, to)}
-                disabled={pending}
+                disabled={busy}
                 className={outlineBtn}
               >
-                {pending ? "Cargando…" : "Aplicar rango"}
+                {busy ? "Cargando…" : "Aplicar rango"}
               </button>
             </div>
           )}

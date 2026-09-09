@@ -6,6 +6,7 @@ import {
   adminToolbarBtnBaseClass,
   adminToolbarBtnIdleClass,
 } from "@/lib/admin-ui";
+import { useReportsNavPending } from "@/components/admin/ReportsNavPending";
 import { CalendarRange, Store } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useOptimistic, useTransition } from "react";
@@ -63,8 +64,10 @@ export function ReportsVistaFilter({
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { markNav, isPending: navPending } = useReportsNavPending();
   const [pending, startTransition] = useTransition();
   const [optimisticVista, setOptimisticVista] = useOptimistic(vista);
+  const busy = pending || navPending;
 
   useEffect(() => {
     const base = new URLSearchParams(searchParams.toString());
@@ -73,12 +76,13 @@ export function ReportsVistaFilter({
   }, [router, searchParams, todayKey]);
 
   function select(next: ReportVista) {
-    if (next === optimisticVista) return;
+    if (next === optimisticVista || busy) return;
     const href = hrefForVista(
       next,
       new URLSearchParams(searchParams.toString()),
       todayKey,
     );
+    markNav(href);
     startTransition(() => {
       setOptimisticVista(next);
       router.push(href);
@@ -87,10 +91,10 @@ export function ReportsVistaFilter({
 
   return (
     <div
-      className={`inline-flex shrink-0 flex-nowrap items-center gap-2 ${pending ? "opacity-90" : ""}`}
+      className={`inline-flex shrink-0 flex-nowrap items-center gap-2 ${busy ? "opacity-90" : ""}`}
       role="group"
       aria-label="Tipo de reporte"
-      aria-busy={pending}
+      aria-busy={busy}
     >
       {options.map((opt) => {
         const active = optimisticVista === opt.id;
@@ -101,6 +105,7 @@ export function ReportsVistaFilter({
             key={opt.id}
             type="button"
             onClick={() => select(opt.id)}
+            disabled={busy}
             onMouseEnter={() => {
               router.prefetch(
                 hrefForVista(
@@ -112,7 +117,7 @@ export function ReportsVistaFilter({
             }}
             aria-pressed={active}
             title={opt.hint}
-            className={`${adminToolbarBtnBaseClass} shrink-0 px-2.5 sm:px-3 ${active ? adminToolbarBtnActiveClass : adminToolbarBtnIdleClass}`}
+            className={`${adminToolbarBtnBaseClass} shrink-0 px-2.5 sm:px-3 ${active ? adminToolbarBtnActiveClass : adminToolbarBtnIdleClass} disabled:cursor-wait`}
           >
             <Icon className="size-4 shrink-0" strokeWidth={2.25} aria-hidden />
             <span className="xl:hidden">{shortLabel}</span>

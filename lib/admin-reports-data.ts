@@ -1,7 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { ReportExpenseDetailLine } from "@/components/admin/ReportLiquidityMetricCards";
 import type { StockInvestmentTrend } from "@/lib/admin-stock-investment-trend";
-import { fetchStockInvestmentTrend } from "@/lib/admin-stock-investment-trend";
 import {
   dayInRange,
   dayKeysInclusiveReport,
@@ -145,13 +144,14 @@ async function fetchStockInvestmentTotals(supabase: SupabaseClient): Promise<{
   const { data, error } = await supabase.rpc("admin_stock_investment_totals");
   if (!error && data?.length) {
     const row = data[0] as { net_cents?: number; gross_cents?: number };
-    const { count } = await supabase
-      .from("products")
-      .select("id", { count: "exact", head: true });
+    const netCents = Number(row.net_cents ?? 0);
+    const grossCents = Number(row.gross_cents ?? 0);
+    // No hacemos COUNT de products: solo sirve para “hay stock”, y el round-trip extra
+    // ralentiza los KPIs de tienda.
     return {
-      netCents: Number(row.net_cents ?? 0),
-      grossCents: Number(row.gross_cents ?? 0),
-      productCount: count ?? 0,
+      netCents,
+      grossCents,
+      productCount: netCents > 0 || grossCents > 0 ? 1 : 0,
     };
   }
 
@@ -263,6 +263,69 @@ async function fetchPaidOrdersForRevenue(
     }),
   );
   return parts.flat();
+}
+
+/** Ingresos + ganancia bruta del periodo en 1 RPC (fallback: ítems vía PostgREST). */
+async function fetchPeriodLineMetricsRpc(
+  supabase: SupabaseClient,
+  rangeFrom: string,
+  rangeTo: string,
+): Promise<{
+  ingresosSinIva: number;
+  ingresosConIva: number;
+  gananciaBruta: number;
+} | null> {
+  const { data, error } = await supabase.rpc("admin_report_period_line_metrics", {
+    p_from: rangeFrom,
+    p_to: rangeTo,
+  });
+  if (error) {
+    console.warn(
+      "[admin reportes] period_line_metrics RPC:",
+      error.message,
+      "→ fallback PostgREST",
+    );
+    return null;
+  }
+  if (!data || typeof data !== "object" || Array.isArray(data)) return null;
+  const row = data as Record<string, unknown>;
+  return {
+    ingresosSinIva: Math.round(Number(row.ingresos_sin_iva ?? 0)),
+    ingresosConIva: Math.round(Number(row.ingresos_con_iva ?? 0)),
+    gananciaBruta: Math.round(Number(row.ganancia_bruta ?? 0)),
+  };
+}
+
+async function fetchPeriodLineMetricsFallback(
+  supabase: SupabaseClient,
+  paidOrderIds: string[],
+): Promise<{
+  ingresosSinIva: number;
+  ingresosConIva: number;
+  gananciaBruta: number;
+}> {
+  if (paidOrderIds.length === 0) {
+    return { ingresosSinIva: 0, ingresosConIva: 0, gananciaBruta: 0 };
+  }
+  const paidPeriodOrders = await fetchPaidOrdersForRevenue(supabase, paidOrderIds);
+  const { orderItems, productsById } = await fetchLineDetailForOrders(
+    supabase,
+    paidPeriodOrders,
+  );
+  const rev = sumRevenueNetGrossForOrders(
+    paidPeriodOrders,
+    orderItems,
+    productsById,
+  );
+  return {
+    ingresosSinIva: rev.net,
+    ingresosConIva: rev.gross,
+    gananciaBruta: sumGrossProfitNetOnLinesForPaidOrders(
+      paidPeriodOrders,
+      orderItems,
+      productsById,
+    ),
+  };
 }
 
 async function fetchLineDetailForOrders(
@@ -435,19 +498,6 @@ function buildChartPointsFromRpc(
   );
 }
 
-async function loadStockInvestmentTrend(
-  supabase: SupabaseClient,
-  netCents: number,
-  grossCents: number,
-): Promise<StockInvestmentTrend | null> {
-  try {
-    return await fetchStockInvestmentTrend(supabase, netCents, grossCents);
-  } catch (err) {
-    console.error("[admin reportes] stock trend:", err);
-    return null;
-  }
-}
-
 function buildEmptyReport(
   opts: ReportFetchOpts,
   message: string | null,
@@ -533,6 +583,12 @@ async function fetchAdminReportViaRpc(
     productCount: 0,
   };
 
+  const periodDayCount = reportRangeDayCountInclusive(rangeFrom, rangeTo);
+  const needsLineDetailForPeriod = periodDayCount <= REPORT_LINE_DETAIL_MAX_DAYS;
+  const revenueApproxFromOrderTotals = !needsLineDetailForPeriod;
+
+  // Dashboard (con ingresos/ganancia embebidos) + stock en paralelo.
+  // El trend de stock (activity log) ya no bloquea los KPIs.
   const [stockTotals, rpcRes] = await Promise.all([
     skipStock ? Promise.resolve(emptyStock) : fetchStockInvestmentTotals(supabase),
     supabase.rpc("admin_report_dashboard_agg", {
@@ -556,39 +612,37 @@ async function fetchAdminReportViaRpc(
     return null;
   }
 
-  const periodDayCount = reportRangeDayCountInclusive(rangeFrom, rangeTo);
-  const needsLineDetailForPeriod = periodDayCount <= REPORT_LINE_DETAIL_MAX_DAYS;
-  const revenueApproxFromOrderTotals = !needsLineDetailForPeriod;
-
-  const paidOrderIds = normalizePaidOrderIds(d.paidOrderIds);
-
   let ingresosSinIvaPeriod = 0;
   let ingresosConIvaPeriod = 0;
   let gananciaBruta = 0;
 
-  if (needsLineDetailForPeriod && paidOrderIds.length > 0) {
-    const paidPeriodOrders = await fetchPaidOrdersForRevenue(supabase, paidOrderIds);
-    const { orderItems, productsById } = await fetchLineDetailForOrders(
-      supabase,
-      paidPeriodOrders,
-    );
-    const rev = sumRevenueNetGrossForOrders(
-      paidPeriodOrders,
-      orderItems,
-      productsById,
-    );
-    ingresosSinIvaPeriod = rev.net;
-    ingresosConIvaPeriod = rev.gross;
-    gananciaBruta = sumGrossProfitNetOnLinesForPaidOrders(
-      paidPeriodOrders,
-      orderItems,
-      productsById,
-    );
-  } else if (paidOrderIds.length > 0) {
-    const paidPeriodOrders = await fetchPaidOrdersForRevenue(supabase, paidOrderIds);
-    const rev = revenueNetGrossFromOrderTotals(paidPeriodOrders);
-    ingresosSinIvaPeriod = rev.net;
-    ingresosConIvaPeriod = rev.gross;
+  const embeddedSin = d.ingresosSinIva ?? d.ingresos_sin_iva;
+  const embeddedCon = d.ingresosConIva ?? d.ingresos_con_iva;
+  const embeddedBruta = d.gananciaBruta ?? d.ganancia_bruta;
+  const hasEmbeddedLineMetrics =
+    embeddedSin != null || embeddedCon != null || embeddedBruta != null;
+
+  if (needsLineDetailForPeriod && hasEmbeddedLineMetrics) {
+    ingresosSinIvaPeriod = Math.round(Number(embeddedSin ?? 0));
+    ingresosConIvaPeriod = Math.round(Number(embeddedCon ?? 0));
+    gananciaBruta = Math.round(Number(embeddedBruta ?? 0));
+  } else if (needsLineDetailForPeriod) {
+    const lineRpc = await fetchPeriodLineMetricsRpc(supabase, rangeFrom, rangeTo);
+    if (lineRpc) {
+      ingresosSinIvaPeriod = lineRpc.ingresosSinIva;
+      ingresosConIvaPeriod = lineRpc.ingresosConIva;
+      gananciaBruta = lineRpc.gananciaBruta;
+    } else {
+      const paidOrderIds = normalizePaidOrderIds(d.paidOrderIds);
+      const fb = await fetchPeriodLineMetricsFallback(supabase, paidOrderIds);
+      ingresosSinIvaPeriod = fb.ingresosSinIva;
+      ingresosConIvaPeriod = fb.ingresosConIva;
+      gananciaBruta = fb.gananciaBruta;
+    }
+  } else {
+    const totalCobrado = Math.round(Number(d.totalCobradoPedidos ?? 0));
+    ingresosSinIvaPeriod = totalCobrado;
+    ingresosConIvaPeriod = totalCobrado;
     gananciaBruta = 0;
   }
 
@@ -621,14 +675,6 @@ async function fetchAdminReportViaRpc(
       d.chartPoints,
     );
 
-  const stockInvestmentTrend = skipStock
-    ? null
-    : await loadStockInvestmentTrend(
-        supabase,
-        stockTotals.netCents,
-        stockTotals.grossCents,
-      );
-
   return {
     periodLabel,
     rangeFrom,
@@ -642,7 +688,9 @@ async function fetchAdminReportViaRpc(
     stockInversionGross: stockTotals.grossCents,
     stockHasProducts: stockTotals.productCount > 0,
     stockHasGrossCost: stockTotals.grossCents > 0,
-    stockInvestmentTrend,
+    // El % vs 7 días exigía escanear activity_log + catálogo entero; la UI ya
+    // muestra c/IVA cuando no hay trend.
+    stockInvestmentTrend: null,
     ingresosSinIvaPeriod,
     ingresosConIvaPeriod,
     ivaRecaudadoPeriod,
@@ -920,13 +968,7 @@ async function fetchAdminReportViaLegacy(
     opts.salesTrendPriorTo,
   );
 
-  const stockInvestmentTrend = skipStock
-    ? null
-    : await loadStockInvestmentTrend(
-        supabase,
-        stockTotals.netCents,
-        stockTotals.grossCents,
-      );
+  const stockInvestmentTrend = null;
 
   return {
     periodLabel,
