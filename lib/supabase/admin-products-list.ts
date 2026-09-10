@@ -60,7 +60,7 @@ export async function fetchAdminProductsList(
       continue;
     }
 
-    let query = supabase.from("products").select(sel, { count: "exact" });
+    let query = supabase.from("products").select(sel, { count: "estimated" });
 
     // Listar por código de referencia ascendente (01, 02, …).
     if (sel.includes("reference")) {

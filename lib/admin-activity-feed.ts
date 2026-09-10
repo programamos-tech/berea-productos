@@ -37,6 +37,7 @@ export async function loadAdminActivityFeedItems(
   const { rows, error } = await fetchAdminActivityLogPage(supabase, {
     page: 1,
     pageSize,
+    includeTotal: false,
   });
   if (error) return { items: [], error };
 

@@ -44,16 +44,20 @@ export type FetchAdminActivityLogPageResult = {
 
 export async function fetchAdminActivityLogPage(
   supabase: SupabaseClient,
-  opts: { page: number; pageSize: number },
+  opts: { page: number; pageSize: number; includeTotal?: boolean },
 ): Promise<FetchAdminActivityLogPageResult> {
   const safePage = Math.max(1, Math.floor(opts.page));
   const safeSize = Math.min(100, Math.max(1, Math.floor(opts.pageSize)));
   const from = (safePage - 1) * safeSize;
   const to = from + safeSize - 1;
+  const includeTotal = opts.includeTotal !== false;
 
   const { data, error, count } = await supabase
     .from("admin_activity_log")
-    .select(ACTIVITY_LOG_SELECT, { count: "exact" })
+    .select(
+      ACTIVITY_LOG_SELECT,
+      includeTotal ? { count: "estimated" } : {},
+    )
     .order("created_at", { ascending: false })
     .range(from, to);
 

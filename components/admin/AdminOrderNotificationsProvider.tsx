@@ -89,14 +89,17 @@ export function AdminOrderNotificationsProvider({
 
     let channel: RealtimeChannel | null = null;
     let pollTimer: number | undefined;
+    let fallbackTimer: number | undefined;
     let pollInFlight = false;
     let cancelled = false;
+    let realtimeOk = false;
 
     const stopChannel = () => {
       if (channel) {
         void supabase.removeChannel(channel);
         channel = null;
       }
+      realtimeOk = false;
     };
 
     const stopPoll = () => {
@@ -104,10 +107,16 @@ export function AdminOrderNotificationsProvider({
         window.clearInterval(pollTimer);
         pollTimer = undefined;
       }
+      if (fallbackTimer != null) {
+        window.clearTimeout(fallbackTimer);
+        fallbackTimer = undefined;
+      }
     };
 
     const pollPending = async () => {
-      if (cancelled || pollInFlight || !isDocumentVisible()) return;
+      if (cancelled || pollInFlight || !isDocumentVisible() || realtimeOk) {
+        return;
+      }
       pollInFlight = true;
       try {
         const { data } = await supabase
@@ -126,6 +135,13 @@ export function AdminOrderNotificationsProvider({
       }
     };
 
+    const startPoll = () => {
+      if (cancelled || pollTimer != null || realtimeOk) return;
+      pollTimer = window.setInterval(() => {
+        void pollPending();
+      }, POLL_MS);
+    };
+
     const startChannel = () => {
       if (cancelled || channel) return;
       channel = supabase
@@ -141,14 +157,28 @@ export function AdminOrderNotificationsProvider({
             if (item) pushNotification(item);
           },
         )
-        .subscribe();
-    };
+        .subscribe((status) => {
+          if (cancelled) return;
+          if (status === "SUBSCRIBED") {
+            realtimeOk = true;
+            stopPoll();
+            return;
+          }
+          if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+            realtimeOk = false;
+            startPoll();
+            void pollPending();
+          }
+        });
 
-    const startPoll = () => {
-      if (cancelled || pollTimer != null) return;
-      pollTimer = window.setInterval(() => {
-        void pollPending();
-      }, POLL_MS);
+      if (fallbackTimer != null) window.clearTimeout(fallbackTimer);
+      fallbackTimer = window.setTimeout(() => {
+        fallbackTimer = undefined;
+        if (!cancelled && !realtimeOk) {
+          startPoll();
+          void pollPending();
+        }
+      }, 4000);
     };
 
     const bootstrap = async () => {
@@ -177,8 +207,6 @@ export function AdminOrderNotificationsProvider({
     const resume = () => {
       if (cancelled || !isDocumentVisible()) return;
       startChannel();
-      startPoll();
-      void pollPending();
     };
 
     const pause = () => {

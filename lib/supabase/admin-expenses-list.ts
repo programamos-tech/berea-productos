@@ -246,7 +246,7 @@ export async function fetchAdminExpensesPage(
   const listQuery = applyExpensesFilters(
     supabase
       .from("store_expenses")
-      .select(EXPENSES_DETAIL_SELECT, { count: "exact" }),
+      .select(EXPENSES_DETAIL_SELECT),
     opts,
   )
     .order("expense_date", { ascending: false })
@@ -336,11 +336,7 @@ export async function fetchAdminExpensesPage(
     rows,
     stats: {
       ...stats,
-      // Misma fuente que Ventas: count exacto del listado paginado.
-      total:
-        typeof listRes.count === "number" && listRes.count >= 0
-          ? listRes.count
-          : stats.total,
+      total: stats.total,
     },
     error: null,
   };

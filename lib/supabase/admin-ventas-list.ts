@@ -109,7 +109,7 @@ export async function fetchAdminVentasPage(
   const to = from + safeSize - 1;
 
   const listRes = await applyVentasFilters(
-    supabase.from("orders").select(VENTAS_SELECT, { count: "exact" }),
+    supabase.from("orders").select(VENTAS_SELECT, { count: "estimated" }),
     opts,
   )
     .order("created_at", { ascending: false })

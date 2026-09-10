@@ -308,7 +308,7 @@ export async function fetchAdminCustomersPage(
   if (activity === "all") {
     let query = supabase
       .from("customers")
-      .select(CUSTOMER_SELECT, { count: "exact" })
+      .select(CUSTOMER_SELECT, { count: "estimated" })
       .order("name", { ascending: true })
       .range(from, from + safeSize - 1);
 

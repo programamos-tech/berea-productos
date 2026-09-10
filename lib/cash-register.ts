@@ -675,7 +675,7 @@ export async function fetchCashSessionsPage(
 
   let query = supabase
     .from("cash_register_sessions")
-    .select(SESSION_SELECT, { count: "exact" })
+    .select(SESSION_SELECT, { count: "estimated" })
     .order("business_day", { ascending: false });
 
   const status = opts.status ?? "all";

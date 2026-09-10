@@ -75,7 +75,9 @@ export default async function AdminOrdersPage({
 
   let query = supabase
     .from("orders")
-    .select("id,status,customer_name,total_cents,created_at", { count: "exact" });
+    .select("id,status,customer_name,total_cents,created_at", {
+      count: "estimated",
+    });
 
   if (dateFrom || dateTo) {
     const lo = dateFrom ?? "1970-01-01";
