@@ -46,6 +46,11 @@ function skipsMiddlewareAuth(path: string): boolean {
     path === "/icon.png" ||
     path === "/icon" ||
     path.startsWith("/icon?") ||
+    path === "/apple-icon" ||
+    path.startsWith("/apple-icon") ||
+    path === "/favicon.ico" ||
+    path === "/manifest.webmanifest" ||
+    path === "/admin/manifest.webmanifest" ||
     isPublicStorePath(path)
   );
 }
@@ -89,7 +94,9 @@ export async function middleware(request: NextRequest) {
       path.startsWith("/icon?") ||
       path === "/favicon.ico" ||
       path === "/apple-icon" ||
-      path.startsWith("/apple-icon");
+      path.startsWith("/apple-icon") ||
+      path === "/manifest.webmanifest" ||
+      path === "/admin/manifest.webmanifest";
     if (!platformOk) {
       const dest = new URL("/empezar", request.url);
       return withTenantHeaders(request, NextResponse.redirect(dest));
