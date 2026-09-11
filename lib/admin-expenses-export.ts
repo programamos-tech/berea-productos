@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { monthYmdBounds } from "@/lib/admin-report-range";
 import { parseExpenseKind, parseExpenseScope } from "@/lib/expenses-constants";
+import { formatCop } from "@/lib/money";
 
 export type ExpenseExportRow = {
   expense_date: string;
@@ -14,19 +15,16 @@ export type ExpenseExportRow = {
   created_at: string;
 };
 
-function csvEscape(value: string): string {
-  if (/[",\n\r]/.test(value)) {
+function csvEscape(value: string, alwaysQuote = false): string {
+  if (alwaysQuote || /[",\n\r]/.test(value)) {
     return `"${value.replace(/"/g, '""')}"`;
   }
   return value;
 }
 
+/** `amount_cents` en esta app es pesos COP enteros (igual que `formatCop`). */
 function formatPesos(cents: number): string {
-  const n = Math.round(cents) / 100;
-  return n.toLocaleString("es-CO", {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  });
+  return formatCop(Math.max(0, Math.round(Number(cents) || 0)));
 }
 
 export function expensesExportFilename(yearMonth: string): string {
@@ -39,7 +37,7 @@ export function buildExpensesExportCsv(rows: ExpenseExportRow[]): string {
     "Tipo",
     "Alcance",
     "Concepto",
-    "Monto",
+    "Monto COP",
     "Medio de pago",
     "Notas",
     "Estado",
@@ -53,7 +51,7 @@ export function buildExpensesExportCsv(rows: ExpenseExportRow[]): string {
         csvEscape(r.kind),
         csvEscape(r.scope),
         csvEscape(r.concept),
-        csvEscape(formatPesos(r.amount_cents)),
+        csvEscape(formatPesos(r.amount_cents), true),
         csvEscape(r.payment_method),
         csvEscape(r.notes),
         csvEscape(r.status),
