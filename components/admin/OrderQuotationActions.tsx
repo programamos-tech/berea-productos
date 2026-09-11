@@ -97,7 +97,9 @@ export function OrderQuotationActions({
               Facturar cotización #{invoiceRef}
             </h3>
             <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-300">
-              Se descuenta stock y queda como venta pagada. Total{" "}
+              Se descuenta stock (local primero, luego bodega) y queda como
+              venta pagada. Si no alcanza, se actualiza con lo que hay y la
+              factura igual se emite. Total{" "}
               <span className="font-semibold tabular-nums">
                 {new Intl.NumberFormat("es-CO", {
                   style: "currency",

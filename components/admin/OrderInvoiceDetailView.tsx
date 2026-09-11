@@ -19,6 +19,10 @@ import {
   storeTaxRegime as envStoreTaxRegime,
 } from "@/lib/brand";
 import { formatCop } from "@/lib/money";
+import {
+  quotationConvertErrorMessage,
+  type QuotationStockNotice,
+} from "@/lib/quotation-stock-notice";
 import { getPublicSiteUrl } from "@/lib/public-site-url";
 import {
   formatStoreInvoiceDateNumeric,
@@ -30,6 +34,23 @@ import {
   ventaFormaPagoTone,
   ventaPagoRecibidoTone,
 } from "@/lib/ventas-sales";
+
+function stockNoticeLine(row: QuotationStockNotice): string {
+  const covered = row.tookLocal + row.tookWarehouse;
+  const short = Math.max(0, row.need - covered);
+  const parts = [
+    `pedía ${row.need}`,
+    `había ${row.hadLocal} en local`,
+    `y ${row.hadWarehouse} en bodega`,
+  ];
+  if (row.tookWarehouse > 0) {
+    parts.push(`se descontó ${row.tookLocal} local y ${row.tookWarehouse} bodega`);
+  } else {
+    parts.push(`se descontó ${row.tookLocal}`);
+  }
+  if (short > 0) parts.push(`faltaron ${short} (stock quedó en 0)`);
+  return `${row.name}: ${parts.join(", ")}.`;
+}
 
 const labelClass =
   "text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500";
@@ -98,6 +119,9 @@ export type OrderInvoiceDetailViewProps = {
   ventasListHref?: string;
   /** Marca de tirilla/factura (tenant brand → env fallback). */
   invoiceBrand?: InvoiceBrandFields;
+  convertError?: string | null;
+  justInvoiced?: boolean;
+  stockNotices?: QuotationStockNotice[];
 };
 
 function IconClock({ className }: { className?: string }) {
@@ -211,6 +235,9 @@ export function OrderInvoiceDetailView(props: OrderInvoiceDetailViewProps) {
     fulfillmentStatus = null,
     ventasListHref = "/admin/ventas",
     invoiceBrand,
+    convertError = null,
+    justInvoiced = false,
+    stockNotices = [],
   } = props;
 
   const invoiceTradeName =
@@ -295,6 +322,10 @@ export function OrderInvoiceDetailView(props: OrderInvoiceDetailViewProps) {
     checkoutPaymentMethod === "transfer" &&
     transferProofAttachments.length > 0;
 
+  const convertErrorMessage = quotationConvertErrorMessage(
+    convertError ?? undefined,
+  );
+
   return (
     <div
       className={
@@ -303,6 +334,37 @@ export function OrderInvoiceDetailView(props: OrderInvoiceDetailViewProps) {
           : "invoice-ticket-print flex w-full min-w-0 max-w-none flex-col gap-4 print:mx-auto print:max-w-[72mm] print:gap-2 print:bg-white print:px-0 print:py-0 print:text-zinc-900 print:leading-snug dark:print:bg-white"
       }
     >
+      {convertErrorMessage ? (
+        <div
+          className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900 print:hidden dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-100"
+          role="alert"
+        >
+          {convertErrorMessage}
+        </div>
+      ) : null}
+      {justInvoiced ? (
+        <div
+          className={`rounded-xl border px-4 py-3 text-sm print:hidden ${
+            stockNotices.length > 0
+              ? "border-amber-200 bg-amber-50 text-amber-950 dark:border-amber-900/50 dark:bg-amber-950/35 dark:text-amber-100"
+              : "border-emerald-200 bg-emerald-50 text-emerald-950 dark:border-emerald-900/50 dark:bg-emerald-950/35 dark:text-emerald-100"
+          }`}
+          role="status"
+        >
+          <p className="font-medium">
+            {stockNotices.length > 0
+              ? "Cotización facturada. El stock de local no alcanzaba; se actualizó con lo que había (local y bodega)."
+              : "Cotización facturada. Se descontó el stock y quedó como venta pagada."}
+          </p>
+          {stockNotices.length > 0 ? (
+            <ul className="mt-2 list-disc space-y-1 pl-5 text-sm">
+              {stockNotices.map((row, i) => (
+                <li key={`${row.name}-${i}`}>{stockNoticeLine(row)}</li>
+              ))}
+            </ul>
+          ) : null}
+        </div>
+      ) : null}
       <header className="flex flex-wrap items-center justify-between gap-2 gap-y-2 print:hidden">
         <div className="min-w-0">
           <p className="text-[11px] text-zinc-500">

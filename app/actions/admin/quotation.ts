@@ -13,11 +13,16 @@ import {
 } from "@/lib/require-admin-permission";
 import { sendHtmlEmail } from "@/lib/email/send";
 import {
-  buildKitPosComponentDeductions,
   expandKitLinesToProductQty,
+  type KitComponentDeduction,
   type ProductKitRow,
 } from "@/lib/product-kits";
 import { fetchKitsByIdsWithItems } from "@/lib/load-product-kits";
+import {
+  allocateAvailableStock,
+  encodeQuotationStockNotices,
+  type QuotationStockNotice,
+} from "@/lib/quotation-stock-notice";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getTenantBrandForRequest } from "@/lib/tenant-context";
 import { ventaNumeroReferencia } from "@/lib/ventas-sales";
@@ -140,39 +145,96 @@ export async function convertQuotationToSaleAction(formData: FormData) {
         stock_warehouse: p.stock_warehouse as number | null,
       });
     }
-    for (const [pid, qty] of qtyByProduct) {
-      const p = productById.get(pid);
-      if (!p) redirectOrder(orderId, "stock");
-      if (Number(p.stock_local ?? 0) < qty) redirectOrder(orderId, "stock");
-    }
   }
 
-  const stockItems = [...qtyByProduct.entries()].map(([product_id, quantity]) => ({
-    product_id,
-    quantity,
-  }));
-  if (stockItems.length > 0) {
-    const { error: stockErr } = await supabase.rpc("decrement_products_stock_local", {
-      p_items: stockItems,
+  const working = new Map<string, { local: number; warehouse: number }>();
+  for (const [pid, p] of productById) {
+    working.set(pid, {
+      local: Math.max(0, Math.floor(Number(p.stock_local ?? 0))),
+      warehouse: Math.max(0, Math.floor(Number(p.stock_warehouse ?? 0))),
     });
-    if (stockErr) {
-      console.error("convertQuotationToSaleAction stock", stockErr);
-      redirectOrder(orderId, "stock");
+  }
+
+  const stockNotices: QuotationStockNotice[] = [];
+
+  function takeFromWorking(
+    pid: string,
+    need: number,
+    fallbackName: string,
+  ): { takeL: number; takeW: number } {
+    const p = productById.get(pid);
+    const bin = working.get(pid) ?? { local: 0, warehouse: 0 };
+    const hadLocal = bin.local;
+    const hadWarehouse = bin.warehouse;
+    const alloc = allocateAvailableStock(need, hadLocal, hadWarehouse);
+    bin.local -= alloc.takeL;
+    bin.warehouse -= alloc.takeW;
+    working.set(pid, bin);
+    if (hadLocal < need) {
+      stockNotices.push({
+        name: p?.name ?? fallbackName,
+        need,
+        hadLocal,
+        hadWarehouse,
+        tookLocal: alloc.takeL,
+        tookWarehouse: alloc.takeW,
+      });
     }
+    return { takeL: alloc.takeL, takeW: alloc.takeW };
+  }
+
+  type ProductLineDeduction = {
+    itemId: string;
+    productId: string;
+    name: string;
+    takeL: number;
+    takeW: number;
+  };
+  const productLineDeductions: ProductLineDeduction[] = [];
+  const kitDeductionsByItemId = new Map<string, KitComponentDeduction[]>();
+
+  for (const row of items ?? []) {
+    if (!row.product_id) continue;
+    const qty = Math.max(0, Math.floor(Number(row.quantity ?? 0)));
+    if (qty < 1) continue;
+    const pid = String(row.product_id);
+    const name = String(row.product_name_snapshot ?? "Producto");
+    const took = takeFromWorking(pid, qty, name);
+    productLineDeductions.push({
+      itemId: String(row.id),
+      productId: pid,
+      name,
+      takeL: took.takeL,
+      takeW: took.takeW,
+    });
+  }
+
+  for (const kl of kitLines) {
+    const kit = kitsById.get(kl.kitId);
+    const item = (items ?? []).find((r) => String(r.kit_id) === kl.kitId);
+    if (!kit || !item) continue;
+    const deductions = (kit.items ?? []).map((comp) => {
+      const pid = String(comp.product_id);
+      const perKit = Math.max(1, Math.floor(Number(comp.quantity ?? 0)));
+      const need = perKit * Math.max(1, Math.floor(kl.quantity));
+      const name = String(comp.products?.name ?? kl.name);
+      const took = takeFromWorking(pid, need, name);
+      return {
+        product_id: pid,
+        stock_deducted_local: took.takeL,
+        stock_deducted_warehouse: took.takeW,
+      };
+    });
+    kitDeductionsByItemId.set(String(item.id), deductions);
   }
 
   async function undoStockDecrement() {
-    for (const [pid, quantity] of qtyByProduct) {
-      const { data: cur } = await supabase
-        .from("products")
-        .select("stock_local")
-        .eq("id", pid)
-        .maybeSingle();
-      if (!cur) continue;
+    for (const [pid, orig] of productById) {
       await supabase
         .from("products")
         .update({
-          stock_local: Math.max(0, Number(cur.stock_local ?? 0) + quantity),
+          stock_local: orig.stock_local,
+          stock_warehouse: orig.stock_warehouse,
         })
         .eq("id", pid);
     }
@@ -189,13 +251,34 @@ export async function convertQuotationToSaleAction(formData: FormData) {
     }
   }
 
-  for (const row of items ?? []) {
-    if (!row.product_id) continue;
-    const qty = Math.max(0, Math.floor(Number(row.quantity ?? 0)));
+  for (const [pid, orig] of productById) {
+    const next = working.get(pid);
+    if (!next) continue;
+    const origL = Math.max(0, Math.floor(Number(orig.stock_local ?? 0)));
+    const origW = Math.max(0, Math.floor(Number(orig.stock_warehouse ?? 0)));
+    if (next.local === origL && next.warehouse === origW) continue;
+    const { error: stockErr } = await supabase
+      .from("products")
+      .update({
+        stock_local: next.local,
+        stock_warehouse: next.warehouse,
+      })
+      .eq("id", pid);
+    if (stockErr) {
+      console.error("convertQuotationToSaleAction stock", stockErr);
+      await undoStockDecrement();
+      redirectOrder(orderId, "db");
+    }
+  }
+
+  for (const line of productLineDeductions) {
     const { data: marked, error: markErr } = await supabase
       .from("order_items")
-      .update({ stock_deducted_local: qty, stock_deducted_warehouse: 0 })
-      .eq("id", row.id)
+      .update({
+        stock_deducted_local: line.takeL,
+        stock_deducted_warehouse: line.takeW,
+      })
+      .eq("id", line.itemId)
       .select("id")
       .maybeSingle();
     if (markErr || !marked?.id) {
@@ -205,23 +288,17 @@ export async function convertQuotationToSaleAction(formData: FormData) {
     }
   }
 
-  for (const kl of kitLines) {
-    const kit = kitsById.get(kl.kitId);
-    if (!kit) continue;
-    const deductions = buildKitPosComponentDeductions(kit, kl.quantity);
-    const item = (items ?? []).find((r) => String(r.kit_id) === kl.kitId);
-    if (item) {
-      const { data: kitMarked, error: kitMarkErr } = await supabase
-        .from("order_items")
-        .update({ kit_component_deductions: deductions })
-        .eq("id", item.id)
-        .select("id")
-        .maybeSingle();
-      if (kitMarkErr || !kitMarked?.id) {
-        console.error("convertQuotationToSaleAction mark kit stock", kitMarkErr);
-        await undoStockDecrement();
-        redirectOrder(orderId, "db");
-      }
+  for (const [itemId, deductions] of kitDeductionsByItemId) {
+    const { data: kitMarked, error: kitMarkErr } = await supabase
+      .from("order_items")
+      .update({ kit_component_deductions: deductions })
+      .eq("id", itemId)
+      .select("id")
+      .maybeSingle();
+    if (kitMarkErr || !kitMarked?.id) {
+      console.error("convertQuotationToSaleAction mark kit stock", kitMarkErr);
+      await undoStockDecrement();
+      redirectOrder(orderId, "db");
     }
   }
 
@@ -252,24 +329,33 @@ export async function convertQuotationToSaleAction(formData: FormData) {
   }
 
   const stockTrace = buildPosSaleStockTrace({
-    productLines: productLines.map((l) => ({
+    productLines: productLineDeductions.map((l) => ({
       productId: l.productId,
       name: l.name,
-      quantity: l.quantity,
+      quantity: l.takeL + l.takeW,
+      deductedLocal: l.takeL,
+      deductedWarehouse: l.takeW,
     })),
-    kitLines: kitLines.map((kl) => {
-      const kit = kitsById.get(kl.kitId)!;
+    kitLines: kitLines.flatMap((kl) => {
+      const kit = kitsById.get(kl.kitId);
+      if (!kit) return [];
+      const item = (items ?? []).find((r) => String(r.kit_id) === kl.kitId);
+      const deductions = item
+        ? (kitDeductionsByItemId.get(String(item.id)) ?? [])
+        : [];
       const productNames = new Map(
         (kit.items ?? []).map((row) => [
           String(row.product_id),
           String(row.products?.name ?? "Producto"),
         ]),
       );
-      return {
-        kitName: kl.name,
-        deductions: buildKitPosComponentDeductions(kit, kl.quantity),
-        productNames,
-      };
+      return [
+        {
+          kitName: kl.name,
+          deductions,
+          productNames,
+        },
+      ];
     }),
     stockByProductId: productById,
   });
@@ -284,13 +370,18 @@ export async function convertQuotationToSaleAction(formData: FormData) {
       from_quotation: true,
       payment_method: paymentMethod,
       total_cents: totalCents,
+      stock_shortages: stockNotices,
       ...activityStockTraceToMetadata(stockTrace),
     },
   });
 
   revalidatePath("/admin/ventas");
   revalidatePath(`/admin/orders/${orderId}`);
-  redirect(`/admin/orders/${orderId}?facturada=1`);
+  const qs = new URLSearchParams({ facturada: "1" });
+  if (stockNotices.length > 0) {
+    qs.set("stock", encodeQuotationStockNotices(stockNotices));
+  }
+  redirect(`/admin/orders/${orderId}?${qs.toString()}`);
 }
 
 export async function sendQuotationEmailAction(formData: FormData): Promise<

@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { OrderInvoiceDetailView } from "@/components/admin/OrderInvoiceDetailView";
 import { safeAdminVentasListReturnPath } from "@/lib/admin-ventas-list-url";
 import { resolveProfileName } from "@/lib/cash-close-report";
+import { decodeQuotationStockNotices } from "@/lib/quotation-stock-notice";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getTenantBrandForRequest } from "@/lib/tenant-context";
 import { ventaNumeroReferencia } from "@/lib/ventas-sales";
@@ -236,6 +237,11 @@ export default async function AdminOrderDetailPage({ params, searchParams }: Pro
       }
       ventasListHref={ventasListHref}
       invoiceBrand={invoiceBrand}
+      convertError={typeof sp.error === "string" ? sp.error : null}
+      justInvoiced={sp.facturada === "1"}
+      stockNotices={decodeQuotationStockNotices(
+        typeof sp.stock === "string" ? sp.stock : undefined,
+      )}
     />
   );
 }

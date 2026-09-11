@@ -120,6 +120,8 @@ export function buildPosSaleStockTrace(params: {
     productId: string;
     name: string;
     quantity: number;
+    deductedLocal?: number;
+    deductedWarehouse?: number;
   }[];
   kitLines: {
     kitName: string;
@@ -131,13 +133,17 @@ export function buildPosSaleStockTrace(params: {
   const map = new Map<string, ActivityStockMovement>();
 
   for (const line of params.productLines) {
-    const qty = floorQty(line.quantity);
-    if (qty < 1) continue;
+    const loc =
+      line.deductedLocal != null
+        ? floorQty(line.deductedLocal)
+        : floorQty(line.quantity);
+    const wh = floorQty(line.deductedWarehouse);
+    if (loc < 1 && wh < 1) continue;
     appendMovementDelta(map, {
       product_id: line.productId,
       product_name: line.name,
-      local_delta: -qty,
-      warehouse_delta: 0,
+      local_delta: -loc,
+      warehouse_delta: -wh,
       context: null,
     });
   }
