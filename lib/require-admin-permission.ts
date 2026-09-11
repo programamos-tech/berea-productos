@@ -1,4 +1,7 @@
-import type { PermissionKey } from "@/lib/admin-permissions";
+import {
+  jobRoleSkipsCashRegister,
+  type PermissionKey,
+} from "@/lib/admin-permissions";
 import {
   fetchCashSessionForBusinessDay,
   todayBusinessDayYmd,
@@ -38,12 +41,12 @@ export async function assertActionPermission(key: PermissionKey): Promise<void> 
 }
 
 /**
- * Vendedora: no puede operar ventas/egresos sin caja abierta del día.
- * Dueña no está bloqueada. Si el día ya cerró, también bloquea altas.
+ * Venta: no puede operar ventas/egresos sin caja abierta del día.
+ * Propietario y administrador no están bloqueados. Si el día ya cerró, también bloquea altas.
  */
 export async function assertCashRegisterOpenForStaff(): Promise<void> {
   const perm = await requireAdminSession();
-  if (perm.jobRole === "owner") return;
+  if (jobRoleSkipsCashRegister(perm.jobRole)) return;
   if (!perm.permissions.caja_gestionar) return;
 
   const supabase = await createSupabaseServerClient();

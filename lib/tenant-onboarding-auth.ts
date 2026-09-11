@@ -13,7 +13,7 @@ function isPlatformAdminEmail(email: string | undefined | null): boolean {
 
 /**
  * Who may open /admin/tenants/nuevo and call createTenantOnboarding (v1):
- * - `job_role === 'owner'` (Aleya owners act as Berea operators), OR
+ * - `job_role === 'owner'` (propietarios actúan como operadores Berea), OR
  * - session email in `BEREA_PLATFORM_ADMIN_EMAILS`.
  */
 export async function canOnboardTenants(): Promise<boolean> {

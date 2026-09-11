@@ -2,18 +2,68 @@
 export type PermissionKey = (typeof PERMISSION_KEYS)[number];
 
 /** Rol laboral del colaborador (columna `profiles.job_role`). */
-export type CollaboratorJobRole = "owner" | "cashier" | "support";
+export const COLLABORATOR_JOB_ROLES = [
+  "owner",
+  "admin",
+  "sales",
+  "inventory",
+] as const;
+
+export type CollaboratorJobRole = (typeof COLLABORATOR_JOB_ROLES)[number];
+
+export function isCollaboratorJobRole(
+  raw: string | null | undefined,
+): raw is CollaboratorJobRole {
+  return (
+    raw === "owner" || raw === "admin" || raw === "sales" || raw === "inventory"
+  );
+}
 
 export function normalizeCollaboratorJobRole(
   raw: string | null | undefined,
 ): CollaboratorJobRole {
-  if (raw === "owner") return "owner";
-  if (raw === "support") return "support";
-  return "cashier";
+  const v = String(raw ?? "")
+    .trim()
+    .toLowerCase();
+  if (v === "owner" || v === "propietario") return "owner";
+  if (v === "admin" || v === "administrador") return "admin";
+  if (v === "inventory" || v === "inventario" || v === "support") {
+    return "inventory";
+  }
+  if (v === "sales" || v === "venta" || v === "cashier" || v === "cajero") {
+    return "sales";
+  }
+  return "sales";
+}
+
+export function collaboratorJobRoleLabel(role: CollaboratorJobRole): string {
+  if (role === "owner") return "Propietario";
+  if (role === "admin") return "Administrador";
+  if (role === "inventory") return "Inventario";
+  return "Venta";
+}
+
+export function collaboratorJobRoleToneClass(role: CollaboratorJobRole): string {
+  if (role === "owner") {
+    return "font-medium text-emerald-700 dark:text-emerald-300";
+  }
+  if (role === "admin") {
+    return "font-medium text-amber-700 dark:text-amber-300";
+  }
+  if (role === "inventory") {
+    return "font-medium text-violet-700 dark:text-violet-300";
+  }
+  return "font-medium text-sky-700 dark:text-sky-300";
+}
+
+/** Propietario y administrador no quedan bloqueados por el candado de caja. */
+export function jobRoleSkipsCashRegister(role: CollaboratorJobRole): boolean {
+  return role === "owner" || role === "admin";
 }
 
 export const PERMISSION_KEYS = [
   "inicio_reportes",
+  "reportes_tienda",
   "ventas_ver",
   "ventas_crear",
   "clientes_ver",
@@ -60,7 +110,10 @@ export const PERMISSION_MODULES: PermissionModule[] = [
   {
     id: "inicio",
     label: "Inicio",
-    items: [{ key: "inicio_reportes", label: "Inicio / Reportes" }],
+    items: [
+      { key: "inicio_reportes", label: "Reportes por periodo" },
+      { key: "reportes_tienda", label: "Cómo va la tienda" },
+    ],
   },
   {
     id: "ventas",
@@ -135,7 +188,12 @@ export const PERMISSION_MODULES: PermissionModule[] = [
   {
     id: "tienda",
     label: "Tienda",
-    items: [{ key: "ajustes_tienda_ver", label: "Ajustes de tienda, bienvenida y envíos" }],
+    items: [
+      {
+        key: "ajustes_tienda_ver",
+        label: "Ajustes de tienda, bienvenida y envíos",
+      },
+    ],
   },
 ];
 
@@ -147,16 +205,27 @@ function allTrue(): PermissionMap {
   return m;
 }
 
-/** Dueño: todo habilitado. */
+function allFalse(): PermissionMap {
+  const m: PermissionMap = {};
+  for (const k of PERMISSION_KEYS) m[k] = false;
+  return m;
+}
+
+/** Propietario: todo, incluidas ambas vistas de reportes. */
 export function defaultPermissionsOwner(): PermissionMap {
   return allTrue();
 }
 
-/** Cajero: alineado al mock (inventario lectura + ventas; sin admin). */
-export function defaultPermissionsCashier(): PermissionMap {
-  const m: PermissionMap = {};
-  for (const k of PERMISSION_KEYS) m[k] = false;
-  m.inicio_reportes = false;
+/** Administrador: igual que propietario, sin “Cómo va la tienda”. */
+export function defaultPermissionsAdmin(): PermissionMap {
+  const m = allTrue();
+  m.reportes_tienda = false;
+  return m;
+}
+
+/** Venta: caja, ventas y piso; sin reportes ni administración. */
+export function defaultPermissionsSales(): PermissionMap {
+  const m = allFalse();
   m.ventas_ver = true;
   m.ventas_crear = true;
   m.clientes_ver = true;
@@ -170,23 +239,27 @@ export function defaultPermissionsCashier(): PermissionMap {
   m.caja_ver = true;
   m.caja_gestionar = true;
   m.actividades_ver = true;
-  m.marketing_ver = false;
-  m.ajustes_tienda_ver = false;
   return m;
 }
 
-/**
- * Apoyo: refuerzo en depósito / datos sin operar caja como cajero principal.
- * (Misma base que cajero; afiná permisos con los checkboxes.)
- */
-export function defaultPermissionsSupport(): PermissionMap {
-  return defaultPermissionsCashier();
+/** Inventario: solo productos (catálogo, categorías y stock). */
+export function defaultPermissionsInventory(): PermissionMap {
+  const m = allFalse();
+  m.inventario_ver = true;
+  m.productos_crear = true;
+  m.productos_editar = true;
+  m.categorias_gestionar = true;
+  m.stock_actualizar = true;
+  return m;
 }
 
-export function permissionsFromRoleTemplate(role: CollaboratorJobRole): PermissionMap {
+export function permissionsFromRoleTemplate(
+  role: CollaboratorJobRole,
+): PermissionMap {
   if (role === "owner") return defaultPermissionsOwner();
-  if (role === "support") return defaultPermissionsSupport();
-  return defaultPermissionsCashier();
+  if (role === "admin") return defaultPermissionsAdmin();
+  if (role === "inventory") return defaultPermissionsInventory();
+  return defaultPermissionsSales();
 }
 
 export function normalizePermissions(raw: unknown): PermissionMap {
@@ -210,5 +283,6 @@ export function mergePermissionsWithDefaults(
   for (const k of PERMISSION_KEYS) {
     if (k in s) out[k] = Boolean(s[k]);
   }
+  if (!out.inicio_reportes) out.reportes_tienda = false;
   return out;
 }

@@ -57,10 +57,13 @@ function hrefForVista(
 export function ReportsVistaFilter({
   vista,
   todayKey,
+  allowTiendaVista = true,
 }: {
   vista: ReportVista;
   /** YYYY-MM-DD en zona de la tienda; acelera el salto a “Por periodo”. */
   todayKey?: string;
+  /** Propietario: ambas vistas. Administrador: solo periodo. */
+  allowTiendaVista?: boolean;
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -72,8 +75,8 @@ export function ReportsVistaFilter({
   useEffect(() => {
     const base = new URLSearchParams(searchParams.toString());
     router.prefetch(hrefForVista("dia", base, todayKey));
-    router.prefetch(hrefForVista("tienda", base));
-  }, [router, searchParams, todayKey]);
+    if (allowTiendaVista) router.prefetch(hrefForVista("tienda", base));
+  }, [router, searchParams, todayKey, allowTiendaVista]);
 
   function select(next: ReportVista) {
     if (next === optimisticVista || busy) return;
@@ -88,6 +91,8 @@ export function ReportsVistaFilter({
       router.push(href);
     });
   }
+
+  if (!allowTiendaVista) return null;
 
   return (
     <div

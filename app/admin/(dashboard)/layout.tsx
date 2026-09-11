@@ -10,6 +10,7 @@ import {
   navHrefsForCashGate,
   staffMustOpenCashRegister,
 } from "@/lib/cash-register-gate";
+import { jobRoleSkipsCashRegister } from "@/lib/admin-permissions";
 import { loadAdminPermissions } from "@/lib/load-admin-permissions";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { canOnboardTenants } from "@/lib/tenant-onboarding-auth";
@@ -24,7 +25,8 @@ export default async function AdminDashboardLayout({
   if (!perm) redirect("/admin/login");
 
   const needsCashCheck =
-    perm.jobRole !== "owner" && Boolean(perm.permissions.caja_gestionar);
+    !jobRoleSkipsCashRegister(perm.jobRole) &&
+    Boolean(perm.permissions.caja_gestionar);
 
   const [showOnboarding, todaySession] = await Promise.all([
     canOnboardTenants(),

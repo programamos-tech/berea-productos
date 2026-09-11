@@ -1,5 +1,6 @@
 import { AdminUserAvatar } from "@/components/admin/AdminUserAvatar";
 import {
+  collaboratorJobRoleLabel,
   PERMISSION_MODULES,
   type PermissionMap,
 } from "@/lib/admin-permissions";
@@ -12,14 +13,6 @@ import {
 import { loadAdminPermissions } from "@/lib/load-admin-permissions";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
-
-function jobRoleLabel(role: string | null | undefined): string {
-  const r = String(role ?? "").toLowerCase();
-  if (r === "owner") return "Propietario";
-  if (r === "cashier") return "Cajero";
-  if (r === "support") return "Soporte";
-  return role ? String(role) : "—";
-}
 
 function formatDate(iso: string | null | undefined): string {
   if (!iso) return "—";
@@ -66,7 +59,7 @@ export default async function AdminCuentaPage({
 
   const displayName = perm.displayName;
   const email = perm.email;
-  const roleLabel = jobRoleLabel(perm.jobRole);
+  const roleLabel = collaboratorJobRoleLabel(perm.jobRole);
   const username = profile?.login_username?.trim() || "—";
   const permissionGroups = grantedPermissionGroups(perm.permissions);
   const grantedCount = permissionGroups.reduce(

@@ -9,6 +9,11 @@ import {
   adminToolbarBtnActiveClass,
   adminToolbarBtnBaseClass,
 } from "@/lib/admin-ui";
+import {
+  collaboratorJobRoleLabel,
+  collaboratorJobRoleToneClass,
+  normalizeCollaboratorJobRole,
+} from "@/lib/admin-permissions";
 import { loadAdminPermissions } from "@/lib/load-admin-permissions";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -27,19 +32,11 @@ type ProfileRow = {
 };
 
 function jobLabel(jobRole: string | null | undefined): string {
-  if (jobRole === "owner") return "Dueño";
-  if (jobRole === "support") return "Apoyo";
-  return "Cajero";
+  return collaboratorJobRoleLabel(normalizeCollaboratorJobRole(jobRole));
 }
 
 function jobToneClass(jobRole: string | null | undefined): string {
-  if (jobRole === "owner") {
-    return "font-medium text-emerald-700 dark:text-emerald-300";
-  }
-  if (jobRole === "support") {
-    return "font-medium text-violet-700 dark:text-violet-300";
-  }
-  return "font-medium text-sky-700 dark:text-sky-300";
+  return collaboratorJobRoleToneClass(normalizeCollaboratorJobRole(jobRole));
 }
 
 export default async function AdminUsuariosRolesPage() {
@@ -88,7 +85,7 @@ export default async function AdminUsuariosRolesPage() {
       const email =
         row.public_email?.trim() || emailByUserId.get(row.id) || "—";
       const loginEmail = emailByUserId.get(row.id)?.trim() || "";
-      const jobRole = row.job_role ?? "cashier";
+      const jobRole = normalizeCollaboratorJobRole(row.job_role);
       const avatarSeed =
         (loginEmail || (email !== "—" ? email : "") || title).toLowerCase();
 

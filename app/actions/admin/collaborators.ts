@@ -1,8 +1,8 @@
 "use server";
 
 import {
+  isCollaboratorJobRole,
   normalizePermissions,
-  type CollaboratorJobRole,
   type PermissionMap,
 } from "@/lib/admin-permissions";
 import { slugUsername } from "@/lib/collaborator-utils";
@@ -41,7 +41,7 @@ export async function inviteCollaboratorAction(formData: FormData) {
   const loginUsernameRaw = String(formData.get("login_username") ?? "").trim();
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const password = String(formData.get("password") ?? "");
-  const jobRole = String(formData.get("job_role") ?? "cashier") as CollaboratorJobRole;
+  const jobRoleRaw = String(formData.get("job_role") ?? "sales");
   const branchLabelRaw = String(formData.get("branch_label") ?? "").trim();
   const branchLabel = branchLabelRaw.length > 0 ? branchLabelRaw : null;
   const avatarVariant = String(formData.get("avatar_variant") ?? "A").trim().slice(0, 1) || "A";
@@ -59,9 +59,10 @@ export async function inviteCollaboratorAction(formData: FormData) {
   if (!displayName || !email || !password || password.length < 6) {
     redirectNewError("validation");
   }
-  if (jobRole !== "owner" && jobRole !== "cashier" && jobRole !== "support") {
+  if (!isCollaboratorJobRole(jobRoleRaw)) {
     redirectNewError("validation");
   }
+  const jobRole = jobRoleRaw;
 
   const loginUsername = (loginUsernameRaw || slugUsername(displayName)).toLowerCase();
 
@@ -144,7 +145,7 @@ export async function updateCollaboratorAction(formData: FormData) {
 
   const displayName = String(formData.get("display_name") ?? "").trim();
   const loginUsername = String(formData.get("login_username") ?? "").trim().toLowerCase();
-  const jobRole = String(formData.get("job_role") ?? "cashier") as CollaboratorJobRole;
+  const jobRoleRaw = String(formData.get("job_role") ?? "sales");
   const branchLabelRaw = String(formData.get("branch_label") ?? "").trim();
   const branchLabel = branchLabelRaw.length > 0 ? branchLabelRaw : null;
   const avatarVariant = String(formData.get("avatar_variant") ?? "A").trim().slice(0, 1) || "A";
@@ -164,9 +165,10 @@ export async function updateCollaboratorAction(formData: FormData) {
   if (!displayName || !loginUsername) {
     redirectEditError(profileId, "validation");
   }
-  if (jobRole !== "owner" && jobRole !== "cashier" && jobRole !== "support") {
+  if (!isCollaboratorJobRole(jobRoleRaw)) {
     redirectEditError(profileId, "validation");
   }
+  const jobRole = jobRoleRaw;
 
   const { data: other } = await service
     .from("profiles")

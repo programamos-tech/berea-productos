@@ -1,19 +1,20 @@
-import type {
-  CollaboratorJobRole,
-  PermissionMap,
+import {
+  jobRoleSkipsCashRegister,
+  type CollaboratorJobRole,
+  type PermissionMap,
 } from "@/lib/admin-permissions";
 import type { CashRegisterSessionRow } from "@/lib/cash-register";
 
 /**
- * Vendedora / apoyo con permiso de caja: deben abrir caja al empezar el día
- * antes de operar el panel. Dueña no está bloqueada.
+ * Venta con permiso de caja: deben abrir caja al empezar el día
+ * antes de operar el panel. Propietario y administrador no están bloqueados.
  */
 export function staffMustOpenCashRegister(args: {
   jobRole: CollaboratorJobRole;
   permissions: PermissionMap;
   todaySession: Pick<CashRegisterSessionRow, "status"> | null;
 }): boolean {
-  if (args.jobRole === "owner") return false;
+  if (jobRoleSkipsCashRegister(args.jobRole)) return false;
   if (!args.permissions.caja_gestionar) return false;
   if (args.todaySession?.status === "open") return false;
   if (args.todaySession?.status === "closed") return false;

@@ -67,8 +67,13 @@ export default async function AdminHomePage({ searchParams }: PageProps) {
 
   const sp = await searchParams;
   const todayKey = todayYmdInReportStore();
+  const canSeeTiendaVista = Boolean(perm.permissions.reportes_tienda);
+  const vistaRaw = parseReportVistaFromSearchParams(sp);
+  if (!canSeeTiendaVista && vistaRaw === "tienda") {
+    redirect(`/admin?vista=dia&from=${todayKey}&to=${todayKey}`);
+  }
   const currentYm = currentYearMonthInReportStore();
-  const vista = parseReportVistaFromSearchParams(sp);
+  const vista = canSeeTiendaVista ? vistaRaw : "dia";
   const tiendaYm = parseReportTiendaMonthFromSearchParams(sp, todayKey);
   const urlRange = parseReportRangeFromSearchParams(sp, todayKey);
   const { from: rangeFrom, to: rangeTo } =
@@ -109,7 +114,11 @@ export default async function AdminHomePage({ searchParams }: PageProps) {
               />
             </div>
             <div className="flex w-full min-w-0 flex-nowrap items-center gap-2 overflow-x-auto overscroll-x-contain pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] xl:w-auto xl:flex-1 xl:justify-end xl:overflow-visible [&::-webkit-scrollbar]:hidden">
-              <ReportsVistaFilter vista={vista} todayKey={todayKey} />
+              <ReportsVistaFilter
+                vista={vista}
+                todayKey={todayKey}
+                allowTiendaVista={canSeeTiendaVista}
+              />
               {vista === "tienda" ? (
                 <ReportsMonthFilter
                   selectedYm={tiendaYm}

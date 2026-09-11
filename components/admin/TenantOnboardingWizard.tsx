@@ -25,7 +25,7 @@ const STEPS = [
   { id: 2, title: "Facturación", hint: "Datos de tirilla / factura" },
   { id: 3, title: "Contacto", hint: "Teléfono, correo, WhatsApp" },
   { id: 4, title: "Logo", hint: "Imagen para impresión" },
-  { id: 5, title: "Dueño", hint: "Primer usuario owner" },
+  { id: 5, title: "Propietario", hint: "Primer usuario owner" },
   { id: 6, title: "Revisar", hint: "Crear la tienda" },
 ] as const;
 
@@ -523,7 +523,7 @@ export function TenantOnboardingWizard({
                 className={productInputClass}
                 value={form.owner_display_name}
                 onChange={(e) => setField("owner_display_name", e.target.value)}
-                placeholder={form.trade_name || form.name || "Dueño"}
+                placeholder={form.trade_name || form.name || "Propietario"}
               />
             </div>
             <div>
@@ -573,7 +573,7 @@ export function TenantOnboardingWizard({
             />
             <ReviewRow label="Teléfono" value={form.phone || "—"} />
             <ReviewRow label="Email" value={form.contact_email || "—"} />
-            <ReviewRow label="Dueño" value={form.owner_email} />
+            <ReviewRow label="Propietario" value={form.owner_email} />
             <ReviewRow
               label="Logo"
               value={logoFile ? logoFile.name : "Sin archivo (env default)"}

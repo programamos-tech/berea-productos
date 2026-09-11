@@ -7,7 +7,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
-/** Preview del modal matutino como lo vería Andrew (cashier) mañana. */
+/** Preview del modal matutino como lo vería Venta mañana. */
 export default async function SimularCajaMananaPage() {
   await requireAdminAnyPermission([
     "caja_ver",

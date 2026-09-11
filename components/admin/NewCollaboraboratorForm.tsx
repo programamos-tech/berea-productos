@@ -14,6 +14,8 @@ import {
   productSectionTitle as sectionTitle,
 } from "@/components/admin/product-form-primitives";
 import {
+  COLLABORATOR_JOB_ROLES,
+  collaboratorJobRoleLabel,
   mergePermissionsWithDefaults,
   permissionsFromRoleTemplate,
   PERMISSION_MODULES,
@@ -102,12 +104,6 @@ export function EditCollaboratorHeader({ name }: { name: string }) {
   );
 }
 
-function roleLabel(role: CollaboratorJobRole) {
-  if (role === "owner") return "Dueño";
-  if (role === "support") return "Apoyo";
-  return "Cajero";
-}
-
 type Props = {
   mode: "create" | "edit";
   storeLabel?: string;
@@ -121,13 +117,13 @@ export function NewCollaboraboratorForm({ mode, initial }: Props) {
   const [email, setEmail] = useState(initial?.public_email ?? "");
   const [password, setPassword] = useState("");
   const [jobRole, setJobRole] = useState<CollaboratorJobRole>(
-    initial?.job_role ?? "cashier",
+    initial?.job_role ?? "sales",
   );
   const [isActive, setIsActive] = useState(initial?.is_active ?? true);
   const [permissions, setPermissions] = useState<PermissionMap>(() =>
     mergePermissionsWithDefaults(
       initial?.permissions ?? undefined,
-      initial?.job_role ?? "cashier",
+      initial?.job_role ?? "sales",
     ),
   );
 
@@ -143,7 +139,7 @@ export function NewCollaboraboratorForm({ mode, initial }: Props) {
 
   const payloadJson = useMemo(() => JSON.stringify(permissions), [permissions]);
 
-  const summaryRole = roleLabel(jobRole);
+  const summaryRole = collaboratorJobRoleLabel(jobRole);
   const grantedCount = PERMISSION_MODULES.reduce(
     (n, mod) => n + mod.items.filter((i) => Boolean(permissions[i.key])).length,
     0,
@@ -249,12 +245,18 @@ export function NewCollaboraboratorForm({ mode, initial }: Props) {
                   id="job_role"
                   name="job_role"
                   value={jobRole}
-                  onChange={(e) => setJobRole(e.target.value as CollaboratorJobRole)}
+                  onChange={(e) => {
+                    const next = e.target.value as CollaboratorJobRole;
+                    setJobRole(next);
+                    setPermissions(permissionsFromRoleTemplate(next));
+                  }}
                   className={inputClass}
                 >
-                  <option value="owner">Dueño</option>
-                  <option value="cashier">Cajero</option>
-                  <option value="support">Apoyo</option>
+                  {COLLABORATOR_JOB_ROLES.map((role) => (
+                    <option key={role} value={role}>
+                      {collaboratorJobRoleLabel(role)}
+                    </option>
+                  ))}
                 </select>
               </div>
               <div className="sm:col-span-2">
