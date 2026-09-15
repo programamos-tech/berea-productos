@@ -1,11 +1,8 @@
-import { signOutAdmin } from "@/app/actions/admin/auth";
-import { AdminAuthShell } from "@/components/admin/AdminAuthShell";
 import { OperatorAccountsTable } from "@/components/admin/OperatorAccountsTable";
 import { loadAdminPermissions } from "@/lib/load-admin-permissions";
-import { accountHolderLabel } from "@/lib/platform-operator";
+import { toOperatorAccountRow } from "@/lib/operator-accounts";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
 import { adminPageSubtitleClass, adminPageTitleClass } from "@/lib/admin-ui";
-import { adminAccountChrome } from "@/lib/tenant-brand";
 import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
@@ -14,33 +11,30 @@ type CustomerTenantRow = {
   id: string;
   slug: string;
   name: string;
+  status: string;
   account_holder_name: string | null;
   account_holder_email: string | null;
   brand: unknown;
 };
 
-function toAccountRows(rows: CustomerTenantRow[]) {
-  return rows
-    .map((row) => {
-      const chrome = adminAccountChrome({
-        slug: row.slug,
-        name: row.name,
-        brand: row.brand,
-      });
-      const email = row.account_holder_email?.trim() || null;
-      return {
-        id: row.id,
-        logoSrc: chrome.logoSrc,
-        holderName: accountHolderLabel(row.account_holder_name),
-        tradeName: chrome.name,
-        email,
-      };
-    })
-    .sort(
-      (a, b) =>
-        a.holderName.localeCompare(b.holderName, "es") ||
-        a.tradeName.localeCompare(b.tradeName, "es"),
-    );
+async function lastSaleByTenant(
+  service: ReturnType<typeof createSupabaseServiceClient>,
+  tenantIds: string[],
+) {
+  const lastSaleAt = new Map<string, string>();
+  await Promise.all(
+    tenantIds.map(async (tenantId) => {
+      const { data } = await service
+        .from("orders")
+        .select("created_at")
+        .eq("tenant_id", tenantId)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (data?.created_at) lastSaleAt.set(tenantId, data.created_at as string);
+    }),
+  );
+  return lastSaleAt;
 }
 
 export default async function AdminCuentasPage() {
@@ -49,48 +43,55 @@ export default async function AdminCuentasPage() {
   if (!perm.isPlatformOperator) redirect("/admin");
 
   let rows: CustomerTenantRow[] = [];
+  let lastSaleAt = new Map<string, string>();
   try {
     const service = createSupabaseServiceClient();
     const { data, error } = await service
       .from("tenants")
       .select(
-        "id, slug, name, account_holder_name, account_holder_email, brand",
+        "id, slug, name, status, account_holder_name, account_holder_email, brand",
       )
       .eq("kind", "customer")
-      .in("status", ["active", "trial"])
       .order("account_holder_name", { ascending: true });
     if (error) {
       console.error("[cuentas] tenants:", error.message);
     }
     rows = (data ?? []) as CustomerTenantRow[];
+    lastSaleAt = await lastSaleByTenant(
+      service,
+      rows.map((row) => row.id),
+    );
   } catch (e) {
     console.error("[cuentas] service:", e);
   }
 
-  const accounts = toAccountRows(rows);
+  const accounts = rows
+    .map((row) =>
+      toOperatorAccountRow({
+        ...row,
+        lastSaleAt: lastSaleAt.get(row.id) ?? null,
+      }),
+    )
+    .sort(
+      (a, b) =>
+        a.holderName.localeCompare(b.holderName, "es") ||
+        a.tradeName.localeCompare(b.tradeName, "es"),
+    );
 
   return (
-    <AdminAuthShell
-      layout="canvas"
-      contentWidthClassName="max-w-5xl"
-      headerActions={
-        <form action={signOutAdmin}>
-          <button
-            type="submit"
-            className="rounded-lg px-3 py-2 text-sm font-medium text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-800 dark:hover:bg-zinc-900 dark:hover:text-zinc-200"
-          >
-            Cerrar sesión
-          </button>
-        </form>
-      }
-    >
-      <h1 className={adminPageTitleClass}>Cuentas</h1>
-      <p className={adminPageSubtitleClass}>
-        Elige la cuenta del cliente para entrar a su negocio.
-      </p>
-      <div className="mt-8">
+    <div className="flex w-full min-w-0 flex-col gap-4">
+      <header className="flex shrink-0 flex-wrap items-center justify-between gap-2 gap-y-2">
+        <div className="min-w-0">
+          <h1 className={adminPageTitleClass}>Cuentas</h1>
+          <p className={adminPageSubtitleClass}>
+            Contacto del cliente, estado operativo y acceso a su negocio
+          </p>
+        </div>
+      </header>
+
+      <section className="min-h-0 border-t border-zinc-200/70 pt-4 dark:border-zinc-800">
         <OperatorAccountsTable rows={accounts} />
-      </div>
-    </AdminAuthShell>
+      </section>
+    </div>
   );
 }
