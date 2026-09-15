@@ -4,14 +4,49 @@ import { AdminThemeToggle } from "@/components/admin/AdminThemeToggle";
 import { ADMIN_BRAND_LOGO_ON_SIDEBAR_CLASS } from "@/lib/admin-theme";
 import { adminProductBrand, adminSidebarLogoPath } from "@/lib/brand";
 
-/** Chrome de autenticación / cuentas: mismo lenguaje visual que el login. */
+/** Chrome de autenticación (login en split) y picker de cuentas (canvas). */
 export function AdminAuthShell({
   children,
   contentWidthClassName = "max-w-[420px]",
+  layout = "split",
+  headerActions,
 }: {
   children: ReactNode;
   contentWidthClassName?: string;
+  /** `split`: login (panel oscuro). `canvas`: cuentas (logo sobre blanco / dark). */
+  layout?: "split" | "canvas";
+  headerActions?: ReactNode;
 }) {
+  if (layout === "canvas") {
+    return (
+      <div className="relative min-h-dvh bg-white text-zinc-900 antialiased dark:bg-zinc-950 dark:text-zinc-100">
+        <header className="sticky top-0 z-20 border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
+          <div
+            className={`mx-auto flex w-full items-center justify-between gap-4 px-6 py-4 sm:px-8 ${contentWidthClassName}`}
+          >
+            <Image
+              src={adminSidebarLogoPath}
+              alt={adminProductBrand}
+              width={480}
+              height={265}
+              className="h-8 w-auto max-w-[10.5rem] object-contain object-left"
+              priority
+            />
+            <div className="flex items-center gap-1 sm:gap-2">
+              {headerActions}
+              <AdminThemeToggle className="rounded-lg" />
+            </div>
+          </div>
+        </header>
+        <main className="px-6 py-8 sm:px-8 sm:py-10">
+          <div className={`mx-auto w-full ${contentWidthClassName}`}>
+            {children}
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="relative min-h-dvh overflow-x-clip bg-zinc-100 text-zinc-900 antialiased dark:bg-zinc-950 dark:text-zinc-100">
       <div

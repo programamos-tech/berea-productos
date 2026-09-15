@@ -1,4 +1,3 @@
-import { leaveCustomerAccount } from "@/app/actions/admin/platform-accounts";
 import Image from "next/image";
 import Link from "next/link";
 import { AdminGlobalSearch } from "@/components/admin/AdminGlobalSearch";
@@ -6,6 +5,7 @@ import { AdminNotificationBell } from "@/components/admin/AdminNotificationBell"
 import { AdminThemeToggle } from "@/components/admin/AdminThemeToggle";
 import { AdminUserAvatar } from "@/components/admin/AdminUserAvatar";
 import { AdminUserMenu } from "@/components/admin/AdminUserMenu";
+import { LeaveAccountButton } from "@/components/admin/LeaveAccountButton";
 
 function IconHelp() {
   return (
@@ -59,14 +59,9 @@ export function AdminTopBar({
             <span className="font-semibold">Cuenta de {actingAccount.holderName}</span>
             <span className="text-zinc-400"> · {actingAccount.storeName}</span>
           </p>
-          <form action={leaveCustomerAccount}>
-            <button
-              type="submit"
-              className="shrink-0 rounded-md px-2 py-0.5 font-medium text-zinc-300 transition hover:bg-zinc-800 hover:text-white"
-            >
-              Cambiar
-            </button>
-          </form>
+          <LeaveAccountButton className="shrink-0 rounded-md px-2 py-0.5 font-medium text-zinc-300 transition hover:bg-zinc-800 hover:text-white disabled:opacity-60">
+            Cambiar
+          </LeaveAccountButton>
         </div>
       ) : null}
       <div className="flex h-14 min-w-0 max-w-full items-center gap-2 px-3 sm:h-16 sm:gap-3 sm:px-6">

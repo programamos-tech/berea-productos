@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import Script from "next/script";
+import { AccountSwitchLoadingProvider } from "@/components/admin/AccountSwitchLoading";
 import { AdminThemeProvider } from "@/components/admin/AdminThemeProvider";
 
 export const metadata: Metadata = {
@@ -46,7 +47,9 @@ export default function AdminRootLayout({
         strategy="beforeInteractive"
         dangerouslySetInnerHTML={{ __html: ADMIN_THEME_BOOT }}
       />
-      <AdminThemeProvider>{children}</AdminThemeProvider>
+      <AdminThemeProvider>
+        <AccountSwitchLoadingProvider>{children}</AccountSwitchLoadingProvider>
+      </AdminThemeProvider>
     </>
   );
 }
