@@ -8,7 +8,7 @@ export async function ReportActivityFeed() {
 
   if (error) {
     return (
-      <section className="flex h-full min-h-0 flex-col">
+      <section className="flex min-h-0 flex-col xl:h-full">
         <h2 className="text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
           Actividad reciente
         </h2>
@@ -24,6 +24,6 @@ export async function ReportActivityFeed() {
 
 export function ReportActivityFeedSkeleton() {
   return (
-    <div className="h-full min-h-0 animate-pulse rounded-lg bg-zinc-100/40 dark:bg-zinc-900/40" />
+    <div className="h-40 min-h-0 animate-pulse rounded-lg bg-zinc-100/40 dark:bg-zinc-900/40 xl:h-full" />
   );
 }

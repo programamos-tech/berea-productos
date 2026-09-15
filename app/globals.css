@@ -239,6 +239,15 @@ body {
 html:has([data-admin-theme]) {
   -ms-overflow-style: none;
   scrollbar-width: none;
+  overflow-x: clip;
+  max-width: 100%;
+  text-size-adjust: 100%;
+  -webkit-text-size-adjust: 100%;
+}
+
+html:has([data-admin-theme]) body {
+  overflow-x: clip;
+  max-width: 100%;
 }
 
 html:has([data-admin-theme])::-webkit-scrollbar {

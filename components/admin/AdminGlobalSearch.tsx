@@ -190,11 +190,11 @@ export function AdminGlobalSearch() {
   };
 
   return (
-    <div ref={rootRef} className="relative w-full min-w-0 overflow-visible">
+    <div ref={rootRef} className="relative w-full min-w-0 max-w-full">
       <label htmlFor="admin-global-search" className="sr-only">
         Buscar clientes, facturas y productos
       </label>
-      <div className="relative min-w-0" role="search">
+      <div className="relative min-w-0 max-w-full" role="search">
         <IconSearch className="pointer-events-none absolute left-3.5 top-1/2 size-[18px] -translate-y-1/2 text-[var(--admin-coral-deep)]/45 dark:text-zinc-500" />
         <input
           ref={inputRef}

@@ -39,7 +39,7 @@ type PageProps = {
 
 /** Mobile/iPad: scroll de página (sin lock). Desktop xl+: alto de viewport con scroll interno si hace falta. */
 const reportsViewportClass =
-  "flex w-full min-w-0 flex-col gap-3 overflow-x-hidden pb-8 max-xl:overflow-visible xl:h-[calc(100dvh-4rem-3rem)] xl:min-h-0 xl:flex-1 xl:gap-2.5 xl:overflow-y-auto xl:overscroll-y-contain xl:pb-0";
+  "flex w-full min-w-0 max-w-full flex-col gap-3 overflow-x-clip pb-8 xl:h-[calc(100dvh-4rem-3rem)] xl:min-h-0 xl:flex-1 xl:gap-2.5 xl:overflow-y-auto xl:overscroll-y-contain xl:pb-0";
 
 function ReportsKpisSkeleton() {
   return (
@@ -113,7 +113,7 @@ export default async function AdminHomePage({ searchParams }: PageProps) {
                 isCurrentTiendaMonth={isCurrentTiendaMonth}
               />
             </div>
-            <div className="flex w-full min-w-0 flex-nowrap items-center gap-2 overflow-x-auto overscroll-x-contain pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] xl:w-auto xl:flex-1 xl:justify-end xl:overflow-visible [&::-webkit-scrollbar]:hidden">
+            <div className="flex w-full min-w-0 max-w-full flex-wrap items-center gap-2 xl:w-auto xl:flex-1 xl:flex-nowrap xl:justify-end">
               <ReportsVistaFilter
                 vista={vista}
                 todayKey={todayKey}
@@ -168,7 +168,7 @@ export default async function AdminHomePage({ searchParams }: PageProps) {
               </Suspense>
             </ReportsPendingSwap>
 
-            <div className="grid min-h-0 flex-1 grid-cols-1 gap-5 border-t border-zinc-200/70 pt-4 dark:border-zinc-800 max-xl:flex-none lg:grid-cols-12 lg:gap-6">
+            <div className="grid min-h-0 flex-1 grid-cols-1 items-start gap-5 border-t border-zinc-200/70 pt-4 dark:border-zinc-800 max-xl:flex-none lg:grid-cols-12 lg:gap-6 xl:items-stretch">
               <div className="flex min-h-0 min-w-0 flex-col lg:col-span-7 max-xl:min-h-0">
                 <ReportMonthlyChartsSection
                   todayKey={todayKey}
@@ -178,7 +178,7 @@ export default async function AdminHomePage({ searchParams }: PageProps) {
                 />
               </div>
 
-              <section className="reports-chart-reveal flex max-h-[min(24rem,60vh)] min-h-[14rem] flex-col border-t border-zinc-200/70 pt-4 dark:border-zinc-800 sm:min-h-[16rem] lg:col-span-5 lg:max-h-none lg:min-h-0 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0">
+              <section className="reports-chart-reveal flex h-auto max-h-[min(24rem,60vh)] min-h-0 w-full flex-col self-start border-t border-zinc-200/70 pt-4 dark:border-zinc-800 lg:col-span-5 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0 xl:h-full xl:max-h-none xl:self-stretch">
                 <Suspense fallback={<ReportActivityFeedSkeleton />}>
                   <ReportActivityFeed />
                 </Suspense>

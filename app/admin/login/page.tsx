@@ -7,7 +7,7 @@ import { adminProductBrand, adminSidebarLogoPath } from "@/lib/brand";
 
 export default function AdminLoginPage() {
   return (
-    <div className="relative min-h-screen overflow-hidden bg-zinc-100 text-zinc-900 antialiased dark:bg-zinc-950 dark:text-zinc-100">
+    <div className="relative min-h-dvh overflow-x-clip bg-zinc-100 text-zinc-900 antialiased dark:bg-zinc-950 dark:text-zinc-100">
       {/* Atmosphere */}
       <div
         aria-hidden
@@ -24,8 +24,8 @@ export default function AdminLoginPage() {
         </div>
       </div>
 
-      <div className="relative z-10 flex min-h-screen flex-col lg:flex-row">
-        <aside className="relative flex min-h-0 flex-1 flex-col overflow-hidden border-b border-zinc-200/80 bg-zinc-900 text-zinc-100 lg:min-h-screen lg:w-[42%] lg:max-w-xl lg:flex-none lg:border-b-0 lg:border-r lg:border-r-zinc-800">
+      <div className="relative z-10 flex min-h-dvh flex-col lg:flex-row">
+        <aside className="relative flex shrink-0 flex-col overflow-hidden border-b border-zinc-200/80 bg-zinc-900 text-zinc-100 lg:min-h-dvh lg:w-[42%] lg:max-w-xl lg:flex-none lg:border-b-0 lg:border-r lg:border-r-zinc-800">
           <div
             aria-hidden
             className="pointer-events-none absolute -left-24 top-1/4 size-[28rem] rounded-full bg-[var(--admin-coral)]/25 blur-3xl"
@@ -34,7 +34,7 @@ export default function AdminLoginPage() {
             aria-hidden
             className="pointer-events-none absolute -bottom-32 right-0 size-[22rem] rounded-full bg-zinc-600/40 blur-3xl"
           />
-          <div className="relative flex flex-1 flex-col justify-center px-8 py-12 sm:px-12 lg:py-20 lg:pl-14 lg:pr-10 xl:pl-20">
+          <div className="relative flex flex-col justify-center px-8 py-10 sm:px-12 lg:flex-1 lg:py-20 lg:pl-14 lg:pr-10 xl:pl-20">
             <div className="mx-auto w-full max-w-sm lg:mx-0">
               <Image
                 src={adminSidebarLogoPath}
@@ -44,14 +44,14 @@ export default function AdminLoginPage() {
                 className={`h-auto w-full max-w-[11rem] object-contain object-left brightness-0 invert sm:max-w-[13rem] ${ADMIN_BRAND_LOGO_ON_SIDEBAR_CLASS}`}
                 priority
               />
-              <p className="mt-4 whitespace-nowrap text-[10px] font-medium tracking-wide text-zinc-400 sm:text-[11px]">
+              <p className="mt-4 text-[10px] font-medium tracking-wide text-zinc-400 sm:whitespace-nowrap sm:text-[11px]">
                 Gestiona tu tienda de productos
               </p>
             </div>
           </div>
         </aside>
 
-        <main className="relative flex flex-1 flex-col justify-center px-6 py-12 sm:px-10 lg:px-16 xl:px-24">
+        <main className="relative flex min-w-0 flex-1 flex-col justify-center px-6 py-10 sm:px-10 lg:px-16 xl:px-24">
           <div className="relative mx-auto w-full max-w-[420px]">
             <div className={`${adminPanelClass} px-8 py-10 sm:px-10 sm:py-12`}>
               <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">

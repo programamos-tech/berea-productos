@@ -191,7 +191,7 @@ export function ReportActivityFeedLive({
   }
 
   return (
-    <section className="flex h-full min-h-0 flex-col">
+    <section className="flex min-h-0 flex-col xl:h-full">
       <div className="flex shrink-0 items-end justify-between gap-2">
         <div>
           <h2 className="text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
@@ -209,11 +209,11 @@ export function ReportActivityFeedLive({
       {items.length === 0 ? (
         <p className="mt-6 text-sm text-zinc-500">Todavía no hay actividades.</p>
       ) : (
-        <div className="relative mt-3 min-h-0 flex-1 max-h-[20rem] lg:max-h-none">
+        <div className="relative mt-3 min-h-0 max-h-[20rem] flex-1 xl:max-h-none">
           <ul
             ref={listRef}
             onScroll={updateMoreBelow}
-            className="reports-activity-scroll max-h-[20rem] space-y-0 overflow-y-auto overscroll-contain lg:h-full lg:max-h-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+            className="reports-activity-scroll max-h-[20rem] space-y-0 overflow-y-auto overscroll-contain xl:h-full xl:max-h-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
           >
             {items.map((row) => {
               const fresh = freshIds.has(row.id);

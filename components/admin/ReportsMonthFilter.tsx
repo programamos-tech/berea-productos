@@ -13,7 +13,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 
 const panelClass =
-  "absolute right-0 top-[calc(100%+0.35rem)] z-40 w-[min(100vw-1.5rem,16rem)] rounded-xl border border-zinc-200 bg-white p-2 shadow-[0_16px_48px_-24px_rgba(24,24,27,0.22)] dark:border-zinc-700 dark:bg-zinc-900 dark:shadow-[0_16px_48px_-24px_rgba(0,0,0,0.55)]";
+  "absolute right-0 top-[calc(100%+0.35rem)] z-40 w-[min(16rem,calc(100dvw-1.5rem))] max-w-full rounded-xl border border-zinc-200 bg-white p-2 shadow-[0_16px_48px_-24px_rgba(24,24,27,0.22)] dark:border-zinc-700 dark:bg-zinc-900 dark:shadow-[0_16px_48px_-24px_rgba(0,0,0,0.55)]";
 
 function sentenceCase(label: string): string {
   const t = label.trim();

@@ -43,8 +43,8 @@ export function AdminTopBar({
   email,
 }: AdminTopBarProps) {
   return (
-    <header className="sticky top-0 z-50 w-full min-w-0 overflow-visible border-b border-zinc-200 bg-white/90 backdrop-blur-md print:hidden dark:border-zinc-800 dark:bg-zinc-900/90">
-      <div className="flex h-14 min-w-0 items-center gap-2 overflow-visible px-3 sm:h-16 sm:gap-3 sm:px-6">
+    <header className="sticky top-0 z-50 w-full min-w-0 max-w-full overflow-visible border-b border-zinc-200 bg-white/90 backdrop-blur-md print:hidden dark:border-zinc-800 dark:bg-zinc-900/90">
+      <div className="flex h-14 min-w-0 max-w-full items-center gap-2 px-3 sm:h-16 sm:gap-3 sm:px-6">
         <Link
           href="/admin"
           prefetch
@@ -61,8 +61,8 @@ export function AdminTopBar({
           />
         </Link>
 
-        <div className="flex min-w-0 flex-1 basis-0 items-center overflow-visible">
-          <div className="w-full min-w-0 overflow-visible pl-0.5">
+        <div className="flex min-w-0 flex-1 basis-0 items-center">
+          <div className="w-full min-w-0 pl-0.5">
             <AdminGlobalSearch />
           </div>
         </div>

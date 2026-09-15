@@ -61,7 +61,7 @@ function Metric({
 }) {
   return (
     <div
-      className="reports-metric-card min-w-0"
+      className="reports-metric-card min-w-0 overflow-hidden"
       style={{ ["--reports-stagger" as string]: `${staggerMs}ms` }}
     >
       <div className="inline-flex min-w-0 items-center gap-1.5">
@@ -77,7 +77,7 @@ function Metric({
         </p>
         {labelExtra}
       </div>
-      <div className="mt-1 text-base font-semibold tabular-nums tracking-tight text-zinc-900 dark:text-zinc-50 sm:text-lg lg:text-xl">
+      <div className="mt-1 min-w-0 text-base font-semibold tabular-nums tracking-tight text-zinc-900 dark:text-zinc-50 sm:text-lg lg:text-xl">
         {children}
       </div>
       {hint ? (
@@ -264,7 +264,7 @@ export async function ReportsDashboardBody({
   return (
     <div
       key={`reports-kpis-${vista}-${rangeFrom}-${rangeTo}`}
-      className="shrink-0 overflow-visible"
+      className="min-w-0 max-w-full shrink-0 overflow-x-clip"
     >
       {isSingleDayPeriod ? (
         <div className="mb-4 flex flex-wrap items-center gap-2">
