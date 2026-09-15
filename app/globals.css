@@ -663,7 +663,7 @@ html.store-checkout-nav-pending body {
   }
 }
 
-/* Cambio de cuenta (operador Berea): overlay de entrada / vuelta a Cuentas. */
+/* Cambio de cuenta (operador Berea): overlay mínimo. */
 @keyframes account-switch-overlay-in {
   from {
     opacity: 0;
@@ -673,72 +673,27 @@ html.store-checkout-nav-pending body {
   }
 }
 
-@keyframes account-switch-card-in {
-  from {
-    opacity: 0;
-    transform: translateY(10px) scale(0.96);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-@keyframes account-switch-ring {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@keyframes account-switch-bar {
-  0% {
-    transform: translateX(-120%);
-  }
+@keyframes account-switch-mark-pulse {
+  0%,
   100% {
-    transform: translateX(420%);
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
   }
 }
 
 .account-switch-overlay {
-  animation: account-switch-overlay-in 0.22s ease-out both;
+  animation: account-switch-overlay-in 0.2s ease-out both;
 }
 
-.account-switch-overlay-card {
-  animation: account-switch-card-in 0.38s cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
-.account-switch-overlay-bar {
-  position: absolute;
-  top: 0;
-  left: 0;
-  height: 2px;
-  width: 28%;
-  background: var(--admin-coral, #0197b2);
-  animation: account-switch-bar 1.15s ease-in-out infinite;
-}
-
-.account-switch-overlay-ring {
-  border: 2px solid color-mix(in srgb, var(--admin-coral, #0197b2) 22%, transparent);
-  border-top-color: var(--admin-coral, #0197b2);
-  animation: account-switch-ring 0.85s linear infinite;
-}
-
-.account-switch-overlay-spinner {
-  display: block;
-  width: 1.35rem;
-  height: 1.35rem;
-  border-radius: 999px;
-  border: 2px solid color-mix(in srgb, var(--admin-coral, #0197b2) 22%, transparent);
-  border-top-color: var(--admin-coral, #0197b2);
-  animation: account-switch-ring 0.75s linear infinite;
+.account-switch-overlay-mark {
+  animation: account-switch-mark-pulse 1.6s ease-in-out infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .account-switch-overlay,
-  .account-switch-overlay-card,
-  .account-switch-overlay-bar,
-  .account-switch-overlay-ring,
-  .account-switch-overlay-spinner {
+  .account-switch-overlay-mark {
     animation: none;
   }
 }

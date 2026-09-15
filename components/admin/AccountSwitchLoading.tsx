@@ -26,7 +26,7 @@ export type AccountSwitchPayload =
       mode: "leave";
     };
 
-const MIN_VISIBLE_MS = 850;
+const MIN_VISIBLE_MS = 700;
 const SAFETY_MS = 15000;
 
 const AccountSwitchContext = createContext<
@@ -48,56 +48,29 @@ function destinationReached(pathname: string, mode: AccountSwitchPayload["mode"]
 
 function Overlay({ payload }: { payload: AccountSwitchPayload }) {
   const theme = useAdminTheme()?.resolved ?? "light";
-  const isEnter = payload.mode === "enter";
-  const title = isEnter ? payload.name : "Cuentas";
-  const kicker = isEnter ? "Entrando a" : "Volviendo a";
-  const detail = isEnter ? `Cuenta de ${payload.holderName}` : "Selector de clientes";
+  const label = payload.mode === "enter" ? payload.name : "Cuentas";
 
   const node = (
     <div
       data-admin-theme={theme}
-      className="account-switch-overlay fixed inset-0 z-[300] flex items-center justify-center bg-white/92 px-6 backdrop-blur-md dark:bg-zinc-950/92"
+      className="account-switch-overlay fixed inset-0 z-[300] flex items-center justify-center bg-white dark:bg-zinc-950"
       role="status"
       aria-live="assertive"
       aria-busy="true"
-      aria-label={`${kicker} ${title}`}
+      aria-label={label}
     >
-      <div className="account-switch-overlay-bar" aria-hidden />
-      <div className="account-switch-overlay-card flex w-full max-w-sm flex-col items-center text-center">
-        {isEnter ? (
-          <span className="relative grid size-[4.75rem] place-items-center">
-            <span className="account-switch-overlay-ring absolute inset-0 rounded-full" />
-            <span className="relative size-16 overflow-hidden rounded-2xl ring-1 ring-zinc-200/80 dark:ring-zinc-700/80">
-              <Image
-                src={payload.logoSrc}
-                alt=""
-                width={128}
-                height={128}
-                className="size-full object-cover"
-                priority
-              />
-            </span>
-          </span>
-        ) : (
-          <span className="flex flex-col items-center gap-4">
-            <span className="account-switch-overlay-spinner" aria-hidden />
-            <Image
-              src={adminSidebarLogoPath}
-              alt={adminProductBrand}
-              width={480}
-              height={265}
-              className="h-8 w-auto max-w-[10.5rem] object-contain"
-              priority
-            />
-          </span>
-        )}
-        <p className="mt-5 text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
-          {kicker}
+      <div className="flex flex-col items-center">
+        <Image
+          src={adminSidebarLogoPath}
+          alt={adminProductBrand}
+          width={480}
+          height={265}
+          className="account-switch-overlay-mark h-7 w-auto max-w-[8.5rem] object-contain sm:h-8 sm:max-w-[9.5rem]"
+          priority
+        />
+        <p className="mt-4 text-[13px] font-medium tracking-tight text-zinc-400 dark:text-zinc-500">
+          {label}
         </p>
-        <p className="mt-1.5 text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
-          {title}
-        </p>
-        <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">{detail}</p>
       </div>
     </div>
   );
