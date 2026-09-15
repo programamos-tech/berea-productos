@@ -22,6 +22,7 @@ export function AdminDashboardShell({
   cashGate = null,
   sessionUser,
   actingAccount = null,
+  accountBrand,
 }: {
   children: React.ReactNode;
   /** Hrefs del menú lateral permitidos para esta sesión (incluye `/admin/cuenta` y `/`). */
@@ -43,6 +44,10 @@ export function AdminDashboardShell({
     holderName: string;
     storeName: string;
   } | null;
+  accountBrand: {
+    name: string;
+    logoSrc: string;
+  };
 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -69,7 +74,7 @@ export function AdminDashboardShell({
     <AdminOrderNotificationsProvider enabled={notifyNewWebOrders && !mustOpen}>
       <AdminAuthVisibilityKeepAlive />
       <div className="isolate flex min-h-dvh max-w-full items-stretch antialiased">
-        <AdminSidebar allowedNavHrefs={allowedNavHrefs} />
+        <AdminSidebar allowedNavHrefs={allowedNavHrefs} account={accountBrand} />
 
         <div className="relative z-10 flex min-h-dvh min-w-0 max-w-full flex-1 flex-col overflow-x-clip overflow-y-visible bg-white dark:bg-zinc-950 lg:ml-64 print:ml-0 print:bg-white">
           <AdminTopBar
@@ -78,6 +83,7 @@ export function AdminDashboardShell({
             email={sessionUser.email}
             isPlatformOperator={sessionUser.isPlatformOperator}
             actingAccount={actingAccount}
+            accountBrand={accountBrand}
           />
           <main className="relative z-0 min-h-0 min-w-0 max-w-full flex-1 overflow-x-clip overflow-y-visible p-3 pb-[calc(4.75rem+env(safe-area-inset-bottom,0px))] sm:p-4 md:p-6 lg:pb-6 print:bg-white print:p-8 print:pb-8">
             {children}

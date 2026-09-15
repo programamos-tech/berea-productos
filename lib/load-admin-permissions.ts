@@ -8,6 +8,10 @@ import {
 } from "@/lib/admin-permissions";
 import { resolveActingCustomerTenant } from "@/lib/platform-operator-server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import {
+  adminAccountChrome,
+  type AdminAccountChrome,
+} from "@/lib/tenant-brand";
 
 const ADMIN_AUTH_TIMEOUT_MS = 12_000;
 
@@ -18,6 +22,7 @@ export type AdminSession = {
   tenantId: string;
   tenantSlug: string;
   tenantName: string;
+  tenantLogoSrc: string;
   displayName: string;
   email: string;
   isPlatformOperator: boolean;
@@ -40,7 +45,7 @@ async function loadAdminPermissionsUncached(): Promise<AdminSession | null> {
     supabase
       .from("profiles")
       .select(
-        "permissions, job_role, tenant_id, display_name, is_platform_operator, tenants!inner(slug, name)",
+        "permissions, job_role, tenant_id, display_name, is_platform_operator, tenants!inner(slug, name, brand)",
       )
       .eq("id", user.id)
       .maybeSingle(),
@@ -67,8 +72,8 @@ async function loadAdminPermissionsUncached(): Promise<AdminSession | null> {
   }
 
   const tenantsJoin = row.tenants as
-    | { slug?: string; name?: string }
-    | { slug?: string; name?: string }[]
+    | { slug?: string; name?: string; brand?: unknown }
+    | { slug?: string; name?: string; brand?: unknown }[]
     | null;
   const homeTenant = Array.isArray(tenantsJoin) ? tenantsJoin[0] : tenantsJoin;
   const homeSlug = homeTenant?.slug;
@@ -85,7 +90,14 @@ async function loadAdminPermissionsUncached(): Promise<AdminSession | null> {
 
   const tenantId = acting?.id ?? homeTenantId;
   const tenantSlug = acting?.slug ?? homeSlug;
-  const tenantName = acting?.name ?? homeName;
+  const chrome: AdminAccountChrome = acting
+    ? acting.chrome
+    : adminAccountChrome({
+        slug: homeSlug,
+        name: homeName,
+        brand: homeTenant?.brand,
+      });
+  const tenantName = chrome.name;
 
   const jobRole = normalizeCollaboratorJobRole(row.job_role as string | null);
   const permissions = mergePermissionsWithDefaults(
@@ -108,6 +120,7 @@ async function loadAdminPermissionsUncached(): Promise<AdminSession | null> {
     tenantId,
     tenantSlug,
     tenantName,
+    tenantLogoSrc: chrome.logoSrc,
     displayName,
     email,
     isPlatformOperator,

@@ -6,6 +6,7 @@ import {
   ACTING_TENANT_HEADER,
   isActingTenantId,
 } from "@/lib/platform-operator";
+import { adminAccountChrome, type AdminAccountChrome } from "@/lib/tenant-brand";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export type ActingCustomerTenant = {
@@ -13,6 +14,8 @@ export type ActingCustomerTenant = {
   slug: string;
   name: string;
   accountHolderName: string;
+  brand: unknown;
+  chrome: AdminAccountChrome;
 };
 
 function actingCookieOptions() {
@@ -49,7 +52,7 @@ async function resolveActingCustomerTenantUncached(): Promise<ActingCustomerTena
 
   const { data: tenant } = await supabase
     .from("tenants")
-    .select("id, slug, name, account_holder_name")
+    .select("id, slug, name, account_holder_name, brand")
     .eq("id", actingId)
     .eq("kind", "customer")
     .in("status", ["active", "trial"])
@@ -64,6 +67,12 @@ async function resolveActingCustomerTenantUncached(): Promise<ActingCustomerTena
     accountHolderName: accountHolderLabel(
       tenant.account_holder_name as string | null,
     ),
+    brand: tenant.brand,
+    chrome: adminAccountChrome({
+      slug: tenant.slug as string,
+      name: tenant.name as string,
+      brand: tenant.brand,
+    }),
   };
 }
 

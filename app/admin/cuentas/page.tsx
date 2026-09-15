@@ -1,13 +1,12 @@
+import Image from "next/image";
 import { signOutAdmin } from "@/app/actions/admin/auth";
 import { enterCustomerAccount } from "@/app/actions/admin/platform-accounts";
+import { AdminAuthShell } from "@/components/admin/AdminAuthShell";
 import { loadAdminPermissions } from "@/lib/load-admin-permissions";
 import { accountHolderLabel } from "@/lib/platform-operator";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
-import {
-  adminPageSubtitleClass,
-  adminPageTitleClass,
-  adminPanelClass,
-} from "@/lib/admin-ui";
+import { adminPanelClass } from "@/lib/admin-ui";
+import { adminAccountChrome } from "@/lib/tenant-brand";
 import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
@@ -18,13 +17,14 @@ type CustomerTenantRow = {
   name: string;
   account_holder_name: string | null;
   account_holder_email: string | null;
+  brand: unknown;
 };
 
 type HolderGroup = {
   key: string;
   holderName: string;
   holderEmail: string | null;
-  stores: CustomerTenantRow[];
+  stores: Array<CustomerTenantRow & { logoSrc: string; tradeName: string }>;
 };
 
 function groupByHolder(rows: CustomerTenantRow[]): HolderGroup[] {
@@ -33,16 +33,26 @@ function groupByHolder(rows: CustomerTenantRow[]): HolderGroup[] {
     const email = row.account_holder_email?.trim().toLowerCase() || "";
     const name = accountHolderLabel(row.account_holder_name);
     const key = email || name.toLowerCase();
+    const chrome = adminAccountChrome({
+      slug: row.slug,
+      name: row.name,
+      brand: row.brand,
+    });
+    const store = {
+      ...row,
+      logoSrc: chrome.logoSrc,
+      tradeName: chrome.name,
+    };
     const existing = byKey.get(key);
     if (existing) {
-      existing.stores.push(row);
+      existing.stores.push(store);
       continue;
     }
     byKey.set(key, {
       key,
       holderName: name,
       holderEmail: email || null,
-      stores: [row],
+      stores: [store],
     });
   }
   return [...byKey.values()].sort((a, b) =>
@@ -61,7 +71,7 @@ export default async function AdminCuentasPage() {
     const { data, error } = await service
       .from("tenants")
       .select(
-        "id, slug, name, account_holder_name, account_holder_email",
+        "id, slug, name, account_holder_name, account_holder_email, brand",
       )
       .eq("kind", "customer")
       .in("status", ["active", "trial"])
@@ -77,56 +87,56 @@ export default async function AdminCuentasPage() {
   const groups = groupByHolder(rows);
 
   return (
-    <div className="relative min-h-dvh overflow-x-clip bg-zinc-100 text-zinc-900 antialiased dark:bg-zinc-950 dark:text-zinc-100">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_0%_0%,color-mix(in_srgb,var(--admin-coral)_18%,transparent),transparent_55%)]"
-      />
-      <div className="relative mx-auto flex min-h-dvh w-full max-w-lg flex-col px-4 py-10 sm:px-6">
-        <header className="mb-8">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
-            Berea Productos
-          </p>
-          <h1 className={adminPageTitleClass}>Cuentas</h1>
-          <p className={adminPageSubtitleClass}>
-            Elige la cuenta del propietario para entrar a sus tiendas.
-          </p>
-        </header>
+    <AdminAuthShell contentWidthClassName="max-w-[28rem]">
+      <div className={`${adminPanelClass} px-6 py-8 sm:px-8 sm:py-10`}>
+        <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
+          Berea Productos
+        </p>
+        <h1 className="mt-2 text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
+          Cuentas
+        </h1>
+        <p className="mt-2 text-sm leading-relaxed text-zinc-500 dark:text-zinc-400">
+          Elige la cuenta del propietario para entrar a sus tiendas.
+        </p>
 
         {groups.length === 0 ? (
-          <div className={`${adminPanelClass} px-5 py-6 text-sm text-zinc-600 dark:text-zinc-300`}>
+          <p className="mt-8 text-sm text-zinc-600 dark:text-zinc-300">
             Todavía no hay cuentas de clientes.
-          </div>
+          </p>
         ) : (
-          <ul className="flex flex-col gap-4">
+          <ul className="mt-8 flex flex-col gap-3">
             {groups.map((group) => (
-              <li key={group.key} className={`${adminPanelClass} overflow-hidden`}>
-                <div className="border-b border-zinc-200 px-5 py-4 dark:border-zinc-800">
-                  <p className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
-                    Cuenta de {group.holderName}
-                  </p>
-                  {group.holderEmail ? (
-                    <p className="mt-0.5 text-sm text-zinc-500">{group.holderEmail}</p>
-                  ) : null}
-                </div>
-                <ul className="divide-y divide-zinc-100 dark:divide-zinc-800">
+              <li key={group.key}>
+                <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-zinc-500">
+                  Cuenta de {group.holderName}
+                </p>
+                <ul className="flex flex-col gap-2.5">
                   {group.stores.map((store) => (
                     <li key={store.id}>
                       <form action={enterCustomerAccount}>
                         <input type="hidden" name="tenant_id" value={store.id} />
                         <button
                           type="submit"
-                          className="flex w-full items-center justify-between gap-3 px-5 py-4 text-left transition hover:bg-zinc-50 dark:hover:bg-zinc-800/70"
+                          className="flex w-full items-center gap-3 rounded-xl border border-zinc-200 bg-white p-2.5 text-left shadow-sm ring-1 ring-zinc-950/[0.04] transition hover:border-zinc-300 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-950 dark:ring-white/[0.06] dark:hover:border-zinc-600 dark:hover:bg-zinc-900"
                         >
-                          <span>
-                            <span className="block text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-                              {store.name}
+                          <span className="relative size-16 shrink-0 overflow-hidden rounded-lg">
+                            <Image
+                              src={store.logoSrc}
+                              alt=""
+                              width={128}
+                              height={128}
+                              className="size-full object-cover"
+                            />
+                          </span>
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                              {store.tradeName}
                             </span>
-                            <span className="mt-0.5 block text-xs text-zinc-500">
-                              {store.slug}
+                            <span className="mt-0.5 block truncate text-xs text-zinc-500">
+                              {group.holderEmail || store.slug}
                             </span>
                           </span>
-                          <span className="text-sm font-medium text-zinc-500">
+                          <span className="shrink-0 pr-1 text-sm font-medium text-zinc-500">
                             Entrar
                           </span>
                         </button>
@@ -139,7 +149,7 @@ export default async function AdminCuentasPage() {
           </ul>
         )}
 
-        <form action={signOutAdmin} className="mt-auto pt-10">
+        <form action={signOutAdmin} className="mt-8">
           <button
             type="submit"
             className="text-sm font-medium text-zinc-500 underline-offset-4 hover:text-zinc-800 hover:underline dark:hover:text-zinc-200"
@@ -148,6 +158,6 @@ export default async function AdminCuentasPage() {
           </button>
         </form>
       </div>
-    </div>
+    </AdminAuthShell>
   );
 }

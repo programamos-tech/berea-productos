@@ -91,6 +91,10 @@ export default async function AdminDashboardLayout({
         isPlatformOperator: perm.isPlatformOperator,
       }}
       actingAccount={perm.actingAccount}
+      accountBrand={{
+        name: perm.tenantName,
+        logoSrc: perm.tenantLogoSrc,
+      }}
     >
       {children}
     </AdminDashboardShell>

@@ -6,10 +6,6 @@ import { AdminNotificationBell } from "@/components/admin/AdminNotificationBell"
 import { AdminThemeToggle } from "@/components/admin/AdminThemeToggle";
 import { AdminUserAvatar } from "@/components/admin/AdminUserAvatar";
 import { AdminUserMenu } from "@/components/admin/AdminUserMenu";
-import {
-  ADMIN_BRAND_LOGO_ON_SIDEBAR_CLASS,
-} from "@/lib/admin-theme";
-import { adminProductBrand, adminSidebarLogoPath } from "@/lib/brand";
 
 function IconHelp() {
   return (
@@ -38,6 +34,10 @@ type AdminTopBarProps = {
     holderName: string;
     storeName: string;
   } | null;
+  accountBrand: {
+    name: string;
+    logoSrc: string;
+  };
 };
 
 const iconBtnClass =
@@ -49,6 +49,7 @@ export function AdminTopBar({
   email,
   isPlatformOperator = false,
   actingAccount = null,
+  accountBrand,
 }: AdminTopBarProps) {
   return (
     <header className="sticky top-0 z-50 w-full min-w-0 max-w-full overflow-visible border-b border-zinc-200 bg-white/90 backdrop-blur-md print:hidden dark:border-zinc-800 dark:bg-zinc-900/90">
@@ -73,14 +74,14 @@ export function AdminTopBar({
           href="/admin"
           prefetch
           className="flex shrink-0 items-center rounded-md outline-none transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-zinc-400/50 lg:hidden"
-          title={adminProductBrand}
+          title={accountBrand.name}
         >
           <Image
-            src={adminSidebarLogoPath}
-            alt={adminProductBrand}
-            width={480}
-            height={265}
-            className={`h-7 w-auto max-w-[7.5rem] object-contain object-left sm:h-8 sm:max-w-[8.5rem] ${ADMIN_BRAND_LOGO_ON_SIDEBAR_CLASS}`}
+            src={accountBrand.logoSrc}
+            alt={accountBrand.name}
+            width={64}
+            height={64}
+            className="size-8 rounded-md object-cover sm:size-9"
             priority
           />
         </Link>

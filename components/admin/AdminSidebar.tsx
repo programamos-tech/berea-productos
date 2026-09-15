@@ -9,17 +9,9 @@ import {
   filterAdminNavSections,
 } from "@/components/admin/admin-nav-config";
 import {
-  ADMIN_BRAND_LOGO_ON_SIDEBAR_CLASS,
-  ADMIN_SIDEBAR_PRODUCT_LOGO_CLASS,
-} from "@/lib/admin-theme";
-import {
-  adminProductBrand,
-  adminSidebarLogoPath,
   adminSupportWhatsAppDisplay,
   adminSupportWhatsAppPrefilledText,
   adminSupportWhatsAppUrl,
-  adminTenantBrand,
-  adminTenantLogoPath,
 } from "@/lib/brand";
 
 function Icon(props: SVGProps<SVGSVGElement> & { children: React.ReactNode }) {
@@ -57,54 +49,63 @@ function IconExternalStore({ className }: { className?: string }) {
 const sidebarInkMuted = "text-zinc-500 dark:text-zinc-500";
 const sidebarBorder = "border-zinc-200 dark:border-zinc-800/90";
 
-function SidebarProductBrand() {
+type AccountBrand = {
+  name: string;
+  logoSrc: string;
+};
+
+function SidebarProductBrand({ account }: { account: AccountBrand }) {
   return (
     <Link
       href="/admin"
       prefetch
-      className="inline-block rounded-md outline-none transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-zinc-400/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--admin-sidebar-bg)]"
+      className="inline-flex w-full flex-col items-center rounded-md outline-none transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-zinc-400/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--admin-sidebar-bg)]"
     >
-      <Image
-        src={adminSidebarLogoPath}
-        alt={adminProductBrand}
-        width={1200}
-        height={662}
-        className={`${ADMIN_SIDEBAR_PRODUCT_LOGO_CLASS} ${ADMIN_BRAND_LOGO_ON_SIDEBAR_CLASS}`}
-        priority
-      />
+      <span className="relative w-full max-w-[9.5rem] overflow-hidden rounded-2xl ring-1 ring-zinc-200/80 dark:ring-zinc-700/80">
+        <Image
+          src={account.logoSrc}
+          alt={account.name}
+          width={320}
+          height={320}
+          className="aspect-square w-full object-cover"
+          priority
+        />
+      </span>
     </Link>
   );
 }
 
 function SidebarTenantAccount({
+  account,
   showStorefront,
   onNavigate,
 }: {
+  account: AccountBrand;
   showStorefront: boolean;
   onNavigate: () => void;
 }) {
   const href = showStorefront ? STOREFRONT_HREF : CUENTA_HREF;
   const title = showStorefront
-    ? `Ver tienda · ${adminTenantBrand}`
-    : `Cuenta · ${adminTenantBrand}`;
+    ? `Ver tienda · ${account.name}`
+    : `Cuenta · ${account.name}`;
 
   const cardClass =
     "group mt-3.5 flex w-full items-center gap-2.5 rounded-lg border border-zinc-200 bg-white px-2.5 py-2 text-left transition dark:border-zinc-700/70 dark:bg-zinc-900/55";
 
   const inner = (
     <>
-      <span className="relative flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-md bg-[#3d3d3f]">
+      <span className="relative flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-md ring-1 ring-zinc-200/80 dark:ring-zinc-700">
         <Image
-          src={adminTenantLogoPath}
+          src={account.logoSrc}
           alt=""
           width={64}
           height={64}
-          className="size-full object-contain p-0.5"
+          className="size-full object-cover"
         />
       </span>
       <span className="min-w-0 flex-1">
         <span className="block truncate text-[13px] font-medium text-zinc-800 dark:text-zinc-200">
-          {adminTenantBrand}
+          {account.name}
         </span>
       </span>
       {showStorefront ? (
@@ -129,23 +130,31 @@ function SidebarTenantAccount({
 }
 
 function SidebarHeader({
+  account,
   showStorefront,
   onNavigate,
 }: {
+  account: AccountBrand;
   showStorefront: boolean;
   onNavigate: () => void;
 }) {
   return (
     <div className={`border-b px-3 py-3 ${sidebarBorder}`}>
       <div className="flex flex-col items-center text-center">
-        <SidebarProductBrand />
+        <SidebarProductBrand account={account} />
         <p
-          className={`mt-2 whitespace-nowrap text-[10px] font-medium tracking-wide ${sidebarInkMuted}`}
+          className={`mt-2.5 text-[13px] font-semibold tracking-tight text-zinc-800 dark:text-zinc-200`}
+        >
+          {account.name}
+        </p>
+        <p
+          className={`mt-0.5 whitespace-nowrap text-[10px] font-medium tracking-wide ${sidebarInkMuted}`}
         >
           Gestiona tu tienda de productos
         </p>
       </div>
       <SidebarTenantAccount
+        account={account}
         showStorefront={showStorefront}
         onNavigate={onNavigate}
       />
@@ -201,8 +210,10 @@ function SidebarSupportCard() {
 
 function AdminSidebarInner({
   allowedNavHrefs,
+  account,
 }: {
   allowedNavHrefs: string[];
+  account: AccountBrand;
 }) {
   const pathname = usePathname();
   const allowed = new Set(allowedNavHrefs);
@@ -221,6 +232,7 @@ function AdminSidebarInner({
       className={`fixed inset-y-0 left-0 z-[50] hidden w-64 shrink-0 flex-col border-r bg-[var(--admin-sidebar-bg)] print:hidden lg:flex ${sidebarBorder}`}
     >
       <SidebarHeader
+        account={account}
         showStorefront={allowed.has(STOREFRONT_HREF)}
         onNavigate={() => {}}
       />
@@ -299,22 +311,27 @@ function AdminSidebarInner({
   );
 }
 
-function AdminSidebarFallback() {
+function AdminSidebarFallback({ account }: { account: AccountBrand }) {
   return (
     <aside
       className={`fixed inset-y-0 left-0 z-[45] hidden w-64 flex-col border-r bg-[var(--admin-sidebar-bg)] print:hidden lg:flex lg:flex-col ${sidebarBorder}`}
     >
       <div className={`border-b px-3 py-3 ${sidebarBorder}`}>
         <div className="flex flex-col items-center text-center">
-          <SidebarProductBrand />
+          <SidebarProductBrand account={account} />
           <p
-            className={`mt-2 whitespace-nowrap text-[10px] font-medium tracking-wide ${sidebarInkMuted}`}
+            className={`mt-2.5 text-[13px] font-semibold tracking-tight text-zinc-800 dark:text-zinc-200`}
+          >
+            {account.name}
+          </p>
+          <p
+            className={`mt-0.5 whitespace-nowrap text-[10px] font-medium tracking-wide ${sidebarInkMuted}`}
           >
             Gestiona tu tienda de productos
           </p>
         </div>
         <div className="mt-3.5 flex w-full items-center gap-2.5 rounded-lg border border-zinc-200 bg-white px-2.5 py-2 dark:border-zinc-700/70 dark:bg-zinc-900/55">
-          <span className="size-8 shrink-0 rounded-md bg-[#3d3d3f]" />
+          <span className="size-8 shrink-0 overflow-hidden rounded-md bg-zinc-200 dark:bg-zinc-700" />
           <span className="min-w-0 flex-1">
             <span className="block h-3 w-20 rounded bg-zinc-200 dark:bg-zinc-700" />
           </span>
@@ -327,12 +344,14 @@ function AdminSidebarFallback() {
 
 export function AdminSidebar({
   allowedNavHrefs,
+  account,
 }: {
   allowedNavHrefs: string[];
+  account: AccountBrand;
 }) {
   return (
-    <Suspense fallback={<AdminSidebarFallback />}>
-      <AdminSidebarInner allowedNavHrefs={allowedNavHrefs} />
+    <Suspense fallback={<AdminSidebarFallback account={account} />}>
+      <AdminSidebarInner allowedNavHrefs={allowedNavHrefs} account={account} />
     </Suspense>
   );
 }

@@ -7,6 +7,7 @@
  */
 
 import {
+  adminTenantLogoPath,
   invoiceLegalName as envInvoiceLegalName,
   invoiceLogoPath as envInvoiceLogoPath,
   invoiceStoreAddress as envInvoiceStoreAddress,
@@ -111,6 +112,33 @@ export function resolveInvoiceLogoSrc(logoPath: string): string {
   if (/^https?:\/\//i.test(p)) return p;
   if (p.startsWith("/")) return p;
   return storagePublicObjectUrl(p) ?? p;
+}
+
+const ACCOUNT_LOGO_BY_SLUG: Record<string, string> = {
+  aleya: "/logo-milagros-cuenta.png",
+  "estacion-iphone": "/logo-estacion-iphone.png",
+};
+
+export type AdminAccountChrome = {
+  name: string;
+  logoSrc: string;
+};
+
+/** Logo and trade name for the admin sidebar / account picker. */
+export function adminAccountChrome(input: {
+  slug: string;
+  name: string;
+  brand?: unknown;
+}): AdminAccountChrome {
+  const parsed = parseTenantBrand(input.brand);
+  const logoPath =
+    parsed.logo_path || ACCOUNT_LOGO_BY_SLUG[input.slug] || "";
+  return {
+    name: parsed.trade_name || input.name,
+    logoSrc: logoPath
+      ? resolveInvoiceLogoSrc(logoPath)
+      : adminTenantLogoPath,
+  };
 }
 
 /** Merge tenant brand over env defaults (Aleya / legacy). */
