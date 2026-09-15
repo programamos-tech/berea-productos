@@ -1,4 +1,4 @@
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { unstable_cache } from "next/cache";
 import { fetchCatalogBrowseSections } from "@/lib/catalog-browse-rows";
 import { fetchStoreCategoriesWithCounts } from "@/lib/fetch-store-categories";
@@ -12,89 +12,155 @@ import {
 import { fetchPublishedBanners } from "@/lib/store-banners";
 import { fetchBannerStoreCoupon, fetchStorefrontCouponDiscountPercentByProductId } from "@/lib/store-coupons";
 import { fetchActiveWelcomeModal } from "@/lib/store-welcome-modal";
+import {
+  createStorefrontAnonClient,
+  getStorefrontTenant,
+} from "@/lib/storefront-tenant";
 import { withStorefrontImage } from "@/lib/storefront-product-image";
+import type { TenantRef } from "@/lib/tenant-context";
 
 const STORE_CACHE_REVALIDATE_SEC = 300;
 
-function publicSupabase(): SupabaseClient {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !key) {
-    throw new Error("Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY");
-  }
-  return createClient(url, key);
+function publicSupabase(tenantSlug: string): SupabaseClient {
+  return createStorefrontAnonClient(tenantSlug);
 }
 
-export const getCachedStoreCategoriesWithCounts = unstable_cache(
-  async () => fetchStoreCategoriesWithCounts(publicSupabase()),
-  ["store-categories-with-counts"],
-  { revalidate: STORE_CACHE_REVALIDATE_SEC, tags: ["store-categories"] },
-);
+function storeCacheTags(base: string, slug: string): string[] {
+  return [base, `${base}:${slug}`];
+}
 
-export const getCachedAllCategoryRows = unstable_cache(
-  async () => {
-    const { data } = await publicSupabase()
-      .from("categories")
-      .select("id,name,sort_order")
-      .order("sort_order", { ascending: true })
-      .order("name", { ascending: true });
-    return data ?? [];
-  },
-  ["store-all-category-rows"],
-  { revalidate: STORE_CACHE_REVALIDATE_SEC, tags: ["store-categories"] },
-);
+export async function getCachedStoreCategoriesWithCounts() {
+  const tenant = await getStorefrontTenant();
+  return unstable_cache(
+    async () =>
+      fetchStoreCategoriesWithCounts(
+        publicSupabase(tenant.slug),
+        tenant.id,
+      ),
+    ["store-categories-with-counts", tenant.id],
+    {
+      revalidate: STORE_CACHE_REVALIDATE_SEC,
+      tags: storeCacheTags("store-categories", tenant.slug),
+    },
+  )();
+}
+
+export async function getCachedAllCategoryRows() {
+  const tenant = await getStorefrontTenant();
+  return unstable_cache(
+    async () => {
+      const { data } = await publicSupabase(tenant.slug)
+        .from("categories")
+        .select("id,name,sort_order")
+        .eq("tenant_id", tenant.id)
+        .order("sort_order", { ascending: true })
+        .order("name", { ascending: true });
+      return data ?? [];
+    },
+    ["store-all-category-rows", tenant.id],
+    {
+      revalidate: STORE_CACHE_REVALIDATE_SEC,
+      tags: storeCacheTags("store-categories", tenant.slug),
+    },
+  )();
+}
 
 export async function getCachedListingFacets(
   categoryIds: string[] | null,
 ): Promise<Awaited<ReturnType<typeof fetchListingFacets>>> {
+  const tenant = await getStorefrontTenant();
   const key =
     categoryIds?.length ?
-      `store-listing-facets:${[...categoryIds].sort().join(",")}`
-    : "store-listing-facets:all";
+      `store-listing-facets:${tenant.id}:${[...categoryIds].sort().join(",")}`
+    : `store-listing-facets:${tenant.id}:all`;
   return unstable_cache(
-    async () => fetchListingFacets(publicSupabase(), { categoryIds }),
+    async () =>
+      fetchListingFacets(publicSupabase(tenant.slug), {
+        categoryIds,
+        tenantId: tenant.id,
+      }),
     [key],
-    { revalidate: STORE_CACHE_REVALIDATE_SEC, tags: ["store-products"] },
+    {
+      revalidate: STORE_CACHE_REVALIDATE_SEC,
+      tags: storeCacheTags("store-products", tenant.slug),
+    },
   )();
 }
 
 export async function getCachedCatalogBrowseSections(
   allCategoryRows: { id: string; name: string; sort_order: number }[],
 ) {
-  const key = `store-catalog-sections:${allCategoryRows.map((c) => c.id).join(",")}`;
+  const tenant = await getStorefrontTenant();
+  const key = `store-catalog-sections:${tenant.id}:${allCategoryRows.map((c) => c.id).join(",")}`;
   return unstable_cache(
-    async () => fetchCatalogBrowseSections(publicSupabase(), allCategoryRows),
+    async () =>
+      fetchCatalogBrowseSections(
+        publicSupabase(tenant.slug),
+        allCategoryRows,
+        tenant.id,
+      ),
     [key],
-    { revalidate: STORE_CACHE_REVALIDATE_SEC, tags: ["store-products"] },
+    {
+      revalidate: STORE_CACHE_REVALIDATE_SEC,
+      tags: storeCacheTags("store-products", tenant.slug),
+    },
   )();
 }
 
-export const getCachedPublishedBanners = async (
+export async function getCachedPublishedBanners(
   placement: "hero" | "products",
-) =>
-  unstable_cache(
-    async () => fetchPublishedBanners(publicSupabase(), placement),
-    [`store-published-banners:${placement}`],
-    { revalidate: STORE_CACHE_REVALIDATE_SEC, tags: ["store-banners"] },
+) {
+  const tenant = await getStorefrontTenant();
+  return unstable_cache(
+    async () =>
+      fetchPublishedBanners(publicSupabase(tenant.slug), placement, tenant.id),
+    [`store-published-banners:${tenant.id}:${placement}`],
+    {
+      revalidate: STORE_CACHE_REVALIDATE_SEC,
+      tags: storeCacheTags("store-banners", tenant.slug),
+    },
   )();
+}
 
-export const getCachedBannerStoreCoupon = unstable_cache(
-  async () => fetchBannerStoreCoupon(publicSupabase()),
-  ["store-banner-coupon"],
-  { revalidate: STORE_CACHE_REVALIDATE_SEC, tags: ["store-coupons"] },
-);
+export async function getCachedBannerStoreCoupon() {
+  const tenant = await getStorefrontTenant();
+  return unstable_cache(
+    async () => fetchBannerStoreCoupon(publicSupabase(tenant.slug), tenant.id),
+    ["store-banner-coupon", tenant.id],
+    {
+      revalidate: STORE_CACHE_REVALIDATE_SEC,
+      tags: storeCacheTags("store-coupons", tenant.slug),
+    },
+  )();
+}
 
-export const getCachedActiveWelcomeModal = unstable_cache(
-  async () => fetchActiveWelcomeModal(publicSupabase()),
-  ["store-welcome-modal"],
-  { revalidate: STORE_CACHE_REVALIDATE_SEC, tags: ["store-welcome-modal"] },
-);
+export async function getCachedActiveWelcomeModal() {
+  const tenant = await getStorefrontTenant();
+  return unstable_cache(
+    async () => fetchActiveWelcomeModal(publicSupabase(tenant.slug), tenant.id),
+    ["store-welcome-modal", tenant.id],
+    {
+      revalidate: STORE_CACHE_REVALIDATE_SEC,
+      tags: storeCacheTags("store-welcome-modal", tenant.slug),
+    },
+  )();
+}
 
-export const getCachedStorefrontCouponDiscounts = unstable_cache(
-  async () => fetchStorefrontCouponDiscountPercentByProductId(publicSupabase()),
-  ["storefront-coupon-discounts"],
-  { revalidate: STORE_CACHE_REVALIDATE_SEC, tags: ["store-coupons"] },
-);
+export async function getCachedStorefrontCouponDiscounts() {
+  const tenant = await getStorefrontTenant();
+  return unstable_cache(
+    async () =>
+      fetchStorefrontCouponDiscountPercentByProductId(
+        publicSupabase(tenant.slug),
+        tenant.slug,
+      ),
+    ["storefront-coupon-discounts", tenant.id],
+    {
+      revalidate: STORE_CACHE_REVALIDATE_SEC,
+      tags: storeCacheTags("store-coupons", tenant.slug),
+    },
+  )();
+}
 
 const HOME_PRODUCTS_LIMIT = 8;
 
@@ -111,23 +177,34 @@ export type HomeFeaturedProduct = {
   created_at: string;
 };
 
-export const getCachedHomeFeaturedProducts = unstable_cache(
-  async (): Promise<HomeFeaturedProduct[]> => {
-    const { data } = await withStorefrontImage(
-      publicSupabase()
-        .from("products")
-        .select(
-          "id,name,brand,description,price_cents,has_vat,image_path,stock_quantity,fragrance_options,created_at",
-        )
-        .eq("is_published", true),
-    )
-      .order("created_at", { ascending: false })
-      .limit(HOME_PRODUCTS_LIMIT);
-    return (data ?? []) as HomeFeaturedProduct[];
-  },
-  ["store-home-featured-products"],
-  { revalidate: STORE_CACHE_REVALIDATE_SEC, tags: ["store-products"] },
-);
+async function loadHomeFeaturedProducts(
+  tenant: TenantRef,
+): Promise<HomeFeaturedProduct[]> {
+  const { data } = await withStorefrontImage(
+    publicSupabase(tenant.slug)
+      .from("products")
+      .select(
+        "id,name,brand,description,price_cents,has_vat,image_path,stock_quantity,fragrance_options,created_at",
+      )
+      .eq("is_published", true)
+      .eq("tenant_id", tenant.id),
+  )
+    .order("created_at", { ascending: false })
+    .limit(HOME_PRODUCTS_LIMIT);
+  return (data ?? []) as HomeFeaturedProduct[];
+}
+
+export async function getCachedHomeFeaturedProducts() {
+  const tenant = await getStorefrontTenant();
+  return unstable_cache(
+    async () => loadHomeFeaturedProducts(tenant),
+    ["store-home-featured-products", tenant.id],
+    {
+      revalidate: STORE_CACHE_REVALIDATE_SEC,
+      tags: storeCacheTags("store-products", tenant.slug),
+    },
+  )();
+}
 
 const HOME_KITS_LIMIT = 8;
 
@@ -141,9 +218,12 @@ export type HomeFeaturedKit = {
   item_count: number;
 };
 
-async function loadAvailableStorefrontKits(): Promise<HomeFeaturedKit[]> {
-  const kits = await fetchKitsWithItems(publicSupabase(), {
+async function loadAvailableStorefrontKits(
+  tenant: TenantRef,
+): Promise<HomeFeaturedKit[]> {
+  const kits = await fetchKitsWithItems(publicSupabase(tenant.slug), {
     publishedOnly: true,
+    tenantId: tenant.id,
   });
   return kits
     .filter((k) => kitIsAvailable(k, "storefront"))
@@ -161,21 +241,33 @@ async function loadAvailableStorefrontKits(): Promise<HomeFeaturedKit[]> {
     });
 }
 
-export const getCachedHomeFeaturedKits = unstable_cache(
-  async (): Promise<HomeFeaturedKit[]> => {
-    const kits = await loadAvailableStorefrontKits();
-    return kits.slice(0, HOME_KITS_LIMIT);
-  },
-  ["store-home-featured-kits"],
-  { revalidate: STORE_CACHE_REVALIDATE_SEC, tags: ["store-kits"] },
-);
+export async function getCachedHomeFeaturedKits() {
+  const tenant = await getStorefrontTenant();
+  return unstable_cache(
+    async (): Promise<HomeFeaturedKit[]> => {
+      const kits = await loadAvailableStorefrontKits(tenant);
+      return kits.slice(0, HOME_KITS_LIMIT);
+    },
+    ["store-home-featured-kits", tenant.id],
+    {
+      revalidate: STORE_CACHE_REVALIDATE_SEC,
+      tags: storeCacheTags("store-kits", tenant.slug),
+    },
+  )();
+}
 
 /** Todos los kits disponibles para la sección del catálogo. */
-export const getCachedCatalogKits = unstable_cache(
-  async (): Promise<HomeFeaturedKit[]> => loadAvailableStorefrontKits(),
-  ["store-catalog-kits"],
-  { revalidate: STORE_CACHE_REVALIDATE_SEC, tags: ["store-kits"] },
-);
+export async function getCachedCatalogKits() {
+  const tenant = await getStorefrontTenant();
+  return unstable_cache(
+    async (): Promise<HomeFeaturedKit[]> => loadAvailableStorefrontKits(tenant),
+    ["store-catalog-kits", tenant.id],
+    {
+      revalidate: STORE_CACHE_REVALIDATE_SEC,
+      tags: storeCacheTags("store-kits", tenant.slug),
+    },
+  )();
+}
 
 export type CatalogGridProduct = {
   id: string;
@@ -192,20 +284,27 @@ export type CatalogGridProduct = {
 };
 
 /** Catálogo completo (scroll): todos los productos publicados con imagen. */
-export const getCachedAllCatalogProducts = unstable_cache(
-  async (): Promise<CatalogGridProduct[]> => {
-    const { data } = await withStorefrontImage(
-      publicSupabase()
-        .from("products")
-        .select(
-          "id,name,brand,price_cents,has_vat,image_path,stock_quantity,size_options,size_value,size_unit,fragrance_options",
-        )
-        .eq("is_published", true),
-    )
-      .order("created_at", { ascending: false })
-      .limit(1000);
-    return (data ?? []) as CatalogGridProduct[];
-  },
-  ["store-all-catalog-products"],
-  { revalidate: STORE_CACHE_REVALIDATE_SEC, tags: ["store-products"] },
-);
+export async function getCachedAllCatalogProducts() {
+  const tenant = await getStorefrontTenant();
+  return unstable_cache(
+    async (): Promise<CatalogGridProduct[]> => {
+      const { data } = await withStorefrontImage(
+        publicSupabase(tenant.slug)
+          .from("products")
+          .select(
+            "id,name,brand,price_cents,has_vat,image_path,stock_quantity,size_options,size_value,size_unit,fragrance_options",
+          )
+          .eq("is_published", true)
+          .eq("tenant_id", tenant.id),
+      )
+        .order("created_at", { ascending: false })
+        .limit(1000);
+      return (data ?? []) as CatalogGridProduct[];
+    },
+    ["store-all-catalog-products", tenant.id],
+    {
+      revalidate: STORE_CACHE_REVALIDATE_SEC,
+      tags: storeCacheTags("store-products", tenant.slug),
+    },
+  )();
+}

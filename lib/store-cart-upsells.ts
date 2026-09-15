@@ -1,6 +1,7 @@
 import { expandFragranceLabels } from "@/lib/fragrance-options";
 import { storefrontListGrossUnitCents } from "@/lib/storefront-gross-price";
 import { withStorefrontImage } from "@/lib/storefront-product-image";
+import { getStorefrontTenant } from "@/lib/storefront-tenant";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export type StoreCartUpsellProduct = {
@@ -46,6 +47,7 @@ export async function loadStoreCartUpsells(
     Math.max(32, limit + exclude.size + 12),
   );
 
+  const tenant = await getStorefrontTenant();
   const { data } = await withStorefrontImage(
     supabase
       .from("products")
@@ -53,6 +55,7 @@ export async function loadStoreCartUpsells(
         "id,name,price_cents,has_vat,image_path,colors,stock_quantity,created_at,fragrance_options",
       )
       .eq("is_published", true)
+      .eq("tenant_id", tenant.id)
       .gt("stock_quantity", 0),
   )
     .order("created_at", { ascending: false })

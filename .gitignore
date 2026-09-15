@@ -34,6 +34,9 @@ yarn-error.log*
 .env*
 !.env.example
 
+# one-off local credentials
+scripts/*.local.txt
+
 # vercel
 .vercel
 

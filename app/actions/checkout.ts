@@ -18,6 +18,7 @@ import {
 import { normalizeStorefrontCartLines } from "@/lib/storefront-cart";
 import { storeBrand } from "@/lib/brand";
 import { ensureStoreCustomerLinked } from "@/lib/store-customer-service";
+import { getRequestTenant } from "@/lib/tenant-context";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
 import {
@@ -152,6 +153,7 @@ export async function startCheckout(formData: FormData) {
   const kitLines = normalized.filter(isCartKitLine);
 
   const supabase = createSupabaseServiceClient();
+  const tenant = await getRequestTenant();
   const productIds = [...new Set(productLines.map((l) => l.productId))];
   let products: {
     id: string;
@@ -170,7 +172,8 @@ export async function startCheckout(formData: FormData) {
       .select(
         "id,name,price_cents,currency,stock_quantity,is_published,has_vat,vat_percent",
       )
-      .in("id", productIds);
+      .in("id", productIds)
+      .eq("tenant_id", tenant.id);
 
     if (pErr) {
       if (process.env.NODE_ENV === "development") {
@@ -186,7 +189,10 @@ export async function startCheckout(formData: FormData) {
 
   const kitsById = new Map<string, ProductKitRow>();
   if (kitLines.length > 0) {
-    const allKits = await fetchKitsWithItems(supabase, { publishedOnly: true });
+    const allKits = await fetchKitsWithItems(supabase, {
+      publishedOnly: true,
+      tenantId: tenant.id,
+    });
     for (const kit of allKits) {
       kitsById.set(kit.id, kit);
     }
@@ -210,6 +216,7 @@ export async function startCheckout(formData: FormData) {
     .from("customers")
     .select("id,customer_kind,wholesale_discount_percent")
     .eq("email", emailLc)
+    .eq("tenant_id", tenant.id)
     .maybeSingle();
 
   const wholesalePct = existingCustomer
@@ -279,6 +286,7 @@ export async function startCheckout(formData: FormData) {
     const couponMatch = await findActiveStoreCouponForCheckout(
       supabase,
       couponCode,
+      tenant.id,
     );
     if (!couponMatch) {
       redirect("/checkout?error=coupon_invalid");
@@ -317,6 +325,7 @@ export async function startCheckout(formData: FormData) {
     .from("store_shipping_municipalities")
     .select("id, name, rate_cents, is_enabled")
     .eq("id", shippingMunicipalityId)
+    .eq("tenant_id", tenant.id)
     .maybeSingle();
 
   if (!municipalityRow || municipalityRow.is_enabled !== true) {
@@ -384,6 +393,7 @@ export async function startCheckout(formData: FormData) {
         ...customerShippingFull,
         email: emailLc,
         source: "storefront",
+        tenant_id: tenant.id,
       })
       .select("id")
       .single();
@@ -398,6 +408,7 @@ export async function startCheckout(formData: FormData) {
           ...customerShippingCompat,
           email: emailLc,
           source: "storefront",
+          tenant_id: tenant.id,
         })
         .select("id")
         .single());
@@ -432,6 +443,7 @@ export async function startCheckout(formData: FormData) {
     checkout_payment_method: useTransfer ? "transfer" : "wompi",
     transfer_session_token: transferSessionToken,
     fulfillment_status: useTransfer ? "awaiting_payment" : null,
+    tenant_id: tenant.id,
   };
 
   let { data: orderRow, error: oErr } = await supabase
@@ -487,6 +499,7 @@ export async function startCheckout(formData: FormData) {
       unit_price_cents: l.unit_price_cents,
       product_name_snapshot: l.product_name_snapshot,
       kit_component_deductions: l.kit_component_deductions,
+      tenant_id: tenant.id,
     })),
   );
 

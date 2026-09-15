@@ -160,6 +160,9 @@ export async function createTenantOnboarding(
       slug,
       name,
       status,
+      kind: "customer",
+      account_holder_name: ownerDisplayName,
+      account_holder_email: ownerEmail,
       custom_domains: customDomains,
       brand,
     })

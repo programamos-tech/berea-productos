@@ -26,8 +26,9 @@ export function resolveWelcomeModalCtaHref(href: string | null | undefined) {
 
 export async function fetchActiveWelcomeModal(
   supabase: SupabaseClient,
+  tenantId?: string,
 ): Promise<StoreWelcomeModalRow | null> {
-  const { data } = await supabase
+  let q = supabase
     .from("store_welcome_modals")
     .select(
       "id,title,description,image_path,discount_code,cta_label,cta_href,is_enabled,sort_order,created_at",
@@ -35,8 +36,9 @@ export async function fetchActiveWelcomeModal(
     .eq("is_enabled", true)
     .order("sort_order", { ascending: true })
     .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    .limit(1);
+  if (tenantId) q = q.eq("tenant_id", tenantId);
+  const { data } = await q.maybeSingle();
   return (data as StoreWelcomeModalRow | null) ?? null;
 }
 

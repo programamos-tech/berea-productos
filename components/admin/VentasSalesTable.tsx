@@ -27,6 +27,7 @@ export type VentaOrderRow = {
   total_cents: number;
   created_at: string | null;
   wompi_reference: string | null;
+  wompi_transaction_id?: string | null;
   customer_email: string | null;
 };
 
@@ -86,7 +87,10 @@ export function VentasSalesTable({
         className="divide-y divide-zinc-100 xl:hidden dark:divide-zinc-800"
       >
         {rows.map((row) => {
-          const ref = ventaNumeroReferencia(row.id);
+          const ref = ventaNumeroReferencia(
+            row.id,
+            row.wompi_transaction_id ?? null,
+          );
           const estado = ventaEstadoTone(row.status);
           const pago = ventaFormaPagoTone(row.wompi_reference);
           const pagoIcon = ventaPagoIcon(row.wompi_reference);
@@ -157,7 +161,10 @@ export function VentasSalesTable({
           <tbody>
             {rows.map((row) => {
               const href = orderDetailHref(row.id);
-              const ref = ventaNumeroReferencia(row.id);
+              const ref = ventaNumeroReferencia(
+                row.id,
+                row.wompi_transaction_id ?? null,
+              );
               const estado = ventaEstadoTone(row.status);
               const pago = ventaFormaPagoTone(row.wompi_reference);
               const pagoIcon = ventaPagoIcon(row.wompi_reference);

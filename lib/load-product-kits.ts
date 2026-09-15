@@ -72,7 +72,7 @@ export async function fetchKitsByIdsWithItems(
 
 export async function fetchKitsWithItems(
   supabase: SupabaseClient,
-  opts?: { publishedOnly?: boolean },
+  opts?: { publishedOnly?: boolean; tenantId?: string },
 ): Promise<ProductKitRow[]> {
   let q = supabase
     .from("product_kits")
@@ -81,6 +81,9 @@ export async function fetchKitsWithItems(
     .order("name", { ascending: true });
   if (opts?.publishedOnly) {
     q = q.eq("is_published", true);
+  }
+  if (opts?.tenantId) {
+    q = q.eq("tenant_id", opts.tenantId);
   }
   const { data: kits } = await q;
   if (!kits?.length) return [];

@@ -8,11 +8,17 @@ import { useEffect, useRef, useState } from "react";
 type Props = {
   displayName: string;
   email: string;
+  isPlatformOperator?: boolean;
   /** Avatar renderizado en el servidor (p. ej. `AdminUserAvatar`). */
   avatar: ReactNode;
 };
 
-export function AdminUserMenu({ displayName, email, avatar }: Props) {
+export function AdminUserMenu({
+  displayName,
+  email,
+  isPlatformOperator = false,
+  avatar,
+}: Props) {
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
 
@@ -74,6 +80,15 @@ export function AdminUserMenu({ displayName, email, avatar }: Props) {
           aria-labelledby="admin-logout-title"
           className="absolute right-0 top-full z-[100] mt-2 w-[min(18rem,calc(100vw-2rem))] origin-top-right rounded-2xl border border-zinc-200 bg-white p-4 shadow-[0_16px_48px_-16px_rgba(24,24,27,0.18)] ring-1 ring-zinc-950/[0.04] dark:border-zinc-700 dark:bg-zinc-900 dark:shadow-[0_16px_48px_-16px_rgba(0,0,0,0.45)] dark:ring-white/[0.06] sm:w-80 sm:p-5"
         >
+          {isPlatformOperator ? (
+            <Link
+              href="/admin/cuentas"
+              onClick={() => setOpen(false)}
+              className="mb-2 block rounded-xl border border-zinc-200 bg-zinc-50 px-3.5 py-2.5 text-sm font-semibold text-zinc-900 transition hover:border-zinc-300 hover:bg-zinc-100 dark:border-zinc-600 dark:bg-zinc-800/80 dark:text-zinc-100 dark:hover:bg-zinc-800"
+            >
+              Cambiar de cuenta
+            </Link>
+          ) : null}
           <Link
             href="/admin/cuenta"
             onClick={() => setOpen(false)}

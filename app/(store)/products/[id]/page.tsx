@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ProductDetailView } from "@/components/store/ProductDetailView";
+import { getStorefrontTenant } from "@/lib/storefront-tenant";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { storagePublicObjectUrl } from "@/lib/storage-public-url";
 import { expandFragranceLabels } from "@/lib/fragrance-options";
@@ -27,6 +28,7 @@ function catalogHref(categoryId: string | null, brand: string | null): string {
 export default async function ProductDetailPage({ params }: Props) {
   const { id } = await params;
   const supabase = await createSupabaseServerClient();
+  const tenant = await getStorefrontTenant();
   const { data: product } = await supabase
     .from("products")
     .select(
@@ -34,6 +36,7 @@ export default async function ProductDetailPage({ params }: Props) {
     )
     .eq("id", id)
     .eq("is_published", true)
+    .eq("tenant_id", tenant.id)
     .maybeSingle();
 
   if (!product || !productHasStorefrontImage(product.image_path)) notFound();

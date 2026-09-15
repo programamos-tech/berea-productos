@@ -51,6 +51,8 @@ export default async function AdminUsuariosRolesPage() {
     .select(
       "id, created_at, display_name, login_username, public_email, job_role, branch_label, is_active",
     )
+    .eq("tenant_id", authPerm?.tenantId ?? "")
+    .eq("is_platform_operator", false)
     .order("created_at", { ascending: true });
 
   const emailByUserId = new Map<string, string>();

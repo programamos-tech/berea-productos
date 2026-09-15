@@ -11,6 +11,7 @@ import {
   maxKitsAvailableFromItems,
 } from "@/lib/product-kits";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getStorefrontTenant } from "@/lib/storefront-tenant";
 
 /** Misma lógica que checkout: publicados, stock y kits disponibles. */
 export async function normalizeStorefrontCartLines(
@@ -22,6 +23,7 @@ export async function normalizeStorefrontCartLines(
   const kitLines = cart.filter(isCartKitLine);
 
   const supabase = await createSupabaseServerClient();
+  const tenant = await getStorefrontTenant();
   const next: CartLine[] = [];
 
   if (productLines.length > 0) {
@@ -29,7 +31,8 @@ export async function normalizeStorefrontCartLines(
     const { data: products } = await supabase
       .from("products")
       .select("id,is_published,stock_quantity")
-      .in("id", ids);
+      .in("id", ids)
+      .eq("tenant_id", tenant.id);
 
     const byId = new Map(
       (products ?? []).map((p) => [
@@ -44,7 +47,10 @@ export async function normalizeStorefrontCartLines(
   }
 
   if (kitLines.length > 0) {
-    const kits = await fetchKitsWithItems(supabase, { publishedOnly: true });
+    const kits = await fetchKitsWithItems(supabase, {
+      publishedOnly: true,
+      tenantId: tenant.id,
+    });
     const byKitId = new Map(kits.map((k) => [k.id, k]));
     const merged = new Map<string, number>();
     for (const line of kitLines) {

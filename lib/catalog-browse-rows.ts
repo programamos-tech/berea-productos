@@ -59,6 +59,7 @@ function toProductRow(row: BrowsePreviewRow): CatalogBrowseProductRow {
 
 async function fetchCatalogBrowsePreviewRows(
   supabase: SupabaseClient,
+  tenantId?: string,
 ): Promise<BrowsePreviewRow[]> {
   const { data, error } = await supabase.rpc("store_catalog_browse_preview", {
     p_per_category: CATALOG_ROW_PREVIEW_LIMIT + 1,
@@ -72,42 +73,46 @@ async function fetchCatalogBrowsePreviewRows(
     console.error("[catalog-browse] store_catalog_browse_preview:", error.message);
   }
 
-  return fetchCatalogBrowsePreviewRowsFallback(supabase);
+  return fetchCatalogBrowsePreviewRowsFallback(supabase, tenantId);
 }
 
 /** Fallback si la migración RPC aún no está aplicada. */
 async function fetchCatalogBrowsePreviewRowsFallback(
   supabase: SupabaseClient,
+  tenantId?: string,
 ): Promise<BrowsePreviewRow[]> {
-  const merged = await supabase
+  let catQuery = supabase
     .from("categories")
     .select("id,name,sort_order")
     .order("sort_order", { ascending: true });
+  if (tenantId) catQuery = catQuery.eq("tenant_id", tenantId);
+  const merged = await catQuery;
 
   const categories = merged.data ?? [];
   if (!categories.length) return [];
 
   const rows: BrowsePreviewRow[] = [];
   for (const cat of categories) {
+    const productQuery = supabase
+      .from("products")
+      .select(`${PRODUCT_SELECT},category_id,created_at`)
+      .eq("is_published", true)
+      .eq("category_id", cat.id);
     const { data } = await withStorefrontImage(
-      supabase
-        .from("products")
-        .select(`${PRODUCT_SELECT},category_id,created_at`)
-        .eq("is_published", true)
-        .eq("category_id", cat.id),
+      tenantId ? productQuery.eq("tenant_id", tenantId) : productQuery,
     )
       .order("created_at", { ascending: false })
       .limit(CATALOG_ROW_PREVIEW_LIMIT + 1);
     if (data?.length) rows.push(...(data as BrowsePreviewRow[]));
   }
 
-  const { data: uncategorized } = await withStorefrontImage(
-    supabase
-      .from("products")
-      .select(`${PRODUCT_SELECT},category_id,created_at`)
-      .eq("is_published", true)
-      .is("category_id", null),
-  )
+  let uncatQuery = supabase
+    .from("products")
+    .select(`${PRODUCT_SELECT},category_id,created_at`)
+    .eq("is_published", true)
+    .is("category_id", null);
+  if (tenantId) uncatQuery = uncatQuery.eq("tenant_id", tenantId);
+  const { data: uncategorized } = await withStorefrontImage(uncatQuery)
     .order("created_at", { ascending: false })
     .limit(CATALOG_ROW_PREVIEW_LIMIT + 1);
 
@@ -118,8 +123,9 @@ async function fetchCatalogBrowsePreviewRowsFallback(
 export async function fetchCatalogBrowseSections(
   supabase: SupabaseClient,
   allCategoryRows: { id: string; name: string; sort_order: number }[],
+  tenantId?: string,
 ): Promise<CatalogBrowseSection[]> {
-  const previewRows = await fetchCatalogBrowsePreviewRows(supabase);
+  const previewRows = await fetchCatalogBrowsePreviewRows(supabase, tenantId);
   const merged = mergeCategoryRowsForFilterMenu(allCategoryRows);
   const byCategoryId = new Map<string, BrowsePreviewRow[]>();
 

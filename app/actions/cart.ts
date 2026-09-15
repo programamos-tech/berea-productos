@@ -11,6 +11,7 @@ import {
   setCart,
   type CartLine,
 } from "@/lib/cart";
+import { getStorefrontTenant } from "@/lib/storefront-tenant";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { expandFragranceLabels } from "@/lib/fragrance-options";
 import { fetchKitWithItems } from "@/lib/load-product-kits";
@@ -50,11 +51,13 @@ export async function addToCart(
       ? fragrance.trim()
       : undefined;
   const supabase = await createSupabaseServerClient();
+  const tenant = await getStorefrontTenant();
   const { data: row } = await supabase
     .from("products")
     .select("stock_quantity, fragrance_options, image_path")
     .eq("id", productId)
     .eq("is_published", true)
+    .eq("tenant_id", tenant.id)
     .maybeSingle();
 
   if (!row || !productHasStorefrontImage(row.image_path)) return;
@@ -101,11 +104,13 @@ export async function setLineQuantity(
       ? fragrance.trim()
       : undefined;
   const supabase = await createSupabaseServerClient();
+  const tenant = await getStorefrontTenant();
   const { data: row } = await supabase
     .from("products")
     .select("stock_quantity")
     .eq("id", productId)
     .eq("is_published", true)
+    .eq("tenant_id", tenant.id)
     .maybeSingle();
   const stock = Math.max(0, Math.floor(Number(row?.stock_quantity ?? 0)));
 
@@ -162,11 +167,13 @@ export async function buyNowFromDetail(formData: FormData) {
   );
 
   const supabase = await createSupabaseServerClient();
+  const tenant = await getStorefrontTenant();
   const { data: row } = await supabase
     .from("products")
     .select("stock_quantity, fragrance_options")
     .eq("id", productId)
     .eq("is_published", true)
+    .eq("tenant_id", tenant.id)
     .maybeSingle();
 
   if (!row) redirect("/products");

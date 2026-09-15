@@ -106,12 +106,26 @@ export function AdminLoginForm() {
       email,
       password,
     });
-    setLoading(false);
     if (signErr) {
+      setLoading(false);
       setError(friendlyAuthError(signErr.message));
       return;
     }
-    router.replace("/admin");
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    let dest = "/admin";
+    if (user) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("is_platform_operator")
+        .eq("id", user.id)
+        .maybeSingle();
+      if (profile?.is_platform_operator) dest = "/admin/cuentas";
+    }
+    setLoading(false);
+    router.replace(dest);
     router.refresh();
   }
 

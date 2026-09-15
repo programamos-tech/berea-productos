@@ -3,9 +3,12 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 /** Marcas distintas entre productos publicados (para filtros del listado). */
 export async function fetchPublishedProductBrands(
   supabase: SupabaseClient,
-  options: { categoryIds: string[] | null },
+  options: { categoryIds: string[] | null; tenantId?: string },
 ): Promise<string[]> {
   let q = supabase.from("products").select("brand").eq("is_published", true);
+  if (options.tenantId) {
+    q = q.eq("tenant_id", options.tenantId);
+  }
   if (options.categoryIds?.length) {
     q = q.in("category_id", options.categoryIds);
   }

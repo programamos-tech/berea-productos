@@ -277,8 +277,17 @@ export function ventaEstadoTone(status: string): { label: string; className: str
   }
 }
 
-/** Número corto legible para la columna factura/pedido (no correlativo real). */
-export function ventaNumeroReferencia(id: string): string {
+/** Número corto legible para la columna factura/pedido.
+ * Pedidos migrados (Nou) guardan el correlativo en `wompi_transaction_id`.
+ */
+export function ventaNumeroReferencia(
+  id: string,
+  legacyInvoice?: string | null,
+): string {
+  const legacy = String(legacyInvoice ?? "").trim();
+  const nou = /(?:^|:)NOU:(\d+)/.exec(legacy);
+  if (nou?.[1]) return nou[1];
+  if (/^\d{1,10}$/.test(legacy)) return legacy;
   const hex = id.replace(/-/g, "").slice(-10);
   const n = parseInt(hex.slice(0, 8), 16);
   if (!Number.isFinite(n)) return id.replace(/-/g, "").slice(0, 8).toUpperCase();

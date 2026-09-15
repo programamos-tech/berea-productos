@@ -29,6 +29,7 @@ import {
 } from "@/lib/storefront-gross-price";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
+import { getRequestTenant } from "@/lib/tenant-context";
 import { imagePathForProductLine } from "@/lib/product-line-image";
 import {
   shouldUnoptimizeStorageImageUrl,
@@ -432,6 +433,7 @@ export default async function CheckoutPage({
   const kitLines = displayCart.filter(isCartKitLine);
 
   const supabase = createSupabaseServiceClient();
+  const tenant = await getRequestTenant();
   const productIds = [...new Set(productLines.map((l) => l.productId))];
   let products: {
     id: string;
@@ -451,7 +453,8 @@ export default async function CheckoutPage({
       .select(
         "id,name,price_cents,has_vat,image_path,fragrance_option_images,is_published,stock_quantity,colors",
       )
-      .in("id", productIds);
+      .in("id", productIds)
+      .eq("tenant_id", tenant.id);
     products = data ?? [];
   }
 
@@ -462,7 +465,10 @@ export default async function CheckoutPage({
 
   const kitsPromise =
     kitLines.length > 0
-      ? fetchKitsWithItems(supabase, { publishedOnly: true })
+      ? fetchKitsWithItems(supabase, {
+          publishedOnly: true,
+          tenantId: tenant.id,
+        })
       : Promise.resolve([]);
 
   const [kits, cartUpsellProducts, municipalityRes] = await Promise.all([
@@ -472,6 +478,7 @@ export default async function CheckoutPage({
       .from("store_shipping_municipalities")
       .select("id, name, department, rate_cents")
       .eq("is_enabled", true)
+      .eq("tenant_id", tenant.id)
       .order("sort_order", { ascending: true })
       .order("name", { ascending: true }),
   ]);

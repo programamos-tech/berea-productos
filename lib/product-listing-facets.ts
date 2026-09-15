@@ -53,7 +53,7 @@ export function mergeCategoryRowsForFilterMenu(
 
 export async function fetchListingFacets(
   supabase: SupabaseClient,
-  options: { categoryIds: string[] | null },
+  options: { categoryIds: string[] | null; tenantId?: string },
 ): Promise<ListingFacets> {
   const categoryIds = options.categoryIds?.length ? options.categoryIds : null;
   const { data, error } = await supabase.rpc("store_listing_facets_agg", {
@@ -123,7 +123,7 @@ function facetsFromAggregatedPayload(payload: Record<string, unknown>): ListingF
 
 async function fetchListingFacetsFallback(
   supabase: SupabaseClient,
-  options: { categoryIds: string[] | null },
+  options: { categoryIds: string[] | null; tenantId?: string },
 ): Promise<ListingFacets> {
   let q = withStorefrontImage(
     supabase
@@ -131,6 +131,9 @@ async function fetchListingFacetsFallback(
       .select("brand, colors, size_options, size_value, size_unit, price_cents")
       .eq("is_published", true),
   );
+  if (options.tenantId) {
+    q = q.eq("tenant_id", options.tenantId);
+  }
   if (options.categoryIds?.length) {
     q = q.in("category_id", options.categoryIds);
   }

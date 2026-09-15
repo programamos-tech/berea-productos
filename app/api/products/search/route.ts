@@ -1,4 +1,4 @@
-import { createClient } from "@supabase/supabase-js";
+import { createStorefrontAnonClient, storefrontTenantSlugFromHeaders } from "@/lib/storefront-tenant";
 import { NextResponse } from "next/server";
 import { withStorefrontImage } from "@/lib/storefront-product-image";
 
@@ -21,22 +21,32 @@ export async function GET(request: Request) {
     return NextResponse.json({ products: [] });
   }
 
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !key) {
+  const slug = storefrontTenantSlugFromHeaders(request.headers);
+  let supabase;
+  try {
+    supabase = createStorefrontAnonClient(slug);
+  } catch {
     return NextResponse.json(
       { error: "Missing Supabase env" },
       { status: 500 },
     );
   }
 
-  const supabase = createClient(url, key);
-  const { data, error } = await withStorefrontImage(
+  const { data: tenant } = await supabase
+    .from("tenants")
+    .select("id")
+    .eq("slug", slug)
+    .maybeSingle();
+
+  let query = withStorefrontImage(
     supabase
       .from("products")
       .select("id,name,price_cents,has_vat,image_path")
       .eq("is_published", true),
-  )
+  );
+  if (tenant?.id) query = query.eq("tenant_id", tenant.id);
+
+  const { data, error } = await query
     .ilike("name", `%${q}%`)
     .order("name")
     .limit(12);

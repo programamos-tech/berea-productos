@@ -17,6 +17,7 @@ import { storefrontListGrossUnitCents } from "@/lib/storefront-gross-price";
 import { productHasStorefrontImage } from "@/lib/storefront-product-image";
 import { storeShellClass } from "@/lib/store-theme";
 import { storagePublicObjectUrl } from "@/lib/storage-public-url";
+import { getStorefrontTenant } from "@/lib/storefront-tenant";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -25,8 +26,11 @@ type Props = { params: Promise<{ id: string }> };
 
 const loadPublishedKit = cache(async (id: string) => {
   const supabase = await createSupabaseServerClient();
+  const tenant = await getStorefrontTenant();
   const kit = await fetchKitWithItems(supabase, id);
   if (!kit?.is_published) return null;
+  const kitTenantId = (kit as { tenant_id?: string }).tenant_id;
+  if (kitTenantId && kitTenantId !== tenant.id) return null;
   return kit;
 });
 

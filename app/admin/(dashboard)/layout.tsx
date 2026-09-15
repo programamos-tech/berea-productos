@@ -23,6 +23,9 @@ export default async function AdminDashboardLayout({
 }) {
   const perm = await loadAdminPermissions();
   if (!perm) redirect("/admin/login");
+  if (perm.isPlatformOperator && !perm.actingAccount) {
+    redirect("/admin/cuentas");
+  }
 
   const needsCashCheck =
     !jobRoleSkipsCashRegister(perm.jobRole) &&
@@ -85,7 +88,9 @@ export default async function AdminDashboardLayout({
       sessionUser={{
         displayName: perm.displayName,
         email: perm.email,
+        isPlatformOperator: perm.isPlatformOperator,
       }}
+      actingAccount={perm.actingAccount}
     >
       {children}
     </AdminDashboardShell>

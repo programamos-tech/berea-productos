@@ -4,6 +4,11 @@ import { NextResponse, type NextRequest } from "next/server";
 import { withTimeout } from "@/lib/async-timeout";
 import { hasSupabaseAuthCookie } from "@/lib/supabase-auth-cookie";
 import {
+  ACTING_TENANT_COOKIE,
+  ACTING_TENANT_HEADER,
+  isActingTenantId,
+} from "@/lib/platform-operator";
+import {
   resolveTenantFromHost,
   TENANT_KIND_HEADER,
   TENANT_SLUG_HEADER,
@@ -59,6 +64,10 @@ function isCuentaPath(path: string) {
   return path === "/cuenta" || path.startsWith("/cuenta/");
 }
 
+function isAdminActingPath(path: string): boolean {
+  return path.startsWith("/admin") || path.startsWith("/api/admin");
+}
+
 /** Attach tenant host resolution for downstream RSC / route handlers. */
 function withTenantHeaders(
   request: NextRequest,
@@ -71,6 +80,14 @@ function withTenantHeaders(
   }
   response.headers.set(TENANT_KIND_HEADER, resolved.kind);
   request.headers.set(TENANT_KIND_HEADER, resolved.kind);
+
+  if (isAdminActingPath(request.nextUrl.pathname)) {
+    const acting = request.cookies.get(ACTING_TENANT_COOKIE)?.value?.trim();
+    if (isActingTenantId(acting)) {
+      response.headers.set(ACTING_TENANT_HEADER, acting);
+      request.headers.set(ACTING_TENANT_HEADER, acting);
+    }
+  }
   return response;
 }
 
@@ -210,13 +227,16 @@ export async function middleware(request: NextRequest) {
     if (user && supabase) {
       const { data: profile } = await supabase
         .from("profiles")
-        .select("id")
+        .select("id, is_platform_operator")
         .eq("id", user.id)
         .maybeSingle();
       if (profile) {
+        const dest = profile.is_platform_operator
+          ? "/admin/cuentas"
+          : "/admin";
         return withTenantHeaders(
           request,
-          NextResponse.redirect(new URL("/admin", request.url)),
+          NextResponse.redirect(new URL(dest, request.url)),
         );
       }
       const hasNoProfileError =

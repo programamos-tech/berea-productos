@@ -25,16 +25,22 @@ export type StoreCategoryMenuItem = {
  */
 export async function fetchStoreCategoriesWithCounts(
   supabase: SupabaseClient,
+  tenantId?: string,
 ): Promise<StoreCategoryMenuItem[]> {
-  const { data: categories, error: catErr } = await supabase
+  let catQuery = supabase
     .from("categories")
     .select("id,name,sort_order,icon_key")
     .order("sort_order", { ascending: true })
     .order("name", { ascending: true });
+  if (tenantId) catQuery = catQuery.eq("tenant_id", tenantId);
+  const { data: categories, error: catErr } = await catQuery;
 
   if (catErr || !categories?.length) return [];
 
-  const countByCategory = await fetchPublishedProductCountsByCategory(supabase);
+  const countByCategory = await fetchPublishedProductCountsByCategory(
+    supabase,
+    tenantId,
+  );
 
   const groups = new Map<string, typeof categories>();
   for (const c of categories) {
@@ -79,6 +85,7 @@ export async function fetchStoreCategoriesWithCounts(
 
 async function fetchPublishedProductCountsByCategory(
   supabase: SupabaseClient,
+  tenantId?: string,
 ): Promise<Map<string, number>> {
   const { data, error } = await supabase.rpc(
     "store_published_product_counts_by_category",
@@ -101,8 +108,13 @@ async function fetchPublishedProductCountsByCategory(
     );
   }
 
+  let productQuery = supabase
+    .from("products")
+    .select("category_id")
+    .eq("is_published", true);
+  if (tenantId) productQuery = productQuery.eq("tenant_id", tenantId);
   const { data: products, error: prodErr } = await withStorefrontImage(
-    supabase.from("products").select("category_id").eq("is_published", true),
+    productQuery,
   );
 
   const countByCategory = new Map<string, number>();

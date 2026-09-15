@@ -21,6 +21,7 @@ export function AdminDashboardShell({
   notifyNewWebOrders = false,
   cashGate = null,
   sessionUser,
+  actingAccount = null,
 }: {
   children: React.ReactNode;
   /** Hrefs del menú lateral permitidos para esta sesión (incluye `/admin/cuenta` y `/`). */
@@ -36,7 +37,12 @@ export function AdminDashboardShell({
   sessionUser: {
     displayName: string;
     email: string;
+    isPlatformOperator?: boolean;
   };
+  actingAccount?: {
+    holderName: string;
+    storeName: string;
+  } | null;
 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -70,6 +76,8 @@ export function AdminDashboardShell({
             showOrderNotifications={notifyNewWebOrders && !mustOpen}
             displayName={sessionUser.displayName}
             email={sessionUser.email}
+            isPlatformOperator={sessionUser.isPlatformOperator}
+            actingAccount={actingAccount}
           />
           <main className="relative z-0 min-h-0 min-w-0 max-w-full flex-1 overflow-x-clip overflow-y-visible p-3 pb-[calc(4.75rem+env(safe-area-inset-bottom,0px))] sm:p-4 md:p-6 lg:pb-6 print:bg-white print:p-8 print:pb-8">
             {children}

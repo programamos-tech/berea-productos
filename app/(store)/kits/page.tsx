@@ -7,6 +7,7 @@ import {
   resolveKitSalePriceCents,
 } from "@/lib/product-kits";
 import { getStorefrontCartQuantityByKitId } from "@/lib/storefront-cart";
+import { getStorefrontTenant } from "@/lib/storefront-tenant";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { storeShellClass } from "@/lib/store-theme";
 
@@ -14,7 +15,11 @@ export const dynamic = "force-dynamic";
 
 export default async function KitsPage() {
   const supabase = await createSupabaseServerClient();
-  const allKits = await fetchKitsWithItems(supabase, { publishedOnly: true });
+  const tenant = await getStorefrontTenant();
+  const allKits = await fetchKitsWithItems(supabase, {
+    publishedOnly: true,
+    tenantId: tenant.id,
+  });
   const kits = allKits
     .filter((k) => kitIsAvailable(k, "storefront"))
     .map((k) => {

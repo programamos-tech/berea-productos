@@ -30,7 +30,7 @@ export async function assertCanOnboardTenants(): Promise<
 
   const email = perm.email || undefined;
 
-  if (perm.jobRole === "owner" || isPlatformAdminEmail(email)) {
+  if (perm.jobRole === "owner" || perm.isPlatformOperator || isPlatformAdminEmail(email)) {
     return { ok: true, userId: perm.userId, email };
   }
 

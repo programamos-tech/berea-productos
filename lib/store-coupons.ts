@@ -124,8 +124,9 @@ export async function fetchStorefrontCouponDiscountPercentForProduct(
 /** Primer cupón elegible para el banner superior (orden + vigencia). */
 export async function fetchBannerStoreCoupon(
   supabase: SupabaseClient,
+  tenantId?: string,
 ): Promise<StoreCouponBannerPayload | null> {
-  const { data, error } = await supabase
+  let q = supabase
     .from("store_coupons")
     .select(
       "id, banner_message, code, is_enabled, show_in_banner, starts_at, ends_at, sort_order, created_at",
@@ -134,6 +135,8 @@ export async function fetchBannerStoreCoupon(
     .eq("show_in_banner", true)
     .order("sort_order", { ascending: true })
     .order("created_at", { ascending: true });
+  if (tenantId) q = q.eq("tenant_id", tenantId);
+  const { data, error } = await q;
 
   if (error || !data?.length) {
     return null;
@@ -172,16 +175,19 @@ export type StoreCheckoutCouponMatch = {
 export async function findActiveStoreCouponForCheckout(
   supabase: SupabaseClient,
   rawCode: string,
+  tenantId?: string,
 ): Promise<StoreCheckoutCouponMatch | null> {
   const needle = rawCode.trim().toLowerCase();
   if (!needle) {
     return null;
   }
 
-  const { data, error } = await supabase
+  let couponQuery = supabase
     .from("store_coupons")
     .select("id, code, discount_percent, is_enabled, starts_at, ends_at")
     .eq("is_enabled", true);
+  if (tenantId) couponQuery = couponQuery.eq("tenant_id", tenantId);
+  const { data, error } = await couponQuery;
 
   if (error || !data?.length) {
     return null;

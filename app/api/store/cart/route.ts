@@ -22,6 +22,7 @@ import {
   type StoreCartUpsellProduct,
 } from "@/lib/store-cart-upsells";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getStorefrontTenant } from "@/lib/storefront-tenant";
 
 export const dynamic = "force-dynamic";
 
@@ -56,6 +57,7 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const onlySuggestions = url.searchParams.get("only") === "suggestions";
   const supabase = await createSupabaseServerClient();
+  const tenant = await getStorefrontTenant();
 
   if (onlySuggestions) {
     const exclude = String(url.searchParams.get("exclude") ?? "")
@@ -97,6 +99,7 @@ export async function GET(request: Request) {
             "id,name,price_cents,has_vat,image_path,fragrance_option_images,colors,stock_quantity,is_published",
           )
           .in("id", productIds)
+          .eq("tenant_id", tenant.id)
       : Promise.resolve({ data: [] as unknown[] }),
     kitIds.length > 0
       ? fetchKitsByIdsWithItems(supabase, kitIds)

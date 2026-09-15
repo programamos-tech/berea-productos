@@ -1,3 +1,4 @@
+import { leaveCustomerAccount } from "@/app/actions/admin/platform-accounts";
 import Image from "next/image";
 import Link from "next/link";
 import { AdminGlobalSearch } from "@/components/admin/AdminGlobalSearch";
@@ -32,6 +33,11 @@ type AdminTopBarProps = {
   showOrderNotifications?: boolean;
   displayName: string;
   email: string;
+  isPlatformOperator?: boolean;
+  actingAccount?: {
+    holderName: string;
+    storeName: string;
+  } | null;
 };
 
 const iconBtnClass =
@@ -41,9 +47,27 @@ export function AdminTopBar({
   showOrderNotifications = false,
   displayName,
   email,
+  isPlatformOperator = false,
+  actingAccount = null,
 }: AdminTopBarProps) {
   return (
     <header className="sticky top-0 z-50 w-full min-w-0 max-w-full overflow-visible border-b border-zinc-200 bg-white/90 backdrop-blur-md print:hidden dark:border-zinc-800 dark:bg-zinc-900/90">
+      {actingAccount ? (
+        <div className="flex min-h-9 items-center justify-between gap-2 border-b border-zinc-800 bg-zinc-900 px-3 py-1.5 text-[12px] text-zinc-100 sm:px-6">
+          <p className="min-w-0 truncate">
+            <span className="font-semibold">Cuenta de {actingAccount.holderName}</span>
+            <span className="text-zinc-400"> · {actingAccount.storeName}</span>
+          </p>
+          <form action={leaveCustomerAccount}>
+            <button
+              type="submit"
+              className="shrink-0 rounded-md px-2 py-0.5 font-medium text-zinc-300 transition hover:bg-zinc-800 hover:text-white"
+            >
+              Cambiar
+            </button>
+          </form>
+        </div>
+      ) : null}
       <div className="flex h-14 min-w-0 max-w-full items-center gap-2 px-3 sm:h-16 sm:gap-3 sm:px-6">
         <Link
           href="/admin"
@@ -99,6 +123,7 @@ export function AdminTopBar({
           <AdminUserMenu
             displayName={displayName}
             email={email}
+            isPlatformOperator={isPlatformOperator}
             avatar={
               <AdminUserAvatar
                 displayName={displayName}

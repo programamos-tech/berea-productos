@@ -1,6 +1,6 @@
-import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 import { getCachedStorefrontCouponDiscounts } from "@/lib/store-public-cache";
+import { createStorefrontAnonClient, storefrontTenantSlugFromHeaders } from "@/lib/storefront-tenant";
 import { filterRowsWithStorefrontImage } from "@/lib/storefront-product-image";
 
 const UUID_RE =
@@ -27,23 +27,32 @@ export async function GET(request: Request) {
     return NextResponse.json({ products: [] });
   }
 
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !key) {
+  const slug = storefrontTenantSlugFromHeaders(request.headers);
+  let supabase;
+  try {
+    supabase = createStorefrontAnonClient(slug);
+  } catch {
     return NextResponse.json(
       { error: "Missing Supabase env" },
       { status: 500 },
     );
   }
 
-  const supabase = createClient(url, key);
-  const { data, error } = await supabase
+  const { data: tenant } = await supabase
+    .from("tenants")
+    .select("id")
+    .eq("slug", slug)
+    .maybeSingle();
+
+  let query = supabase
     .from("products")
     .select(
       "id,name,brand,description,price_cents,has_vat,image_path,stock_quantity,size_options,size_value,size_unit,fragrance_options",
     )
     .eq("is_published", true)
     .in("id", ids);
+  if (tenant?.id) query = query.eq("tenant_id", tenant.id);
+  const { data, error } = await query;
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

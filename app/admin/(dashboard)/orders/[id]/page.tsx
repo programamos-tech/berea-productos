@@ -66,7 +66,12 @@ export default async function AdminOrderDetailPage({ params, searchParams }: Pro
     lineDiscountAmountCents: Math.max(0, Number(it.line_discount_amount_cents ?? 0)),
   }));
 
-  const invoiceRef = ventaNumeroReferencia(id);
+  const invoiceRef = ventaNumeroReferencia(
+    id,
+    "wompi_transaction_id" in order && order.wompi_transaction_id != null
+      ? String(order.wompi_transaction_id)
+      : null,
+  );
 
   const customerId =
     order.customer_id != null && String(order.customer_id).trim().length > 0

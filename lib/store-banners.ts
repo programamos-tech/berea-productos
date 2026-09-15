@@ -15,14 +15,17 @@ export type StoreBannerRow = {
 export async function fetchPublishedBanners(
   supabase: SupabaseClient,
   placement: StoreBannerPlacement,
+  tenantId?: string,
 ): Promise<StoreBannerRow[]> {
-  const { data, error } = await supabase
+  let q = supabase
     .from("store_banners")
     .select("id,placement,image_path,href,alt_text,sort_order,is_published")
     .eq("placement", placement)
     .eq("is_published", true)
     .order("sort_order", { ascending: true })
     .order("created_at", { ascending: true });
+  if (tenantId) q = q.eq("tenant_id", tenantId);
+  const { data, error } = await q;
 
   if (error) return [];
   return (data ?? []) as StoreBannerRow[];

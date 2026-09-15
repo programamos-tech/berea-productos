@@ -14,8 +14,6 @@ import {
 import { STORE_CARD_PRIORITY_COUNT } from "@/lib/store-image";
 import { storeShellClass } from "@/lib/store-theme";
 
-export const revalidate = 300;
-
 const STORE_HIGHLIGHTS = [
   {
     title: "Productos 100% originales de la más alta calidad",

@@ -9,12 +9,13 @@ export type VentaOrderRow = {
   total_cents: number;
   created_at: string;
   wompi_reference: string | null;
+  wompi_transaction_id: string | null;
   customer_email: string | null;
 };
 
 /** Columnas presentes en prod y local (sin checkout_payment_method). */
 const VENTAS_SELECT =
-  "id,status,customer_name,total_cents,created_at,wompi_reference,customer_email";
+  "id,status,customer_name,total_cents,created_at,wompi_reference,wompi_transaction_id,customer_email";
 
 type VentasFilterOpts = {
   q?: string;

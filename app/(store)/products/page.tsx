@@ -1,3 +1,4 @@
+import { getStorefrontTenant } from "@/lib/storefront-tenant";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { CatalogKitsSection } from "@/components/store/CatalogKitsSection";
 import { CatalogListingHero } from "@/components/store/CatalogListingHero";
@@ -114,6 +115,7 @@ export default async function ProductsPage({ searchParams }: Props) {
   }
 
   const supabase = await createSupabaseServerClient();
+  const tenant = await getStorefrontTenant();
   const filterCategoryIds = categoryId
     ? []
     : parseProductsCategoriesFilterParam(firstSearchParam(sp.categories));
@@ -123,8 +125,9 @@ export default async function ProductsPage({ searchParams }: Props) {
       ? supabase
           .from("categories")
           .select("name,listing_hero_image_path,listing_hero_alt_text")
-          .eq("id", categoryId)
-          .maybeSingle()
+      .eq("id", categoryId)
+      .eq("tenant_id", tenant.id)
+      .maybeSingle()
       : Promise.resolve({ data: null }),
     getCachedAllCategoryRows(),
   ]);
@@ -223,7 +226,8 @@ export default async function ProductsPage({ searchParams }: Props) {
           "id,name,brand,price_cents,has_vat,image_path,stock_quantity,size_options,size_value,size_unit,fragrance_options,created_at",
           { count: "exact" },
         )
-        .eq("is_published", true),
+        .eq("is_published", true)
+        .eq("tenant_id", tenant.id),
     );
 
     if (categoryFilterId && expandedCategoryIds?.length) {

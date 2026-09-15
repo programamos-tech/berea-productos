@@ -1,5 +1,6 @@
 import { cache } from "react";
 import { headers } from "next/headers";
+import { resolveActingCustomerTenant } from "@/lib/platform-operator-server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
   DEFAULT_TENANT_SLUG,
@@ -22,7 +23,12 @@ export type TenantRef = {
  * Resolve the active tenant for this request (host header → tenants row).
  * Falls back to Aleya so legacy domains / local keep working.
  */
-export async function getRequestTenant(): Promise<TenantRef> {
+async function getRequestTenantUncached(): Promise<TenantRef> {
+  const acting = await resolveActingCustomerTenant();
+  if (acting) {
+    return { id: acting.id, slug: acting.slug, name: acting.name };
+  }
+
   const h = await headers();
   const fromMiddleware = h.get(TENANT_SLUG_HEADER)?.trim();
   const fromHost = resolveTenantFromHost(h.get("host")).slug;
@@ -59,6 +65,8 @@ export async function getRequestTenant(): Promise<TenantRef> {
 
   return { id: aleya.id, slug: aleya.slug, name: aleya.name };
 }
+
+export const getRequestTenant = cache(getRequestTenantUncached);
 
 async function getTenantBrandForRequestUncached(): Promise<InvoiceBrandFields> {
   const tenant = await getRequestTenant();

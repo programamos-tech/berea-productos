@@ -6,19 +6,28 @@ import {
   type CollaboratorJobRole,
   type PermissionMap,
 } from "@/lib/admin-permissions";
+import { resolveActingCustomerTenant } from "@/lib/platform-operator-server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 const ADMIN_AUTH_TIMEOUT_MS = 12_000;
 
-async function loadAdminPermissionsUncached(): Promise<{
+export type AdminSession = {
   userId: string;
   permissions: PermissionMap;
   jobRole: CollaboratorJobRole;
   tenantId: string;
   tenantSlug: string;
+  tenantName: string;
   displayName: string;
   email: string;
-} | null> {
+  isPlatformOperator: boolean;
+  actingAccount: {
+    holderName: string;
+    storeName: string;
+  } | null;
+};
+
+async function loadAdminPermissionsUncached(): Promise<AdminSession | null> {
   const supabase = await createSupabaseServerClient();
   const authResult = (await withTimeout(
     supabase.auth.getUser(),
@@ -31,7 +40,7 @@ async function loadAdminPermissionsUncached(): Promise<{
     supabase
       .from("profiles")
       .select(
-        "permissions, job_role, tenant_id, display_name, tenants!inner(slug)",
+        "permissions, job_role, tenant_id, display_name, is_platform_operator, tenants!inner(slug, name)",
       )
       .eq("id", user.id)
       .maybeSingle(),
@@ -51,20 +60,32 @@ async function loadAdminPermissionsUncached(): Promise<{
 
   if (!row) return null;
 
-  const tenantId = row.tenant_id as string | null;
-  if (!tenantId) {
+  const homeTenantId = row.tenant_id as string | null;
+  if (!homeTenantId) {
     console.error("[admin] profiles: missing tenant_id");
     return null;
   }
 
-  const tenantsJoin = row.tenants as { slug?: string } | { slug?: string }[] | null;
-  const tenantSlug = Array.isArray(tenantsJoin)
-    ? tenantsJoin[0]?.slug
-    : tenantsJoin?.slug;
-  if (!tenantSlug) {
+  const tenantsJoin = row.tenants as
+    | { slug?: string; name?: string }
+    | { slug?: string; name?: string }[]
+    | null;
+  const homeTenant = Array.isArray(tenantsJoin) ? tenantsJoin[0] : tenantsJoin;
+  const homeSlug = homeTenant?.slug;
+  const homeName = homeTenant?.name ?? "";
+  if (!homeSlug) {
     console.error("[admin] profiles: missing tenant slug");
     return null;
   }
+
+  const isPlatformOperator = row.is_platform_operator === true;
+  const acting = isPlatformOperator
+    ? await resolveActingCustomerTenant()
+    : null;
+
+  const tenantId = acting?.id ?? homeTenantId;
+  const tenantSlug = acting?.slug ?? homeSlug;
+  const tenantName = acting?.name ?? homeName;
 
   const jobRole = normalizeCollaboratorJobRole(row.job_role as string | null);
   const permissions = mergePermissionsWithDefaults(
@@ -86,8 +107,13 @@ async function loadAdminPermissionsUncached(): Promise<{
     jobRole,
     tenantId,
     tenantSlug,
+    tenantName,
     displayName,
     email,
+    isPlatformOperator,
+    actingAccount: acting
+      ? { holderName: acting.accountHolderName, storeName: acting.name }
+      : null,
   };
 }
 
