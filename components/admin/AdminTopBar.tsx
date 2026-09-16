@@ -6,8 +6,6 @@ import { AdminThemeToggle } from "@/components/admin/AdminThemeToggle";
 import { AdminUserAvatar } from "@/components/admin/AdminUserAvatar";
 import { AdminUserMenu } from "@/components/admin/AdminUserMenu";
 import { LeaveAccountButton } from "@/components/admin/LeaveAccountButton";
-import { BranchSwitcher } from "@/components/admin/BranchSwitcher";
-import type { BranchContext } from "@/lib/branch-context";
 
 type AdminTopBarProps = {
   showOrderNotifications?: boolean;
@@ -22,7 +20,6 @@ type AdminTopBarProps = {
     name: string;
     logoSrc: string;
   };
-  branchContext: BranchContext;
 };
 
 export function AdminTopBar({
@@ -32,7 +29,6 @@ export function AdminTopBar({
   isPlatformOperator = false,
   actingAccount = null,
   accountBrand,
-  branchContext,
 }: AdminTopBarProps) {
   return (
     <header className="sticky top-0 z-50 w-full min-w-0 max-w-full overflow-visible border-b border-zinc-200 bg-white/90 backdrop-blur-md print:hidden dark:border-zinc-800 dark:bg-zinc-900/90">
@@ -71,11 +67,7 @@ export function AdminTopBar({
         </div>
 
         <div className="flex shrink-0 items-center gap-1 sm:gap-2">
-          <div className="flex items-center gap-1 lg:hidden">
-            <BranchSwitcher
-              active={branchContext.active}
-              branches={branchContext.available}
-            />
+          <div className="lg:hidden">
             <AdminThemeToggle />
           </div>
           <Link

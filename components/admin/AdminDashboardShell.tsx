@@ -94,7 +94,6 @@ export function AdminDashboardShell({
             isPlatformOperator={sessionUser.isPlatformOperator}
             actingAccount={actingAccount}
             accountBrand={accountBrand}
-            branchContext={branchContext}
           />
           <main className="relative z-0 min-h-0 min-w-0 max-w-full flex-1 overflow-x-clip overflow-y-visible p-3 pb-[calc(4.75rem+env(safe-area-inset-bottom,0px))] sm:p-4 md:p-6 lg:pb-6 print:bg-white print:p-8 print:pb-8">
             {children}

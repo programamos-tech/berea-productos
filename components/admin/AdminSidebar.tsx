@@ -38,7 +38,6 @@ function Icon(props: SVGProps<SVGSVGElement> & { children: React.ReactNode }) {
 }
 
 const STOREFRONT_HREF = "/";
-const CUENTA_HREF = "/admin/cuenta";
 
 function IconExternalStore({ className }: { className?: string }) {
   return (
@@ -81,23 +80,20 @@ function SidebarProductBrand({ account }: { account: AccountBrand }) {
 
 function SidebarTenantAccount({
   account,
+  branchContext,
   showStorefront,
   onNavigate,
 }: {
   account: AccountBrand;
+  branchContext: BranchContext;
   showStorefront: boolean;
   onNavigate: () => void;
 }) {
-  const href = showStorefront ? STOREFRONT_HREF : CUENTA_HREF;
-  const title = showStorefront
-    ? `Ver tienda · ${account.name}`
-    : `Cuenta · ${account.name}`;
-
   const cardClass =
-    "group mt-3.5 flex w-full items-center gap-2.5 rounded-lg border border-zinc-200 bg-white px-2.5 py-2 text-left transition dark:border-zinc-700/70 dark:bg-zinc-900/55";
+    "mt-3.5 flex w-full items-center gap-2.5 rounded-lg border border-zinc-200 bg-white px-2.5 py-2 text-left dark:border-zinc-700/70 dark:bg-zinc-900/55";
 
-  const inner = (
-    <>
+  return (
+    <div className={cardClass}>
       <span className="relative flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-md ring-1 ring-zinc-200/80 dark:ring-zinc-700">
         <Image
           src={account.logoSrc}
@@ -108,28 +104,29 @@ function SidebarTenantAccount({
         />
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-[13px] font-medium text-zinc-800 dark:text-zinc-200">
-          {account.name}
+        <span className="block text-[9px] font-semibold uppercase tracking-[0.12em] text-zinc-500 dark:text-zinc-400">
+          Sucursal activa
         </span>
+        <BranchSwitcher
+          active={branchContext.active}
+          branches={branchContext.available}
+          appearance="bare"
+          className="mt-0.5 w-full"
+        />
       </span>
       {showStorefront ? (
-        <span className={`shrink-0 opacity-70 ${sidebarInkMuted}`} aria-hidden>
+        <Link
+          href={STOREFRONT_HREF}
+          prefetch
+          onClick={() => onNavigate()}
+          title={`Ver tienda · ${account.name}`}
+          className={`shrink-0 rounded-md p-1 opacity-70 transition hover:bg-zinc-100 hover:opacity-100 dark:hover:bg-zinc-800 ${sidebarInkMuted}`}
+        >
           <IconExternalStore className="size-4" />
-        </span>
+          <span className="sr-only">Ver tienda</span>
+        </Link>
       ) : null}
-    </>
-  );
-
-  return (
-    <Link
-      href={href}
-      prefetch
-      onClick={() => onNavigate()}
-      title={title}
-      className={`${cardClass} hover:border-zinc-300 hover:bg-zinc-50 dark:hover:border-zinc-600 dark:hover:bg-zinc-900/80`}
-    >
-      {inner}
-    </Link>
+    </div>
   );
 }
 
@@ -159,22 +156,9 @@ function SidebarHeader({
           Gestiona tu tienda de productos
         </p>
       </div>
-      <div className="mt-3 w-full rounded-xl border border-zinc-200 bg-zinc-50/80 p-2.5 text-left dark:border-zinc-700/70 dark:bg-zinc-900/55">
-        <p className="mb-1.5 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-500 dark:text-zinc-400">
-          <span className="size-1.5 rounded-full bg-emerald-500" aria-hidden />
-          Sucursal activa
-        </p>
-        <BranchSwitcher
-          active={branchContext.active}
-          branches={branchContext.available}
-          className="w-full"
-        />
-        <p className="mt-1.5 truncate text-[10px] text-zinc-500 dark:text-zinc-400">
-          Viendo datos de {branchContext.active.name}
-        </p>
-      </div>
       <SidebarTenantAccount
         account={account}
+        branchContext={branchContext}
         showStorefront={showStorefront}
         onNavigate={onNavigate}
       />
@@ -375,7 +359,6 @@ function AdminSidebarFallback({
             Gestiona tu tienda de productos
           </p>
         </div>
-        <div className="mt-3 h-[4.5rem] w-full rounded-xl border border-zinc-200 bg-zinc-50/80 dark:border-zinc-700/70 dark:bg-zinc-900/55" />
         <div className="mt-3.5 flex w-full items-center gap-2.5 rounded-lg border border-zinc-200 bg-white px-2.5 py-2 dark:border-zinc-700/70 dark:bg-zinc-900/55">
           <span className="size-8 shrink-0 overflow-hidden rounded-md bg-zinc-200 dark:bg-zinc-700" />
           <span className="min-w-0 flex-1">
