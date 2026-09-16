@@ -110,22 +110,27 @@ function normalizeAdminProductRow(row: unknown): AdminProductRowModel {
 }
 
 function ProductStockStatus({ stock }: { stock: number }) {
+  const baseClass =
+    "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide";
   if (stock <= 0) {
     return (
-      <span className="inline-flex rounded-md border border-rose-200 bg-rose-50 px-2 py-1 text-[11px] font-medium text-rose-700 dark:border-rose-900/70 dark:bg-rose-950/40 dark:text-rose-300">
+      <span className={`${baseClass} bg-red-50 text-red-900 ring-1 ring-red-200/90 dark:bg-red-950/45 dark:text-red-200 dark:ring-red-800/50`}>
+        <span className="size-1.5 rounded-full bg-current opacity-75" aria-hidden />
         Sin stock
       </span>
     );
   }
   if (stock <= LOW_STOCK_MAX) {
     return (
-      <span className="inline-flex rounded-md border border-amber-200 bg-amber-50 px-2 py-1 text-[11px] font-medium text-amber-800 dark:border-amber-900/70 dark:bg-amber-950/40 dark:text-amber-300">
+      <span className={`${baseClass} bg-amber-50 text-amber-900 ring-1 ring-amber-200/90 dark:bg-amber-950/40 dark:text-amber-200 dark:ring-amber-800/55`}>
+        <span className="size-1.5 rounded-full bg-current opacity-75" aria-hidden />
         Stock bajo
       </span>
     );
   }
   return (
-    <span className="inline-flex rounded-md border border-emerald-200 bg-emerald-50 px-2 py-1 text-[11px] font-medium text-emerald-700 dark:border-emerald-900/70 dark:bg-emerald-950/40 dark:text-emerald-300">
+    <span className={`${baseClass} bg-emerald-50 text-emerald-900 ring-1 ring-emerald-200/90 dark:bg-emerald-950/50 dark:text-emerald-200 dark:ring-emerald-800/60`}>
+      <span className="size-1.5 rounded-full bg-current opacity-75" aria-hidden />
       Con stock
     </span>
   );
@@ -391,7 +396,7 @@ export default async function AdminProductsPage({
                             {p.name}
                           </p>
                           <p className="mt-1.5 text-xs text-zinc-500">
-                            Categoría{" "}
+                            Catálogo{" "}
                             <span className="font-medium text-zinc-700 dark:text-zinc-300">
                               {p.categoryName}
                             </span>
@@ -427,8 +432,8 @@ export default async function AdminProductsPage({
                 <div className="hidden min-w-0 overflow-x-auto lg:block">
                   <table className="w-full min-w-[960px] table-fixed text-left text-sm">
                     <colgroup>
-                      <col className="w-[25%]" />
                       <col className="w-[12%]" />
+                      <col className="w-[25%]" />
                       <col className="w-[17%]" />
                       <col className="w-[8%]" />
                       <col className="w-[13%]" />
@@ -437,12 +442,12 @@ export default async function AdminProductsPage({
                     </colgroup>
                     <thead>
                       <tr className="border-b border-zinc-200/70 dark:border-zinc-800">
-                        <th className={thClass}>Equipo / accesorio</th>
                         <th className={thClass}>Referencia</th>
-                        <th className={thClass}>Categoría</th>
+                        <th className={thClass}>Producto</th>
+                        <th className={thClass}>Catálogo</th>
                         <th className={`${thClass} text-right`}>Stock</th>
-                        <th className={thClass}>Estado</th>
-                        <th className={`${thClass} text-right`}>Precio</th>
+                        <th className={thClass}>Estado del stock</th>
+                        <th className={`${thClass} text-right`}>Precio de venta</th>
                         <th className={`${thClass} pr-2 text-right`}>Acciones</th>
                       </tr>
                     </thead>
@@ -452,6 +457,11 @@ export default async function AdminProductsPage({
                           key={p.id}
                           className="border-b border-zinc-100/80 last:border-0 transition hover:bg-zinc-50/50 dark:border-zinc-800/80 dark:hover:bg-zinc-900/40"
                         >
+                          <td
+                            className={`${tdClass} font-mono text-xs tabular-nums text-zinc-600 dark:text-zinc-400`}
+                          >
+                            {p.code}
+                          </td>
                           <td className={`${tdClass} min-w-0`}>
                             <Link
                               href={`/admin/products/${p.id}`}
@@ -459,11 +469,6 @@ export default async function AdminProductsPage({
                             >
                               {p.name}
                             </Link>
-                          </td>
-                          <td
-                            className={`${tdClass} font-mono text-xs tabular-nums text-zinc-600 dark:text-zinc-400`}
-                          >
-                            {p.code}
                           </td>
                           <td className={`${tdClass} truncate text-xs text-zinc-500 dark:text-zinc-400`}>
                             {p.categoryName}
