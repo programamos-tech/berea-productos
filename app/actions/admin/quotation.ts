@@ -17,6 +17,7 @@ import {
   type KitComponentDeduction,
   type ProductKitRow,
 } from "@/lib/product-kits";
+import { fetchCurrentBranchInventoryMap } from "@/lib/branch-inventory";
 import { fetchKitsByIdsWithItems } from "@/lib/load-product-kits";
 import {
   allocateAvailableStock,
@@ -137,12 +138,16 @@ export async function convertQuotationToSaleAction(formData: FormData) {
       .select("id,name,stock_local,stock_warehouse")
       .in("id", productIds);
     if (pErr || !products) redirectOrder(orderId, "db");
+    const inventory = await fetchCurrentBranchInventoryMap(
+      supabase,
+      products.map((product) => String(product.id)),
+    );
     for (const p of products ?? []) {
       productById.set(String(p.id), {
         id: String(p.id),
         name: String(p.name ?? "Producto"),
-        stock_local: p.stock_local as number | null,
-        stock_warehouse: p.stock_warehouse as number | null,
+        stock_local: inventory.get(String(p.id)) ?? 0,
+        stock_warehouse: 0,
       });
     }
   }
@@ -230,13 +235,10 @@ export async function convertQuotationToSaleAction(formData: FormData) {
 
   async function undoStockDecrement() {
     for (const [pid, orig] of productById) {
-      await supabase
-        .from("products")
-        .update({
-          stock_local: orig.stock_local,
-          stock_warehouse: orig.stock_warehouse,
-        })
-        .eq("id", pid);
+      await supabase.rpc("set_product_branch_stock", {
+        p_product_id: pid,
+        p_quantity: Math.max(0, Math.floor(Number(orig.stock_local ?? 0))),
+      });
     }
     for (const row of items ?? []) {
       if (!row.product_id && !row.kit_id) continue;
@@ -249,26 +251,10 @@ export async function convertQuotationToSaleAction(formData: FormData) {
         })
         .eq("id", row.id);
     }
-  }
-
-  for (const [pid, orig] of productById) {
-    const next = working.get(pid);
-    if (!next) continue;
-    const origL = Math.max(0, Math.floor(Number(orig.stock_local ?? 0)));
-    const origW = Math.max(0, Math.floor(Number(orig.stock_warehouse ?? 0)));
-    if (next.local === origL && next.warehouse === origW) continue;
-    const { error: stockErr } = await supabase
-      .from("products")
-      .update({
-        stock_local: next.local,
-        stock_warehouse: next.warehouse,
-      })
-      .eq("id", pid);
-    if (stockErr) {
-      console.error("convertQuotationToSaleAction stock", stockErr);
-      await undoStockDecrement();
-      redirectOrder(orderId, "db");
-    }
+    await supabase
+      .from("orders")
+      .update({ stock_deducted_at: null })
+      .eq("id", orderId);
   }
 
   for (const line of productLineDeductions) {
@@ -300,6 +286,22 @@ export async function convertQuotationToSaleAction(formData: FormData) {
       await undoStockDecrement();
       redirectOrder(orderId, "db");
     }
+  }
+
+  const { error: stockErr } = await supabase.rpc(
+    "decrement_order_branch_inventory",
+    {
+      p_order_id: orderId,
+      p_items: [...qtyByProduct.entries()].map(([product_id, quantity]) => ({
+        product_id,
+        quantity,
+      })),
+    },
+  );
+  if (stockErr) {
+    console.error("convertQuotationToSaleAction branch stock", stockErr);
+    await undoStockDecrement();
+    redirectOrder(orderId, "stock");
   }
 
   const { data: paidRow, error: updErr } = await supabase

@@ -30,6 +30,7 @@ import {
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
 import { getRequestTenant } from "@/lib/tenant-context";
+import { withStorefrontBranchStock } from "@/lib/storefront-branch-inventory";
 import { imagePathForProductLine } from "@/lib/product-line-image";
 import {
   shouldUnoptimizeStorageImageUrl,
@@ -455,7 +456,11 @@ export default async function CheckoutPage({
       )
       .in("id", productIds)
       .eq("tenant_id", tenant.id);
-    products = data ?? [];
+    products = await withStorefrontBranchStock(
+      supabase,
+      tenant.id,
+      data ?? [],
+    );
   }
 
   const byId = new Map(products.map((p) => [p.id, p]));

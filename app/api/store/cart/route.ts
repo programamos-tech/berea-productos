@@ -23,6 +23,10 @@ import {
 } from "@/lib/store-cart-upsells";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getStorefrontTenant } from "@/lib/storefront-tenant";
+import {
+  withStorefrontBranchStock,
+  withStorefrontKitStock,
+} from "@/lib/storefront-branch-inventory";
 
 export const dynamic = "force-dynamic";
 
@@ -91,7 +95,7 @@ export async function GET(request: Request) {
     });
   }
 
-  const [productsRes, kits] = await Promise.all([
+  const [productsRes, rawKits] = await Promise.all([
     productIds.length > 0
       ? supabase
           .from("products")
@@ -106,7 +110,7 @@ export async function GET(request: Request) {
       : Promise.resolve([]),
   ]);
 
-  const productRows = (productsRes.data ?? []) as {
+  const productRowsRaw = (productsRes.data ?? []) as {
     id: string;
     name: string;
     price_cents: number;
@@ -117,6 +121,10 @@ export async function GET(request: Request) {
     stock_quantity: number | null;
     is_published: boolean | null;
   }[];
+  const [productRows, kits] = await Promise.all([
+    withStorefrontBranchStock(supabase, tenant.id, productRowsRaw),
+    withStorefrontKitStock(supabase, tenant.id, rawKits),
+  ]);
 
   const byId = new Map(productRows.map((p) => [p.id, p]));
   const stockMap = new Map(

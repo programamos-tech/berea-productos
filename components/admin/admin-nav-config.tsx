@@ -153,6 +153,16 @@ export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
         ),
       },
       {
+        href: "/admin/sucursales",
+        label: "Sucursales",
+        icon: (
+          <Icon>
+            <path d="M4 21V7l8-4 8 4v14" />
+            <path d="M8 21v-5h8v5M8 9h.01M12 9h.01M16 9h.01M8 12h.01M12 12h.01M16 12h.01" />
+          </Icon>
+        ),
+      },
+      {
         href: "/admin/actividades",
         label: "Registros",
         icon: (

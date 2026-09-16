@@ -1,6 +1,10 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies, headers } from "next/headers";
 import {
+  ACTIVE_BRANCH_HEADER,
+  isBranchId,
+} from "@/lib/branch-context";
+import {
   ACTING_TENANT_HEADER,
   isActingTenantId,
 } from "@/lib/platform-operator";
@@ -18,11 +22,15 @@ export async function createSupabaseServerClient() {
     resolveTenantFromHost(headerList.get("host")).slug ||
     DEFAULT_TENANT_SLUG;
   const actingTenantId = headerList.get(ACTING_TENANT_HEADER)?.trim() ?? "";
+  const activeBranchId = headerList.get(ACTIVE_BRANCH_HEADER)?.trim() ?? "";
   const extraHeaders: Record<string, string> = {
     [TENANT_SLUG_HEADER]: tenantSlug,
   };
   if (isActingTenantId(actingTenantId)) {
     extraHeaders[ACTING_TENANT_HEADER] = actingTenantId;
+  }
+  if (isBranchId(activeBranchId)) {
+    extraHeaders[ACTIVE_BRANCH_HEADER] = activeBranchId;
   }
 
   return createServerClient(

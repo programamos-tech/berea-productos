@@ -420,6 +420,17 @@ export async function createProduct(formData: FormData) {
   if (!(await verifyInsertedRowInDev(supabase, "products", id))) {
     redirect("/admin/products/new?error=db");
   }
+  const { error: initialStockError } = await supabase.rpc(
+    "set_product_branch_stock",
+    {
+      p_product_id: id,
+      p_quantity: stockLocal,
+    },
+  );
+  if (initialStockError) {
+    console.error("createProduct branch inventory", initialStockError);
+    redirect("/admin/products/new?error=db");
+  }
   void logAdminActivity(supabase, {
     actorId: user.id,
     actionType: "product_created",
@@ -569,6 +580,17 @@ export async function updateProduct(productId: string, formData: FormData) {
     }
     redirect(`/admin/products/${productId}/edit?error=db`);
   }
+  const { error: branchStockError } = await supabase.rpc(
+    "set_product_branch_stock",
+    {
+      p_product_id: productId,
+      p_quantity: stockLocal,
+    },
+  );
+  if (branchStockError) {
+    console.error("updateProduct branch inventory", branchStockError);
+    redirect(`/admin/products/${productId}/edit?error=db`);
+  }
 
   await logAdminActivity(supabase, {
     actorId: user.id,
@@ -685,31 +707,25 @@ export async function adjustProductStock(productId: string, formData: FormData) 
     nextLocal = Math.max(0, Math.floor(Number(row.next_local ?? 0)));
     nextWh = Math.max(0, Math.floor(Number(row.next_warehouse ?? 0)));
   } else {
-    const { data: row, error: fetchErr } = await supabase
-      .from("products")
-      .select("stock_local, stock_warehouse")
-      .eq("id", productId)
-      .maybeSingle();
-
-    if (fetchErr || !row) {
+    const { data: inventoryRows, error: fetchErr } = await supabase.rpc(
+      "current_branch_inventory",
+      { p_product_ids: [productId] },
+    );
+    const current = Array.isArray(inventoryRows) ? inventoryRows[0] : null;
+    if (fetchErr || !current) {
       console.error("adjustProductStock fetch", fetchErr);
       redirect("/admin/products?error=stock");
     }
 
-    curLocal = Math.max(0, Math.floor(Number(row.stock_local ?? 0)));
-    curWh = Math.max(0, Math.floor(Number(row.stock_warehouse ?? 0)));
-    nextLocal = isWarehouse ? curLocal : qty;
-    nextWh = isWarehouse ? qty : curWh;
+    curLocal = Math.max(0, Math.floor(Number(current.quantity ?? 0)));
+    curWh = 0;
+    nextLocal = qty;
+    nextWh = 0;
     nextLocal = Math.min(Math.max(0, nextLocal), Number.MAX_SAFE_INTEGER);
-    nextWh = Math.min(Math.max(0, nextWh), Number.MAX_SAFE_INTEGER);
-
-    const { error } = await supabase
-      .from("products")
-      .update({
-        stock_local: nextLocal,
-        stock_warehouse: nextWh,
-      })
-      .eq("id", productId);
+    const { error } = await supabase.rpc("set_product_branch_stock", {
+      p_product_id: productId,
+      p_quantity: nextLocal,
+    });
 
     if (error) redirect("/admin/products?error=stock");
   }
@@ -744,11 +760,11 @@ export async function transferProductStock(productId: string, formData: FormData
   if (!user) redirect("/admin/login");
   await assertActionPermission("stock_transferir");
 
-  const direction = String(formData.get("direction") ?? "local_to_warehouse");
+  const fromBranchId = String(formData.get("from_branch_id") ?? "").trim();
+  const toBranchId = String(formData.get("to_branch_id") ?? "").trim();
   const qty = parseNonNegInt(formData.get("quantity"));
   const transferPage = `/admin/products/${productId}/transfer`;
   const returnTo = safeStockAdjustReturnTo(String(formData.get("return_to") ?? ""));
-  const fromLocal = direction === "local_to_warehouse";
 
   const claim = await claimAdminFormToken(
     supabase,
@@ -768,10 +784,11 @@ export async function transferProductStock(productId: string, formData: FormData
   }
 
   const { data: rpcRows, error: rpcErr } = await supabase.rpc(
-    "transfer_product_stock_qty",
+    "transfer_product_stock_between_branches",
     {
       p_product_id: productId,
-      p_direction: fromLocal ? "local_to_warehouse" : "warehouse_to_local",
+      p_from_branch_id: fromBranchId,
+      p_to_branch_id: toBranchId,
       p_qty: qty,
     },
   );
@@ -784,19 +801,20 @@ export async function transferProductStock(productId: string, formData: FormData
   const row = Array.isArray(rpcRows) ? rpcRows[0] : rpcRows;
   if (!row) redirect(`${transferPage}?error=transfer`);
 
-  const curLocal = Math.max(0, Math.floor(Number(row.previous_local ?? 0)));
-  const curWh = Math.max(0, Math.floor(Number(row.previous_warehouse ?? 0)));
-  const nextLocal = Math.max(0, Math.floor(Number(row.next_local ?? 0)));
-  const nextWh = Math.max(0, Math.floor(Number(row.next_warehouse ?? 0)));
+  const curLocal = Math.max(0, Math.floor(Number(row.previous_from ?? 0)));
+  const curWh = Math.max(0, Math.floor(Number(row.previous_to ?? 0)));
+  const nextLocal = Math.max(0, Math.floor(Number(row.next_from ?? 0)));
+  const nextWh = Math.max(0, Math.floor(Number(row.next_to ?? 0)));
 
   await logAdminActivity(supabase, {
     actorId: user.id,
     actionType: "stock_transferred",
     entityType: "product",
     entityId: productId,
-    summary: `${fromLocal ? "Tienda → depósito" : "Depósito → tienda"} · ${qty} u.`,
+    summary: `Traslado entre sucursales · ${qty} u.`,
     metadata: {
-      direction,
+      from_branch_id: fromBranchId,
+      to_branch_id: toBranchId,
       quantity: qty,
       previous_local: curLocal,
       previous_warehouse: curWh,

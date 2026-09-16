@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireAdminApiSession } from "@/lib/admin-api";
 import { ventaNumeroReferencia } from "@/lib/ventas-sales";
+import { fetchCurrentBranchInventoryMap } from "@/lib/branch-inventory";
 
 function sanitizeIlikeQuery(q: string) {
   return q.replace(/[%_\\,]/g, "").slice(0, 80);
@@ -160,9 +161,18 @@ export async function GET(request: Request) {
       ...o,
       invoiceRef: ventaNumeroReferencia(o.id),
     }));
+  const productRows = productsRes.data ?? [];
+  const inventory = await fetchCurrentBranchInventoryMap(
+    supabase,
+    productRows.map((row) => String(row.id)),
+  );
 
   return NextResponse.json({
-    products: productsRes.data ?? [],
+    products: productRows.map((row) => ({
+      ...row,
+      stock_local: inventory.get(String(row.id)) ?? 0,
+      stock_quantity: inventory.get(String(row.id)) ?? 0,
+    })),
     customers: customersRes.data ?? [],
     orders,
   });

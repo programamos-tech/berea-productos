@@ -1,4 +1,6 @@
 import { cache } from "react";
+import { loadBranchContext } from "@/lib/branch-server";
+import type { BranchContext } from "@/lib/branch-context";
 import { withTimeout } from "@/lib/async-timeout";
 import {
   mergePermissionsWithDefaults,
@@ -26,6 +28,7 @@ export type AdminSession = {
   displayName: string;
   email: string;
   isPlatformOperator: boolean;
+  branchContext: BranchContext;
   actingAccount: {
     holderName: string;
     storeName: string;
@@ -98,6 +101,11 @@ async function loadAdminPermissionsUncached(): Promise<AdminSession | null> {
         brand: homeTenant?.brand,
       });
   const tenantName = chrome.name;
+  const branchContext = await loadBranchContext(tenantId);
+  if (!branchContext) {
+    console.error("[admin] branches: no accessible active branch");
+    return null;
+  }
 
   const jobRole = normalizeCollaboratorJobRole(row.job_role as string | null);
   const permissions = mergePermissionsWithDefaults(
@@ -124,6 +132,7 @@ async function loadAdminPermissionsUncached(): Promise<AdminSession | null> {
     displayName,
     email,
     isPlatformOperator,
+    branchContext,
     actingAccount: acting
       ? { holderName: acting.accountHolderName, storeName: acting.name }
       : null,

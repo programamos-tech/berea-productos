@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   inviteCollaboratorAction,
   updateCollaboratorAction,
@@ -25,6 +25,7 @@ import {
 } from "@/lib/admin-permissions";
 import { adminPanelLgClass } from "@/lib/admin-ui";
 import { slugUsername } from "@/lib/collaborator-utils";
+import type { BranchRef } from "@/lib/branch-context";
 
 const cardClass = `${adminPanelLgClass} p-5 sm:p-6`;
 
@@ -40,6 +41,7 @@ export type CollaboratorInitial = {
   avatar_variant: string | null;
   permissions: PermissionMap | null;
   is_active: boolean;
+  branchIds?: string[];
 };
 
 export function NewCollaboratorHeader() {
@@ -108,9 +110,14 @@ type Props = {
   mode: "create" | "edit";
   storeLabel?: string;
   initial?: CollaboratorInitial;
+  branches?: BranchRef[];
 };
 
-export function NewCollaboraboratorForm({ mode, initial }: Props) {
+export function NewCollaboraboratorForm({
+  mode,
+  initial,
+  branches = [],
+}: Props) {
   const [displayName, setDisplayName] = useState(initial?.display_name ?? "");
   const [loginUsername, setLoginUsername] = useState(initial?.login_username ?? "");
   const [usernameTouched, setUsernameTouched] = useState(mode === "edit");
@@ -126,11 +133,6 @@ export function NewCollaboraboratorForm({ mode, initial }: Props) {
       initial?.job_role ?? "sales",
     ),
   );
-
-  useEffect(() => {
-    if (mode === "edit" || usernameTouched) return;
-    setLoginUsername(slugUsername(displayName));
-  }, [displayName, mode, usernameTouched]);
 
   const avatarSeed = useMemo(
     () => (email.trim() || displayName.trim() || "berea-house").toLowerCase(),
@@ -214,7 +216,13 @@ export function NewCollaboraboratorForm({ mode, initial }: Props) {
                   name="display_name"
                   required
                   value={displayName}
-                  onChange={(e) => setDisplayName(e.target.value)}
+                  onChange={(e) => {
+                    const nextName = e.target.value;
+                    setDisplayName(nextName);
+                    if (mode === "create" && !usernameTouched) {
+                      setLoginUsername(slugUsername(nextName));
+                    }
+                  }}
                   placeholder="Ej. María López"
                   className={inputClass}
                 />
@@ -333,6 +341,38 @@ export function NewCollaboraboratorForm({ mode, initial }: Props) {
                   </label>
                 </div>
               ) : null}
+              {jobRole !== "owner" && jobRole !== "admin" ? (
+                <fieldset className="sm:col-span-2">
+                  <legend className={labelClass}>Sucursales asignadas</legend>
+                  <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                    {branches.map((branch) => (
+                      <label
+                        key={branch.id}
+                        className="flex items-center gap-2 rounded-lg border border-zinc-200 px-3 py-2 text-sm dark:border-zinc-700"
+                      >
+                        <input
+                          type="checkbox"
+                          name="branch_ids"
+                          value={branch.id}
+                          defaultChecked={
+                            initial?.branchIds?.includes(branch.id) ??
+                            branch.isDefault
+                          }
+                          className={checkboxClass}
+                        />
+                        {branch.name}
+                      </label>
+                    ))}
+                  </div>
+                  <p className="mt-1.5 text-xs text-zinc-500">
+                    El colaborador solo podrá cambiar entre estas sucursales.
+                  </p>
+                </fieldset>
+              ) : (
+                <p className="sm:col-span-2 text-xs text-zinc-500">
+                  Propietarios y administradores tienen acceso a todas las sucursales.
+                </p>
+              )}
             </div>
           </section>
         </div>

@@ -18,6 +18,7 @@ import {
 } from "@/lib/storefront-tenant";
 import { withStorefrontImage } from "@/lib/storefront-product-image";
 import type { TenantRef } from "@/lib/tenant-context";
+import { withStorefrontKitStock } from "@/lib/storefront-branch-inventory";
 
 const STORE_CACHE_REVALIDATE_SEC = 300;
 
@@ -221,10 +222,16 @@ export type HomeFeaturedKit = {
 async function loadAvailableStorefrontKits(
   tenant: TenantRef,
 ): Promise<HomeFeaturedKit[]> {
-  const kits = await fetchKitsWithItems(publicSupabase(tenant.slug), {
+  const supabase = publicSupabase(tenant.slug);
+  const rawKits = await fetchKitsWithItems(supabase, {
     publishedOnly: true,
     tenantId: tenant.id,
   });
+  const kits = await withStorefrontKitStock(
+    supabase,
+    tenant.id,
+    rawKits,
+  );
   return kits
     .filter((k) => kitIsAvailable(k, "storefront"))
     .map((k) => {

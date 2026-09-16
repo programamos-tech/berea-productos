@@ -14,6 +14,7 @@ import {
 import { storagePublicObjectUrl } from "@/lib/storage-public-url";
 import { requireAdminPermission } from "@/lib/require-admin-permission";
 import { SALE_VAT_PERCENT } from "@/lib/product-vat-price";
+import { fetchCurrentBranchInventoryMap } from "@/lib/branch-inventory";
 
 export const dynamic = "force-dynamic";
 
@@ -112,10 +113,8 @@ export default async function EditProductPage({ params, searchParams }: Props) {
   const p = product as ProductRow;
   const cats = categories ?? [];
   const categoryId = p.category_id ?? "";
-  const stockLocal = Math.max(
-    0,
-    Math.floor(Number(p.stock_local ?? p.stock_quantity ?? 0)),
-  );
+  const inventory = await fetchCurrentBranchInventoryMap(supabase, [id]);
+  const stockLocal = inventory.get(id) ?? 0;
   const referenceLabel =
     (p.reference ?? "").trim() || shortSku(id);
 
@@ -158,7 +157,7 @@ export default async function EditProductPage({ params, searchParams }: Props) {
           costCents: p.cost_cents ?? 0,
           costGrossCents: p.cost_gross_cents ?? 0,
           stockLocal,
-          stockWarehouse: p.stock_warehouse ?? 0,
+          stockWarehouse: 0,
           isPublished: p.is_published === true,
           sizeRows: sizeRowsForEditForm(p),
           hasExpiration: p.has_expiration === true,

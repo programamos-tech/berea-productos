@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { adminProductsNameReferenceOrIlikeFilter } from "@/lib/admin-product-search-filter";
 import { requireAdminApiSession } from "@/lib/admin-api";
+import { fetchCurrentBranchInventoryMap } from "@/lib/branch-inventory";
 
 function sanitizeIlikeQuery(q: string) {
   return q.replace(/[%_\\,]/g, "").slice(0, 80);
@@ -37,5 +38,16 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ products: data ?? [] });
+  const rows = data ?? [];
+  const inventory = await fetchCurrentBranchInventoryMap(
+    supabase,
+    rows.map((row) => String(row.id)),
+  );
+  return NextResponse.json({
+    products: rows.map((row) => ({
+      ...row,
+      stock_local: inventory.get(String(row.id)) ?? 0,
+      stock_quantity: inventory.get(String(row.id)) ?? 0,
+    })),
+  });
 }

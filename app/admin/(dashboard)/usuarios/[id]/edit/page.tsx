@@ -37,7 +37,7 @@ function errorMessage(code: string | undefined): string | null {
 }
 
 export default async function AdminEditColaboradorPage({ params, searchParams }: Props) {
-  await requireAdminPermission("colaboradores_gestionar");
+  const perm = await requireAdminPermission("colaboradores_gestionar");
   const { id } = await params;
   const sp = await searchParams;
   const err = typeof sp.error === "string" ? sp.error : undefined;
@@ -67,6 +67,10 @@ export default async function AdminEditColaboradorPage({ params, searchParams }:
     row.permissions as PermissionMap | null,
     jobRole,
   );
+  const { data: memberships } = await supabase
+    .from("profile_branch_memberships")
+    .select("branch_id")
+    .eq("profile_id", id);
 
   const initial = {
     profileId: row.id as string,
@@ -77,6 +81,7 @@ export default async function AdminEditColaboradorPage({ params, searchParams }:
     avatar_variant: (row.avatar_variant as string | null) ?? "A",
     permissions,
     is_active: row.is_active !== false,
+    branchIds: (memberships ?? []).map((item) => String(item.branch_id)),
   };
 
   const title =
@@ -90,7 +95,12 @@ export default async function AdminEditColaboradorPage({ params, searchParams }:
           {errorMessage(err)}
         </p>
       ) : null}
-      <NewCollaboraboratorForm mode="edit" storeLabel={storeBrand} initial={initial} />
+      <NewCollaboraboratorForm
+        mode="edit"
+        storeLabel={storeBrand}
+        initial={initial}
+        branches={perm.branchContext.available}
+      />
     </div>
   );
 }

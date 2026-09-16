@@ -43,7 +43,6 @@ export function NewProductForm({
   const [brand, setBrand] = useState("");
   const [categoryId, setCategoryId] = useState("");
   const [stockLocal, setStockLocal] = useState(0);
-  const [stockWarehouse, setStockWarehouse] = useState(0);
   const [costCents, setCostCents] = useState(0);
   const [costGrossCents, setCostGrossCents] = useState(0);
   const [priceCents, setPriceCents] = useState(0);
@@ -53,7 +52,7 @@ export function NewProductForm({
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
   const [fileLabel, setFileLabel] = useState("Ningún archivo seleccionado");
 
-  const totalStock = stockLocal + stockWarehouse;
+  const totalStock = stockLocal;
   const fmtStock = (n: number) =>
     n <= 0 ? "0" : formatQuantityInputGrouping(n);
   const categoryLabel =
@@ -296,10 +295,10 @@ export function NewProductForm({
 
           <section className={cardClass}>
             <h2 className={sectionTitle}>Control de stock</h2>
-            <div className="mt-5 grid gap-4 sm:grid-cols-2">
+            <div className="mt-5 max-w-xs">
               <div>
                 <label htmlFor="np-sl" className={labelClass}>
-                  Stock en local (mostrador)
+                  Stock en la sucursal activa
                 </label>
                 <ProductQuantityInput
                   id="np-sl"
@@ -308,29 +307,18 @@ export function NewProductForm({
                   onChange={setStockLocal}
                 />
               </div>
-              <div>
-                <label htmlFor="np-sw" className={labelClass}>
-                  Stock en bodega
-                </label>
-                <ProductQuantityInput
-                  id="np-sw"
-                  name="stock_warehouse"
-                  value={stockWarehouse}
-                  onChange={setStockWarehouse}
-                />
-              </div>
             </div>
+            <input type="hidden" name="stock_warehouse" value="0" />
             <div className="mt-4 rounded-lg border border-zinc-200/90 bg-white/60 px-4 py-3 text-sm text-zinc-800 dark:border-zinc-700 dark:bg-zinc-950/60 dark:text-zinc-200">
               Total inicial:{" "}
               <span className="font-medium tabular-nums">
                 {fmtStock(totalStock)} unidades
               </span>{" "}
-              (local + bodega)
+              en esta sucursal
             </div>
             <div className="mt-4 space-y-2 text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
               <p>
-                El stock en local refleja las unidades disponibles en el mostrador; la
-                bodega es tu inventario central.
+                El stock pertenece a la sucursal elegida en la barra superior.
               </p>
               <p>
                 Puedes ajustar cantidades después desde la lista de productos. La asignación
@@ -413,15 +401,9 @@ export function NewProductForm({
                   </dd>
                 </div>
                 <div className="flex justify-between gap-2">
-                  <dt className="text-zinc-500 dark:text-zinc-400">Stock local</dt>
+                  <dt className="text-zinc-500 dark:text-zinc-400">Stock sucursal</dt>
                   <dd className="tabular-nums text-zinc-900 dark:text-zinc-100">
                     {fmtStock(stockLocal)} unidades
-                  </dd>
-                </div>
-                <div className="flex justify-between gap-2">
-                  <dt className="text-zinc-500 dark:text-zinc-400">Stock bodega</dt>
-                  <dd className="tabular-nums text-zinc-900 dark:text-zinc-100">
-                    {fmtStock(stockWarehouse)} unidades
                   </dd>
                 </div>
                 <div className="flex justify-between gap-2 border-t border-zinc-200/80 pt-2 dark:border-zinc-700/80">

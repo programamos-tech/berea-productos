@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { mergeCategoryRowsForFilterMenu } from "@/lib/product-listing-facets";
 import { expandCategoryIdsFromRows } from "@/lib/store-category-group";
 import { withStorefrontImage } from "@/lib/storefront-product-image";
+import { withStorefrontBranchStock } from "@/lib/storefront-branch-inventory";
 
 const PRODUCT_SELECT =
   "id,name,brand,price_cents,has_vat,image_path,stock_quantity,size_options,size_value,size_unit,fragrance_options,created_at";
@@ -125,7 +126,10 @@ export async function fetchCatalogBrowseSections(
   allCategoryRows: { id: string; name: string; sort_order: number }[],
   tenantId?: string,
 ): Promise<CatalogBrowseSection[]> {
-  const previewRows = await fetchCatalogBrowsePreviewRows(supabase, tenantId);
+  const previewRowsRaw = await fetchCatalogBrowsePreviewRows(supabase, tenantId);
+  const previewRows = tenantId
+    ? await withStorefrontBranchStock(supabase, tenantId, previewRowsRaw)
+    : previewRowsRaw;
   const merged = mergeCategoryRowsForFilterMenu(allCategoryRows);
   const byCategoryId = new Map<string, BrowsePreviewRow[]>();
 

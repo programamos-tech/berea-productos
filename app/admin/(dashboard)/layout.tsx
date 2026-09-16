@@ -95,6 +95,7 @@ export default async function AdminDashboardLayout({
         name: perm.tenantName,
         logoSrc: perm.tenantLogoSrc,
       }}
+      branchContext={perm.branchContext}
     >
       {children}
     </AdminDashboardShell>

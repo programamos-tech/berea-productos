@@ -13,6 +13,11 @@ import {
 } from "@/lib/store-public-cache";
 import { STORE_CARD_PRIORITY_COUNT } from "@/lib/store-image";
 import { storeShellClass } from "@/lib/store-theme";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getStorefrontTenant } from "@/lib/storefront-tenant";
+import {
+  withStorefrontBranchStock,
+} from "@/lib/storefront-branch-inventory";
 
 const STORE_HIGHLIGHTS = [
   {
@@ -30,13 +35,23 @@ const STORE_HIGHLIGHTS = [
 ] as const;
 
 export default async function HomePage() {
-  const [heroBanners, featuredProducts, featuredKits, couponPctByProductId] =
+  const [heroBanners, featuredProductsRaw, featuredKitsRaw, couponPctByProductId] =
     await Promise.all([
       getCachedPublishedBanners("hero"),
       getCachedHomeFeaturedProducts(),
       getCachedHomeFeaturedKits(),
       getCachedStorefrontCouponDiscounts(),
     ]);
+  const [supabase, tenant] = await Promise.all([
+    createSupabaseServerClient(),
+    getStorefrontTenant(),
+  ]);
+  const featuredProducts = await withStorefrontBranchStock(
+    supabase,
+    tenant.id,
+    featuredProductsRaw,
+  );
+  const featuredKits = featuredKitsRaw;
 
   return (
     <div>

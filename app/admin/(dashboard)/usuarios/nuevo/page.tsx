@@ -31,7 +31,7 @@ function errorMessage(code: string | undefined): string | null {
 }
 
 export default async function AdminNuevoColaboradorPage({ searchParams }: Props) {
-  await requireAdminPermission("colaboradores_gestionar");
+  const perm = await requireAdminPermission("colaboradores_gestionar");
   const sp = await searchParams;
   const err = typeof sp.error === "string" ? sp.error : undefined;
   const banner = errorMessage(err);
@@ -44,7 +44,11 @@ export default async function AdminNuevoColaboradorPage({ searchParams }: Props)
           {banner}
         </p>
       ) : null}
-      <NewCollaboraboratorForm mode="create" storeLabel={storeBrand} />
+      <NewCollaboraboratorForm
+        mode="create"
+        storeLabel={storeBrand}
+        branches={perm.branchContext.available}
+      />
     </AdminNewPageShell>
   );
 }

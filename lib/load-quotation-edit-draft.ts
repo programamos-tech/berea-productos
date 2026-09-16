@@ -7,6 +7,7 @@ import {
 import { fetchKitsByIdsWithItems } from "@/lib/load-product-kits";
 import { ventaNumeroReferencia } from "@/lib/ventas-sales";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { fetchCurrentBranchInventoryMap } from "@/lib/branch-inventory";
 
 export type QuotationEditDraftLine = {
   productId: string;
@@ -126,6 +127,10 @@ export async function loadQuotationEditDraft(
   const productById = new Map(
     (productsRes.data ?? []).map((p) => [String(p.id), p]),
   );
+  const inventory = await fetchCurrentBranchInventoryMap(
+    supabase,
+    productIds,
+  );
   const kitById = new Map(kits.map((k) => [String(k.id), k]));
 
   const lines: QuotationEditDraftLine[] = [];
@@ -151,7 +156,7 @@ export async function loadQuotationEditDraft(
             ? String(p.reference).trim()
             : null,
         price_cents: Math.max(0, Math.floor(Number(p.price_cents ?? 0))),
-        stock_local: Math.max(0, Math.floor(Number(p.stock_local ?? 0))),
+        stock_local: inventory.get(String(p.id)) ?? 0,
         has_vat: Boolean(p.has_vat),
         vat_percent:
           p.vat_percent != null && Number.isFinite(Number(p.vat_percent))

@@ -19,6 +19,7 @@ import { storeShellClass } from "@/lib/store-theme";
 import { storagePublicObjectUrl } from "@/lib/storage-public-url";
 import { getStorefrontTenant } from "@/lib/storefront-tenant";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { withStorefrontKitStock } from "@/lib/storefront-branch-inventory";
 
 export const dynamic = "force-dynamic";
 
@@ -31,7 +32,12 @@ const loadPublishedKit = cache(async (id: string) => {
   if (!kit?.is_published) return null;
   const kitTenantId = (kit as { tenant_id?: string }).tenant_id;
   if (kitTenantId && kitTenantId !== tenant.id) return null;
-  return kit;
+  const [scopedKit] = await withStorefrontKitStock(
+    supabase,
+    tenant.id,
+    [kit],
+  );
+  return scopedKit ?? null;
 });
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {

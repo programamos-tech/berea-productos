@@ -17,6 +17,22 @@ function redirectNewError(code: string): never {
   redirect(`/admin/usuarios/nuevo?error=${encodeURIComponent(code)}`);
 }
 
+async function allowedMembershipBranchIds(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  tenantId: string,
+  rawIds: FormDataEntryValue[],
+): Promise<string[]> {
+  const requested = [...new Set(rawIds.map(String).filter(Boolean))];
+  if (requested.length === 0) return [];
+  const { data } = await supabase
+    .from("branches")
+    .select("id")
+    .eq("tenant_id", tenantId)
+    .eq("is_active", true)
+    .in("id", requested);
+  return (data ?? []).map((row) => String(row.id));
+}
+
 export async function inviteCollaboratorAction(formData: FormData) {
   const supabase = await createSupabaseServerClient();
   const {
@@ -66,12 +82,24 @@ export async function inviteCollaboratorAction(formData: FormData) {
     redirectNewError("validation");
   }
   const jobRole = jobRoleRaw;
+  const membershipBranchIds = await allowedMembershipBranchIds(
+    supabase,
+    perm.tenantId,
+    formData.getAll("branch_ids"),
+  );
+  if (
+    (jobRole === "sales" || jobRole === "inventory") &&
+    membershipBranchIds.length === 0
+  ) {
+    redirectNewError("validation");
+  }
 
   const loginUsername = (loginUsernameRaw || slugUsername(displayName)).toLowerCase();
 
   const { data: dupUser } = await service
     .from("profiles")
     .select("id")
+    .eq("tenant_id", perm.tenantId)
     .eq("login_username", loginUsername)
     .maybeSingle();
   if (dupUser) redirectNewError("duplicate_username");
@@ -115,6 +143,16 @@ export async function inviteCollaboratorAction(formData: FormData) {
     await service.auth.admin.deleteUser(uid);
     redirectNewError("db");
   }
+  if (membershipBranchIds.length > 0) {
+    const { error: membershipError } = await supabase.rpc(
+      "replace_profile_branch_memberships",
+      { p_profile_id: uid, p_branch_ids: membershipBranchIds },
+    );
+    if (membershipError) {
+      await service.auth.admin.deleteUser(uid);
+      redirectNewError("db");
+    }
+  }
 
   revalidatePath("/admin/usuarios");
   redirect("/admin/usuarios");
@@ -137,9 +175,18 @@ export async function updateCollaboratorAction(formData: FormData) {
     .maybeSingle();
   if (!myProfile) redirect("/admin/login?error=no_profile");
   await assertActionPermission("colaboradores_gestionar");
+  const perm = await loadAdminPermissions();
+  if (!perm?.tenantId) redirect("/admin/login");
 
   const profileId = String(formData.get("profile_id") ?? "").trim();
   if (!profileId) redirect("/admin/usuarios");
+  const { data: targetProfile } = await supabase
+    .from("profiles")
+    .select("id")
+    .eq("id", profileId)
+    .eq("tenant_id", perm.tenantId)
+    .maybeSingle();
+  if (!targetProfile?.id) redirect("/admin/usuarios");
 
   let service: ReturnType<typeof createSupabaseServiceClient>;
   try {
@@ -174,10 +221,22 @@ export async function updateCollaboratorAction(formData: FormData) {
     redirectEditError(profileId, "validation");
   }
   const jobRole = jobRoleRaw;
+  const membershipBranchIds = await allowedMembershipBranchIds(
+    supabase,
+    perm.tenantId,
+    formData.getAll("branch_ids"),
+  );
+  if (
+    (jobRole === "sales" || jobRole === "inventory") &&
+    membershipBranchIds.length === 0
+  ) {
+    redirectEditError(profileId, "validation");
+  }
 
   const { data: other } = await service
     .from("profiles")
     .select("id")
+    .eq("tenant_id", perm.tenantId)
     .eq("login_username", loginUsername)
     .neq("id", profileId)
     .maybeSingle();
@@ -194,9 +253,16 @@ export async function updateCollaboratorAction(formData: FormData) {
       avatar_variant: avatarVariant,
       is_active: isActive,
     })
-    .eq("id", profileId);
+    .eq("id", profileId)
+    .eq("tenant_id", perm.tenantId);
 
   if (uErr) redirectEditError(profileId, "db");
+
+  const { error: membershipError } = await supabase.rpc(
+    "replace_profile_branch_memberships",
+    { p_profile_id: profileId, p_branch_ids: membershipBranchIds },
+  );
+  if (membershipError) redirectEditError(profileId, "db");
 
   if (password.length >= 6) {
     const { error: pwErr } = await service.auth.admin.updateUserById(profileId, {

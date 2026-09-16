@@ -12,6 +12,7 @@ import {
 import { fetchStorefrontCouponDiscountPercentForProduct } from "@/lib/store-coupons";
 import { productHasStorefrontImage } from "@/lib/storefront-product-image";
 import { storeShellClass } from "@/lib/store-theme";
+import { withStorefrontBranchStock } from "@/lib/storefront-branch-inventory";
 
 export const dynamic = "force-dynamic";
 
@@ -40,6 +41,11 @@ export default async function ProductDetailPage({ params }: Props) {
     .maybeSingle();
 
   if (!product || !productHasStorefrontImage(product.image_path)) notFound();
+  const [productWithStock] = await withStorefrontBranchStock(
+    supabase,
+    tenant.id,
+    [product],
+  );
 
   const catRel = product.categories as { name?: string } | null | undefined;
   const categoryName =
@@ -151,7 +157,7 @@ export default async function ProductDetailPage({ params }: Props) {
         name={product.name}
         description={product.description}
         priceCents={product.price_cents}
-        stockQuantity={product.stock_quantity}
+        stockQuantity={productWithStock?.stock_quantity ?? 0}
         imageUrl={img}
         fragranceImageUrls={fragranceImageUrls}
         sizeLabels={sizeLabels}

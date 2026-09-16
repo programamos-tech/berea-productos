@@ -56,6 +56,28 @@ export default async function AdminUsuariosRolesPage() {
     .order("created_at", { ascending: true });
 
   const emailByUserId = new Map<string, string>();
+  const branchNamesByProfile = new Map<string, string[]>();
+  const profileIds = (profiles ?? []).map((row) => String(row.id));
+  if (profileIds.length > 0) {
+    const { data: memberships } = await supabase
+      .from("profile_branch_memberships")
+      .select("profile_id,branches(name)")
+      .in("profile_id", profileIds);
+    for (const item of memberships ?? []) {
+      const joined = item.branches as
+        | { name?: string }
+        | { name?: string }[]
+        | null;
+      const branch = Array.isArray(joined) ? joined[0] : joined;
+      const name = String(branch?.name ?? "").trim();
+      if (!name) continue;
+      const key = String(item.profile_id);
+      branchNamesByProfile.set(key, [
+        ...(branchNamesByProfile.get(key) ?? []),
+        name,
+      ]);
+    }
+  }
   try {
     const service = createSupabaseServiceClient();
     const { data } = await service.auth.admin.listUsers({ perPage: 200 });
@@ -100,7 +122,11 @@ export default async function AdminUsuariosRolesPage() {
         jobLabel: jobLabel(jobRole),
         jobToneClass: jobToneClass(jobRole),
         active: row.is_active !== false,
-        branchLabel: row.branch_label?.trim() || null,
+        branchLabel:
+          branchNamesByProfile.get(row.id)?.join(", ") ||
+          (jobRole === "owner" || jobRole === "admin"
+            ? "Todas"
+            : row.branch_label?.trim() || null),
         avatarSeed,
       };
     },

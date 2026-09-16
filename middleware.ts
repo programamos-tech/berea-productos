@@ -4,6 +4,11 @@ import { NextResponse, type NextRequest } from "next/server";
 import { withTimeout } from "@/lib/async-timeout";
 import { hasSupabaseAuthCookie } from "@/lib/supabase-auth-cookie";
 import {
+  ACTIVE_BRANCH_COOKIE,
+  ACTIVE_BRANCH_HEADER,
+  isBranchId,
+} from "@/lib/branch-context";
+import {
   ACTING_TENANT_COOKIE,
   ACTING_TENANT_HEADER,
   isActingTenantId,
@@ -86,6 +91,11 @@ function withTenantHeaders(
     if (isActingTenantId(acting)) {
       response.headers.set(ACTING_TENANT_HEADER, acting);
       request.headers.set(ACTING_TENANT_HEADER, acting);
+    }
+    const branch = request.cookies.get(ACTIVE_BRANCH_COOKIE)?.value?.trim();
+    if (isBranchId(branch)) {
+      response.headers.set(ACTIVE_BRANCH_HEADER, branch);
+      request.headers.set(ACTIVE_BRANCH_HEADER, branch);
     }
   }
   return response;

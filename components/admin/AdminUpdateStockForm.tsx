@@ -44,7 +44,7 @@ export function AdminUpdateStockForm({
   returnTo,
 }: Props) {
   const [movementMode, setMovementMode] = useState<MovementMode>("add");
-  const [location, setLocation] = useState<StockLoc>("local");
+  const [location] = useState<StockLoc>("local");
   const [quantity, setQuantity] = useState(0);
   const [submissionId] = useState(newSubmissionId);
 
@@ -99,14 +99,13 @@ export function AdminUpdateStockForm({
       {/* 1. Dónde */}
       <section className="pt-6">
         <p className={stepLabel}>1 · ¿Dónde ajustás?</p>
-        <div className="mt-3 grid grid-cols-2 gap-3">
+        <div className="mt-3 grid gap-3">
           {(
             [
-              { id: "local" as const, title: "Local", stock: stockLocal },
               {
-                id: "warehouse" as const,
-                title: "Bodega",
-                stock: stockWarehouse,
+                id: "local" as const,
+                title: "Sucursal activa",
+                stock: stockLocal,
               },
             ] as const
           ).map((opt) => {
@@ -115,7 +114,6 @@ export function AdminUpdateStockForm({
               <button
                 key={opt.id}
                 type="button"
-                onClick={() => setLocation(opt.id)}
                 aria-pressed={selected}
                 className={`rounded-xl border px-4 py-4 text-left transition ${
                   selected
@@ -174,7 +172,7 @@ export function AdminUpdateStockForm({
               </span>
               <span className="mt-0.5 block text-xs leading-relaxed text-zinc-500">
                 Ideal cuando te llegó mercancía o una compra. Se agrega al stock
-                actual de {location === "local" ? "local" : "bodega"}.
+                actual de la sucursal activa.
               </span>
             </span>
           </button>
@@ -207,7 +205,7 @@ export function AdminUpdateStockForm({
               </span>
               <span className="mt-0.5 block text-xs leading-relaxed text-zinc-500">
                 Ideal después de un conteo. El número que pongas será el stock
-                final en {location === "local" ? "local" : "bodega"}.
+                final en la sucursal activa.
               </span>
             </span>
           </button>
@@ -252,7 +250,7 @@ export function AdminUpdateStockForm({
         <div className="mt-3 flex flex-wrap items-end gap-x-4 gap-y-2">
           <div>
             <p className="text-xs text-zinc-500">
-              {location === "local" ? "Local" : "Bodega"} ahora
+              Sucursal activa ahora
             </p>
             <p className="mt-0.5 text-xl font-semibold tabular-nums text-zinc-500 line-through decoration-zinc-300 dark:decoration-zinc-600">
               {fmtQty(currentForLoc)}
@@ -287,7 +285,7 @@ export function AdminUpdateStockForm({
         >
           {movementMode === "add"
             ? quantity > 0
-              ? `Sumar ${fmtQty(quantity)} a ${location === "local" ? "local" : "bodega"}`
+              ? `Sumar ${fmtQty(quantity)} a la sucursal`
               : "Ingresá una cantidad"
             : `Guardar stock en ${fmtQty(quantity)}`}
         </AdminFormSubmitButton>

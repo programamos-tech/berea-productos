@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getCachedStorefrontCouponDiscounts } from "@/lib/store-public-cache";
 import { createStorefrontAnonClient, storefrontTenantSlugFromHeaders } from "@/lib/storefront-tenant";
 import { filterRowsWithStorefrontImage } from "@/lib/storefront-product-image";
+import { withStorefrontBranchStock } from "@/lib/storefront-branch-inventory";
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -58,7 +59,10 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  const byId = new Map((data ?? []).map((p) => [p.id as string, p]));
+  const scopedData = tenant?.id
+    ? await withStorefrontBranchStock(supabase, String(tenant.id), data ?? [])
+    : data ?? [];
+  const byId = new Map(scopedData.map((p) => [p.id as string, p]));
   const couponPctByProductId = await getCachedStorefrontCouponDiscounts();
   const products = filterRowsWithStorefrontImage(
     ids

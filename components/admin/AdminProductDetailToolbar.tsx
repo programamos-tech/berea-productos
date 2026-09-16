@@ -47,6 +47,13 @@ export function AdminProductDetailToolbar({
       >
         Stock
       </button>
+      <Link
+        href={`/admin/products/${productId}/transfer`}
+        className={btnIdle}
+        title="Trasladar entre sucursales"
+      >
+        Trasladar
+      </Link>
       <ProductDeleteConfirmForm
         productId={productId}
         productName={productName}

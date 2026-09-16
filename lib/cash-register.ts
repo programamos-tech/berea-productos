@@ -8,6 +8,7 @@ import {
   type PosPaymentBreakdownRow,
 } from "@/lib/pos-payment-breakdown";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { fetchCurrentBranchInventoryMap } from "@/lib/branch-inventory";
 
 export type CashSessionStatus = "open" | "closed";
 
@@ -230,16 +231,17 @@ export async function enrichStockOutLinesRemaining(
   ];
   if (needIds.length === 0) return lines;
 
+  const branchInventory = await fetchCurrentBranchInventoryMap(
+    supabase,
+    needIds,
+  );
   const stockById = new Map<string, number>();
   const { data: products } = await supabase
     .from("products")
     .select("id,stock_local")
     .in("id", needIds);
   for (const p of products ?? []) {
-    stockById.set(
-      String(p.id),
-      Math.max(0, Math.floor(Number(p.stock_local ?? 0))),
-    );
+    stockById.set(String(p.id), branchInventory.get(String(p.id)) ?? 0);
   }
 
   return lines.map((l) =>
@@ -476,6 +478,10 @@ export async function fetchCashDayLiveTotals(
     { name: string; reference: string | null; stock_remaining: number | null }
   >();
   if (productIds.length > 0) {
+    const branchInventory = await fetchCurrentBranchInventoryMap(
+      supabase,
+      productIds,
+    );
     const { data: products } = await supabase
       .from("products")
       .select("id,name,reference,stock_local")
@@ -487,7 +493,7 @@ export async function fetchCashDayLiveTotals(
           p.reference == null || String(p.reference).trim() === ""
             ? null
             : String(p.reference).trim(),
-        stock_remaining: Math.max(0, Math.floor(Number(p.stock_local ?? 0))),
+        stock_remaining: branchInventory.get(String(p.id)) ?? 0,
       });
     }
   }

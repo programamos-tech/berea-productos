@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { fetchCurrentBranchInventoryMap } from "@/lib/branch-inventory";
 import {
   fetchOrderItemsInChunks,
   fetchOrdersCreatedInReportYmdWindow,
@@ -259,22 +260,7 @@ async function fetchCurrentStockByProduct(
   supabase: SupabaseClient,
   productIds: string[],
 ): Promise<Map<string, number>> {
-  const map = new Map<string, number>();
-  for (let i = 0; i < productIds.length; i += 120) {
-    const part = productIds.slice(i, i + 120);
-    const { data, error } = await supabase
-      .from("products")
-      .select("id,stock_quantity")
-      .in("id", part);
-    if (error) {
-      console.error("[aleya-export] current stock:", error.message);
-      break;
-    }
-    for (const p of data ?? []) {
-      map.set(String(p.id), floorQty(p.stock_quantity));
-    }
-  }
-  return map;
+  return fetchCurrentBranchInventoryMap(supabase, productIds);
 }
 
 function buildStockStats(params: {
@@ -831,7 +817,7 @@ export function buildAleyaExportMultiMonthCsv(
   const chunks: string[] = [];
   for (let i = 0; i < payloads.length; i++) {
     const p = payloads[i]!;
-    let body = buildAleyaExportCsv(p).replace(/^\uFEFF/, "").replace(/\r?\n$/, "");
+    const body = buildAleyaExportCsv(p).replace(/^\uFEFF/, "").replace(/\r?\n$/, "");
     if (i > 0) {
       chunks.push("");
       chunks.push(`===== ${p.monthLabel} ${p.yearMonth} =====`);

@@ -53,6 +53,37 @@ export async function fetchAdminProductsList(
   const safeSize = Math.min(100, Math.max(10, Math.floor(pageSize)));
   const from = (safePage - 1) * safeSize;
   const to = from + safeSize - 1;
+  let stockFilteredIds: string[] | null = null;
+  if (status === "low" || status === "out") {
+    const { data: stockRows, error: stockError } = await supabase.rpc(
+      "current_branch_inventory",
+      { p_product_ids: null },
+    );
+    if (stockError) {
+      return {
+        list: [],
+        error: stockError,
+        usedFallbackSelect: false,
+        totalCount: 0,
+      };
+    }
+    stockFilteredIds = (stockRows ?? [])
+      .filter((row: { quantity?: number }) => {
+        const quantity = Math.max(0, Math.floor(Number(row.quantity ?? 0)));
+        return status === "out"
+          ? quantity === 0
+          : quantity > 0 && quantity <= lowStockMax;
+      })
+      .map((row: { product_id: string }) => String(row.product_id));
+    if (!stockFilteredIds || stockFilteredIds.length === 0) {
+      return {
+        list: [],
+        error: null,
+        usedFallbackSelect: false,
+        totalCount: 0,
+      };
+    }
+  }
 
   for (let i = 0; i < PRODUCT_SELECT_ATTEMPTS.length; i++) {
     const sel = PRODUCT_SELECT_ATTEMPTS[i]!;
@@ -86,6 +117,7 @@ export async function fetchAdminProductsList(
     if (categoryId && sel.includes("category_id")) {
       query = query.eq("category_id", categoryId);
     }
+    if (stockFilteredIds) query = query.in("id", stockFilteredIds);
     switch (status) {
       case "active":
         query = query.eq("is_published", true);
@@ -94,10 +126,8 @@ export async function fetchAdminProductsList(
         query = query.eq("is_published", false);
         break;
       case "low":
-        query = query.gt("stock_quantity", 0).lte("stock_quantity", lowStockMax);
         break;
       case "out":
-        query = query.eq("stock_quantity", 0);
         break;
       default:
         break;

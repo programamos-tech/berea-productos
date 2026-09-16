@@ -12,6 +12,7 @@ import {
   type CartLine,
 } from "@/lib/cart";
 import { getStorefrontTenant } from "@/lib/storefront-tenant";
+import { withStorefrontBranchStock } from "@/lib/storefront-branch-inventory";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { expandFragranceLabels } from "@/lib/fragrance-options";
 import { fetchKitWithItems } from "@/lib/load-product-kits";
@@ -61,6 +62,11 @@ export async function addToCart(
     .maybeSingle();
 
   if (!row || !productHasStorefrontImage(row.image_path)) return;
+  const [scopedRow] = await withStorefrontBranchStock(
+    supabase,
+    tenant.id,
+    [{ id: productId, ...row }],
+  );
 
   const fragOptsRaw = Array.isArray(row.fragrance_options)
     ? row.fragrance_options.filter(
@@ -70,7 +76,7 @@ export async function addToCart(
   const fragOpts = expandFragranceLabels(fragOptsRaw);
   if (fragOpts.length > 1 && !frag) return;
 
-  const stock = Math.max(0, Math.floor(Number(row.stock_quantity ?? 0)));
+  const stock = Math.max(0, Math.floor(Number(scopedRow?.stock_quantity ?? 0)));
   if (stock <= 0) return;
 
   const cart = await getCart();
@@ -112,7 +118,12 @@ export async function setLineQuantity(
     .eq("is_published", true)
     .eq("tenant_id", tenant.id)
     .maybeSingle();
-  const stock = Math.max(0, Math.floor(Number(row?.stock_quantity ?? 0)));
+  const [scopedRow] = row
+    ? await withStorefrontBranchStock(supabase, tenant.id, [
+        { id: productId, ...row },
+      ])
+    : [];
+  const stock = Math.max(0, Math.floor(Number(scopedRow?.stock_quantity ?? 0)));
 
   const cart = await getCart();
   let next: CartLine[];
@@ -178,7 +189,12 @@ export async function buyNowFromDetail(formData: FormData) {
 
   if (!row) redirect("/products");
 
-  const stock = Math.max(0, Math.floor(Number(row.stock_quantity ?? 0)));
+  const [scopedRow] = await withStorefrontBranchStock(
+    supabase,
+    tenant.id,
+    [{ id: productId, ...row }],
+  );
+  const stock = Math.max(0, Math.floor(Number(scopedRow?.stock_quantity ?? 0)));
   if (stock <= 0) redirect("/products");
 
   const fragOptsRaw = Array.isArray(row.fragrance_options)

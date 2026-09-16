@@ -8,6 +8,7 @@ import { AdminOrderNotificationsProvider } from "@/components/admin/AdminOrderNo
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { AdminTopBar } from "@/components/admin/AdminTopBar";
 import { CashRegisterMorningGateModal } from "@/components/admin/CashRegisterMorningGateModal";
+import type { BranchContext } from "@/lib/branch-context";
 import { pathAllowedDuringCashGate } from "@/lib/cash-register-gate";
 import { isAdminPathInMaintenance } from "@/lib/admin-nav-maintenance";
 import {
@@ -23,6 +24,7 @@ export function AdminDashboardShell({
   sessionUser,
   actingAccount = null,
   accountBrand,
+  branchContext,
 }: {
   children: React.ReactNode;
   /** Hrefs del menú lateral permitidos para esta sesión (incluye `/admin/cuenta` y `/`). */
@@ -48,6 +50,7 @@ export function AdminDashboardShell({
     name: string;
     logoSrc: string;
   };
+  branchContext: BranchContext;
 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -71,7 +74,10 @@ export function AdminDashboardShell({
   }, [pathname, router]);
 
   return (
-    <AdminOrderNotificationsProvider enabled={notifyNewWebOrders && !mustOpen}>
+    <AdminOrderNotificationsProvider
+      enabled={notifyNewWebOrders && !mustOpen}
+      branchId={branchContext.active.id}
+    >
       <AdminAuthVisibilityKeepAlive />
       <div className="isolate flex min-h-dvh max-w-full items-stretch antialiased">
         <AdminSidebar allowedNavHrefs={allowedNavHrefs} account={accountBrand} />
@@ -84,6 +90,7 @@ export function AdminDashboardShell({
             isPlatformOperator={sessionUser.isPlatformOperator}
             actingAccount={actingAccount}
             accountBrand={accountBrand}
+            branchContext={branchContext}
           />
           <main className="relative z-0 min-h-0 min-w-0 max-w-full flex-1 overflow-x-clip overflow-y-visible p-3 pb-[calc(4.75rem+env(safe-area-inset-bottom,0px))] sm:p-4 md:p-6 lg:pb-6 print:bg-white print:p-8 print:pb-8">
             {children}

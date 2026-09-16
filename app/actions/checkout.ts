@@ -37,8 +37,9 @@ import {
   SHIPPING_CITY_OTHER,
 } from "@/lib/store-shipping";
 import { getPublicSiteUrl } from "@/lib/public-site-url";
-import { deductOrderItemsStock, deductTransferWebOrderStock } from "@/lib/storefront-order-stock";
+import { deductTransferWebOrderStock } from "@/lib/storefront-order-stock";
 import { randomUUID } from "node:crypto";
+import { fetchBranchInventoryMap } from "@/lib/branch-inventory";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -154,6 +155,15 @@ export async function startCheckout(formData: FormData) {
 
   const supabase = createSupabaseServiceClient();
   const tenant = await getRequestTenant();
+  const { data: defaultBranch } = await supabase
+    .from("branches")
+    .select("id")
+    .eq("tenant_id", tenant.id)
+    .eq("is_default", true)
+    .eq("is_active", true)
+    .maybeSingle();
+  if (!defaultBranch?.id) redirect("/checkout?error=stock");
+  const storefrontBranchId = String(defaultBranch.id);
   const productIds = [...new Set(productLines.map((l) => l.productId))];
   let products: {
     id: string;
@@ -182,6 +192,15 @@ export async function startCheckout(formData: FormData) {
       redirect("/checkout?error=products");
     }
     products = data ?? [];
+    const inventory = await fetchBranchInventoryMap(
+      supabase,
+      storefrontBranchId,
+      products.map((product) => String(product.id)),
+    );
+    products = products.map((product) => ({
+      ...product,
+      stock_quantity: inventory.get(String(product.id)) ?? 0,
+    }));
   }
 
   const byId = new Map(products.map((p) => [p.id, p]));
@@ -195,6 +214,33 @@ export async function startCheckout(formData: FormData) {
     });
     for (const kit of allKits) {
       kitsById.set(kit.id, kit);
+    }
+    const kitProductIds = [
+      ...new Set(
+        allKits.flatMap((kit) =>
+          (kit.items ?? []).map((item) => String(item.product_id)),
+        ),
+      ),
+    ];
+    const kitInventory = await fetchBranchInventoryMap(
+      supabase,
+      storefrontBranchId,
+      kitProductIds,
+    );
+    for (const kit of allKits) {
+      kit.items = (kit.items ?? []).map((item) => ({
+        ...item,
+        products:
+          item.products && !Array.isArray(item.products)
+            ? {
+                ...item.products,
+                stock_local:
+                  kitInventory.get(String(item.product_id)) ?? 0,
+                stock_quantity:
+                  kitInventory.get(String(item.product_id)) ?? 0,
+              }
+            : item.products,
+      }));
     }
     for (const kl of kitLines) {
       const kit = kitsById.get(kl.kitId);
@@ -217,6 +263,7 @@ export async function startCheckout(formData: FormData) {
     .select("id,customer_kind,wholesale_discount_percent")
     .eq("email", emailLc)
     .eq("tenant_id", tenant.id)
+    .eq("branch_id", storefrontBranchId)
     .maybeSingle();
 
   const wholesalePct = existingCustomer
@@ -379,12 +426,14 @@ export async function startCheckout(formData: FormData) {
     const { error: uErr } = await supabase
       .from("customers")
       .update(customerShippingFull)
-      .eq("id", customerId);
+      .eq("id", customerId)
+      .eq("branch_id", storefrontBranchId);
     if (uErr && isMissingDbColumnError(uErr)) {
       await supabase
         .from("customers")
         .update(customerShippingCompat)
-        .eq("id", customerId);
+        .eq("id", customerId)
+        .eq("branch_id", storefrontBranchId);
     }
   } else {
     let { data: insertedCustomer, error: cErr } = await supabase
@@ -394,6 +443,7 @@ export async function startCheckout(formData: FormData) {
         email: emailLc,
         source: "storefront",
         tenant_id: tenant.id,
+        branch_id: storefrontBranchId,
       })
       .select("id")
       .single();
@@ -409,6 +459,7 @@ export async function startCheckout(formData: FormData) {
           email: emailLc,
           source: "storefront",
           tenant_id: tenant.id,
+          branch_id: storefrontBranchId,
         })
         .select("id")
         .single());
@@ -444,6 +495,7 @@ export async function startCheckout(formData: FormData) {
     transfer_session_token: transferSessionToken,
     fulfillment_status: useTransfer ? "awaiting_payment" : null,
     tenant_id: tenant.id,
+    branch_id: storefrontBranchId,
   };
 
   let { data: orderRow, error: oErr } = await supabase
@@ -500,6 +552,7 @@ export async function startCheckout(formData: FormData) {
       product_name_snapshot: l.product_name_snapshot,
       kit_component_deductions: l.kit_component_deductions,
       tenant_id: tenant.id,
+      branch_id: storefrontBranchId,
     })),
   );
 

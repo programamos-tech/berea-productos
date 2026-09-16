@@ -32,6 +32,7 @@ import {
 import { unitPriceGrossCents } from "@/lib/product-vat-price";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { fetchCurrentBranchInventoryMap } from "@/lib/branch-inventory";
 
 export type PosInvoiceKitLinePayload = {
   kitId: string;
@@ -85,6 +86,7 @@ function isStockRpcMissingError(err: {
     err.code === "42883" ||
     err.code === "PGRST202" ||
     m.includes("decrement_products_stock_local") ||
+    m.includes("decrement_order_branch_inventory") ||
     m.includes("could not find the function") ||
     m.includes("schema cache")
   );
@@ -93,6 +95,7 @@ function isStockRpcMissingError(err: {
 /** Descuenta stock_local; usa RPC si existe, si no el update secuencial (compatibilidad). */
 async function decrementPosStockLocal(
   supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  orderId: string,
   qtyByProduct: Map<string, number>,
   productById: Map<string, { stock_local?: number | null }>,
 ): Promise<"ok" | "stock" | "db"> {
@@ -101,9 +104,13 @@ async function decrementPosStockLocal(
     quantity,
   }));
 
-  const { error: stockErr } = await supabase.rpc("decrement_products_stock_local", {
-    p_items: stockItems,
-  });
+  const { error: stockErr } = await supabase.rpc(
+    "decrement_order_branch_inventory",
+    {
+      p_order_id: orderId,
+      p_items: stockItems,
+    },
+  );
 
   if (!stockErr) return "ok";
 
@@ -293,8 +300,15 @@ export async function createPosInvoiceAction(formData: FormData) {
       .in("id", stockProductIds);
 
     if (pErr || !products) redirectFail("products");
+    const inventory = await fetchCurrentBranchInventoryMap(
+      supabase,
+      products.map((product) => String(product.id)),
+    );
     for (const p of products) {
-      productById.set(p.id as string, p);
+      productById.set(p.id as string, {
+        ...p,
+        stock_local: inventory.get(String(p.id)) ?? 0,
+      });
     }
     for (const [pid, qty] of qtyByProduct) {
       const p = productById.get(pid);
@@ -604,6 +618,7 @@ export async function createPosInvoiceAction(formData: FormData) {
   if (!isQuotation) {
     const stockResult = await decrementPosStockLocal(
       supabase,
+      orderId,
       qtyByProduct,
       stockProductById,
     );

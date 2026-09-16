@@ -1,5 +1,4 @@
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
-import { deductOrderItemsStock } from "@/lib/storefront-order-stock";
 import { verifyWompiEventIntegrity } from "@/lib/wompi";
 
 export const runtime = "nodejs";
@@ -81,41 +80,15 @@ export async function POST(request: Request) {
     return new Response("ok", { status: 200 });
   }
 
-  const { data: order } = await supabase
-    .from("orders")
-    .select("id,status")
-    .eq("id", orderId)
-    .maybeSingle();
-
-  if (!order) {
-    return new Response("ok", { status: 200 });
-  }
-
-  if (order.status === "paid" && mapped === "paid") {
-    return new Response("ok", { status: 200 });
-  }
-
-  const nextStatus = mapped;
-  const { error: updErr } = await supabase
-    .from("orders")
-    .update({
-      status: nextStatus,
-      wompi_transaction_id: txnId ?? undefined,
-      wompi_reference: reference ?? undefined,
-    })
-    .eq("id", orderId);
-
-  if (updErr) {
-    console.error("[wompi webhook] order update", updErr);
+  const { error } = await supabase.rpc("process_wompi_order_status", {
+    p_order_id: orderId,
+    p_status: mapped,
+    p_transaction_id: txnId,
+    p_reference: reference,
+  });
+  if (error) {
+    console.error("[wompi webhook] atomic status update", error, orderId);
     return new Response("db error", { status: 500 });
-  }
-
-  if (nextStatus === "paid") {
-    const stockResult = await deductOrderItemsStock(supabase, orderId);
-    if (!stockResult.ok) {
-      console.error("[wompi webhook] stock deduct", stockResult.reason, orderId);
-      return new Response("stock deduct error", { status: 500 });
-    }
   }
 
   return new Response("ok", { status: 200 });

@@ -17,6 +17,8 @@ import {
   shouldUnoptimizeStorageImageUrl,
   storagePublicObjectUrl,
 } from "@/lib/storage-public-url";
+import { fetchCurrentBranchInventoryMap } from "@/lib/branch-inventory";
+import { loadAdminPermissions } from "@/lib/load-admin-permissions";
 
 export const dynamic = "force-dynamic";
 
@@ -50,6 +52,10 @@ export default async function AdminProductDetailPage({ params }: Props) {
     .maybeSingle();
 
   if (!product) notFound();
+  const [inventory, perm] = await Promise.all([
+    fetchCurrentBranchInventoryMap(supabase, [id]),
+    loadAdminPermissions(),
+  ]);
 
   const raw = product as Record<string, unknown> & {
     id: string;
@@ -94,9 +100,8 @@ export default async function AdminProductDetailPage({ params }: Props) {
   const price = Number(raw.price_cents ?? 0);
   const priceNet = unitPriceNetCents(price);
   const priceGross = unitPriceGrossCents(price, raw.has_vat, raw.vat_percent);
-  const stockW = Number(raw.stock_warehouse ?? 0);
-  const stockL = Number(raw.stock_local ?? 0);
-  const stockTotal = Number(raw.stock_quantity ?? stockW + stockL);
+  const stockL = inventory.get(id) ?? 0;
+  const stockTotal = stockL;
   const sizeOptions = normalizeSizeOptionsFromRow({
     size_options: raw.size_options,
     size_value: raw.size_value,
@@ -267,7 +272,9 @@ export default async function AdminProductDetailPage({ params }: Props) {
             <p className={labelClass}>Stock</p>
             <div className="mt-1.5 space-y-1.5 text-sm">
               <div className="flex justify-between gap-3">
-                <span className="text-zinc-500">Local</span>
+                <span className="text-zinc-500">
+                  {perm?.branchContext.active.name ?? "Sucursal"}
+                </span>
                 <span className="tabular-nums font-medium text-zinc-900 dark:text-zinc-100">
                   {fmtQty(stockL)}
                 </span>

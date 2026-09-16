@@ -45,9 +45,11 @@ const ORDER_SELECT =
 
 export function AdminOrderNotificationsProvider({
   enabled,
+  branchId,
   children,
 }: {
   enabled: boolean;
+  branchId: string;
   children: React.ReactNode;
 }) {
   const [notifications, setNotifications] = useState<AdminWebOrderNotification[]>([]);
@@ -123,6 +125,7 @@ export function AdminOrderNotificationsProvider({
           .from("orders")
           .select(ORDER_SELECT)
           .eq("status", "pending")
+          .eq("branch_id", branchId)
           .order("created_at", { ascending: false })
           .limit(3);
         if (cancelled) return;
@@ -145,10 +148,15 @@ export function AdminOrderNotificationsProvider({
     const startChannel = () => {
       if (cancelled || channel) return;
       channel = supabase
-        .channel("admin-web-orders")
+        .channel(`admin-web-orders:${branchId}`)
         .on(
           "postgres_changes",
-          { event: "INSERT", schema: "public", table: "orders" },
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "orders",
+            filter: `branch_id=eq.${branchId}`,
+          },
           (payload) => {
             if (!isDocumentVisible()) return;
             const item = rowToWebOrderNotification(
@@ -188,6 +196,7 @@ export function AdminOrderNotificationsProvider({
         .from("orders")
         .select(ORDER_SELECT)
         .eq("status", "pending")
+        .eq("branch_id", branchId)
         .order("created_at", { ascending: false })
         .limit(8);
 
@@ -232,7 +241,7 @@ export function AdminOrderNotificationsProvider({
       document.removeEventListener("visibilitychange", onVisibility);
       pause();
     };
-  }, [enabled, pushNotification]);
+  }, [branchId, enabled, pushNotification]);
 
   const unreadCount = useMemo(
     () => notifications.filter((n) => !n.read).length,

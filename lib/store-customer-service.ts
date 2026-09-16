@@ -1,5 +1,7 @@
 import { normalizeDocumentIdForMatch } from "@/lib/normalize-document-id";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
+import { getRequestTenant } from "@/lib/tenant-context";
+import { getStorefrontBranchId } from "@/lib/storefront-branch-inventory";
 
 export { normalizeDocumentIdForMatch } from "@/lib/normalize-document-id";
 
@@ -10,6 +12,8 @@ async function linkCustomerRow(
   emailLc: string,
   displayName: string | null | undefined,
   docNorm: string | null,
+  tenantId: string,
+  branchId: string,
   row: {
     name?: string | null;
     auth_user_id?: string | null;
@@ -36,7 +40,12 @@ async function linkCustomerRow(
     }
   }
 
-  const { error } = await sb.from("customers").update(patch).eq("id", rowId);
+  const { error } = await sb
+    .from("customers")
+    .update(patch)
+    .eq("id", rowId)
+    .eq("tenant_id", tenantId)
+    .eq("branch_id", branchId);
 
   if (
     error &&
@@ -47,7 +56,9 @@ async function linkCustomerRow(
     const { error: e2 } = await sb
       .from("customers")
       .update({ auth_user_id: userId })
-      .eq("id", rowId);
+      .eq("id", rowId)
+      .eq("tenant_id", tenantId)
+      .eq("branch_id", branchId);
     if (e2) {
       if (process.env.NODE_ENV === "development") {
         console.error("[linkCustomerRow] fallback", e2.message);
@@ -78,6 +89,9 @@ export async function ensureStoreCustomerLinked(
   documentRaw?: string | null,
 ): Promise<string | null> {
   const sb = createSupabaseServiceClient();
+  const tenant = await getRequestTenant();
+  const branchId = await getStorefrontBranchId(sb, tenant.id);
+  if (!branchId) return null;
   const emailLc = (email ?? "").toLowerCase().trim();
   if (!emailLc) {
     return null;
@@ -89,6 +103,8 @@ export async function ensureStoreCustomerLinked(
     .from("customers")
     .select("id")
     .eq("auth_user_id", userId)
+    .eq("tenant_id", tenant.id)
+    .eq("branch_id", branchId)
     .maybeSingle();
 
   if (existingAuth?.id) {
@@ -98,7 +114,7 @@ export async function ensureStoreCustomerLinked(
   if (docNorm) {
     const { data: docCustomerId, error: rpcErr } = await sb.rpc(
       "find_customer_id_by_document_normalized",
-      { p_normalized: docNorm },
+      { p_normalized: docNorm, p_branch_id: branchId },
     );
 
     if (rpcErr && process.env.NODE_ENV === "development") {
@@ -117,6 +133,8 @@ export async function ensureStoreCustomerLinked(
         .from("customers")
         .select("id, name, email, auth_user_id, document_id")
         .eq("id", cid)
+        .eq("tenant_id", tenant.id)
+        .eq("branch_id", branchId)
         .maybeSingle();
 
       if (docRow?.id) {
@@ -127,6 +145,8 @@ export async function ensureStoreCustomerLinked(
           emailLc,
           displayName,
           docNorm,
+          tenant.id,
+          branchId,
           docRow,
         );
         if (linked) {
@@ -141,6 +161,8 @@ export async function ensureStoreCustomerLinked(
     .from("customers")
     .select("id, name, email, auth_user_id, document_id")
     .eq("email", emailLc)
+    .eq("tenant_id", tenant.id)
+    .eq("branch_id", branchId)
     .maybeSingle();
 
   if (byEmail?.id) {
@@ -151,6 +173,8 @@ export async function ensureStoreCustomerLinked(
       emailLc,
       displayName,
       docNorm,
+      tenant.id,
+      branchId,
       byEmail,
     );
     if (linked) {
@@ -168,6 +192,8 @@ export async function ensureStoreCustomerLinked(
       source: "storefront",
       auth_user_id: userId,
       document_id: docNorm ?? null,
+      tenant_id: tenant.id,
+      branch_id: branchId,
     })
     .select("id")
     .single();

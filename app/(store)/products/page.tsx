@@ -42,6 +42,7 @@ import {
 import { STORE_CARD_PRIORITY_COUNT } from "@/lib/store-image";
 import { storeShellClass } from "@/lib/store-theme";
 import { withStorefrontImage } from "@/lib/storefront-product-image";
+import { withStorefrontBranchStock } from "@/lib/storefront-branch-inventory";
 
 /** Productos por página en listado filtrado (antes hasta 300 en un solo HTML). */
 const CATALOG_PAGE_SIZE = 24;
@@ -300,7 +301,7 @@ export default async function ProductsPage({ searchParams }: Props) {
   const [
     listingFacets,
     productsBanners,
-    catalogProducts,
+    catalogProductsRaw,
     catalogKits,
     listResultInitial,
     cartQtyByProductId,
@@ -334,7 +335,10 @@ export default async function ProductsPage({ searchParams }: Props) {
   if (currentPage !== page && listResult.total > 0) {
     listResult = await fetchFilteredList(currentPage);
   }
-  const list = listResult.products;
+  const [list, catalogProducts] = await Promise.all([
+    withStorefrontBranchStock(supabase, tenant.id, listResult.products),
+    withStorefrontBranchStock(supabase, tenant.id, catalogProductsRaw),
+  ]);
 
   const invalidCategory = Boolean(categoryId && !categoryName);
 

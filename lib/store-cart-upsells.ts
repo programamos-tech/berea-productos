@@ -3,6 +3,7 @@ import { storefrontListGrossUnitCents } from "@/lib/storefront-gross-price";
 import { withStorefrontImage } from "@/lib/storefront-product-image";
 import { getStorefrontTenant } from "@/lib/storefront-tenant";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { withStorefrontBranchStock } from "@/lib/storefront-branch-inventory";
 
 export type StoreCartUpsellProduct = {
   id: string;
@@ -34,6 +35,7 @@ type UpsellProductRow = {
   image_path: string | null;
   colors: unknown;
   fragrance_options: unknown;
+  stock_quantity: number | null;
 };
 
 export async function loadStoreCartUpsells(
@@ -55,13 +57,18 @@ export async function loadStoreCartUpsells(
         "id,name,price_cents,has_vat,image_path,colors,stock_quantity,created_at,fragrance_options",
       )
       .eq("is_published", true)
-      .eq("tenant_id", tenant.id)
-      .gt("stock_quantity", 0),
+      .eq("tenant_id", tenant.id),
   )
     .order("created_at", { ascending: false })
     .limit(fetchLimit);
 
-  return ((data ?? []) as UpsellProductRow[])
+  const scopedRows = await withStorefrontBranchStock(
+    supabase,
+    tenant.id,
+    (data ?? []) as UpsellProductRow[],
+  );
+  return scopedRows
+    .filter((row) => Number(row.stock_quantity ?? 0) > 0)
     .filter((row) => !exclude.has(row.id))
     .slice(0, limit)
     .map((p) => {

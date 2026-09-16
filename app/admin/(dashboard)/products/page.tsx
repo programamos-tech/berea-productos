@@ -19,6 +19,7 @@ import {
   fetchAdminProductsList,
 } from "@/lib/supabase/admin-products-list";
 import { loadAdminPermissions } from "@/lib/load-admin-permissions";
+import { fetchCurrentBranchInventoryMap } from "@/lib/branch-inventory";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { unitPriceGrossCents } from "@/lib/product-vat-price";
 import { AdminProductsFlashToast } from "@/components/admin/AdminProductsFlashToast";
@@ -213,7 +214,17 @@ export default async function AdminProductsPage({
     totalCount,
   } = listResult;
 
-  const productRows = list.map(normalizeAdminProductRow);
+  const inventoryByProduct = await fetchCurrentBranchInventoryMap(
+    supabase,
+    list.map((row) => String((row as { id?: string }).id ?? "")),
+  );
+  const productRows = list.map((row) => {
+    const normalized = normalizeAdminProductRow(row);
+    return {
+      ...normalized,
+      stock_local: inventoryByProduct.get(normalized.id) ?? 0,
+    };
+  });
 
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
 
@@ -250,7 +261,8 @@ export default async function AdminProductsPage({
               Inventario
             </h1>
             <p className={adminPageSubtitleClass}>
-              Catálogo, stock y precios de la tienda
+              Catálogo compartido · stock de{" "}
+              {authPerm?.branchContext.active.name ?? "la sucursal"}
             </p>
           </div>
           <div className="flex flex-wrap items-center justify-end gap-2">

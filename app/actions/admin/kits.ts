@@ -21,6 +21,7 @@ import {
 import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { fetchCurrentBranchInventoryMap } from "@/lib/branch-inventory";
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -359,7 +360,21 @@ export async function previewKitMarginAction(payload: {
     )
     .in("id", ids);
 
-  const byId = new Map((products ?? []).map((p) => [p.id as string, p]));
+  const inventory = await fetchCurrentBranchInventoryMap(
+    supabase,
+    (products ?? []).map((product) => String(product.id)),
+  );
+  const byId = new Map(
+    (products ?? []).map((p) => [
+      p.id as string,
+      {
+        ...p,
+        stock_local: inventory.get(String(p.id)) ?? 0,
+        stock_quantity: inventory.get(String(p.id)) ?? 0,
+        stock_warehouse: 0,
+      },
+    ]),
+  );
 
   const kitItems = payload.items.map((it) => ({
     product_id: it.productId,

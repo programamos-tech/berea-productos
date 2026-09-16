@@ -4,6 +4,30 @@ import {
   type ProductKitRow,
 } from "@/lib/product-kits";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { fetchCurrentBranchInventoryMap } from "@/lib/branch-inventory";
+
+async function withCurrentBranchStock<T extends KitComponentRow>(
+  supabase: SupabaseClient,
+  items: T[],
+): Promise<T[]> {
+  const ids = items.map((item) => String(item.product_id ?? "")).filter(Boolean);
+  const inventory = await fetchCurrentBranchInventoryMap(supabase, ids);
+  if (inventory.size === 0) return items;
+  return items.map((item) => {
+    const products = item.products;
+    if (!products || Array.isArray(products)) return item;
+    const quantity = inventory.get(String(item.product_id));
+    if (quantity == null) return item;
+    return {
+      ...item,
+      products: {
+        ...products,
+        stock_local: quantity,
+        stock_quantity: quantity,
+      },
+    };
+  });
+}
 
 export async function fetchKitWithItems(
   supabase: SupabaseClient,
@@ -22,9 +46,13 @@ export async function fetchKitWithItems(
     .eq("kit_id", kitId)
     .order("sort_order", { ascending: true });
 
+  const scopedItems = await withCurrentBranchStock(
+    supabase,
+    (items ?? []) as unknown as KitComponentRow[],
+  );
   return {
     ...(kit as ProductKitRow),
-    items: (items ?? []) as unknown as KitComponentRow[],
+    items: scopedItems,
   };
 }
 
@@ -64,9 +92,13 @@ export async function fetchKitsByIdsWithItems(
     .in("kit_id", ids)
     .order("sort_order", { ascending: true });
 
+  const scopedItems = await withCurrentBranchStock(
+    supabase,
+    (items ?? []) as unknown as Array<KitComponentRow & { kit_id: string }>,
+  );
   return attachKitItemsToRows(
     kits as ProductKitRow[],
-    (items ?? []) as unknown as Array<KitComponentRow & { kit_id: string }>,
+    scopedItems,
   );
 }
 
@@ -95,9 +127,13 @@ export async function fetchKitsWithItems(
     .in("kit_id", ids)
     .order("sort_order", { ascending: true });
 
+  const scopedItems = await withCurrentBranchStock(
+    supabase,
+    (items ?? []) as unknown as Array<KitComponentRow & { kit_id: string }>,
+  );
   return attachKitItemsToRows(
     kits as ProductKitRow[],
-    (items ?? []) as unknown as Array<KitComponentRow & { kit_id: string }>,
+    scopedItems,
   );
 }
 
@@ -136,8 +172,12 @@ export async function fetchKitsForAdminList(
     .in("kit_id", ids)
     .order("sort_order", { ascending: true });
 
+  const scopedItems = await withCurrentBranchStock(
+    supabase,
+    (items ?? []) as unknown as Array<KitComponentRow & { kit_id: string }>,
+  );
   return attachKitItemsToRows(
     kits as ProductKitRow[],
-    (items ?? []) as unknown as Array<KitComponentRow & { kit_id: string }>,
+    scopedItems,
   );
 }

@@ -14,6 +14,7 @@ const NAV_HREFS_WITH_PERMISSION: { href: string; keys: PermissionKey[] }[] = [
   { href: "/admin/kits", keys: ["kits_ver"] },
   { href: "/admin/customers", keys: ["clientes_ver"] },
   { href: "/admin/usuarios", keys: ["roles_ver"] },
+  { href: "/admin/sucursales", keys: ["sucursales_ver"] },
   { href: "/admin/actividades", keys: ["actividades_ver"] },
   { href: "/admin/banners", keys: ["marketing_ver"] },
   { href: "/admin/coupons", keys: ["marketing_ver"] },
