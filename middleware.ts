@@ -14,7 +14,11 @@ import {
   isActingTenantId,
 } from "@/lib/platform-operator";
 import {
+  canonicalPlatformUrl,
+  firstHostname,
+  isProductionVercelAlias,
   PLATFORM_PRODUCT_HOST,
+  publicHostname,
   resolveTenantFromHost,
   TENANT_KIND_HEADER,
   TENANT_SLUG_HEADER,
@@ -79,7 +83,9 @@ function withTenantHeaders(
   request: NextRequest,
   response: NextResponse,
 ): NextResponse {
-  const resolved = resolveTenantFromHost(request.headers.get("host"));
+  const resolved = resolveTenantFromHost(
+    publicHostname(request.headers, request.nextUrl.hostname),
+  );
   if (resolved.slug) {
     response.headers.set(TENANT_SLUG_HEADER, resolved.slug);
     request.headers.set(TENANT_SLUG_HEADER, resolved.slug);
@@ -108,13 +114,27 @@ function nextWithTenant(request: NextRequest): NextResponse {
 
 export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
-  const hostKind = resolveTenantFromHost(request.headers.get("host")).kind;
+  const search = request.nextUrl.search;
+  const host = publicHostname(request.headers, request.nextUrl.hostname);
+  const nextHost = firstHostname(request.nextUrl.hostname);
+  const alreadyOnPlatform =
+    host === PLATFORM_PRODUCT_HOST || nextHost === PLATFORM_PRODUCT_HOST;
+  const hostKind = resolveTenantFromHost(
+    alreadyOnPlatform ? PLATFORM_PRODUCT_HOST : host,
+  ).kind;
+
+  // Un solo host canónico: www y aliases de producción de Vercel → productos.bereahouse.com.
+  // 307 (no 301/308) para no cachear bucles en el navegador.
+  if (
+    !alreadyOnPlatform &&
+    (host === `www.${PLATFORM_PRODUCT_HOST}` || isProductionVercelAlias(host))
+  ) {
+    const destPath = path === "/" ? "/empezar" : path;
+    return NextResponse.redirect(canonicalPlatformUrl(destPath, search), 307);
+  }
 
   if (hostKind === "unknown" && isPublicStorePath(path)) {
-    const destination = new URL("/empezar", request.url);
-    destination.hostname = PLATFORM_PRODUCT_HOST;
-    destination.port = "";
-    return NextResponse.redirect(destination);
+    return NextResponse.redirect(canonicalPlatformUrl("/empezar", search), 307);
   }
 
   // productos.bereahouse.com = entrada SaaS (onboarding), no la tienda Aleya/Milagros.
@@ -141,8 +161,10 @@ export async function middleware(request: NextRequest) {
       path === "/manifest.webmanifest" ||
       path === "/admin/manifest.webmanifest";
     if (!platformOk) {
-      const dest = new URL("/empezar", request.url);
-      return withTenantHeaders(request, NextResponse.redirect(dest));
+      return withTenantHeaders(
+        request,
+        NextResponse.redirect(canonicalPlatformUrl("/empezar", search), 307),
+      );
     }
   }
 

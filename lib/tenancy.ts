@@ -39,8 +39,31 @@ const LEGACY_HOST_TO_SLUG: Record<string, string> = {
   "www.milagrosguacari.com": DEFAULT_TENANT_SLUG,
 };
 
-function normalizeHost(raw: string): string {
+export function normalizeHost(raw: string): string {
   return raw.trim().toLowerCase().replace(/\.$/, "").split(":")[0] ?? "";
+}
+
+/** Primer host de `Host` / `x-forwarded-host` (pueden venir varios separados por coma). */
+export function firstHostname(hostHeader: string | null | undefined): string {
+  const first = (hostHeader ?? "").split(",")[0] ?? "";
+  return normalizeHost(first);
+}
+
+export function publicHostname(headers: Headers, fallbackHost?: string): string {
+  return (
+    firstHostname(headers.get("x-forwarded-host")) ||
+    firstHostname(headers.get("host")) ||
+    firstHostname(fallbackHost)
+  );
+}
+
+export function canonicalPlatformUrl(pathname = "/", search = ""): URL {
+  const path = pathname.startsWith("/") ? pathname : `/${pathname}`;
+  return new URL(`${path}${search}`, `https://${PLATFORM_PRODUCT_HOST}`);
+}
+
+export function isProductionVercelAlias(host: string): boolean {
+  return process.env.VERCEL_ENV === "production" && host.endsWith(".vercel.app");
 }
 
 /**
@@ -48,7 +71,7 @@ function normalizeHost(raw: string): string {
  * Does not hit the database.
  */
 export function resolveTenantFromHost(hostHeader: string | null | undefined): ResolvedTenantHost {
-  const host = normalizeHost(hostHeader ?? "");
+  const host = firstHostname(hostHeader);
   if (!host) {
     return { kind: "unknown", slug: null, host: "" };
   }

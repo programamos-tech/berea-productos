@@ -7,7 +7,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: "Berea House",
     short_name: "Berea House",
     description: "Berea House · software y escuela",
-    start_url: "/admin",
+    start_url: "/",
     display: "standalone",
     background_color: TEAL,
     theme_color: TEAL,

@@ -40,7 +40,9 @@ async function getRequestTenantUncached(): Promise<TenantRef> {
 
   const h = await headers();
   const fromMiddleware = h.get(TENANT_SLUG_HEADER)?.trim();
-  const resolvedHost = resolveTenantFromHost(h.get("host"));
+  const resolvedHost = resolveTenantFromHost(
+    h.get("x-forwarded-host") ?? h.get("host"),
+  );
   const fromHost = resolvedHost.slug;
   const slug = fromMiddleware || fromHost || DEFAULT_TENANT_SLUG;
 
