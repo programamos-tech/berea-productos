@@ -9,24 +9,6 @@ import { LeaveAccountButton } from "@/components/admin/LeaveAccountButton";
 import { BranchSwitcher } from "@/components/admin/BranchSwitcher";
 import type { BranchContext } from "@/lib/branch-context";
 
-function IconHelp() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.65} strokeLinecap="round" className="size-5" aria-hidden>
-      <circle cx="12" cy="12" r="9" />
-      <path d="M9.5 9.5a2.5 2.5 0 0 1 4.2-1.7c.6.6.8 1.5.5 2.3-.4 1-1.2 1.4-1.7 2.1-.2.3-.3.6-.3 1.1V14" />
-      <path d="M12 17h.01" />
-    </svg>
-  );
-}
-
-function IconPulse() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.65} strokeLinecap="round" strokeLinejoin="round" className="size-5" aria-hidden>
-      <path d="M4 12h3l2-6 4 12 2-6h5" />
-    </svg>
-  );
-}
-
 type AdminTopBarProps = {
   showOrderNotifications?: boolean;
   displayName: string;
@@ -42,9 +24,6 @@ type AdminTopBarProps = {
   };
   branchContext: BranchContext;
 };
-
-const iconBtnClass =
-  "rounded-lg p-2 text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100";
 
 export function AdminTopBar({
   showOrderNotifications = false,
@@ -92,11 +71,11 @@ export function AdminTopBar({
         </div>
 
         <div className="flex shrink-0 items-center gap-1 sm:gap-2">
-          <BranchSwitcher
-            active={branchContext.active}
-            branches={branchContext.available}
-          />
-          <div className="lg:hidden">
+          <div className="flex items-center gap-1 lg:hidden">
+            <BranchSwitcher
+              active={branchContext.active}
+              branches={branchContext.available}
+            />
             <AdminThemeToggle />
           </div>
           <Link
@@ -109,18 +88,12 @@ export function AdminTopBar({
           {showOrderNotifications ? (
             <AdminNotificationBell className="lg:hidden" />
           ) : null}
-          <div className="ml-0.5 hidden items-center gap-0.5 border-l border-zinc-200 pl-2 dark:border-zinc-700 lg:flex">
+          <div className="ml-0.5 hidden items-center gap-1 border-l border-zinc-200 pl-2 dark:border-zinc-700 lg:flex">
             <AdminThemeToggle />
-            <button type="button" className={iconBtnClass} title="Ayuda">
-              <IconHelp />
-            </button>
-            <Link
-              href="/admin/actividades"
-              className={iconBtnClass}
-              title="Registros"
-            >
-              <IconPulse />
-            </Link>
+            <BranchSwitcher
+              active={branchContext.active}
+              branches={branchContext.available}
+            />
             {showOrderNotifications ? <AdminNotificationBell /> : null}
           </div>
 
