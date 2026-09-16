@@ -45,9 +45,21 @@ export function BranchSwitcher({
 }) {
   const pathname = usePathname();
   const formRef = useRef<HTMLFormElement>(null);
+  const branchInputRef = useRef<HTMLInputElement>(null);
   const menuId = useId();
   const [open, setOpen] = useState(false);
   const bare = appearance === "bare";
+
+  const selectBranch = (branchId: string) => {
+    if (branchId === active.id) {
+      setOpen(false);
+      return;
+    }
+    if (!formRef.current || !branchInputRef.current) return;
+    branchInputRef.current.value = branchId;
+    formRef.current.requestSubmit();
+    setOpen(false);
+  };
 
   useEffect(() => {
     if (!open) return;
@@ -85,6 +97,7 @@ export function BranchSwitcher({
       className={`relative shrink-0 ${className}`}
     >
       <input type="hidden" name="return_to" value={pathname} />
+      <input ref={branchInputRef} type="hidden" name="branch_id" />
       <button
         type="button"
         onClick={() => setOpen((current) => !current)}
@@ -111,12 +124,10 @@ export function BranchSwitcher({
           {branches.map((branch) => (
             <button
               key={branch.id}
-              type={branch.id === active.id ? "button" : "submit"}
-              name={branch.id === active.id ? undefined : "branch_id"}
-              value={branch.id === active.id ? undefined : branch.id}
+              type="button"
               role="menuitemradio"
               aria-checked={branch.id === active.id}
-              onClick={() => setOpen(false)}
+              onClick={() => selectBranch(branch.id)}
               className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-medium outline-none transition focus-visible:ring-2 focus-visible:ring-zinc-400/50 ${
                 branch.id === active.id
                   ? "bg-zinc-100 text-zinc-950 dark:bg-zinc-800 dark:text-white"
