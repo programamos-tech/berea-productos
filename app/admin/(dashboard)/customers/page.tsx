@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { RefreshCw } from "lucide-react";
+import { Building2, RefreshCw, UserRound } from "lucide-react";
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import {
@@ -64,50 +64,15 @@ function CustomerKindIcon({
 }: {
   wholesale: boolean;
 }) {
-  if (wholesale) {
-    return (
-      <span
-        className="inline-flex size-9 shrink-0 items-center justify-center text-zinc-500 dark:text-zinc-400"
-        title="Mayorista"
-        aria-label="Mayorista"
-      >
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={1.75}
-          className="size-[1.125rem]"
-          aria-hidden
-        >
-          <path
-            d="M3 21h18M5 21V8l7-4 7 4v13M9 21v-6h6v6"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
-      </span>
-    );
-  }
+  const Icon = wholesale ? Building2 : UserRound;
+  const label = wholesale ? "Mayorista" : "Cliente final";
   return (
     <span
-      className="inline-flex size-9 shrink-0 items-center justify-center text-zinc-500 dark:text-zinc-400"
-      title="Cliente final"
-      aria-label="Cliente final"
+      className="inline-flex size-8 shrink-0 items-center justify-center text-zinc-400 dark:text-zinc-500"
+      title={label}
+      aria-label={label}
     >
-      <svg
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth={1.75}
-        className="size-[1.125rem]"
-        aria-hidden
-      >
-        <path
-          d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"
-          strokeLinecap="round"
-        />
-        <circle cx="12" cy="7" r="4" />
-      </svg>
+      <Icon className="size-4" strokeWidth={1.75} aria-hidden />
     </span>
   );
 }
@@ -368,7 +333,7 @@ export default async function AdminCustomersPage({
                         className="border-b border-zinc-100/80 last:border-0 dark:border-zinc-800/80"
                       >
                         <td className={tdClass}>
-                          <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-2.5">
                             <CustomerKindIcon wholesale={isWholesale} />
                             <Link
                               href={`/admin/customers/${r.id}`}
