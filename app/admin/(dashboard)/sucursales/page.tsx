@@ -75,7 +75,7 @@ export default async function BranchesPage() {
               paidOrders: 0,
               totalSales: 0,
             };
-            const isCurrent = branch.id === perm?.branchContext.active.id;
+            const isCurrent = branch.id === perm?.branchContext?.active.id;
             return (
               <article
                 key={branch.id}
@@ -117,7 +117,7 @@ export default async function BranchesPage() {
                     </div>
                   )}
                   <div className="flex flex-wrap justify-end gap-1.5">
-                  {branch.id === perm?.branchContext.active.id ? (
+                  {branch.id === perm?.branchContext?.active.id ? (
                     <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200">
                       Activa
                     </span>

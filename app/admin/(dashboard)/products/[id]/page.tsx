@@ -273,7 +273,7 @@ export default async function AdminProductDetailPage({ params }: Props) {
             <div className="mt-1.5 space-y-1.5 text-sm">
               <div className="flex justify-between gap-3">
                 <span className="text-zinc-500">
-                  {perm?.branchContext.active.name ?? "Sucursal"}
+                  {perm?.branchContext?.active.name ?? "Sucursal"}
                 </span>
                 <span className="tabular-nums font-medium text-zinc-900 dark:text-zinc-100">
                   {fmtQty(stockL)}

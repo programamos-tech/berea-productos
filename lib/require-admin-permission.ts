@@ -6,17 +6,23 @@ import {
   fetchCashSessionForBusinessDay,
   todayBusinessDayYmd,
 } from "@/lib/cash-register";
-import { loadAdminPermissions } from "@/lib/load-admin-permissions";
+import {
+  loadAdminPermissions,
+  type AdminActingSession,
+} from "@/lib/load-admin-permissions";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 
 /** Redirección cuando una acción o página requiere un permiso que el usuario no tiene. */
 export const ADMIN_FORBIDDEN_REDIRECT = "/admin/cuenta?notice=forbidden";
 
-export async function requireAdminSession() {
+export async function requireAdminSession(): Promise<AdminActingSession> {
   const perm = await loadAdminPermissions();
   if (!perm) redirect("/admin/login");
-  return perm;
+  if (!perm.branchContext) {
+    redirect(perm.isPlatformOperator ? "/admin/cuentas" : "/admin/login");
+  }
+  return { ...perm, branchContext: perm.branchContext };
 }
 
 /** Exige un permiso concreto (AND implícito de un solo elemento). */

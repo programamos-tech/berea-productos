@@ -285,7 +285,7 @@ export default async function AdminProductsPage({
             </h1>
             <p className={adminPageSubtitleClass}>
               Catálogo compartido · stock de{" "}
-              {authPerm?.branchContext.active.name ?? "la sucursal"}
+              {authPerm?.branchContext?.active.name ?? "la sucursal"}
             </p>
           </div>
           <div className="flex flex-wrap items-center justify-end gap-2">

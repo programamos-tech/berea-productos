@@ -28,11 +28,20 @@ export type AdminSession = {
   displayName: string;
   email: string;
   isPlatformOperator: boolean;
-  branchContext: BranchContext;
+  /**
+   * Sucursales del tenant en el que opera. Null en el picker de cuentas:
+   * el tenant interno `platform` no tiene branches, y exigirlas redirige
+   * /admin/cuentas → /admin/login → /admin/cuentas (ERR_TOO_MANY_REDIRECTS).
+   */
+  branchContext: BranchContext | null;
   actingAccount: {
     holderName: string;
     storeName: string;
   } | null;
+};
+
+export type AdminActingSession = AdminSession & {
+  branchContext: BranchContext;
 };
 
 async function loadAdminPermissionsUncached(): Promise<AdminSession | null> {
@@ -103,8 +112,11 @@ async function loadAdminPermissionsUncached(): Promise<AdminSession | null> {
   const tenantName = chrome.name;
   const branchContext = await loadBranchContext(tenantId);
   if (!branchContext) {
-    console.error("[admin] branches: no accessible active branch");
-    return null;
+    // Operador en el picker: home es el tenant platform, sin sucursales.
+    if (!(isPlatformOperator && !acting)) {
+      console.error("[admin] branches: no accessible active branch");
+      return null;
+    }
   }
 
   const jobRole = normalizeCollaboratorJobRole(row.job_role as string | null);

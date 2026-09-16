@@ -26,6 +26,9 @@ export default async function AdminDashboardLayout({
   if (perm.isPlatformOperator && !perm.actingAccount) {
     redirect("/admin/cuentas");
   }
+  if (!perm.branchContext) {
+    redirect(perm.isPlatformOperator ? "/admin/cuentas" : "/admin/login");
+  }
 
   const needsCashCheck =
     !jobRoleSkipsCashRegister(perm.jobRole) &&
