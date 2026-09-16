@@ -3,8 +3,16 @@ import { join } from "path";
 import {
   PDFDocument,
   StandardFonts,
+  appendBezierCurve,
+  clip,
+  closePath,
+  endPath,
+  moveTo,
+  popGraphicsState,
+  pushGraphicsState,
   rgb,
   type PDFFont,
+  type PDFImage,
   type PDFPage,
 } from "pdf-lib";
 import {
@@ -52,9 +60,10 @@ export type QuotationPdfInput = {
 const INK = hexToRgb("#18181b");
 const MUTED = hexToRgb("#52525b");
 const FAINT = hexToRgb("#71717a");
-const LINE = hexToRgb("#d4d4d8");
 const HAIR = hexToRgb("#e4e4e7");
-const WHITE = rgb(1, 1, 1);
+
+/** Bézier kappa to approximate a circle. */
+const KAPPA = 0.552284749831;
 
 function hexToRgb(hex: string) {
   const h = hex.replace("#", "");
@@ -116,7 +125,7 @@ function drawText(
       font: opts.font,
       color,
     });
-    y -= opts.size * 1.35;
+    y -= opts.size * 1.4;
   }
   return y;
 }
@@ -151,6 +160,43 @@ async function embedLogoImage(pdf: PDFDocument, logoPath: string) {
   }
 }
 
+/** Recorta la imagen a un círculo lleno (avatar), sin borde ni recuadro. */
+function drawCircularAvatar(
+  page: PDFPage,
+  image: PDFImage,
+  opts: { x: number; y: number; size: number },
+) {
+  const { x, y, size } = opts;
+  const r = size / 2;
+  const cx = x + r;
+  const cy = y + r;
+  const k = KAPPA * r;
+
+  page.pushOperators(
+    pushGraphicsState(),
+    moveTo(cx + r, cy),
+    appendBezierCurve(cx + r, cy + k, cx + k, cy + r, cx, cy + r),
+    appendBezierCurve(cx - k, cy + r, cx - r, cy + k, cx - r, cy),
+    appendBezierCurve(cx - r, cy - k, cx - k, cy - r, cx, cy - r),
+    appendBezierCurve(cx + k, cy - r, cx + r, cy - k, cx + r, cy),
+    closePath(),
+    clip(),
+    endPath(),
+  );
+
+  const scale = Math.max(size / image.width, size / image.height);
+  const w = image.width * scale;
+  const h = image.height * scale;
+  page.drawImage(image, {
+    x: x + (size - w) / 2,
+    y: y + (size - h) / 2,
+    width: w,
+    height: h,
+  });
+
+  page.pushOperators(popGraphicsState());
+}
+
 /**
  * Genera PDF de cotización (carta), blanco y negro, alineado a la plataforma.
  * Usa `input.brand` cuando hay tenant; si no, env de Aleya.
@@ -177,11 +223,11 @@ export async function buildQuotationPdf(
 
   const pageWidth = 612; // Letter
   const pageHeight = 792;
-  const marginX = 48;
+  const marginX = 52;
   const contentWidth = pageWidth - marginX * 2;
 
   let page = pdf.addPage([pageWidth, pageHeight]);
-  let y = pageHeight - 44;
+  let y = pageHeight - 48;
 
   const ensureSpace = (needed: number) => {
     if (y - needed < 64) {
@@ -191,118 +237,98 @@ export async function buildQuotationPdf(
   };
 
   const siteUrl = getPublicSiteUrl().replace(/^https?:\/\//, "");
-  const avatarSize = 48;
+  const avatarSize = 52;
   const logo = await embedLogoImage(pdf, invoiceLogoPath);
-  const headerMaxW = contentWidth - (logo ? avatarSize + 16 : 0);
+  const headerMaxW = contentWidth - (logo ? avatarSize + 20 : 0);
+  const headerTop = y;
 
-  y =
-    drawText(page, "COTIZACION COMERCIAL", {
-      x: marginX,
-      y,
-      size: 8,
-      font: fontBold,
-      color: FAINT,
-    }) + 6;
-  y =
-    drawText(page, invoiceLegalName, {
-      x: marginX,
-      y,
-      size: 16,
-      font: fontBold,
-      color: INK,
-      maxWidth: headerMaxW,
-    }) + 4;
-  y = drawText(page, `${invoiceTradeName} · NIT ${invoiceTaxNit} · ${storeTaxRegime}`, {
+  y = drawText(page, invoiceLegalName, {
     x: marginX,
     y,
-    size: 9,
-    font,
-    color: MUTED,
+    size: 18,
+    font: fontBold,
+    color: INK,
     maxWidth: headerMaxW,
   });
-  const addr = [invoiceStoreAddress, invoiceStoreCity].filter(Boolean).join(" · ");
-  if (addr) {
-    y = drawText(page, addr, {
+  y -= 2;
+
+  const tradeDistinct =
+    invoiceTradeName.trim() &&
+    !invoiceLegalName.toLowerCase().includes(invoiceTradeName.trim().toLowerCase());
+  const metaParts = [
+    tradeDistinct ? invoiceTradeName.trim() : "",
+    invoiceTaxNit ? `NIT ${invoiceTaxNit}` : "",
+    storeTaxRegime,
+  ].filter(Boolean);
+  if (metaParts.length > 0) {
+    y = drawText(page, metaParts.join("  ·  "), {
       x: marginX,
-      y: y + 2,
-      size: 8,
+      y,
+      size: 9,
       font,
       color: MUTED,
       maxWidth: headerMaxW,
     });
   }
-  const contactLine = [
-    storeSupportPhone,
-    storeSupportEmail,
-    siteUrl,
-    storeSupportHours,
-  ]
-    .filter(Boolean)
-    .join(" · ");
-  y = drawText(page, contactLine, {
-    x: marginX,
-    y: y + 4,
-    size: 8,
-    font,
-    color: FAINT,
-    maxWidth: headerMaxW,
-  });
 
-  if (logo) {
-    const avatarX = pageWidth - marginX - avatarSize;
-    const avatarY = pageHeight - 44 - avatarSize + 10;
-    page.drawCircle({
-      x: avatarX + avatarSize / 2,
-      y: avatarY + avatarSize / 2,
-      size: avatarSize / 2,
-      color: WHITE,
-      borderColor: LINE,
-      borderWidth: 0.8,
+  const addr = [invoiceStoreAddress, invoiceStoreCity].filter(Boolean).join(" · ");
+  const contactLine = [storeSupportPhone, storeSupportEmail, siteUrl]
+    .filter(Boolean)
+    .join("  ·  ");
+  if (contactLine) {
+    y = drawText(page, contactLine, {
+      x: marginX,
+      y,
+      size: 8,
+      font,
+      color: FAINT,
+      maxWidth: headerMaxW,
     });
-    const pad = 7;
-    const maxInner = avatarSize - pad * 2;
-    const scale = Math.min(maxInner / logo.width, maxInner / logo.height);
-    const w = logo.width * scale;
-    const h = logo.height * scale;
-    page.drawImage(logo, {
-      x: avatarX + (avatarSize - w) / 2,
-      y: avatarY + (avatarSize - h) / 2,
-      width: w,
-      height: h,
+  }
+  if (addr) {
+    y = drawText(page, addr, {
+      x: marginX,
+      y,
+      size: 8,
+      font,
+      color: FAINT,
+      maxWidth: headerMaxW,
+    });
+  }
+  if (storeSupportHours) {
+    y = drawText(page, storeSupportHours, {
+      x: marginX,
+      y,
+      size: 8,
+      font,
+      color: FAINT,
+      maxWidth: headerMaxW,
     });
   }
 
-  y -= 10;
-  page.drawRectangle({
-    x: marginX,
-    y,
-    width: contentWidth,
-    height: 0.8,
-    color: LINE,
-  });
+  if (logo) {
+    drawCircularAvatar(page, logo, {
+      x: pageWidth - marginX - avatarSize,
+      y: headerTop - avatarSize + 14,
+      size: avatarSize,
+    });
+    y = Math.min(y, headerTop - avatarSize - 6);
+  }
+
   y -= 22;
 
-  page.drawRectangle({
-    x: marginX,
-    y: y - 5,
-    width: 78,
-    height: 16,
-    color: WHITE,
-    borderColor: LINE,
-    borderWidth: 0.7,
-  });
   page.drawText("COTIZACION", {
-    x: marginX + 8,
-    y: y - 1,
-    size: 7,
+    x: marginX,
+    y,
+    size: 8,
     font: fontBold,
-    color: MUTED,
+    color: FAINT,
   });
-  y -= 28;
+  y -= 20;
   page.drawText(`#${pdfText(input.invoiceRef)}`, {
     x: marginX,
     y,
-    size: 20,
+    size: 22,
     font: fontBold,
     color: INK,
   });
@@ -318,12 +344,12 @@ export async function buildQuotationPdf(
   const dateW = font.widthOfTextAtSize(dateStr, 10);
   page.drawText(dateStr, {
     x: pageWidth - marginX - dateW,
-    y: y + 4,
+    y: y + 6,
     size: 10,
     font,
     color: MUTED,
   });
-  y -= 24;
+  y -= 28;
 
   const customerLines: string[] = [pdfText(input.customerName)];
   if (input.customerDocumentId?.trim()) {
@@ -341,54 +367,37 @@ export async function buildQuotationPdf(
   if (input.customerAddress?.trim()) {
     customerLines.push(`Direccion: ${pdfText(input.customerAddress.trim())}`);
   }
-  const boxH = 22 + customerLines.length * 12;
-  ensureSpace(boxH + 20);
-  page.drawRectangle({
-    x: marginX,
-    y: y + 8,
-    width: contentWidth,
-    height: 0.7,
-    color: LINE,
-  });
+  ensureSpace(22 + customerLines.length * 13 + 24);
   page.drawText("CLIENTE", {
     x: marginX,
-    y: y - 6,
-    size: 7,
+    y,
+    size: 8,
     font: fontBold,
     color: FAINT,
   });
-  let custY = y - 20;
+  y -= 16;
   for (let i = 0; i < customerLines.length; i++) {
     page.drawText(customerLines[i]!, {
       x: marginX,
-      y: custY,
+      y,
       size: i === 0 ? 11 : 9,
       font: i === 0 ? fontBold : font,
-      color: INK,
+      color: i === 0 ? INK : MUTED,
     });
-    custY -= 12;
+    y -= i === 0 ? 14 : 12;
   }
-  y = custY - 6;
-  page.drawRectangle({
-    x: marginX,
-    y,
-    width: contentWidth,
-    height: 0.7,
-    color: LINE,
-  });
-  y -= 18;
+  y -= 16;
 
-  // Tabla
   const colCant = marginX;
   const colDesc = marginX + 36;
-  const colUnit = pageWidth - marginX - 160;
+  const colUnit = pageWidth - marginX - 150;
   const colTotal = pageWidth - marginX - 70;
   const descWidth = colUnit - colDesc - 8;
 
   ensureSpace(40);
   page.drawText("CANT.", {
     x: colCant,
-    y: y,
+    y,
     size: 8,
     font: fontBold,
     color: FAINT,
@@ -414,20 +423,20 @@ export async function buildQuotationPdf(
     font: fontBold,
     color: FAINT,
   });
-  y -= 8;
+  y -= 10;
   page.drawRectangle({
     x: marginX,
-    y: y,
+    y,
     width: contentWidth,
-    height: 0.8,
-    color: MUTED,
+    height: 0.4,
+    color: HAIR,
   });
-  y -= 16;
+  y -= 14;
 
   for (const line of input.lines) {
     const nameLines = wrapLines(font, line.name, 9, descWidth);
     const ref = line.reference?.trim();
-    const rowH = Math.max(16, nameLines.length * 11 + (ref ? 10 : 0) + 6);
+    const rowH = Math.max(18, nameLines.length * 12 + (ref ? 10 : 0) + 8);
     ensureSpace(rowH + 8);
 
     page.drawText(String(line.quantity), {
@@ -447,7 +456,7 @@ export async function buildQuotationPdf(
         font,
         color: INK,
       });
-      ny -= 11;
+      ny -= 12;
     }
     if (ref) {
       page.drawText(`Ref. ${pdfText(ref)}`, {
@@ -477,60 +486,36 @@ export async function buildQuotationPdf(
     });
 
     y -= rowH;
-    page.drawRectangle({
-      x: marginX,
-      y: y + 4,
-      width: contentWidth,
-      height: 0.5,
-      color: HAIR,
-    });
   }
 
-  // Total
-  ensureSpace(56);
-  y -= 12;
-  const totalBoxW = 200;
-  const totalBoxH = 40;
+  ensureSpace(48);
+  y -= 8;
   page.drawRectangle({
-    x: pageWidth - marginX - totalBoxW,
-    y: y - totalBoxH + 12,
-    width: totalBoxW,
-    height: totalBoxH,
-    color: WHITE,
-    borderColor: LINE,
-    borderWidth: 0.9,
+    x: pageWidth - marginX - 200,
+    y: y + 10,
+    width: 200,
+    height: 0.4,
+    color: HAIR,
   });
-  page.drawText("TOTAL COTIZADO", {
-    x: pageWidth - marginX - totalBoxW + 12,
-    y: y - 2,
+  y -= 8;
+  page.drawText("TOTAL", {
+    x: pageWidth - marginX - 200,
+    y,
     size: 8,
     font: fontBold,
     color: FAINT,
   });
   const totalStr = money(input.totalCents);
   page.drawText(totalStr, {
-    x:
-      pageWidth -
-      marginX -
-      12 -
-      fontBold.widthOfTextAtSize(totalStr, 14),
-    y: y - 20,
+    x: pageWidth - marginX - fontBold.widthOfTextAtSize(totalStr, 14),
+    y: y - 2,
     size: 14,
     font: fontBold,
     color: INK,
   });
-  y -= totalBoxH + 16;
+  y -= 36;
 
-  // Pie
-  ensureSpace(90);
-  page.drawRectangle({
-    x: marginX,
-    y: y,
-    width: contentWidth,
-    height: 0.8,
-    color: LINE,
-  });
-  y -= 16;
+  ensureSpace(80);
   const footer1 = pdfText(`${invoiceLegalName} · NIT ${invoiceTaxNit}`);
   const f1w = font.widthOfTextAtSize(footer1, 8);
   page.drawText(footer1, {
@@ -538,7 +523,7 @@ export async function buildQuotationPdf(
     y,
     size: 8,
     font,
-    color: INK,
+    color: MUTED,
   });
   y -= 12;
   const footer2 = pdfText(
@@ -550,7 +535,7 @@ export async function buildQuotationPdf(
     y,
     size: 7,
     font,
-    color: MUTED,
+    color: FAINT,
   });
   y -= 14;
   const note =
@@ -568,7 +553,7 @@ export async function buildQuotationPdf(
     y -= 10;
   }
 
-  y -= 8;
+  y -= 10;
   const powered = "POWERED BY";
   const pw = font.widthOfTextAtSize(powered, 6);
   page.drawText(powered, {
