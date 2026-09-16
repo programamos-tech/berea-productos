@@ -1002,33 +1002,26 @@ export function OrderInvoiceDetailView(props: OrderInvoiceDetailViewProps) {
       </div>
 
       {isQuotation ? (
-        <div className="ql-footer hidden print:mt-10 print:block print:pt-2 print:text-center print:text-[8pt] print:leading-relaxed print:text-zinc-500">
-          <p className="print:font-medium print:text-zinc-800">
-            {invoiceLegalName} · NIT {invoiceTaxNit}
-          </p>
+        <>
+        <div className="ql-footer hidden print:mt-8 print:block print:pb-[18mm] print:text-center print:text-[8.5pt] print:leading-relaxed print:text-zinc-500">
           <p>
-            Tel. {storeSupportPhone}
-            {" · "}
-            {contactEmail}
-            {" · "}
-            {siteUrl}
+            Esta cotización está sujeta a disponibilidad de inventario, vigencia
+            de precios y confirmación al momento de facturar. No constituye
+            factura. IVA incluido.
           </p>
-          <p className="print:mt-2 print:text-[7.5pt]">
-            Documento de cotización (pre-factura). Valores sujetos a disponibilidad
-            al momento de facturar. IVA incluido.
-          </p>
-          <div className="print:mt-4 print:flex print:flex-col print:items-center print:gap-1">
-            <span className="print:text-[6.5pt] print:font-medium print:uppercase print:tracking-[0.14em] print:text-zinc-400">
-              Powered by
-            </span>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={adminSidebarLogoPath}
-              alt={adminProductBrand}
-              className="print:h-[5mm] print:w-auto print:max-w-[30mm] print:object-contain"
-            />
-          </div>
         </div>
+        <div className="ql-powered hidden print:fixed print:bottom-[10mm] print:left-0 print:right-0 print:flex print:flex-col print:items-center print:gap-1">
+          <span className="print:text-[6.5pt] print:font-medium print:uppercase print:tracking-[0.14em] print:text-zinc-400">
+            Powered by
+          </span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={adminSidebarLogoPath}
+            alt={adminProductBrand}
+            className="print:h-[5mm] print:w-auto print:max-w-[30mm] print:object-contain"
+          />
+        </div>
+        </>
       ) : (
         <div className="hidden print:mt-4 print:block print:text-black">
           <p className="border-t border-dashed border-zinc-600 pt-8 text-center text-[10px]">

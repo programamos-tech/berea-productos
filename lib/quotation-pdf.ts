@@ -229,8 +229,9 @@ export async function buildQuotationPdf(
   let page = pdf.addPage([pageWidth, pageHeight]);
   let y = pageHeight - 48;
 
+  const pageFooterH = 52;
   const ensureSpace = (needed: number) => {
-    if (y - needed < 64) {
+    if (y - needed < 48 + pageFooterH) {
       page = pdf.addPage([pageWidth, pageHeight]);
       y = pageHeight - 48;
     }
@@ -515,55 +516,32 @@ export async function buildQuotationPdf(
   });
   y -= 36;
 
-  ensureSpace(80);
-  const footer1 = pdfText(`${invoiceLegalName} · NIT ${invoiceTaxNit}`);
-  const f1w = font.widthOfTextAtSize(footer1, 8);
-  page.drawText(footer1, {
-    x: (pageWidth - f1w) / 2,
-    y,
-    size: 8,
-    font,
-    color: MUTED,
-  });
-  y -= 12;
-  const footer2 = pdfText(
-    `Tel. ${storeSupportPhone} · ${storeSupportEmail} · ${siteUrl}`,
-  );
-  const f2w = font.widthOfTextAtSize(footer2, 7);
-  page.drawText(footer2, {
-    x: Math.max(marginX, (pageWidth - f2w) / 2),
-    y,
-    size: 7,
-    font,
-    color: FAINT,
-  });
-  y -= 14;
+  ensureSpace(56);
   const note =
-    "Documento de cotizacion (pre-factura). Valores sujetos a disponibilidad al facturar. IVA incluido.";
-  const noteLines = wrapLines(font, note, 7, contentWidth - 20);
+    "Esta cotización está sujeta a disponibilidad de inventario, vigencia de precios y confirmación al momento de facturar. No constituye factura. IVA incluido.";
+  const noteLines = wrapLines(font, note, 8, contentWidth - 40);
   for (const nl of noteLines) {
-    const nw = font.widthOfTextAtSize(nl, 7);
+    const nw = font.widthOfTextAtSize(nl, 8);
     page.drawText(nl, {
       x: (pageWidth - nw) / 2,
       y,
-      size: 7,
+      size: 8,
       font,
-      color: FAINT,
+      color: MUTED,
     });
-    y -= 10;
+    y -= 11;
   }
 
-  y -= 10;
+  const poweredY = 36;
   const powered = "POWERED BY";
   const pw = font.widthOfTextAtSize(powered, 6);
   page.drawText(powered, {
     x: (pageWidth - pw) / 2,
-    y,
+    y: poweredY + 16,
     size: 6,
     font: fontBold,
     color: FAINT,
   });
-  y -= 16;
   const bereaLogo = await embedLogoImage(pdf, adminSidebarLogoPath);
   if (bereaLogo) {
     const maxW = 86;
@@ -573,7 +551,7 @@ export async function buildQuotationPdf(
     const h = bereaLogo.height * scale;
     page.drawImage(bereaLogo, {
       x: (pageWidth - w) / 2,
-      y: y - h + 8,
+      y: poweredY,
       width: w,
       height: h,
     });
