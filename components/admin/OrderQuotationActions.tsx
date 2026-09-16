@@ -70,7 +70,7 @@ export function OrderQuotationActions({
       <button
         type="button"
         onClick={() => setFacturarOpen(true)}
-        className="inline-flex w-full items-center justify-center rounded-lg border border-rose-950 bg-rose-950 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:border-rose-900 hover:bg-rose-900 dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-white"
+        className="inline-flex w-full items-center justify-center rounded-lg border border-[var(--admin-coral)] bg-[var(--admin-coral)] px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:border-[var(--admin-coral-hover)] hover:bg-[var(--admin-coral-hover)]"
       >
         Facturar cotización
       </button>
@@ -168,7 +168,7 @@ export function OrderQuotationActions({
               <div className="flex gap-2 pt-1">
                 <button
                   type="submit"
-                  className="flex-1 rounded-lg border border-rose-950 bg-rose-950 py-2.5 text-sm font-semibold text-white hover:bg-rose-900 dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-950"
+                  className="flex-1 rounded-lg border border-[var(--admin-coral)] bg-[var(--admin-coral)] py-2.5 text-sm font-semibold text-white transition hover:border-[var(--admin-coral-hover)] hover:bg-[var(--admin-coral-hover)]"
                 >
                   Confirmar factura
                 </button>
