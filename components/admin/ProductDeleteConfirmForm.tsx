@@ -1,17 +1,9 @@
 "use client";
 
+import { Trash2 } from "lucide-react";
 import { deleteProduct } from "@/app/actions/admin/products";
 import { adminButtonCancelClass } from "@/lib/admin-ui";
 import { type ReactNode, useRef, useTransition } from "react";
-
-function IconTrash() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="size-5" aria-hidden>
-      <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6h14Z" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M10 11v6M14 11v6" strokeLinecap="round" />
-    </svg>
-  );
-}
 
 const dialogClass =
   "fixed left-1/2 top-1/2 z-[200] w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-zinc-200 bg-white p-6 text-zinc-900 shadow-2xl max-h-[min(90dvh,100%)] overflow-y-auto dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 [&::backdrop]:bg-zinc-950/50";
@@ -94,10 +86,10 @@ export function ProductDeleteConfirmForm({
           type="button"
           title="Eliminar producto"
           aria-label="Eliminar producto"
-          className="inline-flex size-10 items-center justify-center rounded-full border border-red-200/90 bg-white text-red-600 transition hover:bg-red-50 dark:border-red-900/50 dark:bg-red-950/25 dark:text-red-400 dark:hover:bg-red-950/45"
+          className="inline-flex size-8 items-center justify-center rounded-md border border-red-200/90 bg-white text-red-600 transition hover:bg-red-50 dark:border-red-900/50 dark:bg-red-950/25 dark:text-red-400 dark:hover:bg-red-950/45"
           onClick={openDialog}
         >
-          <IconTrash />
+          <Trash2 className="size-4 shrink-0" strokeWidth={1.75} aria-hidden />
         </button>
         {dialog}
       </>

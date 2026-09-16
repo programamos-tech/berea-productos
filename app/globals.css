@@ -455,7 +455,7 @@ html:has([data-admin-theme])::-webkit-scrollbar {
     print-color-adjust: exact;
   }
 
-  /* Cotización: hoja membretada Aleya Shop SAS (carta / block). */
+  /* Cotización: documento carta minimalista, neutro y legible. */
   .quotation-letterhead-print {
     page: letterhead;
     max-width: none !important;
@@ -476,23 +476,23 @@ html:has([data-admin-theme])::-webkit-scrollbar {
   }
 
   .quotation-letterhead-print .ql-accent-bar {
-    background: #ff76a1 !important;
+    background: #18181b !important;
   }
 
   .quotation-letterhead-print .ql-badge {
-    background: #fff5f8 !important;
-    color: #be185d !important;
-    border-color: #ffc2d6 !important;
+    background: #ffffff !important;
+    color: #52525b !important;
+    border-color: #d4d4d8 !important;
   }
 
   .quotation-letterhead-print .ql-rule {
-    border-color: #ff76a1 !important;
+    border-color: #d4d4d8 !important;
   }
 
   .quotation-letterhead-print .ql-table thead th {
-    background: #fff5f8 !important;
-    color: #881337 !important;
-    border-bottom-color: #ff76a1 !important;
+    background: #ffffff !important;
+    color: #52525b !important;
+    border-bottom-color: #a1a1aa !important;
   }
 
   .quotation-letterhead-print .ql-table tbody td {
@@ -500,13 +500,13 @@ html:has([data-admin-theme])::-webkit-scrollbar {
   }
 
   .quotation-letterhead-print .ql-total-box {
-    background: #fff5f8 !important;
-    border-color: #ff76a1 !important;
+    background: #ffffff !important;
+    border-color: #d4d4d8 !important;
   }
 
   .quotation-letterhead-print .ql-footer {
-    border-top-color: #ff76a1 !important;
-    color: #52525b !important;
+    border-top-color: #d4d4d8 !important;
+    color: #71717a !important;
   }
 }
 

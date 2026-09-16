@@ -7,6 +7,8 @@ import { OrderQuotationActions } from "@/components/admin/OrderQuotationActions"
 import { OrderInvoiceFulfillmentSelect } from "@/components/admin/OrderInvoiceFulfillmentSelect";
 import { StaticCopCents } from "@/components/admin/ReportsAnimatedFigures";
 import {
+  adminProductBrand,
+  adminSidebarLogoPath,
   invoiceLegalName as envInvoiceLegalName,
   invoiceLogoPath as envInvoiceLogoPath,
   invoiceStoreAddress as envInvoiceStoreAddress,
@@ -28,7 +30,6 @@ import {
   formatStoreInvoiceDateNumeric,
   formatStoreInvoiceDateTime,
 } from "@/lib/store-datetime-format";
-import { STORE_BRAND } from "@/lib/store-theme";
 import type { InvoiceBrandFields } from "@/lib/tenant-brand";
 import {
   ventaFormaPagoTone,
@@ -502,55 +503,45 @@ export function OrderInvoiceDetailView(props: OrderInvoiceDetailViewProps) {
 
       {isQuotation ? (
         <div className="hidden print:block print:text-[10.5pt] print:leading-snug print:text-zinc-900">
-          <div
-            className="ql-accent-bar print:mb-4 print:h-2 print:w-full print:rounded-sm"
-            style={{ background: STORE_BRAND }}
-            aria-hidden
-          />
-          <div className="print:flex print:items-start print:justify-between print:gap-6">
-            <div className="print:flex print:min-w-0 print:flex-1 print:items-start print:gap-4">
+          <div className="print:flex print:items-start print:justify-between print:gap-8 print:border-b print:border-zinc-300 print:pb-4">
+            <div className="print:min-w-0 print:flex-1">
+              <p className="print:text-[8pt] print:font-semibold print:uppercase print:tracking-[0.18em] print:text-zinc-500">
+                Cotización comercial
+              </p>
+              <p className="print:mt-2 print:text-[16pt] print:font-semibold print:leading-tight print:tracking-tight print:text-black">
+                {invoiceLegalName}
+              </p>
+              <p className="print:mt-1 print:text-[9pt] print:text-zinc-600">
+                {invoiceTradeName} · NIT {invoiceTaxNit} · {storeTaxRegime}
+              </p>
+              {(invoiceStoreAddress || invoiceStoreCity) && (
+                <p className="print:mt-0.5 print:text-[9pt] print:text-zinc-600">
+                  {[invoiceStoreAddress, invoiceStoreCity]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </p>
+              )}
+              <p className="print:mt-2 print:text-[8.5pt] print:text-zinc-500">
+                {storeSupportPhone} · {contactEmail} · {siteUrl}
+                {storeSupportHours ? ` · ${storeSupportHours}` : ""}
+              </p>
+            </div>
+            <div className="print:flex print:size-[17mm] print:shrink-0 print:items-center print:justify-center print:overflow-hidden print:rounded-full print:border print:border-zinc-200 print:bg-white print:p-1.5">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={invoiceLogoPath}
                 alt={invoiceTradeName}
-                className="print:h-[22mm] print:w-auto print:max-w-[42mm] print:object-contain print:bg-black print:p-1"
+                className="print:size-full print:object-contain"
               />
-              <div className="print:min-w-0">
-                <p className="print:text-[16pt] print:font-bold print:leading-tight print:tracking-tight print:text-zinc-950">
-                  {invoiceLegalName}
-                </p>
-                <p className="print:mt-0.5 print:text-[9.5pt] print:font-semibold print:text-[#be185d]">
-                  {invoiceTradeName} · {storeTaxRegime}
-                </p>
-                <p className="print:mt-1 print:text-[9pt] print:text-zinc-600">
-                  NIT {invoiceTaxNit}
-                </p>
-                {(invoiceStoreAddress || invoiceStoreCity) && (
-                  <p className="print:mt-0.5 print:text-[9pt] print:text-zinc-600">
-                    {[invoiceStoreAddress, invoiceStoreCity]
-                      .filter(Boolean)
-                      .join(" · ")}
-                  </p>
-                )}
-              </div>
-            </div>
-            <div className="print:max-w-[52mm] print:text-right print:text-[9pt] print:leading-relaxed print:text-zinc-600">
-              <p className="print:font-semibold print:text-zinc-900">Contacto</p>
-              <p>Tel. {storeSupportPhone}</p>
-              <p>{contactEmail}</p>
-              <p>{siteUrl}</p>
-              {storeSupportHours ? <p>{storeSupportHours}</p> : null}
             </div>
           </div>
 
-          <div className="ql-rule print:mt-4 print:border-b-2 print:border-[#ff76a1]" />
-
-          <div className="print:mt-4 print:flex print:items-end print:justify-between print:gap-4">
+          <div className="print:mt-5 print:flex print:items-end print:justify-between print:gap-4">
             <div>
-              <span className="ql-badge print:inline-block print:rounded print:border print:border-[#ffc2d6] print:bg-[#fff5f8] print:px-2 print:py-0.5 print:text-[8.5pt] print:font-bold print:uppercase print:tracking-[0.14em] print:text-[#be185d]">
+              <span className="ql-badge print:inline-block print:rounded-full print:border print:border-zinc-300 print:bg-white print:px-2.5 print:py-1 print:text-[7.5pt] print:font-semibold print:uppercase print:tracking-[0.16em] print:text-zinc-600">
                 Cotización
               </span>
-              <p className="print:mt-1.5 print:text-[18pt] print:font-bold print:leading-none print:text-zinc-950">
+              <p className="print:mt-2 print:text-[20pt] print:font-semibold print:leading-none print:tracking-tight print:text-black">
                 #{invoiceRef}
               </p>
             </div>
@@ -559,7 +550,7 @@ export function OrderInvoiceDetailView(props: OrderInvoiceDetailViewProps) {
             </p>
           </div>
 
-          <div className="print:mt-4 print:rounded print:border print:border-zinc-200 print:bg-zinc-50 print:px-3 print:py-2.5">
+          <div className="print:mt-5 print:border-y print:border-zinc-200 print:py-3">
             <p className="print:text-[8pt] print:font-bold print:uppercase print:tracking-[0.12em] print:text-zinc-500">
               Cliente
             </p>
@@ -838,7 +829,7 @@ export function OrderInvoiceDetailView(props: OrderInvoiceDetailViewProps) {
             {isQuotation ? (
               <table className="ql-table w-full border-collapse text-[10pt] text-zinc-900">
                 <thead>
-                  <tr>
+                  <tr className="border-b border-zinc-300">
                     <th className="py-2 pr-2 text-left text-[8pt] font-bold uppercase tracking-[0.1em]">
                       Cant.
                     </th>
@@ -928,7 +919,7 @@ export function OrderInvoiceDetailView(props: OrderInvoiceDetailViewProps) {
               <div
                 className={
                   isQuotation
-                    ? "ql-total-box w-full max-w-[70mm] rounded border border-[#ff76a1] bg-[#fff5f8] px-3 py-3"
+                    ? "ql-total-box w-full max-w-[70mm] rounded-lg border border-zinc-300 bg-white px-4 py-3.5"
                     : "w-full max-w-none"
                 }
               >
@@ -943,7 +934,7 @@ export function OrderInvoiceDetailView(props: OrderInvoiceDetailViewProps) {
                     <span
                       className={
                         isQuotation
-                          ? "font-bold uppercase tracking-wide text-[9pt] text-[#be185d]"
+                          ? "font-semibold uppercase tracking-[0.12em] text-[8pt] text-zinc-500"
                           : "font-bold text-[12px] text-black"
                       }
                     >
@@ -999,8 +990,8 @@ export function OrderInvoiceDetailView(props: OrderInvoiceDetailViewProps) {
       </div>
 
       {isQuotation ? (
-        <div className="ql-footer hidden print:mt-8 print:block print:border-t-2 print:border-[#ff76a1] print:pt-3 print:text-center print:text-[8.5pt] print:leading-relaxed print:text-zinc-600">
-          <p className="print:font-semibold print:text-zinc-900">
+        <div className="ql-footer hidden print:mt-10 print:block print:border-t print:border-zinc-300 print:pt-4 print:text-center print:text-[8pt] print:leading-relaxed print:text-zinc-500">
+          <p className="print:font-medium print:text-zinc-800">
             {invoiceLegalName} · NIT {invoiceTaxNit}
           </p>
           <p>
@@ -1010,13 +1001,21 @@ export function OrderInvoiceDetailView(props: OrderInvoiceDetailViewProps) {
             {" · "}
             {siteUrl}
           </p>
-          <p className="print:mt-2 print:text-[8pt]">
+          <p className="print:mt-2 print:text-[7.5pt]">
             Documento de cotización (pre-factura). Valores sujetos a disponibilidad
             al momento de facturar. IVA incluido.
           </p>
-          <p className="print:mt-3 print:text-[9pt] print:font-semibold print:text-[#be185d]">
-            Gracias por confiar en {invoiceTradeName}
-          </p>
+          <div className="print:mt-4 print:flex print:flex-col print:items-center print:gap-1">
+            <span className="print:text-[6.5pt] print:font-medium print:uppercase print:tracking-[0.14em] print:text-zinc-400">
+              Powered by
+            </span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={adminSidebarLogoPath}
+              alt={adminProductBrand}
+              className="print:h-[5mm] print:w-auto print:max-w-[30mm] print:object-contain"
+            />
+          </div>
         </div>
       ) : (
         <div className="hidden print:mt-4 print:block print:text-black">
