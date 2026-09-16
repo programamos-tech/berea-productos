@@ -119,6 +119,14 @@ export async function middleware(request: NextRequest) {
 
   // productos.bereahouse.com = entrada SaaS (onboarding), no la tienda Aleya/Milagros.
   if (hostKind === "platform") {
+    if (path === "/") {
+      const destination = request.nextUrl.clone();
+      destination.pathname = "/empezar";
+      return withTenantHeaders(
+        request,
+        NextResponse.rewrite(destination, { request }),
+      );
+    }
     const platformOk =
       path === "/empezar" ||
       path.startsWith("/empezar/") ||
