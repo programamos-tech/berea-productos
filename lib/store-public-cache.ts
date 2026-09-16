@@ -290,20 +290,18 @@ export type CatalogGridProduct = {
   fragrance_options: string[] | null;
 };
 
-/** Catálogo completo (scroll): todos los productos publicados con imagen. */
+/** Catálogo completo (scroll): todos los productos publicados. */
 export async function getCachedAllCatalogProducts() {
   const tenant = await getStorefrontTenant();
   return unstable_cache(
     async (): Promise<CatalogGridProduct[]> => {
-      const { data } = await withStorefrontImage(
-        publicSupabase(tenant.slug)
+      const { data } = await publicSupabase(tenant.slug)
           .from("products")
           .select(
             "id,name,brand,price_cents,has_vat,image_path,stock_quantity,size_options,size_value,size_unit,fragrance_options",
           )
           .eq("is_published", true)
-          .eq("tenant_id", tenant.id),
-      )
+          .eq("tenant_id", tenant.id)
         .order("created_at", { ascending: false })
         .limit(1000);
       return (data ?? []) as CatalogGridProduct[];

@@ -41,7 +41,6 @@ import {
 } from "@/lib/store-public-cache";
 import { STORE_CARD_PRIORITY_COUNT } from "@/lib/store-image";
 import { storeShellClass } from "@/lib/store-theme";
-import { withStorefrontImage } from "@/lib/storefront-product-image";
 import { withStorefrontBranchStock } from "@/lib/storefront-branch-inventory";
 
 /** Productos por página en listado filtrado (antes hasta 300 en un solo HTML). */
@@ -219,8 +218,7 @@ export default async function ProductsPage({ searchParams }: Props) {
   }> {
     if (catalogBrowseMode) return { products: [], total: 0 };
 
-    let query = withStorefrontImage(
-      supabase
+    let query = supabase
         .from("products")
         .select(
           // Sin `description`: no se muestra en cards y ahorra HTML/RSC.
@@ -228,8 +226,7 @@ export default async function ProductsPage({ searchParams }: Props) {
           { count: "exact" },
         )
         .eq("is_published", true)
-        .eq("tenant_id", tenant.id),
-    );
+        .eq("tenant_id", tenant.id);
 
     if (categoryFilterId && expandedCategoryIds?.length) {
       query = query.in("category_id", expandedCategoryIds);

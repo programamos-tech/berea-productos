@@ -1,5 +1,6 @@
 import { cache } from "react";
 import { headers } from "next/headers";
+import { notFound } from "next/navigation";
 import { resolveActingCustomerTenant } from "@/lib/platform-operator-server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
@@ -56,7 +57,7 @@ async function getRequestTenantUncached(): Promise<TenantRef> {
   }
 
   if (slug !== DEFAULT_TENANT_SLUG || resolvedHost.kind === "unknown") {
-    throw new Error(`Tenant storefront "${slug}" not found`);
+    notFound();
   }
 
   // Hard fallback: Aleya (production dataset)
