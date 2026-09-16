@@ -9,16 +9,18 @@ import { useRef } from "react";
 export function BranchSwitcher({
   active,
   branches,
+  className = "",
 }: {
   active: BranchRef;
   branches: BranchRef[];
+  className?: string;
 }) {
   const pathname = usePathname();
   const formRef = useRef<HTMLFormElement>(null);
 
   if (branches.length <= 1) {
     return (
-      <div className="hidden items-center gap-1.5 rounded-lg border border-zinc-200 px-2.5 py-1.5 text-xs font-medium text-zinc-700 sm:flex dark:border-zinc-700 dark:text-zinc-200">
+      <div className={`hidden items-center gap-1.5 rounded-lg border border-zinc-200 px-2.5 py-1.5 text-xs font-medium text-zinc-700 sm:flex dark:border-zinc-700 dark:text-zinc-200 ${className}`}>
         <MapPin className="size-3.5" aria-hidden />
         <span className="max-w-32 truncate">{active.name}</span>
       </div>
@@ -26,7 +28,11 @@ export function BranchSwitcher({
   }
 
   return (
-    <form ref={formRef} action={switchBranchAction} className="shrink-0">
+    <form
+      ref={formRef}
+      action={switchBranchAction}
+      className={`shrink-0 ${className}`}
+    >
       <input type="hidden" name="return_to" value={pathname} />
       <label className="flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-2 py-1.5 text-xs font-medium text-zinc-700 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200">
         <MapPin className="size-3.5 shrink-0" aria-hidden />

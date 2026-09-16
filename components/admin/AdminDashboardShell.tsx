@@ -80,7 +80,11 @@ export function AdminDashboardShell({
     >
       <AdminAuthVisibilityKeepAlive />
       <div className="isolate flex min-h-dvh max-w-full items-stretch antialiased">
-        <AdminSidebar allowedNavHrefs={allowedNavHrefs} account={accountBrand} />
+        <AdminSidebar
+          allowedNavHrefs={allowedNavHrefs}
+          account={accountBrand}
+          branchContext={branchContext}
+        />
 
         <div className="relative z-10 flex min-h-dvh min-w-0 max-w-full flex-1 flex-col overflow-x-clip overflow-y-visible bg-white dark:bg-zinc-950 lg:ml-64 print:ml-0 print:bg-white">
           <AdminTopBar

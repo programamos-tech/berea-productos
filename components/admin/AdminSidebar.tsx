@@ -8,6 +8,7 @@ import {
   adminNavItemActive,
   filterAdminNavSections,
 } from "@/components/admin/admin-nav-config";
+import { BranchSwitcher } from "@/components/admin/BranchSwitcher";
 import {
   adminProductBrand,
   adminSidebarLogoPath,
@@ -15,6 +16,7 @@ import {
   adminSupportWhatsAppPrefilledText,
   adminSupportWhatsAppUrl,
 } from "@/lib/brand";
+import type { BranchContext } from "@/lib/branch-context";
 
 function Icon(props: SVGProps<SVGSVGElement> & { children: React.ReactNode }) {
   const { children, className = "", ...rest } = props;
@@ -133,10 +135,12 @@ function SidebarTenantAccount({
 
 function SidebarHeader({
   account,
+  branchContext,
   showStorefront,
   onNavigate,
 }: {
   account: AccountBrand;
+  branchContext: BranchContext;
   showStorefront: boolean;
   onNavigate: () => void;
 }) {
@@ -153,6 +157,20 @@ function SidebarHeader({
           className={`mt-0.5 whitespace-nowrap text-[10px] font-medium tracking-wide ${sidebarInkMuted}`}
         >
           Gestiona tu tienda de productos
+        </p>
+      </div>
+      <div className="mt-3 w-full rounded-xl border border-zinc-200 bg-zinc-50/80 p-2.5 text-left dark:border-zinc-700/70 dark:bg-zinc-900/55">
+        <p className="mb-1.5 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-500 dark:text-zinc-400">
+          <span className="size-1.5 rounded-full bg-emerald-500" aria-hidden />
+          Sucursal activa
+        </p>
+        <BranchSwitcher
+          active={branchContext.active}
+          branches={branchContext.available}
+          className="w-full"
+        />
+        <p className="mt-1.5 truncate text-[10px] text-zinc-500 dark:text-zinc-400">
+          Viendo datos de {branchContext.active.name}
         </p>
       </div>
       <SidebarTenantAccount
@@ -231,9 +249,11 @@ function SidebarSupportCard() {
 function AdminSidebarInner({
   allowedNavHrefs,
   account,
+  branchContext,
 }: {
   allowedNavHrefs: string[];
   account: AccountBrand;
+  branchContext: BranchContext;
 }) {
   const pathname = usePathname();
   const allowed = new Set(allowedNavHrefs);
@@ -253,6 +273,7 @@ function AdminSidebarInner({
     >
       <SidebarHeader
         account={account}
+        branchContext={branchContext}
         showStorefront={allowed.has(STOREFRONT_HREF)}
         onNavigate={() => {}}
       />
@@ -331,7 +352,11 @@ function AdminSidebarInner({
   );
 }
 
-function AdminSidebarFallback({ account }: { account: AccountBrand }) {
+function AdminSidebarFallback({
+  account,
+}: {
+  account: AccountBrand;
+}) {
   return (
     <aside
       className={`fixed inset-y-0 left-0 z-[45] hidden w-64 flex-col border-r bg-[var(--admin-sidebar-bg)] print:hidden lg:flex lg:flex-col ${sidebarBorder}`}
@@ -350,6 +375,7 @@ function AdminSidebarFallback({ account }: { account: AccountBrand }) {
             Gestiona tu tienda de productos
           </p>
         </div>
+        <div className="mt-3 h-[4.5rem] w-full rounded-xl border border-zinc-200 bg-zinc-50/80 dark:border-zinc-700/70 dark:bg-zinc-900/55" />
         <div className="mt-3.5 flex w-full items-center gap-2.5 rounded-lg border border-zinc-200 bg-white px-2.5 py-2 dark:border-zinc-700/70 dark:bg-zinc-900/55">
           <span className="size-8 shrink-0 overflow-hidden rounded-md bg-zinc-200 dark:bg-zinc-700" />
           <span className="min-w-0 flex-1">
@@ -365,13 +391,19 @@ function AdminSidebarFallback({ account }: { account: AccountBrand }) {
 export function AdminSidebar({
   allowedNavHrefs,
   account,
+  branchContext,
 }: {
   allowedNavHrefs: string[];
   account: AccountBrand;
+  branchContext: BranchContext;
 }) {
   return (
     <Suspense fallback={<AdminSidebarFallback account={account} />}>
-      <AdminSidebarInner allowedNavHrefs={allowedNavHrefs} account={account} />
+      <AdminSidebarInner
+        allowedNavHrefs={allowedNavHrefs}
+        account={account}
+        branchContext={branchContext}
+      />
     </Suspense>
   );
 }

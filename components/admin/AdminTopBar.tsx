@@ -90,10 +90,6 @@ export function AdminTopBar({
           ) : null}
           <div className="ml-0.5 hidden items-center gap-1 border-l border-zinc-200 pl-2 dark:border-zinc-700 lg:flex">
             <AdminThemeToggle />
-            <BranchSwitcher
-              active={branchContext.active}
-              branches={branchContext.available}
-            />
             {showOrderNotifications ? <AdminNotificationBell /> : null}
           </div>
 
