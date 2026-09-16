@@ -1,7 +1,9 @@
 "use client";
 
 import { switchBranchAction } from "@/app/actions/admin/branches";
+import { useAdminTheme } from "@/components/admin/AdminThemeProvider";
 import type { BranchRef } from "@/lib/branch-context";
+import { adminProductBrand, adminSidebarLogoPath } from "@/lib/brand";
 import {
   shouldUnoptimizeStorageImageUrl,
   storagePublicObjectUrl,
@@ -10,6 +12,40 @@ import { Check, ChevronDown, MapPin } from "lucide-react";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+
+const SWITCH_SAFETY_MS = 15000;
+
+function BranchSwitchLoading({ branchName }: { branchName: string }) {
+  const theme = useAdminTheme()?.resolved ?? "light";
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
+    <div
+      data-admin-theme={theme}
+      className="account-switch-overlay fixed inset-0 z-[300] flex items-center justify-center bg-white dark:bg-zinc-950"
+      role="status"
+      aria-live="assertive"
+      aria-busy="true"
+      aria-label={`Cargando ${branchName}`}
+    >
+      <div className="flex flex-col items-center">
+        <Image
+          src={adminSidebarLogoPath}
+          alt={adminProductBrand}
+          width={480}
+          height={265}
+          className="account-switch-overlay-mark h-7 w-auto max-w-[8.5rem] object-contain sm:h-8 sm:max-w-[9.5rem]"
+          priority
+        />
+        <p className="mt-4 text-[13px] font-medium tracking-tight text-zinc-400 dark:text-zinc-500">
+          Cargando {branchName}…
+        </p>
+      </div>
+    </div>,
+    document.body,
+  );
+}
 
 function BranchOptionMark({ branch }: { branch: BranchRef }) {
   const logoUrl = storagePublicObjectUrl(branch.logoPath);
@@ -48,6 +84,7 @@ export function BranchSwitcher({
   const branchInputRef = useRef<HTMLInputElement>(null);
   const menuId = useId();
   const [open, setOpen] = useState(false);
+  const [switchingBranch, setSwitchingBranch] = useState<BranchRef | null>(null);
   const bare = appearance === "bare";
 
   const selectBranch = (branchId: string) => {
@@ -56,6 +93,8 @@ export function BranchSwitcher({
       return;
     }
     if (!formRef.current || !branchInputRef.current) return;
+    const selected = branches.find((branch) => branch.id === branchId);
+    if (selected) setSwitchingBranch(selected);
     branchInputRef.current.value = branchId;
     formRef.current.requestSubmit();
     setOpen(false);
@@ -78,6 +117,15 @@ export function BranchSwitcher({
       document.removeEventListener("keydown", closeOnEscape);
     };
   }, [open]);
+
+  useEffect(() => {
+    if (!switchingBranch) return;
+    const timeout = window.setTimeout(
+      () => setSwitchingBranch(null),
+      SWITCH_SAFETY_MS,
+    );
+    return () => window.clearTimeout(timeout);
+  }, [switchingBranch]);
 
   if (branches.length <= 1) {
     return (
@@ -142,6 +190,9 @@ export function BranchSwitcher({
             </button>
           ))}
         </div>
+      ) : null}
+      {switchingBranch ? (
+        <BranchSwitchLoading branchName={switchingBranch.name} />
       ) : null}
     </form>
   );
