@@ -6,7 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 import { ProductListingCard } from "@/components/store/ProductListingCard";
 import { RevealOnScroll } from "@/components/store/RevealOnScroll";
 import { useStoreFavorites } from "@/components/store/StoreFavoritesProvider";
-import { storeBrand } from "@/lib/brand";
+import { useStorefrontBrand } from "@/components/store/StorefrontBrandProvider";
 import { storeShellClass } from "@/lib/store-theme";
 
 const shellClass = `${storeShellClass} py-10 sm:py-12`;
@@ -52,6 +52,7 @@ type Product = {
 };
 
 export function FavoritosView() {
+  const chrome = useStorefrontBrand();
   const { ids, ready } = useStoreFavorites();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
@@ -83,12 +84,14 @@ export function FavoritosView() {
   useEffect(() => {
     if (!ready) return;
     if (ids.length === 0) {
-      setProducts([]);
-      return;
+      const clearId = window.setTimeout(() => setProducts([]), 0);
+      return () => window.clearTimeout(clearId);
     }
     const q = encodeURIComponent(ids.join(","));
     let cancelled = false;
-    setLoading(true);
+    const loadingId = window.setTimeout(() => {
+      if (!cancelled) setLoading(true);
+    }, 0);
     fetch(`/api/products/favorites?ids=${q}`)
       .then((r) => r.json())
       .then((body: { products?: Product[] }) => {
@@ -102,6 +105,7 @@ export function FavoritosView() {
       });
     return () => {
       cancelled = true;
+      window.clearTimeout(loadingId);
     };
   }, [ready, ids]);
 
@@ -154,7 +158,7 @@ export function FavoritosView() {
       <FavoritosPageHeader
         eyebrow="Catálogo"
         title="Favoritos"
-        description={`Piezas que marcaste en ${storeBrand}. Puedes quitarlas tocando de nuevo el corazón en la tarjeta.`}
+        description={`Piezas que marcaste en ${chrome.name}. Puedes quitarlas tocando de nuevo el corazón en la tarjeta.`}
       />
 
       {loading ? (

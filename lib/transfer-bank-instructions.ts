@@ -1,3 +1,5 @@
+import type { TenantBrandBank } from "@/lib/tenant-brand";
+
 /**
  * Datos públicos para transferencia en checkout.
  * Valores por defecto de Aleya Shop; override con NEXT_PUBLIC_TRANSFER_* si hace falta.
@@ -57,7 +59,34 @@ function defaultAccounts(): TransferPaymentAccount[] {
   ];
 }
 
-export function getTransferBankInstructions(): TransferBankInstructions {
+export function getTransferBankInstructions(
+  bank?: TenantBrandBank,
+  allowAleyaFallback = false,
+): TransferBankInstructions {
+  if (bank?.account?.trim()) {
+    return {
+      accountHolder: maskAccountHolderName(bank.holder ?? ""),
+      taxId: bank.tax_id?.trim() ?? "",
+      accounts: [
+        {
+          label: "Cuenta para transferencia",
+          value: bank.account.trim(),
+        },
+      ],
+      extraNote:
+        "Transfiere el valor exacto del pedido e indica tu nombre o número de pedido en la referencia.",
+    };
+  }
+  if (!allowAleyaFallback) {
+    return {
+      accountHolder: bank?.holder?.trim() ?? "",
+      taxId: bank?.tax_id?.trim() ?? "",
+      accounts: [],
+      extraNote:
+        "Contacta a la tienda para recibir los datos de transferencia y confirmar tu pago.",
+    };
+  }
+
   const holderFull =
     trimEnv("NEXT_PUBLIC_TRANSFER_ACCOUNT_HOLDER") || DEFAULT_HOLDER_FULL;
   const taxId = trimEnv("NEXT_PUBLIC_TRANSFER_TAX_ID") || DEFAULT_TAX_ID;

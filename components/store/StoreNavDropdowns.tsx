@@ -8,8 +8,8 @@ import {
   STORE_HEADER_ICON_STROKE,
 } from "@/lib/store-header-icons";
 import type { StoreCategoryMenuItem } from "@/lib/fetch-store-categories";
-import { storeBrand } from "@/lib/brand";
 import { StoreSearch } from "@/components/store/StoreSearch";
+import { useStorefrontBrand } from "@/components/store/StorefrontBrandProvider";
 
 const drawerLinkClass =
   "flex items-center justify-between gap-3 px-4 py-3.5 text-left text-[15px] font-medium text-stone-800 transition hover:bg-white/50 active:bg-white/65";
@@ -23,6 +23,7 @@ export function StoreNavDropdowns({
   accountHref?: string;
   accountLabel?: string;
 }) {
+  const chrome = useStorefrontBrand();
   const [open, setOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const baseId = useId();
@@ -31,10 +32,6 @@ export function StoreNavDropdowns({
     setSearchOpen(false);
     setOpen(false);
   }, []);
-
-  useEffect(() => {
-    if (!open) setSearchOpen(false);
-  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -71,7 +68,10 @@ export function StoreNavDropdowns({
         aria-expanded={open}
         aria-controls={`${baseId}-tienda-drawer`}
         id={`${baseId}-tienda-trigger`}
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => {
+          if (open) setSearchOpen(false);
+          setOpen(!open);
+        }}
       >
         <Menu
           className={STORE_HEADER_ICON_LG}
@@ -102,7 +102,7 @@ export function StoreNavDropdowns({
         <div className="flex shrink-0 items-center justify-between gap-3 bg-[var(--store-header-bg)] px-4 py-3.5 text-[var(--store-header-fg)]">
           <div className="min-w-0">
             <p className="truncate text-[10px] font-medium uppercase tracking-[0.18em] text-white/70">
-              {storeBrand}
+              {chrome.name}
             </p>
             <h2
               id={`${baseId}-tienda-drawer-title`}

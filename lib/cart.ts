@@ -1,4 +1,6 @@
 import { cookies } from "next/headers";
+import { getRequestTenant } from "@/lib/tenant-context";
+import { DEFAULT_TENANT_SLUG } from "@/lib/tenancy";
 
 export type CartProductLine = {
   productId: string;
@@ -39,7 +41,15 @@ export function cartLinesMatchKit(
   return a.kitId === b.kitId;
 }
 
-const CART_COOKIE = "tiendas_cart";
+const LEGACY_CART_COOKIE = "tiendas_cart";
+
+async function cartCookieName(): Promise<{ current: string; legacy: boolean }> {
+  const tenant = await getRequestTenant();
+  return {
+    current: `tiendas_cart_${tenant.slug.replace(/[^a-z0-9_-]/g, "_")}`,
+    legacy: tenant.slug === DEFAULT_TENANT_SLUG,
+  };
+}
 
 function parseCartLine(raw: unknown): CartLine | null {
   if (!raw || typeof raw !== "object") return null;
@@ -61,7 +71,10 @@ function parseCartLine(raw: unknown): CartLine | null {
 
 export async function getCart(): Promise<CartLine[]> {
   const jar = await cookies();
-  const raw = jar.get(CART_COOKIE)?.value;
+  const name = await cartCookieName();
+  const raw =
+    jar.get(name.current)?.value ||
+    (name.legacy ? jar.get(LEGACY_CART_COOKIE)?.value : undefined);
   if (!raw) return [];
   try {
     const parsed = JSON.parse(raw) as unknown;
@@ -79,7 +92,8 @@ export async function getCart(): Promise<CartLine[]> {
 
 export async function setCart(lines: CartLine[]) {
   const jar = await cookies();
-  jar.set(CART_COOKIE, JSON.stringify(lines), {
+  const name = await cartCookieName();
+  jar.set(name.current, JSON.stringify(lines), {
     httpOnly: true,
     sameSite: "lax",
     path: "/",

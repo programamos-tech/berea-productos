@@ -9,10 +9,11 @@ import {
   useState,
 } from "react";
 import {
-  STORE_FAVORITES_STORAGE_KEY,
   parseFavoriteIdsFromStorage,
+  storeFavoritesStorageKey,
   writeFavoriteIdsToStorage,
 } from "@/lib/store-favorites";
+import { useStorefrontBrand } from "@/components/store/StorefrontBrandProvider";
 
 type StoreFavoritesContextValue = {
   /** IDs en el orden en que el usuario los agregó */
@@ -32,23 +33,32 @@ export function StoreFavoritesProvider({
 }: {
   children: React.ReactNode;
 }) {
+  const chrome = useStorefrontBrand();
+  const storageKey = storeFavoritesStorageKey(chrome.tenantSlug);
   const [ids, setIds] = useState<string[]>([]);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    setIds(parseFavoriteIdsFromStorage());
-    setReady(true);
-  }, []);
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (cancelled) return;
+      setIds(parseFavoriteIdsFromStorage(storageKey));
+      setReady(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [storageKey]);
 
   useEffect(() => {
     const onStorage = (e: StorageEvent) => {
-      if (e.key === STORE_FAVORITES_STORAGE_KEY) {
-        setIds(parseFavoriteIdsFromStorage());
+      if (e.key === storageKey) {
+        setIds(parseFavoriteIdsFromStorage(storageKey));
       }
     };
     window.addEventListener("storage", onStorage);
     return () => window.removeEventListener("storage", onStorage);
-  }, []);
+  }, [storageKey]);
 
   const toggle = useCallback((productId: string) => {
     setIds((prev) => {
@@ -56,13 +66,13 @@ export function StoreFavoritesProvider({
         ? prev.filter((id) => id !== productId)
         : [...prev, productId];
       try {
-        writeFavoriteIdsToStorage(next);
+        writeFavoriteIdsToStorage(storageKey, next);
       } catch {
         /* quota u otro */
       }
       return next;
     });
-  }, []);
+  }, [storageKey]);
 
   const has = useCallback(
     (productId: string) => ids.includes(productId),

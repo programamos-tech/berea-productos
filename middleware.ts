@@ -14,6 +14,7 @@ import {
   isActingTenantId,
 } from "@/lib/platform-operator";
 import {
+  PLATFORM_PRODUCT_HOST,
   resolveTenantFromHost,
   TENANT_KIND_HEADER,
   TENANT_SLUG_HEADER,
@@ -108,6 +109,13 @@ function nextWithTenant(request: NextRequest): NextResponse {
 export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
   const hostKind = resolveTenantFromHost(request.headers.get("host")).kind;
+
+  if (hostKind === "unknown" && isPublicStorePath(path)) {
+    const destination = new URL("/empezar", request.url);
+    destination.hostname = PLATFORM_PRODUCT_HOST;
+    destination.port = "";
+    return NextResponse.redirect(destination);
+  }
 
   // productos.bereahouse.com = entrada SaaS (onboarding), no la tienda Aleya/Milagros.
   if (hostKind === "platform") {

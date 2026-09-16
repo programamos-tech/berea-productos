@@ -1,22 +1,26 @@
 import Link from "next/link";
-import { storeBrand, storeCopyrightHolder, storeSupportEmail } from "@/lib/brand";
+import { getStorefrontChromeForRequest } from "@/lib/tenant-context";
 import {
   LegalDocument,
   LegalSection,
 } from "@/components/store/legal-document";
 
-export const metadata = {
-  title: `Política de cookies | ${storeBrand}`,
-  description: `Uso de cookies y tecnologías similares en ${storeBrand}.`,
-};
+export async function generateMetadata() {
+  const chrome = await getStorefrontChromeForRequest();
+  return {
+    title: `Política de cookies | ${chrome.name}`,
+    description: `Uso de cookies y tecnologías similares en ${chrome.name}.`,
+  };
+}
 
-export default function CookiesPage() {
+export default async function CookiesPage() {
+  const chrome = await getStorefrontChromeForRequest();
   const updatedLabel = "Última actualización: 8 de mayo de 2026";
 
   return (
     <LegalDocument title="Política de cookies" updatedLabel={updatedLabel}>
       <p>
-        En <strong>{storeBrand}</strong> ({storeCopyrightHolder}) utilizamos
+        En <strong>{chrome.name}</strong> ({chrome.copyrightHolder}) utilizamos
         cookies y almacenamiento local cuando es necesario para que la tienda
         funcione correctamente. Esta página resume qué son y cómo podés gestionar
         tus preferencias.
@@ -98,9 +102,9 @@ export default function CookiesPage() {
           Consultas sobre esta política:{" "}
           <a
             className="font-medium text-[var(--store-brand)] underline underline-offset-2 hover:text-[var(--store-brand-hover)]"
-            href={`mailto:${storeSupportEmail}`}
+            href={`mailto:${chrome.email}`}
           >
-            {storeSupportEmail}
+            {chrome.email}
           </a>
           .
         </p>

@@ -10,7 +10,7 @@ import {
   municipalityDisplayLabel,
   SHIPPING_CITY_OTHER,
 } from "@/lib/store-shipping";
-import { storeWhatsAppUrl } from "@/lib/brand";
+import { useStorefrontBrand } from "@/components/store/StorefrontBrandProvider";
 
 const triggerClass =
   "flex w-full cursor-pointer items-center justify-between gap-3 rounded-2xl border border-stone-300 bg-white py-3 pl-4 pr-3.5 text-left text-[13px] text-stone-900 shadow-sm outline-none transition hover:border-stone-400 focus:border-[var(--store-accent)] focus:ring-2 focus:ring-[var(--store-accent)]/20";
@@ -24,6 +24,7 @@ export function CheckoutCitySelect({
   selectClass?: string;
   required?: boolean;
 }) {
+  const chrome = useStorefrontBrand();
   const {
     municipalities,
     cityValue,
@@ -57,9 +58,9 @@ export function CheckoutCitySelect({
   }, [open]);
 
   const waHref =
-    storeWhatsAppUrl === "#"
+    chrome.whatsappUrl == null
       ? null
-      : `${storeWhatsAppUrl}?text=${encodeURIComponent(
+      : `${chrome.whatsappUrl}?text=${encodeURIComponent(
           "Hola, quiero hacer un pedido pero mi municipio no aparece en las opciones de envío de la tienda.",
         )}`;
 

@@ -35,7 +35,7 @@ export function StoreLogoLink({
         alt={brand}
         width={420}
         height={230}
-        className="mx-auto h-11 w-full object-contain object-center sm:h-12 lg:h-[4.25rem]"
+        className="mx-auto h-11 w-full rounded-xl bg-white/95 px-3 py-1 object-contain object-center shadow-sm sm:h-12 lg:h-[4.25rem]"
         priority
       />
     </Link>

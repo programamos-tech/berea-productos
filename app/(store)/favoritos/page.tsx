@@ -1,9 +1,10 @@
 import { FavoritosView } from "@/components/store/FavoritosView";
-import { storeBrand } from "@/lib/brand";
+import { getStorefrontChromeForRequest } from "@/lib/tenant-context";
 
-export const metadata = {
-  title: `Favoritos | ${storeBrand}`,
-};
+export async function generateMetadata() {
+  const chrome = await getStorefrontChromeForRequest();
+  return { title: `Favoritos | ${chrome.name}` };
+}
 
 export default function FavoritosPage() {
   return <FavoritosView />;

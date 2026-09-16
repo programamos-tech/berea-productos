@@ -6,7 +6,6 @@ import {
   KitDetailView,
   type KitDetailIncludedItem,
 } from "@/components/store/KitDetailView";
-import { storeBrand } from "@/lib/brand";
 import { fetchKitWithItems } from "@/lib/load-product-kits";
 import {
   kitComponentsGrossSumCents,
@@ -20,6 +19,7 @@ import { storagePublicObjectUrl } from "@/lib/storage-public-url";
 import { getStorefrontTenant } from "@/lib/storefront-tenant";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { withStorefrontKitStock } from "@/lib/storefront-branch-inventory";
+import { getStorefrontChromeForRequest } from "@/lib/tenant-context";
 
 export const dynamic = "force-dynamic";
 
@@ -42,13 +42,16 @@ const loadPublishedKit = cache(async (id: string) => {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
-  const kit = await loadPublishedKit(id);
+  const [kit, chrome] = await Promise.all([
+    loadPublishedKit(id),
+    getStorefrontChromeForRequest(),
+  ]);
   if (!kit) {
-    return { title: `Kits y combos | ${storeBrand}` };
+    return { title: `Kits y combos | ${chrome.name}` };
   }
   const desc = kit.description.trim();
   return {
-    title: `${kit.name} | ${storeBrand}`,
+    title: `${kit.name} | ${chrome.name}`,
     ...(desc ? { description: desc.slice(0, 160) } : {}),
   };
 }

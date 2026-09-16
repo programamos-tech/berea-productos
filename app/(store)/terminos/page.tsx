@@ -1,28 +1,27 @@
 import Link from "next/link";
-import {
-  storeBrand,
-  storeCopyrightHolder,
-  storeSupportEmail,
-  storeSupportPhone,
-} from "@/lib/brand";
+import { getStorefrontChromeForRequest } from "@/lib/tenant-context";
 import {
   LegalDocument,
   LegalSection,
 } from "@/components/store/legal-document";
 
-export const metadata = {
-  title: `Términos de uso | ${storeBrand}`,
-  description: `Condiciones generales de uso de ${storeBrand}.`,
-};
+export async function generateMetadata() {
+  const chrome = await getStorefrontChromeForRequest();
+  return {
+    title: `Términos de uso | ${chrome.name}`,
+    description: `Condiciones generales de uso de ${chrome.name}.`,
+  };
+}
 
-export default function TerminosPage() {
+export default async function TerminosPage() {
+  const chrome = await getStorefrontChromeForRequest();
   const updatedLabel = "Última actualización: 8 de mayo de 2026";
 
   return (
     <LegalDocument title="Términos de uso" updatedLabel={updatedLabel}>
       <p>
-        Al acceder y usar el sitio web de <strong>{storeBrand}</strong> operado
-        por <strong>{storeCopyrightHolder}</strong>, aceptás estos términos. Si
+        Al acceder y usar el sitio web de <strong>{chrome.name}</strong> operado
+        por <strong>{chrome.copyrightHolder}</strong>, aceptás estos términos. Si
         no estás de acuerdo, te pedimos no utilizar la tienda.
       </p>
 
@@ -67,9 +66,9 @@ export default function TerminosPage() {
           comunicamos en el proceso de compra o por{" "}
           <a
             className="font-medium text-stone-900 underline underline-offset-2 hover:no-underline"
-            href={`mailto:${storeSupportEmail}`}
+            href={`mailto:${chrome.email}`}
           >
-            {storeSupportEmail}
+            {chrome.email}
           </a>
           .
         </p>
@@ -105,11 +104,11 @@ export default function TerminosPage() {
           Para reclamos, primero contactanos en{" "}
           <a
             className="font-medium text-stone-900 underline underline-offset-2 hover:no-underline"
-            href={`mailto:${storeSupportEmail}`}
+            href={`mailto:${chrome.email}`}
           >
-            {storeSupportEmail}
-          </a>{" "}
-          o al teléfono publicado en el sitio ({storeSupportPhone}).
+            {chrome.email}
+          </a>
+          {chrome.phone ? ` o al teléfono publicado en el sitio (${chrome.phone}).` : "."}
         </p>
       </LegalSection>
 

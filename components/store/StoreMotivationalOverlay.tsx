@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { storeBrand } from "@/lib/brand";
+import { useStorefrontBrand } from "@/components/store/StorefrontBrandProvider";
 
 export const STORE_CHECKOUT_ROUTE_MESSAGES = [
   "Llevándote a finalizar tu compra…",
@@ -37,19 +37,23 @@ export function StoreMotivationalOverlay({
   footnote = "No cierres esta ventana; te llevamos al siguiente paso enseguida.",
   zIndexClass = "z-[100]",
 }: Props) {
+  const chrome = useStorefrontBrand();
   const [mounted, setMounted] = useState(false);
   const [msgIdx, setMsgIdx] = useState(0);
   const [fade, setFade] = useState(true);
 
   useEffect(() => {
-    setMounted(true);
+    const id = window.setTimeout(() => setMounted(true), 0);
+    return () => window.clearTimeout(id);
   }, []);
 
   useEffect(() => {
     if (!active) {
-      setMsgIdx(0);
-      setFade(true);
-      return;
+      const resetId = window.setTimeout(() => {
+        setMsgIdx(0);
+        setFade(true);
+      }, 0);
+      return () => window.clearTimeout(resetId);
     }
     let fadeTimer: number | undefined;
     const id = window.setInterval(() => {
@@ -90,7 +94,7 @@ export function StoreMotivationalOverlay({
         />
         <div className="relative">
           <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--store-brand)]">
-            {storeBrand}
+            {chrome.name}
           </p>
 
           <div className="mx-auto mt-8 flex size-14 items-center justify-center">

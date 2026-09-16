@@ -3,7 +3,6 @@ import { CalendarDays, Headset, Star } from "lucide-react";
 import { HomeKitsCarousel } from "@/components/store/HomeKitsCarousel";
 import { ProductListingCard } from "@/components/store/ProductListingCard";
 import { RevealOnScroll } from "@/components/store/RevealOnScroll";
-import { storeBrand } from "@/lib/brand";
 import { StoreBannerCarousel } from "@/components/store/StoreBannerCarousel";
 import {
   getCachedPublishedBanners,
@@ -18,6 +17,7 @@ import { getStorefrontTenant } from "@/lib/storefront-tenant";
 import {
   withStorefrontBranchStock,
 } from "@/lib/storefront-branch-inventory";
+import { getStorefrontChromeForRequest } from "@/lib/tenant-context";
 
 const STORE_HIGHLIGHTS = [
   {
@@ -42,9 +42,10 @@ export default async function HomePage() {
       getCachedHomeFeaturedKits(),
       getCachedStorefrontCouponDiscounts(),
     ]);
-  const [supabase, tenant] = await Promise.all([
+  const [supabase, tenant, chrome] = await Promise.all([
     createSupabaseServerClient(),
     getStorefrontTenant(),
+    getStorefrontChromeForRequest(),
   ]);
   const featuredProducts = await withStorefrontBranchStock(
     supabase,
@@ -107,7 +108,7 @@ export default async function HomePage() {
           <div className="mt-16 pt-14 sm:mt-20 sm:pt-16">
             <RevealOnScroll className="mx-auto max-w-3xl text-center">
               <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-stone-400 sm:text-xs">
-                Destacado en {storeBrand.split(/\s+/)[0]}
+                Destacado en {chrome.name.split(/\s+/)[0]}
               </p>
               <h2 className="mt-2 text-2xl font-semibold uppercase tracking-[0.06em] text-[var(--store-brand)] sm:text-3xl">
                 Productos destacados

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { StoreAddressesManager } from "@/components/store/StoreAddressesManager";
 import { StoreBirthDateForm } from "@/components/store/StoreBirthDateForm";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { storeBrand, storeSupportEmail, storeWhatsAppUrl } from "@/lib/brand";
+import { getStorefrontChromeForRequest } from "@/lib/tenant-context";
 
 export const metadata = {
   title: "Ajustes",
@@ -47,7 +47,10 @@ export default async function CuentaDireccionesPage({
   const sp = await searchParams;
   const cumple = typeof sp.cumple === "string" ? sp.cumple : undefined;
 
-  const supabase = await createSupabaseServerClient();
+  const [supabase, chrome] = await Promise.all([
+    createSupabaseServerClient(),
+    getStorefrontChromeForRequest(),
+  ]);
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -71,9 +74,9 @@ export default async function CuentaDireccionesPage({
   );
 
   const waEdit =
-    storeWhatsAppUrl !== "#"
-      ? `${storeWhatsAppUrl}?text=${encodeURIComponent("Hola, quiero actualizar los datos de mi perfil.")}`
-      : storeWhatsAppUrl;
+    chrome.whatsappUrl
+      ? `${chrome.whatsappUrl}?text=${encodeURIComponent("Hola, quiero actualizar los datos de mi perfil.")}`
+      : null;
 
   const birthIso =
     customer?.birth_date != null && String(customer.birth_date).trim() !== ""
@@ -90,9 +93,11 @@ export default async function CuentaDireccionesPage({
       <article className={cardClass}>
         <div className="flex flex-wrap items-start justify-between gap-4">
           <h2 className={cardTitle}>Perfil</h2>
-          <Link href={waEdit} className={btnOutline} target="_blank" rel="noopener noreferrer">
-            Editar
-          </Link>
+          {waEdit ? (
+            <Link href={waEdit} className={btnOutline} target="_blank" rel="noopener noreferrer">
+              Editar
+            </Link>
+          ) : null}
         </div>
         <div className="mt-8 space-y-5">
           <div>
@@ -140,9 +145,13 @@ export default async function CuentaDireccionesPage({
             />
             <p className="mt-3 text-xs leading-relaxed text-stone-500">
               Podés cambiarla cuando quieras. Los datos de nombre y correo siguen gestionándose por{" "}
-              <Link href={waEdit} className="font-medium text-stone-700 underline underline-offset-2">
-                WhatsApp
-              </Link>
+              {waEdit ? (
+                <Link href={waEdit} className="font-medium text-stone-700 underline underline-offset-2">
+                  WhatsApp
+                </Link>
+              ) : (
+                "los canales de atención"
+              )}
               .
             </p>
           </div>
@@ -157,7 +166,7 @@ export default async function CuentaDireccionesPage({
         <div className="flex flex-wrap items-start justify-between gap-4">
           <h2 className={cardTitle}>Preferencias de correo</h2>
           <a
-            href={`mailto:${storeSupportEmail}?subject=${encodeURIComponent("Preferencias de correo")}`}
+            href={`mailto:${chrome.email}?subject=${encodeURIComponent("Preferencias de correo")}`}
             className={btnOutline}
           >
             Editar
@@ -165,7 +174,7 @@ export default async function CuentaDireccionesPage({
         </div>
         <p className="mt-8 text-sm leading-relaxed text-stone-600">
           Recibís novedades y comunicaciones de{" "}
-          <span className="font-medium text-stone-800">{storeBrand}</span>{" "}
+          <span className="font-medium text-stone-800">{chrome.name}</span>{" "}
           asociadas a tu cuenta. Para cambiar la frecuencia o darte de baja,
           escríbenos por correo.
         </p>

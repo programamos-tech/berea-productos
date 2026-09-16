@@ -1,10 +1,5 @@
 "use client";
 
-import {
-  storeSupportPhone,
-  storeWhatsAppPrefilledText,
-  storeWhatsAppUrl,
-} from "@/lib/brand";
 import { useStoreCartDrawer } from "@/components/store/StoreCartDrawerProvider";
 
 /** Logo de WhatsApp (globo + teléfono) — el glifo que la gente reconoce. */
@@ -22,12 +17,19 @@ function WhatsAppGlyph({ className }: { className?: string }) {
   );
 }
 
-export function StoreWhatsAppFloatingButton() {
+export function StoreWhatsAppFloatingButton({
+  phone,
+  whatsappUrl,
+  message,
+}: {
+  phone: string;
+  whatsappUrl: string | null;
+  message: string;
+}) {
   const { isOpen: cartOpen } = useStoreCartDrawer();
-  const href =
-    storeWhatsAppUrl === "#"
-      ? null
-      : `${storeWhatsAppUrl}?text=${encodeURIComponent(storeWhatsAppPrefilledText)}`;
+  const href = whatsappUrl
+    ? `${whatsappUrl}?text=${encodeURIComponent(message)}`
+    : null;
 
   if (!href || cartOpen) return null;
 
@@ -37,7 +39,7 @@ export function StoreWhatsAppFloatingButton() {
       target="_blank"
       rel="noopener noreferrer"
       className="fixed bottom-[max(1.1rem,env(safe-area-inset-bottom))] right-4 z-[72] flex size-[4.25rem] items-center justify-center overflow-hidden rounded-full bg-[#25D366] text-white shadow-[0_16px_40px_-10px_rgba(37,211,102,0.55),0_6px_14px_-4px_rgba(0,0,0,0.18)] transition hover:bg-[#20BD5A] hover:shadow-[0_20px_44px_-10px_rgba(37,211,102,0.55)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-[#25D366] active:scale-[0.97] sm:right-6 sm:bottom-[max(1.35rem,env(safe-area-inset-bottom))] sm:size-[4.5rem]"
-      aria-label={`Escribir por WhatsApp a ${storeSupportPhone}`}
+      aria-label={`Escribir por WhatsApp a ${phone || "la tienda"}`}
       title="WhatsApp"
     >
       <WhatsAppGlyph className="size-9 text-white sm:size-10" />

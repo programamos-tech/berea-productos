@@ -1,26 +1,26 @@
 import Link from "next/link";
-import {
-  storeBrand,
-  storeCopyrightHolder,
-  storeSupportEmail,
-} from "@/lib/brand";
+import { getStorefrontChromeForRequest } from "@/lib/tenant-context";
 import {
   LegalDocument,
   LegalSection,
 } from "@/components/store/legal-document";
 
-export const metadata = {
-  title: `Política de privacidad | ${storeBrand}`,
-  description: `Cómo tratamos tus datos personales en ${storeBrand}.`,
-};
+export async function generateMetadata() {
+  const chrome = await getStorefrontChromeForRequest();
+  return {
+    title: `Política de privacidad | ${chrome.name}`,
+    description: `Cómo tratamos tus datos personales en ${chrome.name}.`,
+  };
+}
 
-export default function PrivacidadPage() {
+export default async function PrivacidadPage() {
+  const chrome = await getStorefrontChromeForRequest();
   const updatedLabel = "Última actualización: 8 de mayo de 2026";
 
   return (
     <LegalDocument title="Política de privacidad" updatedLabel={updatedLabel}>
       <p>
-        En {storeBrand} ({storeCopyrightHolder}) respetamos tu privacidad. Esta
+        En {chrome.name} ({chrome.copyrightHolder}) respetamos tu privacidad. Esta
         política describe de forma general qué información podemos recopilar,
         para qué la usamos y qué derechos tienes. Si necesitás detalles
         específicos de tu caso, escribinos.
@@ -28,13 +28,13 @@ export default function PrivacidadPage() {
 
       <LegalSection title="Responsable del tratamiento">
         <p>
-          <strong>{storeCopyrightHolder}</strong>, operando la tienda en línea{" "}
-          <strong>{storeBrand}</strong>. Para consultas sobre datos personales:{" "}
+          <strong>{chrome.copyrightHolder}</strong>, operando la tienda en línea{" "}
+          <strong>{chrome.name}</strong>. Para consultas sobre datos personales:{" "}
           <a
             className="font-medium text-stone-900 underline underline-offset-2 hover:no-underline"
-            href={`mailto:${storeSupportEmail}`}
+            href={`mailto:${chrome.email}`}
           >
-            {storeSupportEmail}
+            {chrome.email}
           </a>
           .
         </p>
@@ -100,9 +100,9 @@ export default function PrivacidadPage() {
           Para ejercerlos, escribinos a{" "}
           <a
             className="font-medium text-stone-900 underline underline-offset-2 hover:no-underline"
-            href={`mailto:${storeSupportEmail}`}
+            href={`mailto:${chrome.email}`}
           >
-            {storeSupportEmail}
+            {chrome.email}
           </a>
           . También podés presentar una queja ante la Superintendencia de
           Industria y Comercio cuando proceda.

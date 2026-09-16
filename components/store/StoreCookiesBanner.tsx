@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState, useSyncExternalStore } from "react";
 
-import { bereaSignaturePath, storeBrand } from "@/lib/brand";
+import { bereaSignaturePath } from "@/lib/brand";
 import {
   STORE_POLICY_LINKS,
   acceptAllStorePolicies,
@@ -16,13 +16,19 @@ import { storeShellClass } from "@/lib/store-theme";
 const policyLinkClass =
   "font-medium text-[var(--store-brand)] underline decoration-[var(--store-brand)]/35 underline-offset-[3px] transition hover:text-[var(--store-brand-hover)] hover:decoration-[var(--store-brand)]/70";
 
-export function StoreCookiesBanner() {
+export function StoreCookiesBanner({
+  brandName,
+  tenantSlug,
+}: {
+  brandName: string;
+  tenantSlug: string;
+}) {
   const [dismissed, setDismissed] = useState(false);
   const [policiesChecked, setPoliciesChecked] = useState(false);
 
   const storedConsent = useSyncExternalStore(
     () => () => {},
-    () => hasStoreCookieConsent(),
+    () => hasStoreCookieConsent(tenantSlug),
     () => true,
   );
 
@@ -30,12 +36,12 @@ export function StoreCookiesBanner() {
 
   const onAcceptAll = () => {
     if (!policiesChecked) return;
-    acceptAllStorePolicies();
+    acceptAllStorePolicies(tenantSlug);
     dismiss();
   };
 
   const onEssentialOnly = () => {
-    acceptEssentialStoreCookies();
+    acceptEssentialStoreCookies(tenantSlug);
     dismiss();
   };
 
@@ -43,7 +49,7 @@ export function StoreCookiesBanner() {
 
   return (
     <aside
-      className="store-cookies-banner-panel fixed inset-x-0 bottom-0 z-[70] border-t border-rose-200/90 bg-[var(--store-chrome-bg)] shadow-[0_-12px_40px_-16px_rgba(255,118,161,0.35)]"
+      className="store-cookies-banner-panel fixed inset-x-0 bottom-0 z-[70] border-t border-[var(--store-brand)]/25 bg-[var(--store-chrome-bg)] shadow-[0_-12px_40px_-16px_rgba(0,0,0,0.2)]"
       role="dialog"
       aria-labelledby="store-cookies-title"
       aria-describedby="store-cookies-desc"
@@ -65,18 +71,18 @@ export function StoreCookiesBanner() {
             id="store-cookies-desc"
             className="mt-1 text-xs leading-snug text-stone-600 sm:text-[13px]"
           >
-            En <strong className="font-medium text-stone-800">{storeBrand}</strong>{" "}
+            En <strong className="font-medium text-stone-800">{brandName}</strong>{" "}
             usamos cookies para tu bolsa y preferencias. Aceptá las políticas o
             continuá solo con lo esencial.
           </p>
         </div>
 
-        <label className="flex min-w-0 flex-1 cursor-pointer items-start gap-2.5 rounded-lg border border-rose-200/80 bg-white/80 px-3 py-2.5 transition hover:border-[var(--store-brand)]/35 hover:bg-white sm:max-w-md lg:max-w-lg">
+        <label className="flex min-w-0 flex-1 cursor-pointer items-start gap-2.5 rounded-lg border border-[var(--store-brand)]/25 bg-white/80 px-3 py-2.5 transition hover:border-[var(--store-brand)]/35 hover:bg-white sm:max-w-md lg:max-w-lg">
           <input
             type="checkbox"
             checked={policiesChecked}
             onChange={(e) => setPoliciesChecked(e.target.checked)}
-            className="mt-0.5 size-4 shrink-0 rounded border-rose-300 accent-[var(--store-brand)] focus:ring-[var(--store-brand)]/30"
+            className="mt-0.5 size-4 shrink-0 rounded border-zinc-300 accent-[var(--store-brand)] focus:ring-[var(--store-brand)]/30"
           />
           <span className="text-[11px] leading-snug text-stone-600 sm:text-xs">
             Acepto la{" "}
@@ -107,14 +113,14 @@ export function StoreCookiesBanner() {
           <button
             type="button"
             onClick={onEssentialOnly}
-            className="min-w-[9.5rem] flex-1 border border-rose-200/90 bg-white px-4 py-2.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-stone-800 transition hover:border-[var(--store-brand)]/50 hover:text-[var(--store-brand)] sm:flex-none sm:px-5 sm:text-[11px]"
+            className="min-w-[9.5rem] flex-1 border border-[var(--store-brand)]/25 bg-white px-4 py-2.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-stone-800 transition hover:border-[var(--store-brand)]/50 hover:text-[var(--store-brand)] sm:flex-none sm:px-5 sm:text-[11px]"
           >
             Solo esenciales
           </button>
         </div>
 
-        <div className="hidden shrink-0 items-center gap-2 border-l border-rose-200/70 pl-5 xl:flex">
-          <span className="text-[8px] font-medium uppercase tracking-[0.2em] text-rose-700/65">
+        <div className="hidden shrink-0 items-center gap-2 border-l border-[var(--store-brand)]/25 pl-5 xl:flex">
+          <span className="text-[8px] font-medium uppercase tracking-[0.2em] text-stone-500">
             Experiencia por
           </span>
           <Image

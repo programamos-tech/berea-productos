@@ -39,6 +39,12 @@ export type TenantBrand = {
   city?: string;
   /** Public `/…` or Storage `product-images/tenants/…`. */
   logo_path?: string;
+  primary_color?: string;
+  tagline?: string;
+  description?: string;
+  announcement?: string;
+  support_hours?: string;
+  instagram_url?: string;
   bank?: TenantBrandBank;
 };
 
@@ -98,6 +104,12 @@ export function parseTenantBrand(raw: unknown): TenantBrand {
     address: asTrimmedString(o.address),
     city: asTrimmedString(o.city),
     logo_path: asTrimmedString(o.logo_path),
+    primary_color: asTrimmedString(o.primary_color),
+    tagline: asTrimmedString(o.tagline),
+    description: asTrimmedString(o.description),
+    announcement: asTrimmedString(o.announcement),
+    support_hours: asTrimmedString(o.support_hours),
+    instagram_url: asTrimmedString(o.instagram_url),
     bank: parseBank(o.bank),
   };
   return brand;

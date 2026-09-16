@@ -19,6 +19,7 @@ import {
 } from "@/components/admin/product-form-primitives";
 import { isValidTenantSlug } from "@/lib/tenant-brand";
 import { PLATFORM_PRODUCT_HOST } from "@/lib/tenancy";
+import { deriveLogoPrimaryColor } from "@/components/admin/StorefrontBrandSettingsForm";
 
 const STEPS = [
   { id: 1, title: "Cuenta", hint: "Slug y nombre de la tienda" },
@@ -108,6 +109,7 @@ export function TenantOnboardingWizard({
   const [form, setForm] = useState<FormState>(INITIAL);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [primaryColor, setPrimaryColor] = useState("#18181B");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<Extract<
     CreateTenantOnboardingResult,
@@ -164,10 +166,14 @@ export function TenantOnboardingWizard({
     setStep((s) => Math.max(1, s - 1));
   }
 
-  function onLogoChange(file: File | null) {
+  async function onLogoChange(file: File | null) {
     setLogoFile(file);
     if (logoPreview) URL.revokeObjectURL(logoPreview);
     setLogoPreview(file ? URL.createObjectURL(file) : null);
+    if (file) {
+      const extracted = await deriveLogoPrimaryColor(file);
+      if (extracted) setPrimaryColor(extracted);
+    }
   }
 
   function submit() {
@@ -191,6 +197,7 @@ export function TenantOnboardingWizard({
     fd.set("contact_email", form.contact_email.trim());
     fd.set("whatsapp", form.whatsapp.trim());
     fd.set("custom_domains", form.custom_domains.trim());
+    fd.set("primary_color", primaryColor);
     fd.set("owner_email", form.owner_email.trim().toLowerCase());
     fd.set("owner_password", form.owner_password);
     fd.set(
@@ -494,8 +501,21 @@ export function TenantOnboardingWizard({
                 onChange={(e) => onLogoChange(e.target.files?.[0] ?? null)}
               />
               <p className="mt-2 text-xs text-zinc-500">
-                Se guarda en Storage: product-images/tenants/…/logo.*
+                Se guarda en Storage y propone automáticamente el color del catálogo.
               </p>
+              <label className={`${productLabelClass} mt-4`} htmlFor="ob-primary-color">
+                Color principal del catálogo
+              </label>
+              <div className="flex items-center gap-2">
+                <input
+                  id="ob-primary-color"
+                  type="color"
+                  value={primaryColor}
+                  onChange={(event) => setPrimaryColor(event.target.value.toUpperCase())}
+                  className="h-11 w-14 cursor-pointer rounded-lg border border-zinc-200 bg-white p-1"
+                />
+                <span className="font-mono text-xs text-zinc-600">{primaryColor}</span>
+              </div>
             </div>
             {logoPreview ? (
               // eslint-disable-next-line @next/next/no-img-element

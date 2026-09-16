@@ -7,6 +7,7 @@ import { buildStoreOrderTrackingUrl } from "@/lib/store-order-tracking-url";
 import { formatStoreDateTime } from "@/lib/store-datetime-format";
 import { loadStoreOrderDetailByTransferToken } from "@/lib/store-order-detail-data";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getStorefrontChromeForRequest } from "@/lib/tenant-context";
 
 export const dynamic = "force-dynamic";
 
@@ -30,7 +31,10 @@ export default async function PedidoSeguimientoPage({ searchParams }: Props) {
   const checkoutPm = order.checkoutPaymentMethod ?? "";
   if (checkoutPm !== "transfer") notFound();
 
-  const sessionSb = await createSupabaseServerClient();
+  const [sessionSb, chrome] = await Promise.all([
+    createSupabaseServerClient(),
+    getStorefrontChromeForRequest(),
+  ]);
   const {
     data: { user },
   } = await sessionSb.auth.getUser();
@@ -48,7 +52,10 @@ export default async function PedidoSeguimientoPage({ searchParams }: Props) {
   }
 
   const trackingUrl = buildStoreOrderTrackingUrl(orderId, token);
-  const instructions = getTransferBankInstructions();
+  const instructions = getTransferBankInstructions(
+    chrome.bank,
+    chrome.tenantSlug === "aleya",
+  );
   const createdAtLabel = formatStoreDateTime(order.createdAt, {
     dateStyle: "full",
     timeStyle: "short",

@@ -1,5 +1,6 @@
 import type { CSSProperties } from "react";
 import { Suspense } from "react";
+import type { Metadata } from "next";
 import { StoreAuthModalProvider } from "@/components/store/StoreAuthModals";
 import { StoreCookiesBanner } from "@/components/store/StoreCookiesBanner";
 import { StoreFavoritesProvider } from "@/components/store/StoreFavoritesProvider";
@@ -11,21 +12,35 @@ import { StoreWelcomeDiscountBanner } from "@/components/store/StoreWelcomeDisco
 import { StoreWhatsAppFloatingButton } from "@/components/store/StoreWhatsAppFloatingButton";
 import { StoreCartDrawerProvider } from "@/components/store/StoreCartDrawerProvider";
 import { StoreChromeShell } from "@/components/store/StoreChromeShell";
+import { StorefrontBrandProvider } from "@/components/store/StorefrontBrandProvider";
 import { resolveWelcomeModalCtaHref } from "@/lib/store-welcome-modal";
-import { STORE_HEADER_BG, STORE_HEADER_FG } from "@/lib/store-theme";
 import {
   getCachedBannerStoreCoupon,
   getCachedActiveWelcomeModal,
 } from "@/lib/store-public-cache";
+import { getStorefrontChromeForRequest } from "@/lib/tenant-context";
+import { storefrontClientChrome } from "@/lib/storefront-brand";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata(): Promise<Metadata> {
+  const chrome = await getStorefrontChromeForRequest();
+  return {
+    title: {
+      default: chrome.name,
+      template: `%s | ${chrome.name}`,
+    },
+    description: chrome.description,
+  };
+}
 
 export default async function StoreLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const [welcomeModal, promoBanner] = await Promise.all([
+  const [chrome, welcomeModal, promoBanner] = await Promise.all([
+    getStorefrontChromeForRequest(),
     getCachedActiveWelcomeModal(),
     getCachedBannerStoreCoupon(),
   ]);
@@ -33,7 +48,7 @@ export default async function StoreLayout({
   const top = (
     <>
       <Suspense fallback={<StoreHeaderSkeleton />}>
-        <StoreHeader />
+        <StoreHeader chrome={chrome} />
       </Suspense>
       {promoBanner ? (
         <StoreWelcomeDiscountBanner dbCoupon={promoBanner} />
@@ -43,9 +58,16 @@ export default async function StoreLayout({
 
   const bottom = (
     <>
-      <StoreFooter />
-      <StoreWhatsAppFloatingButton />
-      <StoreCookiesBanner />
+      <StoreFooter chrome={chrome} />
+      <StoreWhatsAppFloatingButton
+        phone={chrome.phone}
+        whatsappUrl={chrome.whatsappUrl}
+        message={chrome.whatsappPrefilledText}
+      />
+      <StoreCookiesBanner
+        brandName={chrome.name}
+        tenantSlug={chrome.tenantSlug}
+      />
       {welcomeModal ? (
         <StoreWelcomeSignupModal
           title={welcomeModal.title}
@@ -60,15 +82,22 @@ export default async function StoreLayout({
   );
 
   return (
-    <StoreFavoritesProvider>
-      <StoreCartDrawerProvider>
-        <StoreAuthModalProvider>
+    <StorefrontBrandProvider chrome={storefrontClientChrome(chrome)}>
+      <StoreFavoritesProvider>
+        <StoreCartDrawerProvider>
+          <StoreAuthModalProvider>
           <div
             className="flex min-h-full flex-col overflow-x-hidden bg-white text-stone-800"
             style={
               {
-                "--store-header-bg": STORE_HEADER_BG,
-                "--store-header-fg": STORE_HEADER_FG,
+                "--store-accent": chrome.theme.primary,
+                "--store-accent-hover": chrome.theme.primaryHover,
+                "--store-brand": chrome.theme.primary,
+                "--store-brand-hover": chrome.theme.primaryHover,
+                "--store-header-bg": chrome.theme.primary,
+                "--store-header-fg": chrome.theme.foreground,
+                "--store-announcement-bg": chrome.theme.announcement,
+                "--store-image-well-tint": chrome.theme.imageTint,
               } as CSSProperties
             }
           >
@@ -76,8 +105,9 @@ export default async function StoreLayout({
               <main className="flex-1">{children}</main>
             </StoreChromeShell>
           </div>
-        </StoreAuthModalProvider>
-      </StoreCartDrawerProvider>
-    </StoreFavoritesProvider>
+          </StoreAuthModalProvider>
+        </StoreCartDrawerProvider>
+      </StoreFavoritesProvider>
+    </StorefrontBrandProvider>
   );
 }

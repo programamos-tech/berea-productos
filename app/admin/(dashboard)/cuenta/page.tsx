@@ -1,4 +1,5 @@
 import { AdminUserAvatar } from "@/components/admin/AdminUserAvatar";
+import { StorefrontBrandSettingsForm } from "@/components/admin/StorefrontBrandSettingsForm";
 import {
   collaboratorJobRoleLabel,
   PERMISSION_MODULES,
@@ -12,6 +13,7 @@ import {
 } from "@/lib/admin-ui";
 import { loadAdminPermissions } from "@/lib/load-admin-permissions";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { buildStorefrontChrome } from "@/lib/storefront-brand";
 import { redirect } from "next/navigation";
 
 function formatDate(iso: string | null | undefined): string {
@@ -42,6 +44,8 @@ export default async function AdminCuentaPage({
 }) {
   const sp = await searchParams;
   const forbiddenNotice = sp.notice === "forbidden";
+  const storefrontNotice =
+    typeof sp.storefront === "string" ? sp.storefront : undefined;
 
   const perm = await loadAdminPermissions();
   if (!perm) redirect("/admin/login");
@@ -51,11 +55,25 @@ export default async function AdminCuentaPage({
   const user = userData.user;
   if (!user) redirect("/admin/login");
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("login_username, public_email, branch_label")
-    .eq("id", user.id)
-    .maybeSingle();
+  const [{ data: profile }, { data: tenant }] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("login_username, public_email, branch_label")
+      .eq("id", user.id)
+      .maybeSingle(),
+    supabase
+      .from("tenants")
+      .select("brand,storefront_config")
+      .eq("id", perm.tenantId)
+      .maybeSingle(),
+  ]);
+  const storefrontChrome = buildStorefrontChrome({
+    tenantId: perm.tenantId,
+    tenantSlug: perm.tenantSlug,
+    tenantName: perm.tenantName,
+    brandRaw: tenant?.brand,
+    storefrontConfigRaw: tenant?.storefront_config,
+  });
 
   const displayName = perm.displayName;
   const email = perm.email;
@@ -106,6 +124,22 @@ export default async function AdminCuentaPage({
           rol en Equipo.
         </div>
       ) : null}
+      {storefrontNotice ? (
+        <div
+          className={`rounded-lg border px-3 py-2 text-sm ${
+            storefrontNotice === "updated"
+              ? "border-emerald-200 bg-emerald-50 text-emerald-950 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-100"
+              : "border-red-200 bg-red-50 text-red-950 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-100"
+          }`}
+          role="status"
+        >
+          {storefrontNotice === "updated"
+            ? "La apariencia del catálogo quedó actualizada."
+            : storefrontNotice === "logo"
+              ? "El logo debe ser JPG, PNG, WebP o AVIF y pesar máximo 3 MB."
+              : "No pudimos guardar la apariencia del catálogo."}
+        </div>
+      ) : null}
 
       <section className={`${adminPanelClass} p-4 sm:p-5`}>
         <h2 className={adminFilterLabelClass}>Perfil</h2>
@@ -144,6 +178,44 @@ export default async function AdminCuentaPage({
           </div>
         </dl>
       </section>
+
+      {perm.jobRole === "owner" || perm.isPlatformOperator ? (
+        <section className={`${adminPanelClass} p-4 sm:p-5`}>
+          <div className="mb-5">
+            <h2 className={adminFilterLabelClass}>Apariencia del catálogo</h2>
+            <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+              Logo, color y datos públicos de tu tienda en línea.
+            </p>
+          </div>
+          <StorefrontBrandSettingsForm
+            initial={{
+              tradeName: storefrontChrome.name,
+              logoSrc: storefrontChrome.logoSrc,
+              primaryColor: storefrontChrome.primaryColor,
+              tagline: storefrontChrome.tagline,
+              description: storefrontChrome.description,
+              announcement: storefrontChrome.announcement,
+              phone: storefrontChrome.phone,
+              email: storefrontChrome.email,
+              whatsapp: String(
+                (
+                  tenant?.brand as
+                    | { whatsapp?: unknown }
+                    | null
+                    | undefined
+                )?.whatsapp ?? "",
+              ),
+              supportHours: storefrontChrome.supportHours,
+              instagramUrl: storefrontChrome.instagramUrl ?? "",
+              bankHolder: storefrontChrome.bank?.holder ?? "",
+              bankTaxId: storefrontChrome.bank?.tax_id ?? "",
+              bankAccount: storefrontChrome.bank?.account ?? "",
+              checkoutMode: storefrontChrome.checkoutMode,
+              canUseWompi: perm.tenantSlug === "aleya",
+            }}
+          />
+        </section>
+      ) : null}
 
       <section className={`${adminPanelClass} p-4 sm:p-5`}>
         <div className="flex flex-wrap items-baseline justify-between gap-2">

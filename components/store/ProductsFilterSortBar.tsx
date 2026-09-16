@@ -33,8 +33,8 @@ export function ProductsFilterSortBar({ q, sort, categoryId }: Props) {
         href={buildProductsHref(q, s, categoryId)}
         className={`${sortPillBase} ${
           active
-            ? "border border-[#FF76A1]/45 bg-[#ffe8f0] text-[#b8325e]"
-            : "border border-stone-200/80 bg-white text-stone-600 hover:border-[#FF76A1]/25 hover:bg-[#fff8fb]"
+            ? "border border-[var(--store-brand)]/45 bg-[var(--store-announcement-bg)] text-[var(--store-brand)]"
+            : "border border-stone-200/80 bg-white text-stone-600 hover:border-[var(--store-brand)]/25 hover:bg-[var(--store-announcement-bg)]"
         }`}
       >
         {label}
@@ -49,7 +49,7 @@ export function ProductsFilterSortBar({ q, sort, categoryId }: Props) {
           type="button"
           disabled
           title="Filtros avanzados disponibles en una próxima versión"
-          className="inline-flex w-fit shrink-0 items-center gap-1.5 rounded-full border border-[#ffd6e8] bg-[#ffe8f0] px-3 py-1.5 text-xs font-medium text-[#b8325e] shadow-sm sm:text-sm cursor-not-allowed opacity-70"
+          className="inline-flex w-fit shrink-0 cursor-not-allowed items-center gap-1.5 rounded-full border border-[var(--store-brand)]/25 bg-[var(--store-announcement-bg)] px-3 py-1.5 text-xs font-medium text-[var(--store-brand)] opacity-70 shadow-sm sm:text-sm"
         >
           Filtros
           <span className="text-stone-400" aria-hidden>

@@ -16,9 +16,11 @@ import {
   type ProductKitRow,
 } from "@/lib/product-kits";
 import { normalizeStorefrontCartLines } from "@/lib/storefront-cart";
-import { storeBrand } from "@/lib/brand";
 import { ensureStoreCustomerLinked } from "@/lib/store-customer-service";
-import { getRequestTenant } from "@/lib/tenant-context";
+import {
+  getRequestTenant,
+  getStorefrontChromeForRequest,
+} from "@/lib/tenant-context";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
 import {
@@ -86,8 +88,8 @@ export async function startCheckout(formData: FormData) {
   const shippingPostalCode = String(formData.get("zipCode") ?? "").trim();
   const shippingPhone = String(formData.get("mobile") ?? "").trim();
   const couponCode = String(formData.get("couponCode") ?? "").trim();
-  const paymentMethodRaw = String(formData.get("paymentMethod") ?? "transfer").trim();
-  const useTransfer = paymentMethodRaw !== "wompi";
+  const storefrontChrome = await getStorefrontChromeForRequest();
+  const useTransfer = storefrontChrome.checkoutMode !== "wompi";
 
   if (!resolvedName) {
     redirect("/checkout?error=missing_name");
@@ -604,7 +606,7 @@ export async function startCheckout(formData: FormData) {
   }
 
   const link = await createPaymentLink({
-    name: `${storeBrand} · Pedido`,
+    name: `${storefrontChrome.name} · Pedido`,
     description: `Pedido ${orderId}`,
     amountInCents: orderTotalCents,
     currency,

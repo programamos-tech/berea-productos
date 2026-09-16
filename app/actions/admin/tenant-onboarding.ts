@@ -18,6 +18,7 @@ import {
 } from "@/lib/tenant-brand";
 import { assertCanCreateTenant } from "@/lib/tenant-onboarding-auth";
 import { tenantProductHost } from "@/lib/tenancy";
+import { normalizeStorefrontColor } from "@/lib/storefront-brand";
 import { revalidatePath } from "next/cache";
 
 export type CreateTenantOnboardingResult =
@@ -153,6 +154,9 @@ export async function createTenantOnboarding(
     address,
     city,
   });
+  brand.primary_color = normalizeStorefrontColor(
+    String(formData.get("primary_color") ?? ""),
+  );
 
   const { data: tenant, error: tErr } = await service
     .from("tenants")
@@ -165,6 +169,7 @@ export async function createTenantOnboarding(
       account_holder_email: ownerEmail,
       custom_domains: customDomains,
       brand,
+      storefront_config: { checkout_mode: "transfer" },
     })
     .select("id, slug")
     .single();

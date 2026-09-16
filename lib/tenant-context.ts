@@ -12,6 +12,10 @@ import {
   tenantBrandToInvoiceFields,
   type InvoiceBrandFields,
 } from "@/lib/tenant-brand";
+import {
+  buildStorefrontChrome,
+  type StorefrontChrome,
+} from "@/lib/storefront-brand";
 
 export type TenantRef = {
   id: string;
@@ -31,7 +35,8 @@ async function getRequestTenantUncached(): Promise<TenantRef> {
 
   const h = await headers();
   const fromMiddleware = h.get(TENANT_SLUG_HEADER)?.trim();
-  const fromHost = resolveTenantFromHost(h.get("host")).slug;
+  const resolvedHost = resolveTenantFromHost(h.get("host"));
+  const fromHost = resolvedHost.slug;
   const slug = fromMiddleware || fromHost || DEFAULT_TENANT_SLUG;
 
   const supabase = await createSupabaseServerClient();
@@ -48,6 +53,10 @@ async function getRequestTenantUncached(): Promise<TenantRef> {
 
   if (data?.id) {
     return { id: data.id, slug: data.slug, name: data.name };
+  }
+
+  if (slug !== DEFAULT_TENANT_SLUG || resolvedHost.kind === "unknown") {
+    throw new Error(`Tenant storefront "${slug}" not found`);
   }
 
   // Hard fallback: Aleya (production dataset)
@@ -89,3 +98,29 @@ async function getTenantBrandForRequestUncached(): Promise<InvoiceBrandFields> {
  * Empty `tenants.brand` → env defaults from `lib/brand.ts` (Aleya unchanged).
  */
 export const getTenantBrandForRequest = cache(getTenantBrandForRequestUncached);
+
+async function getStorefrontChromeForRequestUncached(): Promise<StorefrontChrome> {
+  const tenant = await getRequestTenant();
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("tenants")
+    .select("brand,storefront_config")
+    .eq("id", tenant.id)
+    .maybeSingle();
+
+  if (error) {
+    console.error("[tenancy] getStorefrontChromeForRequest:", error.message);
+  }
+
+  return buildStorefrontChrome({
+    tenantId: tenant.id,
+    tenantSlug: tenant.slug,
+    tenantName: tenant.name,
+    brandRaw: data?.brand,
+    storefrontConfigRaw: data?.storefront_config,
+  });
+}
+
+export const getStorefrontChromeForRequest = cache(
+  getStorefrontChromeForRequestUncached,
+);

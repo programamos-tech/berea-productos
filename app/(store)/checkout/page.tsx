@@ -29,7 +29,10 @@ import {
 } from "@/lib/storefront-gross-price";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
-import { getRequestTenant } from "@/lib/tenant-context";
+import {
+  getRequestTenant,
+  getStorefrontChromeForRequest,
+} from "@/lib/tenant-context";
 import { withStorefrontBranchStock } from "@/lib/storefront-branch-inventory";
 import { imagePathForProductLine } from "@/lib/product-line-image";
 import {
@@ -277,7 +280,10 @@ export default async function CheckoutPage({
   const unpublishedProduct =
     typeof sp.product === "string" ? sp.product : undefined;
 
-  const displayCart = await getStorefrontCartLines();
+  const [displayCart, storefrontChrome] = await Promise.all([
+    getStorefrontCartLines(),
+    getStorefrontChromeForRequest(),
+  ]);
   if (!displayCart.length) {
     return (
       <CheckoutBolsaVaciaView
@@ -787,18 +793,25 @@ export default async function CheckoutPage({
                   Forma de pago
                 </h2>
                 <p className="mt-2 text-sm leading-relaxed text-stone-500">
-                  El pago se realiza únicamente por transferencia bancaria. Al finalizar verás las cuentas
-                  disponibles (Bancolombia, Nequi o Daviplata) y podrás adjuntar el comprobante en los 2
-                  minutos posteriores a cada vez que habilites la subida.
+                  {storefrontChrome.checkoutMode === "wompi"
+                    ? "Paga en línea de forma segura con Wompi. Al confirmar te llevaremos a su pasarela."
+                    : "El pago se realiza por transferencia bancaria. Al finalizar verás los datos disponibles y podrás adjuntar el comprobante."}
                 </p>
-                <input type="hidden" name="paymentMethod" value="transfer" />
+                <input
+                  type="hidden"
+                  name="paymentMethod"
+                  value={storefrontChrome.checkoutMode}
+                />
                 <div className="mt-6 border border-[var(--store-accent)] bg-white p-4 ring-1 ring-[var(--store-accent)]">
                   <p className="text-sm font-medium text-stone-900">
-                    Transferencia bancaria
+                    {storefrontChrome.checkoutMode === "wompi"
+                      ? "Pago en línea con Wompi"
+                      : "Transferencia bancaria"}
                   </p>
                   <p className="mt-1 text-xs leading-relaxed text-stone-500">
-                    Recibirás los datos para transferir y un formulario para subir el comprobante de
-                    pago.
+                    {storefrontChrome.checkoutMode === "wompi"
+                      ? "Wompi procesará el pago y te devolverá a la confirmación de tu pedido."
+                      : "Recibirás los datos para transferir y un formulario para subir el comprobante de pago."}
                   </p>
                 </div>
               </section>
