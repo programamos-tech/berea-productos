@@ -90,6 +90,13 @@ export function AdminUserMenu({
             </LeaveAccountButton>
           ) : null}
           <Link
+            href="/admin/configuracion"
+            onClick={() => setOpen(false)}
+            className="mb-2 block rounded-xl border border-zinc-200 bg-zinc-50 px-3.5 py-2.5 text-sm font-semibold text-zinc-900 transition hover:border-zinc-300 hover:bg-zinc-100 dark:border-zinc-600 dark:bg-zinc-800/80 dark:text-zinc-100 dark:hover:bg-zinc-800"
+          >
+            Configuración
+          </Link>
+          <Link
             href="/admin/cuenta"
             onClick={() => setOpen(false)}
             className="block rounded-xl border border-zinc-200 bg-zinc-50 px-3.5 py-2.5 text-sm font-semibold text-zinc-900 transition hover:border-zinc-300 hover:bg-zinc-100 dark:border-zinc-600 dark:bg-zinc-800/80 dark:text-zinc-100 dark:hover:bg-zinc-800"

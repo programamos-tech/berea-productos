@@ -25,6 +25,7 @@ export function staffMustOpenCashRegister(args: {
 export const CASH_GATE_ALLOWED_PREFIXES = [
   "/admin/caja",
   "/admin/cuenta",
+  "/admin/configuracion",
 ] as const;
 
 export function pathAllowedDuringCashGate(pathname: string): boolean {
@@ -34,6 +35,11 @@ export function pathAllowedDuringCashGate(pathname: string): boolean {
 }
 
 export function navHrefsForCashGate(allowedNavHrefs: string[]): string[] {
-  const keep = new Set<string>(["/admin/caja", "/admin/cuenta", "/"]);
+  const keep = new Set<string>([
+    "/admin/caja",
+    "/admin/cuenta",
+    "/admin/configuracion",
+    "/",
+  ]);
   return allowedNavHrefs.filter((h) => keep.has(h));
 }

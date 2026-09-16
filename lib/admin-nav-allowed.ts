@@ -30,7 +30,7 @@ export function adminNavAllowedHrefList(
   p: PermissionMap,
   opts?: { jobRole?: CollaboratorJobRole; canOnboard?: boolean },
 ): string[] {
-  const out = new Set<string>(["/admin/cuenta", "/"]);
+  const out = new Set<string>(["/admin/cuenta", "/admin/configuracion", "/"]);
   for (const { href, keys } of NAV_HREFS_WITH_PERMISSION) {
     if (keys.some((k) => Boolean(p[k]))) out.add(href);
   }

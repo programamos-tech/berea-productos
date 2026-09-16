@@ -9,6 +9,10 @@ import {
   TENANT_SLUG_HEADER,
 } from "@/lib/tenancy";
 import {
+  parseInvoiceLayout,
+  type InvoiceLayout,
+} from "@/lib/invoice-layout";
+import {
   parseTenantBrand,
   tenantBrandToInvoiceFields,
   type InvoiceBrandFields,
@@ -99,6 +103,27 @@ async function getTenantBrandForRequestUncached(): Promise<InvoiceBrandFields> {
  * Empty `tenants.brand` → env defaults from `lib/brand.ts` (Aleya unchanged).
  */
 export const getTenantBrandForRequest = cache(getTenantBrandForRequestUncached);
+
+async function getInvoiceLayoutForRequestUncached(): Promise<InvoiceLayout> {
+  const tenant = await getRequestTenant();
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("tenants")
+    .select("storefront_config")
+    .eq("id", tenant.id)
+    .maybeSingle();
+
+  if (error) {
+    console.error("[tenancy] getInvoiceLayoutForRequest:", error.message);
+  }
+
+  return parseInvoiceLayout(data?.storefront_config);
+}
+
+/** Formato de impresión de facturas del tenant (`ticket` o `letter`). */
+export const getInvoiceLayoutForRequest = cache(
+  getInvoiceLayoutForRequestUncached,
+);
 
 async function getStorefrontChromeForRequestUncached(): Promise<StorefrontChrome> {
   const tenant = await getRequestTenant();

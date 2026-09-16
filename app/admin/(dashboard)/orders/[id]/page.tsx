@@ -4,7 +4,7 @@ import { safeAdminVentasListReturnPath } from "@/lib/admin-ventas-list-url";
 import { resolveProfileName } from "@/lib/cash-close-report";
 import { decodeQuotationStockNotices } from "@/lib/quotation-stock-notice";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { getTenantBrandForRequest } from "@/lib/tenant-context";
+import { getInvoiceLayoutForRequest, getTenantBrandForRequest } from "@/lib/tenant-context";
 import { ventaNumeroReferencia } from "@/lib/ventas-sales";
 
 export const dynamic = "force-dynamic";
@@ -188,7 +188,10 @@ export default async function AdminOrderDetailPage({ params, searchParams }: Pro
     ).filter((x): x is NonNullable<typeof x> => x != null);
   }
 
-  const invoiceBrand = await getTenantBrandForRequest();
+  const [invoiceBrand, invoiceLayout] = await Promise.all([
+    getTenantBrandForRequest(),
+    getInvoiceLayoutForRequest(),
+  ]);
 
   return (
     <OrderInvoiceDetailView
@@ -242,6 +245,7 @@ export default async function AdminOrderDetailPage({ params, searchParams }: Pro
       }
       ventasListHref={ventasListHref}
       invoiceBrand={invoiceBrand}
+      invoiceLayout={invoiceLayout}
       convertError={typeof sp.error === "string" ? sp.error : null}
       justInvoiced={sp.facturada === "1"}
       stockNotices={decodeQuotationStockNotices(

@@ -20,6 +20,7 @@ import {
   storeSupportPhone as envStoreSupportPhone,
   storeTaxRegime as envStoreTaxRegime,
 } from "@/lib/brand";
+import type { InvoiceLayout } from "@/lib/invoice-layout";
 import { formatCop } from "@/lib/money";
 import {
   quotationConvertErrorMessage,
@@ -123,6 +124,8 @@ export type OrderInvoiceDetailViewProps = {
   convertError?: string | null;
   justInvoiced?: boolean;
   stockNotices?: QuotationStockNotice[];
+  /** Formato de factura: tira (default) u hoja carta. Las cotizaciones siempre van en hoja. */
+  invoiceLayout?: InvoiceLayout;
 };
 
 function IconClock({ className }: { className?: string }) {
@@ -239,6 +242,7 @@ export function OrderInvoiceDetailView(props: OrderInvoiceDetailViewProps) {
     convertError = null,
     justInvoiced = false,
     stockNotices = [],
+    invoiceLayout = "ticket",
   } = props;
 
   const invoiceTradeName =
@@ -264,6 +268,7 @@ export function OrderInvoiceDetailView(props: OrderInvoiceDetailViewProps) {
 
   const isTransferWeb = checkoutPaymentMethod === "transfer";
   const isQuotation = status === "quotation";
+  const isLetterLayout = isQuotation || invoiceLayout === "letter";
   const docNoun = isQuotation ? "Cotización" : "Factura";
 
   const pagoTone = ventaFormaPagoTone(wompiReference, {
@@ -330,7 +335,7 @@ export function OrderInvoiceDetailView(props: OrderInvoiceDetailViewProps) {
   return (
     <div
       className={
-        isQuotation
+        isLetterLayout
           ? "quotation-letterhead-print flex w-full min-w-0 max-w-none flex-col gap-4 print:mx-auto print:max-w-none print:gap-0 print:bg-white print:px-0 print:py-0 print:text-zinc-900 dark:print:bg-white"
           : "invoice-ticket-print flex w-full min-w-0 max-w-none flex-col gap-4 print:mx-auto print:max-w-[72mm] print:gap-2 print:bg-white print:px-0 print:py-0 print:text-zinc-900 print:leading-snug dark:print:bg-white"
       }
@@ -501,7 +506,7 @@ export function OrderInvoiceDetailView(props: OrderInvoiceDetailViewProps) {
         </Link>
       </header>
 
-      {isQuotation ? (
+      {isLetterLayout ? (
         <div className="hidden print:block print:text-[10.5pt] print:leading-snug print:text-zinc-900">
           <div className="print:flex print:items-start print:justify-between print:gap-8 print:pb-2">
             <div className="print:min-w-0 print:flex-1">
@@ -551,7 +556,7 @@ export function OrderInvoiceDetailView(props: OrderInvoiceDetailViewProps) {
           <div className="print:mt-6 print:flex print:items-end print:justify-between print:gap-4">
             <div>
               <p className="print:text-[8pt] print:font-semibold print:uppercase print:tracking-[0.14em] print:text-zinc-500">
-                Cotización
+                {docNoun}
               </p>
               <p className="print:mt-1 print:text-[20pt] print:font-semibold print:leading-none print:tracking-tight print:text-black">
                 #{invoiceRef}
@@ -838,7 +843,7 @@ export function OrderInvoiceDetailView(props: OrderInvoiceDetailViewProps) {
       <div className="hidden print:block">
         {lines.length === 0 ? null : (
           <>
-            {isQuotation ? (
+            {isLetterLayout ? (
               <table className="ql-table w-full border-collapse text-[10pt] text-zinc-900">
                 <thead>
                   <tr className="border-b border-zinc-300">
@@ -930,7 +935,7 @@ export function OrderInvoiceDetailView(props: OrderInvoiceDetailViewProps) {
             <div className="mt-4 flex justify-end print:break-inside-avoid">
               <div
                 className={
-                  isQuotation
+                  isLetterLayout
                     ? "w-full max-w-[70mm] border-t border-zinc-200 pt-3"
                     : "w-full max-w-none"
                 }
@@ -938,14 +943,14 @@ export function OrderInvoiceDetailView(props: OrderInvoiceDetailViewProps) {
                 {totalsMatch && !showShippingRow ? (
                   <div
                     className={
-                      isQuotation
+                      isLetterLayout
                         ? "flex justify-between gap-4 text-[11pt]"
                         : "flex justify-between gap-4 border-t-2 border-black pt-2"
                     }
                   >
                     <span
                       className={
-                        isQuotation
+                        isLetterLayout
                           ? "font-semibold uppercase tracking-[0.12em] text-[8pt] text-zinc-500"
                           : "font-bold text-[12px] text-black"
                       }
@@ -954,7 +959,7 @@ export function OrderInvoiceDetailView(props: OrderInvoiceDetailViewProps) {
                     </span>
                     <span
                       className={
-                        isQuotation
+                        isLetterLayout
                           ? "text-[13pt] font-bold tabular-nums text-zinc-950"
                           : "text-[13px] font-bold tabular-nums text-black"
                       }
@@ -1001,13 +1006,13 @@ export function OrderInvoiceDetailView(props: OrderInvoiceDetailViewProps) {
         )}
       </div>
 
-      {isQuotation ? (
+      {isLetterLayout ? (
         <>
         <div className="ql-footer hidden print:mt-8 print:block print:pb-[18mm] print:text-center print:text-[8.5pt] print:leading-relaxed print:text-zinc-500">
           <p>
-            Esta cotización está sujeta a disponibilidad de inventario, vigencia
-            de precios y confirmación al momento de facturar. No constituye
-            factura. IVA incluido.
+            {isQuotation
+              ? "Esta cotización está sujeta a disponibilidad de inventario, vigencia de precios y confirmación al momento de facturar. No constituye factura. IVA incluido."
+              : "Documento de venta. IVA incluido. Gracias por su compra."}
           </p>
         </div>
         <div className="ql-powered hidden print:fixed print:bottom-[10mm] print:left-0 print:right-0 print:flex print:flex-col print:items-center print:gap-1">
