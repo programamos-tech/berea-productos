@@ -639,7 +639,7 @@ export function OrderInvoiceDetailView(props: OrderInvoiceDetailViewProps) {
 
       {/* Pantalla: layout limpio estilo Reportes (impresión arriba en bloques hidden print:block) */}
       <div className="print:hidden">
-        <div className="flex flex-col gap-6 border-t border-zinc-200/70 pt-4 dark:border-zinc-800 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(16rem,18rem)] lg:items-start lg:gap-10 xl:gap-12">
+        <div className="flex flex-col gap-6 border-t border-zinc-200/70 pt-4 dark:border-zinc-800 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(18rem,20rem)] lg:items-start lg:gap-10 xl:gap-12">
           <section className="reports-chart-reveal min-w-0">
             {lines.length === 0 ? (
               <p className="text-sm text-zinc-500 dark:text-zinc-400">
