@@ -8,6 +8,7 @@ import {
   type PDFPage,
 } from "pdf-lib";
 import {
+  adminSidebarLogoPath,
   invoiceLegalName as envInvoiceLegalName,
   invoiceLogoPath as envInvoiceLogoPath,
   invoiceStoreAddress as envInvoiceStoreAddress,
@@ -21,7 +22,6 @@ import {
 } from "@/lib/brand";
 import { formatCop } from "@/lib/money";
 import { getPublicSiteUrl } from "@/lib/public-site-url";
-import { STORE_BRAND } from "@/lib/store-theme";
 import {
   resolveInvoiceLogoSrc,
   tenantBrandToInvoiceFields,
@@ -49,12 +49,12 @@ export type QuotationPdfInput = {
   brand?: InvoiceBrandFields;
 };
 
-const BRAND = hexToRgb(STORE_BRAND);
-const BRAND_DARK = hexToRgb("#be185d");
 const INK = hexToRgb("#18181b");
 const MUTED = hexToRgb("#52525b");
-const SOFT = hexToRgb("#fff5f8");
-const RULE = hexToRgb("#f4f4f5");
+const FAINT = hexToRgb("#71717a");
+const LINE = hexToRgb("#d4d4d8");
+const HAIR = hexToRgb("#e4e4e7");
+const WHITE = rgb(1, 1, 1);
 
 function hexToRgb(hex: string) {
   const h = hex.replace("#", "");
@@ -137,8 +137,22 @@ async function loadLogoBytes(logoPath: string): Promise<Uint8Array | null> {
   }
 }
 
+async function embedLogoImage(pdf: PDFDocument, logoPath: string) {
+  const bytes = await loadLogoBytes(logoPath);
+  if (!bytes) return null;
+  try {
+    return await pdf.embedPng(bytes);
+  } catch {
+    try {
+      return await pdf.embedJpg(bytes);
+    } catch {
+      return null;
+    }
+  }
+}
+
 /**
- * Genera PDF membretado de cotización (carta).
+ * Genera PDF de cotización (carta), blanco y negro, alineado a la plataforma.
  * Usa `input.brand` cuando hay tenant; si no, env de Aleya.
  */
 export async function buildQuotationPdf(
@@ -167,171 +181,122 @@ export async function buildQuotationPdf(
   const contentWidth = pageWidth - marginX * 2;
 
   let page = pdf.addPage([pageWidth, pageHeight]);
-  let y = pageHeight - 36;
+  let y = pageHeight - 44;
 
   const ensureSpace = (needed: number) => {
-    if (y - needed < 56) {
+    if (y - needed < 64) {
       page = pdf.addPage([pageWidth, pageHeight]);
       y = pageHeight - 48;
     }
   };
 
-  // Barra rosa superior
-  page.drawRectangle({
-    x: 0,
-    y: pageHeight - 14,
-    width: pageWidth,
-    height: 14,
-    color: BRAND,
-  });
-  y = pageHeight - 36;
+  const siteUrl = getPublicSiteUrl().replace(/^https?:\/\//, "");
+  const avatarSize = 48;
+  const logo = await embedLogoImage(pdf, invoiceLogoPath);
+  const headerMaxW = contentWidth - (logo ? avatarSize + 16 : 0);
 
-  const logoBytes = await loadLogoBytes(invoiceLogoPath);
-  let logoBottom = y;
-  if (logoBytes) {
-    try {
-      let logo;
-      try {
-        logo = await pdf.embedPng(logoBytes);
-      } catch {
-        logo = await pdf.embedJpg(logoBytes);
-      }
-      const maxW = 108;
-      const maxH = 72;
-      const scale = Math.min(maxW / logo.width, maxH / logo.height);
-      const w = logo.width * scale;
-      const h = logo.height * scale;
-      page.drawRectangle({
-        x: marginX,
-        y: y - h - 4,
-        width: w + 8,
-        height: h + 8,
-        color: rgb(0, 0, 0),
-      });
-      page.drawImage(logo, {
-        x: marginX + 4,
-        y: y - h,
-        width: w,
-        height: h,
-      });
-      logoBottom = y - h - 8;
-    } catch {
-      // logo opcional
-    }
-  }
-
-  const headerX = marginX + 128;
-  let hy = y - 4;
-  hy =
+  y =
+    drawText(page, "COTIZACION COMERCIAL", {
+      x: marginX,
+      y,
+      size: 8,
+      font: fontBold,
+      color: FAINT,
+    }) + 6;
+  y =
     drawText(page, invoiceLegalName, {
-      x: headerX,
-      y: hy,
+      x: marginX,
+      y,
       size: 16,
       font: fontBold,
       color: INK,
-      maxWidth: 220,
+      maxWidth: headerMaxW,
     }) + 4;
-  hy =
-    drawText(page, `${invoiceTradeName} · ${storeTaxRegime}`, {
-      x: headerX,
-      y: hy,
-      size: 9,
-      font: fontBold,
-      color: BRAND_DARK,
-      maxWidth: 220,
-    }) + 2;
-  hy = drawText(page, `NIT ${invoiceTaxNit}`, {
-    x: headerX,
-    y: hy,
+  y = drawText(page, `${invoiceTradeName} · NIT ${invoiceTaxNit} · ${storeTaxRegime}`, {
+    x: marginX,
+    y,
     size: 9,
     font,
     color: MUTED,
+    maxWidth: headerMaxW,
   });
   const addr = [invoiceStoreAddress, invoiceStoreCity].filter(Boolean).join(" · ");
   if (addr) {
-    hy = drawText(page, addr, {
-      x: headerX,
-      y: hy + 2,
+    y = drawText(page, addr, {
+      x: marginX,
+      y: y + 2,
       size: 8,
       font,
       color: MUTED,
-      maxWidth: 220,
+      maxWidth: headerMaxW,
+    });
+  }
+  const contactLine = [
+    storeSupportPhone,
+    storeSupportEmail,
+    siteUrl,
+    storeSupportHours,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+  y = drawText(page, contactLine, {
+    x: marginX,
+    y: y + 4,
+    size: 8,
+    font,
+    color: FAINT,
+    maxWidth: headerMaxW,
+  });
+
+  if (logo) {
+    const avatarX = pageWidth - marginX - avatarSize;
+    const avatarY = pageHeight - 44 - avatarSize + 10;
+    page.drawCircle({
+      x: avatarX + avatarSize / 2,
+      y: avatarY + avatarSize / 2,
+      size: avatarSize / 2,
+      color: WHITE,
+      borderColor: LINE,
+      borderWidth: 0.8,
+    });
+    const pad = 7;
+    const maxInner = avatarSize - pad * 2;
+    const scale = Math.min(maxInner / logo.width, maxInner / logo.height);
+    const w = logo.width * scale;
+    const h = logo.height * scale;
+    page.drawImage(logo, {
+      x: avatarX + (avatarSize - w) / 2,
+      y: avatarY + (avatarSize - h) / 2,
+      width: w,
+      height: h,
     });
   }
 
-  const siteUrl = getPublicSiteUrl().replace(/^https?:\/\//, "");
-  const contactX = pageWidth - marginX - 140;
-  let cy = y - 4;
-  cy = drawText(page, "Contacto", {
-    x: contactX,
-    y: cy,
-    size: 9,
-    font: fontBold,
-    color: INK,
-  });
-  cy = drawText(page, `Tel. ${storeSupportPhone}`, {
-    x: contactX,
-    y: cy + 2,
-    size: 8,
-    font,
-    color: MUTED,
-    maxWidth: 140,
-  });
-  cy = drawText(page, storeSupportEmail, {
-    x: contactX,
-    y: cy + 2,
-    size: 8,
-    font,
-    color: MUTED,
-    maxWidth: 140,
-  });
-  cy = drawText(page, siteUrl, {
-    x: contactX,
-    y: cy + 2,
-    size: 8,
-    font,
-    color: MUTED,
-    maxWidth: 140,
-  });
-  if (storeSupportHours) {
-    cy = drawText(page, storeSupportHours, {
-      x: contactX,
-      y: cy + 2,
-      size: 8,
-      font,
-      color: MUTED,
-      maxWidth: 140,
-    });
-  }
-
-  y = Math.min(logoBottom, hy, cy) - 12;
-
-  // Regla rosa
+  y -= 10;
   page.drawRectangle({
     x: marginX,
-    y: y,
+    y,
     width: contentWidth,
-    height: 2,
-    color: BRAND,
+    height: 0.8,
+    color: LINE,
   });
   y -= 22;
 
-  // Badge + número
   page.drawRectangle({
     x: marginX,
-    y: y - 4,
+    y: y - 5,
     width: 78,
     height: 16,
-    color: SOFT,
-    borderColor: BRAND,
-    borderWidth: 0.8,
+    color: WHITE,
+    borderColor: LINE,
+    borderWidth: 0.7,
   });
   page.drawText("COTIZACION", {
     x: marginX + 8,
-    y: y,
-    size: 8,
+    y: y - 1,
+    size: 7,
     font: fontBold,
-    color: BRAND_DARK,
+    color: MUTED,
   });
   y -= 28;
   page.drawText(`#${pdfText(input.invoiceRef)}`, {
@@ -360,7 +325,6 @@ export async function buildQuotationPdf(
   });
   y -= 24;
 
-  // Caja cliente
   const customerLines: string[] = [pdfText(input.customerName)];
   if (input.customerDocumentId?.trim()) {
     customerLines.push(`Documento: ${pdfText(input.customerDocumentId.trim())}`);
@@ -381,24 +345,22 @@ export async function buildQuotationPdf(
   ensureSpace(boxH + 20);
   page.drawRectangle({
     x: marginX,
-    y: y - boxH + 10,
+    y: y + 8,
     width: contentWidth,
-    height: boxH,
-    color: rgb(0.98, 0.98, 0.98),
-    borderColor: RULE,
-    borderWidth: 0.8,
+    height: 0.7,
+    color: LINE,
   });
   page.drawText("CLIENTE", {
-    x: marginX + 10,
-    y: y - 2,
+    x: marginX,
+    y: y - 6,
     size: 7,
     font: fontBold,
-    color: MUTED,
+    color: FAINT,
   });
-  let custY = y - 16;
+  let custY = y - 20;
   for (let i = 0; i < customerLines.length; i++) {
     page.drawText(customerLines[i]!, {
-      x: marginX + 10,
+      x: marginX,
       y: custY,
       size: i === 0 ? 11 : 9,
       font: i === 0 ? fontBold : font,
@@ -406,7 +368,15 @@ export async function buildQuotationPdf(
     });
     custY -= 12;
   }
-  y = y - boxH - 8;
+  y = custY - 6;
+  page.drawRectangle({
+    x: marginX,
+    y,
+    width: contentWidth,
+    height: 0.7,
+    color: LINE,
+  });
+  y -= 18;
 
   // Tabla
   const colCant = marginX;
@@ -416,48 +386,41 @@ export async function buildQuotationPdf(
   const descWidth = colUnit - colDesc - 8;
 
   ensureSpace(40);
-  page.drawRectangle({
-    x: marginX,
-    y: y - 6,
-    width: contentWidth,
-    height: 18,
-    color: SOFT,
-  });
   page.drawText("CANT.", {
     x: colCant,
     y: y,
     size: 8,
     font: fontBold,
-    color: BRAND_DARK,
+    color: FAINT,
   });
   page.drawText("DESCRIPCION", {
     x: colDesc,
     y,
     size: 8,
     font: fontBold,
-    color: BRAND_DARK,
+    color: FAINT,
   });
   page.drawText("V. UNIT.", {
     x: colUnit,
     y,
     size: 8,
     font: fontBold,
-    color: BRAND_DARK,
+    color: FAINT,
   });
   page.drawText("TOTAL", {
     x: colTotal,
     y,
     size: 8,
     font: fontBold,
-    color: BRAND_DARK,
+    color: FAINT,
   });
   y -= 8;
   page.drawRectangle({
     x: marginX,
     y: y,
     width: contentWidth,
-    height: 1.5,
-    color: BRAND,
+    height: 0.8,
+    color: MUTED,
   });
   y -= 16;
 
@@ -519,7 +482,7 @@ export async function buildQuotationPdf(
       y: y + 4,
       width: contentWidth,
       height: 0.5,
-      color: RULE,
+      color: HAIR,
     });
   }
 
@@ -533,16 +496,16 @@ export async function buildQuotationPdf(
     y: y - totalBoxH + 12,
     width: totalBoxW,
     height: totalBoxH,
-    color: SOFT,
-    borderColor: BRAND,
-    borderWidth: 1.2,
+    color: WHITE,
+    borderColor: LINE,
+    borderWidth: 0.9,
   });
   page.drawText("TOTAL COTIZADO", {
     x: pageWidth - marginX - totalBoxW + 12,
     y: y - 2,
     size: 8,
     font: fontBold,
-    color: BRAND_DARK,
+    color: FAINT,
   });
   const totalStr = money(input.totalCents);
   page.drawText(totalStr, {
@@ -559,22 +522,22 @@ export async function buildQuotationPdf(
   y -= totalBoxH + 16;
 
   // Pie
-  ensureSpace(70);
+  ensureSpace(90);
   page.drawRectangle({
     x: marginX,
     y: y,
     width: contentWidth,
-    height: 1.5,
-    color: BRAND,
+    height: 0.8,
+    color: LINE,
   });
   y -= 16;
   const footer1 = pdfText(`${invoiceLegalName} · NIT ${invoiceTaxNit}`);
-  const f1w = fontBold.widthOfTextAtSize(footer1, 8);
+  const f1w = font.widthOfTextAtSize(footer1, 8);
   page.drawText(footer1, {
     x: (pageWidth - f1w) / 2,
     y,
     size: 8,
-    font: fontBold,
+    font,
     color: INK,
   });
   y -= 12;
@@ -600,20 +563,36 @@ export async function buildQuotationPdf(
       y,
       size: 7,
       font,
-      color: MUTED,
+      color: FAINT,
     });
     y -= 10;
   }
-  y -= 4;
-  const thanks = pdfText(`Gracias por confiar en ${invoiceTradeName}`);
-  const tw = fontBold.widthOfTextAtSize(thanks, 9);
-  page.drawText(thanks, {
-    x: (pageWidth - tw) / 2,
+
+  y -= 8;
+  const powered = "POWERED BY";
+  const pw = font.widthOfTextAtSize(powered, 6);
+  page.drawText(powered, {
+    x: (pageWidth - pw) / 2,
     y,
-    size: 9,
+    size: 6,
     font: fontBold,
-    color: BRAND_DARK,
+    color: FAINT,
   });
+  y -= 16;
+  const bereaLogo = await embedLogoImage(pdf, adminSidebarLogoPath);
+  if (bereaLogo) {
+    const maxW = 86;
+    const maxH = 14;
+    const scale = Math.min(maxW / bereaLogo.width, maxH / bereaLogo.height);
+    const w = bereaLogo.width * scale;
+    const h = bereaLogo.height * scale;
+    page.drawImage(bereaLogo, {
+      x: (pageWidth - w) / 2,
+      y: y - h + 8,
+      width: w,
+      height: h,
+    });
+  }
 
   return pdf.save();
 }
