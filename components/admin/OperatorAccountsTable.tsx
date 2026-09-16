@@ -65,6 +65,11 @@ export function OperatorAccountsTable({
                     >
                       {row.holderName}
                     </Link>
+                    {row.sandbox ? (
+                      <p className="mt-0.5 text-[11px] font-medium uppercase tracking-wide text-teal-700 dark:text-teal-300">
+                        Pruebas
+                      </p>
+                    ) : null}
                     <p className="mt-0.5 truncate text-sm text-zinc-600 dark:text-zinc-400">
                       {row.tradeName}
                     </p>
@@ -113,12 +118,19 @@ export function OperatorAccountsTable({
                         src={row.logoSrc}
                         name={row.tradeName}
                       />
-                      <Link
-                        href={`/admin/cuentas/${row.id}`}
-                        className="font-medium text-zinc-900 hover:underline dark:text-zinc-100"
-                      >
-                        {row.holderName}
-                      </Link>
+                      <div className="min-w-0">
+                        <Link
+                          href={`/admin/cuentas/${row.id}`}
+                          className="font-medium text-zinc-900 hover:underline dark:text-zinc-100"
+                        >
+                          {row.holderName}
+                        </Link>
+                        {row.sandbox ? (
+                          <p className="text-[11px] font-medium uppercase tracking-wide text-teal-700 dark:text-teal-300">
+                            Pruebas
+                          </p>
+                        ) : null}
+                      </div>
                     </div>
                   </td>
                   <td className={`${tdClass} text-zinc-700 dark:text-zinc-300`}>

@@ -16,6 +16,7 @@ export type OperatorAccountRow = {
   lastSaleAt: string | null;
   lastSaleLabel: string;
   canEnter: boolean;
+  sandbox: boolean;
 };
 
 export function parseTenantAccountStatus(raw: unknown): TenantAccountStatus {
@@ -92,6 +93,13 @@ export function toOperatorAccountRow(row: {
   const brand = parseTenantBrand(row.brand);
   const status = parseTenantAccountStatus(row.status);
   const lastSaleAt = row.lastSaleAt ?? null;
+  const sandbox =
+    row.slug === "berea-tech" ||
+    Boolean(
+      row.brand &&
+        typeof row.brand === "object" &&
+        (row.brand as { sandbox?: unknown }).sandbox === true,
+    );
   return {
     id: row.id,
     slug: row.slug,
@@ -110,5 +118,6 @@ export function toOperatorAccountRow(row: {
         })
       : "—",
     canEnter: status === "active" || status === "trial",
+    sandbox,
   };
 }

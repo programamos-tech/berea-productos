@@ -74,6 +74,7 @@ export default async function AdminCuentasPage() {
     )
     .sort(
       (a, b) =>
+        Number(b.sandbox) - Number(a.sandbox) ||
         a.holderName.localeCompare(b.holderName, "es") ||
         a.tradeName.localeCompare(b.tradeName, "es"),
     );

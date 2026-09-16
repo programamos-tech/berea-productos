@@ -129,6 +129,7 @@ export function resolveInvoiceLogoSrc(logoPath: string): string {
 const ACCOUNT_LOGO_BY_SLUG: Record<string, string> = {
   aleya: "/logo-milagros-cuenta.png",
   "estacion-iphone": "/logo-estacion-iphone.png",
+  "berea-tech": "/logo-berea-productos.png",
 };
 
 export type AdminAccountChrome = {
