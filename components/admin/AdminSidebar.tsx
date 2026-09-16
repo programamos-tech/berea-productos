@@ -17,6 +17,7 @@ import {
   adminSupportWhatsAppUrl,
 } from "@/lib/brand";
 import type { BranchContext } from "@/lib/branch-context";
+import { storagePublicObjectUrl } from "@/lib/storage-public-url";
 
 function Icon(props: SVGProps<SVGSVGElement> & { children: React.ReactNode }) {
   const { children, className = "", ...rest } = props;
@@ -89,6 +90,8 @@ function SidebarTenantAccount({
   showStorefront: boolean;
   onNavigate: () => void;
 }) {
+  const branchLogo =
+    storagePublicObjectUrl(branchContext.active.logoPath) ?? account.logoSrc;
   const cardClass =
     "mt-3.5 flex w-full items-center gap-2.5 rounded-lg border border-zinc-200 bg-white px-2.5 py-2 text-left dark:border-zinc-700/70 dark:bg-zinc-900/55";
 
@@ -96,8 +99,8 @@ function SidebarTenantAccount({
     <div className={cardClass}>
       <span className="relative flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-md ring-1 ring-zinc-200/80 dark:ring-zinc-700">
         <Image
-          src={account.logoSrc}
-          alt=""
+          src={branchLogo}
+          alt={`Logo de ${branchContext.active.name}`}
           width={64}
           height={64}
           className="size-full object-cover"

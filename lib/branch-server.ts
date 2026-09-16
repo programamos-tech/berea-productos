@@ -15,6 +15,7 @@ function mapBranch(row: Record<string, unknown>): BranchRef {
     tenantId: String(row.tenant_id),
     name: String(row.name),
     code: String(row.code),
+    logoPath: row.logo_path ? String(row.logo_path) : null,
     isDefault: row.is_default === true,
     isActive: row.is_active === true,
   };
@@ -26,7 +27,7 @@ async function loadBranchContextUncached(
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase
     .from("branches")
-    .select("id,tenant_id,name,code,is_default,is_active")
+    .select("id,tenant_id,name,code,logo_path,is_default,is_active")
     .eq("tenant_id", tenantId)
     .eq("is_active", true)
     .order("is_default", { ascending: false })

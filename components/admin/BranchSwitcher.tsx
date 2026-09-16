@@ -2,9 +2,35 @@
 
 import { switchBranchAction } from "@/app/actions/admin/branches";
 import type { BranchRef } from "@/lib/branch-context";
+import {
+  shouldUnoptimizeStorageImageUrl,
+  storagePublicObjectUrl,
+} from "@/lib/storage-public-url";
 import { Check, ChevronDown, MapPin } from "lucide-react";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
+
+function BranchOptionMark({ branch }: { branch: BranchRef }) {
+  const logoUrl = storagePublicObjectUrl(branch.logoPath);
+  if (logoUrl) {
+    return (
+      <Image
+        src={logoUrl}
+        alt=""
+        width={28}
+        height={28}
+        unoptimized={shouldUnoptimizeStorageImageUrl(logoUrl)}
+        className="size-7 shrink-0 rounded-md border border-zinc-200 bg-white object-cover dark:border-zinc-700"
+      />
+    );
+  }
+  return (
+    <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-zinc-100 text-[10px] font-bold text-zinc-500 dark:bg-zinc-800 dark:text-zinc-300">
+      {branch.name.trim().charAt(0).toUpperCase()}
+    </span>
+  );
+}
 
 export function BranchSwitcher({
   active,
@@ -97,6 +123,7 @@ export function BranchSwitcher({
                   : "text-zinc-600 hover:bg-zinc-50 hover:text-zinc-950 dark:text-zinc-300 dark:hover:bg-zinc-800/70 dark:hover:text-white"
               }`}
             >
+              <BranchOptionMark branch={branch} />
               <span className="min-w-0 flex-1 truncate">{branch.name}</span>
               {branch.id === active.id ? (
                 <Check className="size-3.5 shrink-0" aria-hidden />

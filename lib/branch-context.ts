@@ -13,6 +13,7 @@ export type BranchRef = {
   tenantId: string;
   name: string;
   code: string;
+  logoPath: string | null;
   isDefault: boolean;
   isActive: boolean;
 };
