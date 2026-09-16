@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
+import { switchBranchAction } from "@/app/actions/admin/branches";
 import { loadAdminPermissions } from "@/lib/load-admin-permissions";
 import { formatCop } from "@/lib/money";
 import {
@@ -78,12 +79,28 @@ export default async function BranchesPage() {
             return (
               <article
                 key={branch.id}
-                className={`relative flex min-h-56 flex-col rounded-2xl border bg-white p-5 shadow-sm transition dark:bg-zinc-900 ${
+                className={`relative flex min-h-56 cursor-pointer flex-col rounded-2xl border bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:bg-zinc-900 ${
                   isCurrent
                     ? "border-emerald-300 ring-1 ring-emerald-200 dark:border-emerald-800 dark:ring-emerald-900"
                     : "border-zinc-200 dark:border-zinc-800"
                 }`}
               >
+                <form action={switchBranchAction}>
+                  <input type="hidden" name="branch_id" value={branch.id} />
+                  <input
+                    type="hidden"
+                    name="return_to"
+                    value="/admin"
+                  />
+                  <button
+                    type="submit"
+                    className="absolute inset-0 z-10 rounded-2xl outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2"
+                  >
+                    <span className="sr-only">
+                      Entrar a la sucursal {branch.name}
+                    </span>
+                  </button>
+                </form>
                 <div className="flex items-start justify-between gap-3">
                   {logoUrl ? (
                     <Image
@@ -141,7 +158,7 @@ export default async function BranchesPage() {
                 {perm?.permissions.sucursales_gestionar ? (
                   <Link
                     href={`/admin/sucursales/${branch.id}/edit`}
-                    className="mt-5 inline-flex w-fit rounded-lg border border-zinc-200 px-3 py-1.5 text-xs font-medium transition hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
+                    className="relative z-20 mt-5 inline-flex w-fit rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-xs font-medium transition hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800"
                   >
                     Editar sucursal
                   </Link>
