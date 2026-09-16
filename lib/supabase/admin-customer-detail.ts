@@ -34,6 +34,8 @@ export type AdminCustomerDetail = {
     email: string | null;
     phone: string | null;
     document_id: string | null;
+    document_type: "cc" | "nit";
+    requires_electronic_invoice: boolean;
     shipping_address: string | null;
     shipping_city: string | null;
     shipping_postal_code: string | null;
@@ -147,7 +149,7 @@ export async function fetchAdminCustomerDetail(
   const { data: raw, error: cErr } = await supabase
     .from("customers")
     .select(
-      "id,name,email,phone,document_id,shipping_address,shipping_city,shipping_postal_code,notes,source,created_at,birth_date,customer_kind,wholesale_discount_percent",
+      "id,name,email,phone,document_id,document_type,requires_electronic_invoice,shipping_address,shipping_city,shipping_postal_code,notes,source,created_at,birth_date,customer_kind,wholesale_discount_percent",
     )
     .eq("id", customerId)
     .maybeSingle();
@@ -161,11 +163,26 @@ export async function fetchAdminCustomerDetail(
   }
 
   const customer = {
-    ...(raw as Omit<AdminCustomerDetail["customer"], "birth_date" | "customer_kind" | "wholesale_discount_percent">),
+    ...(raw as Omit<
+      AdminCustomerDetail["customer"],
+      | "birth_date"
+      | "document_type"
+      | "requires_electronic_invoice"
+      | "customer_kind"
+      | "wholesale_discount_percent"
+    >),
     birth_date:
       (raw as { birth_date?: string | null }).birth_date != null
         ? String((raw as { birth_date?: string | null }).birth_date)
         : null,
+    document_type:
+      (raw as { document_type?: string | null }).document_type === "nit"
+        ? ("nit" as const)
+        : ("cc" as const),
+    requires_electronic_invoice: Boolean(
+      (raw as { requires_electronic_invoice?: boolean | null })
+        .requires_electronic_invoice,
+    ),
     customer_kind: String(
       (raw as { customer_kind?: string | null }).customer_kind ?? "retail",
     ),

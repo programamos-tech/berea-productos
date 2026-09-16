@@ -33,6 +33,8 @@ export type EditCustomerFormProps = {
   initialEmail: string;
   initialPhone: string;
   initialDocumentId: string;
+  initialDocumentType: "cc" | "nit";
+  initialRequiresElectronicInvoice: boolean;
   initialCustomerKind: string;
   initialWholesaleDiscountPercent: number;
   addressRows: EditCustomerAddressRow[];
@@ -154,6 +156,8 @@ export function EditCustomerForm(props: EditCustomerFormProps) {
     initialEmail,
     initialPhone,
     initialDocumentId,
+    initialDocumentType,
+    initialRequiresElectronicInvoice,
     initialCustomerKind,
     initialWholesaleDiscountPercent,
     addressRows,
@@ -162,8 +166,14 @@ export function EditCustomerForm(props: EditCustomerFormProps) {
 
   const [name, setName] = useState(initialName);
   const [documentId, setDocumentId] = useState(initialDocumentId);
+  const [documentType, setDocumentType] = useState<"cc" | "nit">(
+    initialDocumentType,
+  );
   const [phone, setPhone] = useState(initialPhone);
   const [email, setEmail] = useState(initialEmail);
+  const [requiresElectronicInvoice, setRequiresElectronicInvoice] = useState(
+    initialRequiresElectronicInvoice,
+  );
   const [customerKind, setCustomerKind] = useState<"retail" | "wholesale">(
     () => (initialCustomerKind === "wholesale" ? "wholesale" : "retail"),
   );
@@ -202,7 +212,9 @@ export function EditCustomerForm(props: EditCustomerFormProps) {
 
   const wholesaleMissing: string[] = [];
   if (customerKind === "wholesale") {
-    if (!documentId.trim()) wholesaleMissing.push("NIT");
+    if (!documentId.trim()) {
+      wholesaleMissing.push(documentType === "nit" ? "NIT" : "cédula");
+    }
     if (!phone.trim()) wholesaleMissing.push("teléfono");
     if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
       wholesaleMissing.push("correo válido");
@@ -278,15 +290,28 @@ export function EditCustomerForm(props: EditCustomerFormProps) {
                 />
               </div>
               <div>
+                <label htmlFor="ec-doc-type" className={labelClass}>
+                  Tipo de documento
+                </label>
+                <select
+                  id="ec-doc-type"
+                  name="document_type"
+                  value={documentType}
+                  onChange={(e) =>
+                    setDocumentType(e.target.value === "nit" ? "nit" : "cc")
+                  }
+                  className={inputClass}
+                >
+                  <option value="cc">Cédula</option>
+                  <option value="nit">NIT</option>
+                </select>
+              </div>
+              <div>
                 <label htmlFor="ec-doc" className={labelClass}>
+                  Número de {documentType === "nit" ? "NIT" : "cédula"}
                   {customerKind === "wholesale" ? (
-                    <>
-                      NIT{" "}
-                      <span className="text-red-600 dark:text-red-400">*</span>
-                    </>
-                  ) : (
-                    "Cédula"
-                  )}
+                    <span className="text-red-600 dark:text-red-400"> *</span>
+                  ) : null}
                 </label>
                 <input
                   id="ec-doc"
@@ -294,7 +319,7 @@ export function EditCustomerForm(props: EditCustomerFormProps) {
                   value={documentId}
                   onChange={(e) => setDocumentId(e.target.value)}
                   placeholder={
-                    customerKind === "wholesale"
+                    documentType === "nit"
                       ? "Ej. 900123456-7"
                       : "Ej. 1234567890"
                   }
@@ -304,7 +329,7 @@ export function EditCustomerForm(props: EditCustomerFormProps) {
               </div>
               <div>
                 <label htmlFor="ec-phone" className={labelClass}>
-                  Teléfono
+                  WhatsApp de contacto
                   {customerKind === "wholesale" ? (
                     <span className="text-red-600 dark:text-red-400"> *</span>
                   ) : null}
@@ -315,6 +340,7 @@ export function EditCustomerForm(props: EditCustomerFormProps) {
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   inputMode="tel"
+                  autoComplete="tel"
                   placeholder="Ej. 312 000 0000"
                   required={customerKind === "wholesale"}
                   className={inputClass}
@@ -339,6 +365,25 @@ export function EditCustomerForm(props: EditCustomerFormProps) {
                   className={inputClass}
                 />
               </div>
+              <label className="sm:col-span-2 flex cursor-pointer items-start gap-3 rounded-lg border border-zinc-200/90 bg-zinc-50/60 p-4 dark:border-zinc-700 dark:bg-zinc-950/40">
+                <input
+                  type="checkbox"
+                  name="requires_electronic_invoice"
+                  checked={requiresElectronicInvoice}
+                  onChange={(e) =>
+                    setRequiresElectronicInvoice(e.target.checked)
+                  }
+                  className="mt-0.5 size-4 rounded border-zinc-300 text-zinc-900 focus:ring-zinc-400/40 dark:border-zinc-600 dark:text-zinc-100"
+                />
+                <span>
+                  <span className="block text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                    Necesita factura electrónica
+                  </span>
+                  <span className="mt-0.5 block text-xs text-zinc-500 dark:text-zinc-400">
+                    Se mostrará esta preferencia al consultar el cliente.
+                  </span>
+                </span>
+              </label>
             </div>
           </section>
 
@@ -486,7 +531,10 @@ export function EditCustomerForm(props: EditCustomerFormProps) {
                     type="radio"
                     value="wholesale"
                     checked={customerKind === "wholesale"}
-                    onChange={() => setCustomerKind("wholesale")}
+                    onChange={() => {
+                      setCustomerKind("wholesale");
+                      setDocumentType("nit");
+                    }}
                     className={radioClass}
                   />
                   Mayorista
@@ -541,7 +589,9 @@ export function EditCustomerForm(props: EditCustomerFormProps) {
               <div className="flex justify-between gap-2 border-b border-zinc-100 pb-2 dark:border-zinc-800">
                 <dt className="text-zinc-500 dark:text-zinc-400">Documento</dt>
                 <dd className="max-w-[58%] truncate text-right font-mono text-xs font-medium text-zinc-900 dark:text-zinc-100">
-                  {documentId.trim() || "—"}
+                  {documentId.trim()
+                    ? `${documentType === "nit" ? "NIT" : "CC"} ${documentId.trim()}`
+                    : "—"}
                 </dd>
               </div>
               <div className="flex justify-between gap-2 border-b border-zinc-100 pb-2 dark:border-zinc-800">
@@ -553,9 +603,17 @@ export function EditCustomerForm(props: EditCustomerFormProps) {
                 </dd>
               </div>
               <div className="flex justify-between gap-2 border-b border-zinc-100 pb-2 dark:border-zinc-800">
-                <dt className="text-zinc-500 dark:text-zinc-400">Teléfono</dt>
+                <dt className="text-zinc-500 dark:text-zinc-400">WhatsApp</dt>
                 <dd className="max-w-[58%] truncate text-right font-medium text-zinc-900 dark:text-zinc-100">
                   {phone.trim() || "—"}
+                </dd>
+              </div>
+              <div className="flex justify-between gap-2 border-b border-zinc-100 pb-2 dark:border-zinc-800">
+                <dt className="text-zinc-500 dark:text-zinc-400">
+                  Factura electrónica
+                </dt>
+                <dd className="text-right font-medium text-zinc-900 dark:text-zinc-100">
+                  {requiresElectronicInvoice ? "Sí" : "No"}
                 </dd>
               </div>
               <div className="flex justify-between gap-2">

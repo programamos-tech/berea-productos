@@ -104,6 +104,20 @@ function normEmail(v: string): string | null {
   return t ? t : null;
 }
 
+function customerBillingFieldsFromForm(formData: FormData): {
+  document_type: "cc" | "nit";
+  requires_electronic_invoice: boolean;
+} {
+  return {
+    document_type:
+      String(formData.get("document_type") ?? "").trim() === "nit"
+        ? "nit"
+        : "cc",
+    requires_electronic_invoice:
+      String(formData.get("requires_electronic_invoice") ?? "") === "on",
+  };
+}
+
 function isEmailLike(v: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
 }
@@ -202,6 +216,8 @@ export async function createStoreCustomer(formData: FormData) {
   const email = normEmail(emailRaw);
   const { customer_kind, wholesale_discount_percent } =
     wholesaleFieldsFromForm(formData);
+  const { document_type, requires_electronic_invoice } =
+    customerBillingFieldsFromForm(formData);
 
   if (!name) redirectNewCustomerError("name");
 
@@ -238,6 +254,8 @@ export async function createStoreCustomer(formData: FormData) {
       email,
       phone: phone || null,
       document_id: documentId || null,
+      document_type,
+      requires_electronic_invoice,
       shipping_address: shippingAddress,
       shipping_city: null,
       shipping_postal_code: null,
@@ -296,6 +314,8 @@ export async function createStoreCustomer(formData: FormData) {
       source: "form",
       customer_kind,
       wholesale_discount_percent,
+      document_type,
+      requires_electronic_invoice,
       ...(documentId ? { document_id: documentId } : {}),
       ...(email ? { email } : {}),
       ...(phone ? { phone } : {}),
@@ -351,6 +371,8 @@ export async function updateStoreCustomer(formData: FormData) {
   const email = normEmail(emailRaw);
   const { customer_kind, wholesale_discount_percent } =
     wholesaleFieldsFromForm(formData);
+  const { document_type, requires_electronic_invoice } =
+    customerBillingFieldsFromForm(formData);
 
   if (!name) {
     redirect(`/admin/customers/${customerId}/edit?error=name`);
@@ -388,6 +410,8 @@ export async function updateStoreCustomer(formData: FormData) {
       email,
       phone: phone || null,
       document_id: documentId || null,
+      document_type,
+      requires_electronic_invoice,
       shipping_address: shippingAddress,
       customer_kind,
       wholesale_discount_percent,
@@ -433,6 +457,8 @@ export async function updateStoreCustomer(formData: FormData) {
     metadata: {
       customer_kind,
       wholesale_discount_percent,
+      document_type,
+      requires_electronic_invoice,
       ...(documentId ? { document_id: documentId } : {}),
       ...(email ? { email } : {}),
       ...(phone ? { phone } : {}),

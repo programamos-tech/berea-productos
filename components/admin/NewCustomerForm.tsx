@@ -68,8 +68,11 @@ export function NewCustomerHeader() {
 export function NewCustomerForm({ returnTo }: { returnTo?: string }) {
   const [name, setName] = useState("");
   const [documentId, setDocumentId] = useState("");
+  const [documentType, setDocumentType] = useState<"cc" | "nit">("cc");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
+  const [requiresElectronicInvoice, setRequiresElectronicInvoice] =
+    useState(false);
   const [customerKind, setCustomerKind] = useState<"retail" | "wholesale">("retail");
   const [wholesalePct, setWholesalePct] = useState(10);
   const [addresses, setAddresses] = useState<Addr[]>(() => [newAddress()]);
@@ -102,7 +105,9 @@ export function NewCustomerForm({ returnTo }: { returnTo?: string }) {
 
   const wholesaleMissing: string[] = [];
   if (customerKind === "wholesale") {
-    if (!documentId.trim()) wholesaleMissing.push("NIT");
+    if (!documentId.trim()) {
+      wholesaleMissing.push(documentType === "nit" ? "NIT" : "cédula");
+    }
     if (!phone.trim()) wholesaleMissing.push("teléfono");
     if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
       wholesaleMissing.push("correo electrónico válido");
@@ -156,14 +161,28 @@ export function NewCustomerForm({ returnTo }: { returnTo?: string }) {
                 />
               </div>
               <div>
+                <label htmlFor="nc-doc-type" className={labelClass}>
+                  Tipo de documento
+                </label>
+                <select
+                  id="nc-doc-type"
+                  name="document_type"
+                  value={documentType}
+                  onChange={(e) =>
+                    setDocumentType(e.target.value === "nit" ? "nit" : "cc")
+                  }
+                  className={inputClass}
+                >
+                  <option value="cc">Cédula</option>
+                  <option value="nit">NIT</option>
+                </select>
+              </div>
+              <div>
                 <label htmlFor="nc-doc" className={labelClass}>
+                  Número de {documentType === "nit" ? "NIT" : "cédula"}
                   {customerKind === "wholesale" ? (
-                    <>
-                      NIT <span className="text-red-600 dark:text-red-400">*</span>
-                    </>
-                  ) : (
-                    "Cédula"
-                  )}
+                    <span className="text-red-600 dark:text-red-400"> *</span>
+                  ) : null}
                 </label>
                 <input
                   id="nc-doc"
@@ -171,7 +190,7 @@ export function NewCustomerForm({ returnTo }: { returnTo?: string }) {
                   value={documentId}
                   onChange={(e) => setDocumentId(e.target.value)}
                   placeholder={
-                    customerKind === "wholesale"
+                    documentType === "nit"
                       ? "Ej. 900123456-7 o 900.123.456-7"
                       : "Ej. 1234567890"
                   }
@@ -182,7 +201,7 @@ export function NewCustomerForm({ returnTo }: { returnTo?: string }) {
               </div>
               <div>
                 <label htmlFor="nc-phone" className={labelClass}>
-                  Teléfono
+                  WhatsApp de contacto
                   {customerKind === "wholesale" ? (
                     <span className="text-red-600 dark:text-red-400"> *</span>
                   ) : null}
@@ -194,6 +213,7 @@ export function NewCustomerForm({ returnTo }: { returnTo?: string }) {
                   onChange={(e) => setPhone(e.target.value)}
                   placeholder="Ej. 312 000 0000"
                   inputMode="tel"
+                  autoComplete="tel"
                   required={customerKind === "wholesale"}
                   className={inputClass}
                 />
@@ -217,6 +237,25 @@ export function NewCustomerForm({ returnTo }: { returnTo?: string }) {
                   className={inputClass}
                 />
               </div>
+              <label className="sm:col-span-2 flex cursor-pointer items-start gap-3 rounded-lg border border-zinc-200/90 bg-zinc-50/60 p-4 dark:border-zinc-700 dark:bg-zinc-950/40">
+                <input
+                  type="checkbox"
+                  name="requires_electronic_invoice"
+                  checked={requiresElectronicInvoice}
+                  onChange={(e) =>
+                    setRequiresElectronicInvoice(e.target.checked)
+                  }
+                  className="mt-0.5 size-4 rounded border-zinc-300 text-zinc-900 focus:ring-zinc-400/40 dark:border-zinc-600 dark:text-zinc-100"
+                />
+                <span>
+                  <span className="block text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                    Necesita factura electrónica
+                  </span>
+                  <span className="mt-0.5 block text-xs text-zinc-500 dark:text-zinc-400">
+                    Marca esta opción si el cliente solicita factura electrónica.
+                  </span>
+                </span>
+              </label>
               <div className="sm:col-span-2 rounded-lg border border-zinc-200/90 bg-zinc-50/60 p-4 dark:border-zinc-700 dark:bg-zinc-950/40">
                 <p className={labelClass}>Tipo de cliente</p>
                 <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
@@ -235,7 +274,10 @@ export function NewCustomerForm({ returnTo }: { returnTo?: string }) {
                       type="radio"
                       value="wholesale"
                       checked={customerKind === "wholesale"}
-                      onChange={() => setCustomerKind("wholesale")}
+                      onChange={() => {
+                        setCustomerKind("wholesale");
+                        setDocumentType("nit");
+                      }}
                       className="size-4 border-zinc-300 text-rose-950 focus:ring-rose-900/30 dark:border-zinc-600 dark:text-rose-300"
                     />
                     Mayorista

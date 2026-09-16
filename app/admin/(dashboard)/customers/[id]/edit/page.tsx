@@ -26,7 +26,7 @@ export default async function AdminCustomerEditPage({
   const { data: customer } = await supabase
     .from("customers")
     .select(
-      "id,name,email,phone,document_id,shipping_address,customer_kind,wholesale_discount_percent",
+      "id,name,email,phone,document_id,document_type,requires_electronic_invoice,shipping_address,customer_kind,wholesale_discount_percent",
     )
     .eq("id", id)
     .maybeSingle();
@@ -71,6 +71,10 @@ export default async function AdminCustomerEditPage({
         initialDocumentId={
           customer.document_id != null ? String(customer.document_id) : ""
         }
+        initialDocumentType={customer.document_type === "nit" ? "nit" : "cc"}
+        initialRequiresElectronicInvoice={Boolean(
+          customer.requires_electronic_invoice,
+        )}
         initialCustomerKind={String(
           (customer as { customer_kind?: string }).customer_kind ?? "retail",
         )}

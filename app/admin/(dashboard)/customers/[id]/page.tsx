@@ -117,6 +117,8 @@ export default async function AdminCustomerDetailPage({
 
   const msSincePurchase =
     typeof lastPaidAt === "string"
+      // Server-rendered relative value; refreshed with the dynamic page request.
+      // eslint-disable-next-line react-hooks/purity
       ? Date.now() - new Date(lastPaidAt).getTime()
       : null;
   const daysSincePurchase =
@@ -292,7 +294,7 @@ export default async function AdminCustomerDetailPage({
       <div className="flex shrink-0 flex-wrap items-baseline gap-x-3 gap-y-1 border-b border-zinc-200/70 pb-2.5 text-xs text-zinc-600 dark:border-zinc-800 dark:text-zinc-300">
         <span className="inline-flex min-w-0 items-baseline gap-1.5">
           <span className="shrink-0 text-zinc-400">
-            {isWholesale ? "NIT" : "Doc."}
+            {customer.document_type === "nit" ? "NIT" : "Cédula"}
           </span>
           <span className="truncate tabular-nums text-zinc-900 dark:text-zinc-100">
             {customer.document_id?.trim() || "—"}
@@ -302,7 +304,7 @@ export default async function AdminCustomerDetailPage({
           ·
         </span>
         <span className="inline-flex min-w-0 items-center gap-1.5">
-          <span className="shrink-0 text-zinc-400">Tel.</span>
+          <span className="shrink-0 text-zinc-400">WhatsApp</span>
           {customer.phone?.trim() && customer.phone !== "—" ? (
             <span className="inline-flex min-w-0 items-center gap-1.5">
               <a
@@ -343,6 +345,21 @@ export default async function AdminCustomerDetailPage({
           ) : (
             <span className="text-zinc-900 dark:text-zinc-100">—</span>
           )}
+        </span>
+        <span className={metaSep} aria-hidden>
+          ·
+        </span>
+        <span className="inline-flex min-w-0 items-baseline gap-1.5">
+          <span className="shrink-0 text-zinc-400">Factura electrónica</span>
+          <span
+            className={
+              customer.requires_electronic_invoice
+                ? "font-medium text-emerald-700 dark:text-emerald-400"
+                : "text-zinc-900 dark:text-zinc-100"
+            }
+          >
+            {customer.requires_electronic_invoice ? "Sí" : "No"}
+          </span>
         </span>
         <span className={metaSep} aria-hidden>
           ·
