@@ -74,14 +74,14 @@ type RawAdminProductRow = {
   stock_quantity: number;
   stock_warehouse?: number;
   stock_local?: number;
+  categories?: { name?: string | null } | { name?: string | null }[] | null;
 };
 
 type AdminProductRowModel = {
   id: string;
   name: string;
   code: string;
-  costNetCents: number;
-  costGrossCents: number;
+  categoryName: string;
   publicPriceCents: number;
   /** Stock del punto (local). */
   stock_local: number;
@@ -90,12 +90,9 @@ type AdminProductRowModel = {
 function normalizeAdminProductRow(row: unknown): AdminProductRowModel {
   const raw = row as RawAdminProductRow;
   const stockLocal = Math.max(0, Math.floor(Number(raw.stock_local ?? raw.stock_quantity ?? 0)));
-  const costNet = Math.max(0, Math.round(Number(raw.cost_cents ?? 0)));
-  const costGrossRaw = Number(raw.cost_gross_cents ?? 0);
-  const costGross =
-    costGrossRaw > 0
-      ? Math.max(0, Math.round(costGrossRaw))
-      : costNet;
+  const category = Array.isArray(raw.categories)
+    ? raw.categories[0]
+    : raw.categories;
   const publicPriceCents = unitPriceGrossCents(
     raw.price_cents,
     raw.has_vat,
@@ -106,11 +103,32 @@ function normalizeAdminProductRow(row: unknown): AdminProductRowModel {
     name: raw.name,
     code:
       (raw.reference && String(raw.reference).trim()) || shortSku(raw.id),
-    costNetCents: costNet,
-    costGrossCents: costGross,
+    categoryName: category?.name?.trim() || "—",
     publicPriceCents,
     stock_local: stockLocal,
   };
+}
+
+function ProductStockStatus({ stock }: { stock: number }) {
+  if (stock <= 0) {
+    return (
+      <span className="inline-flex rounded-md border border-rose-200 bg-rose-50 px-2 py-1 text-[11px] font-medium text-rose-700 dark:border-rose-900/70 dark:bg-rose-950/40 dark:text-rose-300">
+        Sin stock
+      </span>
+    );
+  }
+  if (stock <= LOW_STOCK_MAX) {
+    return (
+      <span className="inline-flex rounded-md border border-amber-200 bg-amber-50 px-2 py-1 text-[11px] font-medium text-amber-800 dark:border-amber-900/70 dark:bg-amber-950/40 dark:text-amber-300">
+        Stock bajo
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex rounded-md border border-emerald-200 bg-emerald-50 px-2 py-1 text-[11px] font-medium text-emerald-700 dark:border-emerald-900/70 dark:bg-emerald-950/40 dark:text-emerald-300">
+      Con stock
+    </span>
+  );
 }
 
 export default async function AdminProductsPage({
@@ -357,7 +375,7 @@ export default async function AdminProductsPage({
                 {/* Móvil */}
                 <ul
                   role="list"
-                  className="divide-y divide-zinc-100 xl:hidden dark:divide-zinc-800"
+                  className="divide-y divide-zinc-100 lg:hidden dark:divide-zinc-800"
                 >
                   {productRows.map((p) => (
                     <li key={p.id} className="min-w-0 py-4">
@@ -373,22 +391,20 @@ export default async function AdminProductsPage({
                             {p.name}
                           </p>
                           <p className="mt-1.5 text-xs text-zinc-500">
+                            Categoría{" "}
+                            <span className="font-medium text-zinc-700 dark:text-zinc-300">
+                              {p.categoryName}
+                            </span>
+                          </p>
+                          <p className="mt-1.5 text-xs text-zinc-500">
                             Stock{" "}
                             <span className="font-semibold tabular-nums text-zinc-800 dark:text-zinc-200">
                               <StaticInteger value={p.stock_local} />
                             </span>
                           </p>
-                          <p className="mt-1 text-[11px] text-zinc-500">
-                            Costo{" "}
-                            <span className="tabular-nums text-zinc-700 dark:text-zinc-300">
-                              <StaticCopCents cents={p.costNetCents} />
-                            </span>
-                            <span className="mx-1 text-zinc-400">/</span>
-                            <span className="tabular-nums text-zinc-700 dark:text-zinc-300">
-                              <StaticCopCents cents={p.costGrossCents} />
-                            </span>
-                            <span className="ml-1 text-zinc-400">s/IVA · c/IVA</span>
-                          </p>
+                          <div className="mt-2">
+                            <ProductStockStatus stock={p.stock_local} />
+                          </div>
                           <p className="mt-1.5 text-sm font-semibold tabular-nums text-zinc-900 dark:text-zinc-50">
                             <StaticCopCents cents={p.publicPriceCents} />
                           </p>
@@ -408,25 +424,25 @@ export default async function AdminProductsPage({
                 </ul>
 
                 {/* Desktop */}
-                <div className="hidden min-w-0 overflow-x-auto xl:block">
+                <div className="hidden min-w-0 overflow-x-auto lg:block">
                   <table className="w-full min-w-[960px] table-fixed text-left text-sm">
                     <colgroup>
-                      <col className="w-[11%]" />
-                      <col className="w-[28%]" />
-                      <col className="w-[8%]" />
+                      <col className="w-[25%]" />
                       <col className="w-[12%]" />
+                      <col className="w-[17%]" />
+                      <col className="w-[8%]" />
+                      <col className="w-[13%]" />
                       <col className="w-[12%]" />
                       <col className="w-[13%]" />
-                      <col className="w-[16%]" />
                     </colgroup>
                     <thead>
                       <tr className="border-b border-zinc-200/70 dark:border-zinc-800">
+                        <th className={thClass}>Equipo / accesorio</th>
                         <th className={thClass}>Referencia</th>
-                        <th className={thClass}>Producto</th>
+                        <th className={thClass}>Categoría</th>
                         <th className={`${thClass} text-right`}>Stock</th>
-                        <th className={`${thClass} text-right`}>Costo s/IVA</th>
-                        <th className={`${thClass} text-right`}>Costo c/IVA</th>
-                        <th className={`${thClass} text-right`}>Precio c/IVA</th>
+                        <th className={thClass}>Estado</th>
+                        <th className={`${thClass} text-right`}>Precio</th>
                         <th className={`${thClass} pr-2 text-right`}>Acciones</th>
                       </tr>
                     </thead>
@@ -436,11 +452,6 @@ export default async function AdminProductsPage({
                           key={p.id}
                           className="border-b border-zinc-100/80 last:border-0 transition hover:bg-zinc-50/50 dark:border-zinc-800/80 dark:hover:bg-zinc-900/40"
                         >
-                          <td
-                            className={`${tdClass} font-mono text-xs tabular-nums text-zinc-600 dark:text-zinc-400`}
-                          >
-                            {p.code}
-                          </td>
                           <td className={`${tdClass} min-w-0`}>
                             <Link
                               href={`/admin/products/${p.id}`}
@@ -450,19 +461,20 @@ export default async function AdminProductsPage({
                             </Link>
                           </td>
                           <td
+                            className={`${tdClass} font-mono text-xs tabular-nums text-zinc-600 dark:text-zinc-400`}
+                          >
+                            {p.code}
+                          </td>
+                          <td className={`${tdClass} truncate text-xs text-zinc-500 dark:text-zinc-400`}>
+                            {p.categoryName}
+                          </td>
+                          <td
                             className={`${tdClass} text-right tabular-nums font-medium text-zinc-800 dark:text-zinc-200`}
                           >
                             <StaticInteger value={p.stock_local} />
                           </td>
-                          <td
-                            className={`${tdClass} text-right tabular-nums text-zinc-700 dark:text-zinc-300`}
-                          >
-                            <StaticCopCents cents={p.costNetCents} />
-                          </td>
-                          <td
-                            className={`${tdClass} text-right tabular-nums text-zinc-700 dark:text-zinc-300`}
-                          >
-                            <StaticCopCents cents={p.costGrossCents} />
+                          <td className={tdClass}>
+                            <ProductStockStatus stock={p.stock_local} />
                           </td>
                           <td
                             className={`${tdClass} text-right font-medium tabular-nums text-zinc-900 dark:text-zinc-50`}
