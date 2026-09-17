@@ -83,7 +83,7 @@ export function StoreFooter({ chrome }: { chrome: StorefrontChrome }) {
               </div>
 
               <div>
-                <p className={footerColumnTitle}>Tienda</p>
+                <p className={footerColumnTitle}>Catálogo</p>
                 <ul className="mt-5 space-y-3">
                   <li>
                     <Link href="/" className={footerLink}>

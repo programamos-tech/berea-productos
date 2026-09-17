@@ -78,7 +78,7 @@ export function StoreNavDropdowns({
           strokeWidth={STORE_HEADER_ICON_STROKE}
           aria-hidden
         />
-        <span className="hidden text-[13px] lg:inline">Tienda</span>
+        <span className="hidden text-[13px] lg:inline">Catálogo</span>
       </button>
 
       {/* Overlay */}
@@ -108,7 +108,7 @@ export function StoreNavDropdowns({
               id={`${baseId}-tienda-drawer-title`}
               className="truncate text-base font-semibold tracking-tight text-white"
             >
-              Tienda
+              Catálogo
             </h2>
           </div>
           <button

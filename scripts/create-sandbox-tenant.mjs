@@ -18,7 +18,7 @@ const SLUG = "berea-tech";
 const NAME = "Berea Tech";
 const HOLDER = "Berea Tech";
 const EMAIL = "berea@housetech.com";
-const LOGO = "/logo-berea-house-software.png";
+const LOGO = "/logo-berea-house-mark.png";
 
 function parseEnvFile(p) {
   const out = {};

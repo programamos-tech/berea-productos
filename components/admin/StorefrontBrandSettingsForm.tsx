@@ -127,14 +127,15 @@ export function StorefrontBrandSettingsForm({
           <label htmlFor="storefront-logo" className={productLabelClass}>
             Logo del catálogo
           </label>
-          <div className="mt-2 flex items-center gap-4 rounded-xl border border-zinc-200 bg-zinc-50/60 p-4 dark:border-zinc-700 dark:bg-zinc-950/50">
+          <div className="mt-2 flex items-center gap-4">
             <Image
               src={preview}
               alt="Vista previa del logo"
-              width={80}
+              width={160}
               height={80}
               unoptimized
-              className="size-20 rounded-xl border border-zinc-200 bg-white object-contain p-1 dark:border-zinc-700"
+              className="h-16 w-auto max-w-[10rem] bg-transparent object-contain object-left"
+              style={{ backgroundColor: "transparent" }}
             />
             <div className="min-w-0 flex-1">
               <input

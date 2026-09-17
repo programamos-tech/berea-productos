@@ -1,10 +1,7 @@
 import { getStorefrontTenant } from "@/lib/storefront-tenant";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { CatalogKitsSection } from "@/components/store/CatalogKitsSection";
-import { CatalogListingHero } from "@/components/store/CatalogListingHero";
 import { CatalogPagination } from "@/components/store/CatalogPagination";
-import { CategoryListingHero } from "@/components/store/CategoryListingHero";
-import { StoreBannerCarousel } from "@/components/store/StoreBannerCarousel";
 import { ProductListingCard } from "@/components/store/ProductListingCard";
 import { ProductsListingControls } from "@/components/store/ProductsListingControls";
 import { RevealOnScroll } from "@/components/store/RevealOnScroll";
@@ -30,13 +27,11 @@ import {
   getStorefrontCartQuantityByKitId,
   getStorefrontCartQuantityByProductId,
 } from "@/lib/storefront-cart";
-import { resolveCategoryListingHeroSrc } from "@/lib/category-listing-hero-url";
 import {
   getCachedAllCategoryRows,
   getCachedAllCatalogProducts,
   getCachedCatalogKits,
   getCachedListingFacets,
-  getCachedPublishedBanners,
   getCachedStorefrontCouponDiscounts,
 } from "@/lib/store-public-cache";
 import { STORE_CARD_PRIORITY_COUNT } from "@/lib/store-image";
@@ -124,7 +119,7 @@ export default async function ProductsPage({ searchParams }: Props) {
     categoryId
       ? supabase
           .from("categories")
-          .select("name,listing_hero_image_path,listing_hero_alt_text")
+          .select("name")
       .eq("id", categoryId)
       .eq("tenant_id", tenant.id)
       .maybeSingle()
@@ -135,30 +130,12 @@ export default async function ProductsPage({ searchParams }: Props) {
   const cat = catRes.data;
   let categoryName: string | null = null;
   let categoryFilterId: string | null = null;
-  let categoryListingHeroPath: string | null = null;
-  let categoryListingHeroAlt: string | null = null;
   if (categoryId && cat?.name) {
     categoryName = cat.name;
     categoryFilterId = categoryId;
-    categoryListingHeroPath =
-      typeof cat.listing_hero_image_path === "string" &&
-      cat.listing_hero_image_path.trim()
-        ? cat.listing_hero_image_path.trim()
-        : null;
-    categoryListingHeroAlt =
-      typeof cat.listing_hero_alt_text === "string" &&
-      cat.listing_hero_alt_text.trim()
-        ? cat.listing_hero_alt_text.trim()
-        : null;
   }
 
-  const categoryHeroResolvedSrc = categoryListingHeroPath
-    ? resolveCategoryListingHeroSrc(categoryListingHeroPath)
-    : null;
   const categoryView = Boolean(categoryFilterId && categoryName);
-  const showCategoryListingHero = Boolean(
-    categoryView && categoryHeroResolvedSrc,
-  );
 
   let expandedCategoryIds: string[] | null = null;
   if (categoryFilterId) {
@@ -297,7 +274,6 @@ export default async function ProductsPage({ searchParams }: Props) {
 
   const [
     listingFacets,
-    productsBanners,
     catalogProductsRaw,
     catalogKits,
     listResultInitial,
@@ -306,7 +282,6 @@ export default async function ProductsPage({ searchParams }: Props) {
     couponPctByProductId,
   ] = await Promise.all([
     getCachedListingFacets(facetCategoryIds),
-    categoryView ? Promise.resolve([]) : getCachedPublishedBanners("products"),
     catalogBrowseMode
       ? getCachedAllCatalogProducts()
       : Promise.resolve([]),
@@ -376,42 +351,11 @@ export default async function ProductsPage({ searchParams }: Props) {
   if (priceMax != null) paginationParams.set("price_max", String(priceMax));
   const paginationBaseQuery = paginationParams.toString();
 
-  const catalogHeroBanner = productsBanners[0];
-
   return (
     <div className="min-w-0 bg-white">
-      {catalogBrowseMode ? (
+      {categoryView && categoryName ? (
         <RevealOnScroll className="w-full">
-          <CatalogListingHero
-            title="CATÁLOGO"
-            banner={
-              catalogHeroBanner ?
-                {
-                  image_path: catalogHeroBanner.image_path,
-                  alt_text: catalogHeroBanner.alt_text,
-                }
-              : null
-            }
-          />
-        </RevealOnScroll>
-      ) : null}
-
-      {showCategoryListingHero &&
-      categoryListingHeroPath &&
-      categoryName &&
-      categoryHeroResolvedSrc ? (
-        <RevealOnScroll className="w-full">
-          <CategoryListingHero
-            imagePath={categoryListingHeroPath}
-            title={categoryName}
-            alt={categoryListingHeroAlt}
-          />
-        </RevealOnScroll>
-      ) : null}
-
-      {categoryView && categoryName && !showCategoryListingHero ? (
-        <RevealOnScroll className="w-full">
-          <header className={`${storeShellClass} border-b border-stone-100 pb-6 pt-8 text-center sm:pb-8 sm:pt-10`}>
+          <header className={`${storeShellClass} border-b border-stone-100 pb-5 pt-6 text-center sm:pb-6 sm:pt-8`}>
             <h1 className="text-xl font-semibold uppercase tracking-[0.12em] text-[var(--store-brand)] sm:text-2xl">
               {categoryName}
             </h1>
@@ -451,30 +395,9 @@ export default async function ProductsPage({ searchParams }: Props) {
       <div
         className={`${storeShellClass} space-y-10 pb-10 pt-2 sm:space-y-12 sm:pb-12 sm:pt-3 lg:pb-14`}
       >
-        {!categoryView && !catalogBrowseMode && productsBanners.length > 0 ? (
-          <RevealOnScroll className="w-full">
-            <StoreBannerCarousel
-              variant="products"
-              slides={productsBanners.map((b) => ({
-                id: b.id,
-                image_path: b.image_path,
-                href: b.href,
-                alt_text: b.alt_text,
-              }))}
-            />
-          </RevealOnScroll>
-        ) : null}
-
         {catalogBrowseMode ? (
           catalogKits.length > 0 || catalogProducts.length > 0 ? (
             <div className="space-y-12 sm:space-y-14">
-              {catalogKits.length > 0 ? (
-                <CatalogKitsSection
-                  kits={catalogKits}
-                  cartQtyByKitId={cartQtyByKitId}
-                />
-              ) : null}
-
               {catalogProducts.length > 0 ? (
                 <section
                   aria-labelledby="cat-all-products"
@@ -525,6 +448,13 @@ export default async function ProductsPage({ searchParams }: Props) {
                     ))}
                   </ul>
                 </section>
+              ) : null}
+
+              {catalogKits.length > 0 ? (
+                <CatalogKitsSection
+                  kits={catalogKits}
+                  cartQtyByKitId={cartQtyByKitId}
+                />
               ) : null}
             </div>
           ) : (
