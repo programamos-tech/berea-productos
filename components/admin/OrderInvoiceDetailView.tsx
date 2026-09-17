@@ -281,7 +281,7 @@ export function OrderInvoiceDetailView(props: OrderInvoiceDetailViewProps) {
   const pagoTone = ventaFormaPagoTone(wompiReference, {
     checkoutPaymentMethod: checkoutPaymentMethod ?? undefined,
   });
-  const pagoRecibido = ventaPagoRecibidoTone(status);
+  const pagoRecibido = ventaPagoRecibidoTone(status, wompiReference);
 
   const subtotalLines = lines.reduce(
     (s, l) => s + l.unitPriceCents * l.quantity,

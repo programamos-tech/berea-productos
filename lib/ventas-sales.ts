@@ -1,3 +1,4 @@
+import { isPosCreditSale } from "@/lib/order-credit";
 import { formatStoreVentaFecha } from "@/lib/store-datetime-format";
 
 /** Ventas POS marcan método en `wompi_reference` con prefijo `POS:`. */
@@ -67,7 +68,7 @@ export function ventaFormaPagoBadge(
     return {
       label: "Crédito",
       className:
-        "bg-amber-50 text-amber-900 ring-1 ring-amber-100 dark:bg-amber-950/45 dark:text-amber-100 dark:ring-amber-800/50",
+        "bg-orange-50 text-orange-800 ring-1 ring-orange-200/90 dark:bg-orange-950/45 dark:text-orange-100 dark:ring-orange-800/50",
     };
   }
   if (r === "POS:quotation") {
@@ -98,6 +99,10 @@ export function ventaFormaPagoBadge(
   };
 }
 
+/** Crédito en listados y detalle: un solo naranja bold, como Pagado en verde. */
+export const ventaCreditoToneClass =
+  "font-semibold text-orange-600 dark:text-orange-400";
+
 /** Color de letra (sin pastilla), para listados limpios. */
 export function ventaFormaPagoTone(
   wompiReference: string | null | undefined,
@@ -108,7 +113,7 @@ export function ventaFormaPagoTone(
   if (r === "POS:credit") {
     return {
       label,
-      className: "font-medium text-amber-700 dark:text-amber-300",
+      className: ventaCreditoToneClass,
     };
   }
   if (r === "POS:quotation") {
@@ -206,10 +211,16 @@ export function ventaPagoRecibidoBadge(status: string): { label: string; classNa
 }
 
 /** Color de letra + bold (sin pastilla). */
-export function ventaPagoRecibidoTone(status: string): {
+export function ventaPagoRecibidoTone(
+  status: string,
+  wompiReference?: string | null,
+): {
   label: string;
   className: string;
 } {
+  if (isPosCreditSale(wompiReference) && status !== "cancelled") {
+    return { label: "Crédito", className: ventaCreditoToneClass };
+  }
   const { label } = ventaPagoRecibidoBadge(status);
   switch (status) {
     case "paid":
@@ -287,7 +298,13 @@ export function ventaEstadoBadge(status: string): { label: string; className: st
 }
 
 /** Color de letra + bold (sin pastilla), para listados limpios. */
-export function ventaEstadoTone(status: string): { label: string; className: string } {
+export function ventaEstadoTone(
+  status: string,
+  wompiReference?: string | null,
+): { label: string; className: string } {
+  if (isPosCreditSale(wompiReference) && status !== "cancelled") {
+    return { label: "Crédito", className: ventaCreditoToneClass };
+  }
   const { label } = ventaEstadoBadge(status);
   switch (status) {
     case "paid":

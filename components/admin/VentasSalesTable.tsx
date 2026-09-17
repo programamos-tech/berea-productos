@@ -95,7 +95,7 @@ export function VentasSalesTable({
             row.id,
             row.wompi_transaction_id ?? null,
           );
-          const estado = ventaEstadoTone(row.status);
+          const estado = ventaEstadoTone(row.status, row.wompi_reference);
           const pago = ventaFormaPagoTone(row.wompi_reference);
           const pagoIcon = ventaPagoIcon(row.wompi_reference);
           const PagoIcon = pagoIcon.Icon;
@@ -169,7 +169,7 @@ export function VentasSalesTable({
                 row.id,
                 row.wompi_transaction_id ?? null,
               );
-              const estado = ventaEstadoTone(row.status);
+              const estado = ventaEstadoTone(row.status, row.wompi_reference);
               const pago = ventaFormaPagoTone(row.wompi_reference);
               const pagoIcon = ventaPagoIcon(row.wompi_reference);
               const PagoIcon = pagoIcon.Icon;
@@ -212,7 +212,7 @@ export function VentasSalesTable({
                       className={`inline-flex items-center gap-1.5 text-xs ${pago.className}`}
                     >
                       <PagoIcon
-                        className="size-3.5 shrink-0 text-zinc-400 dark:text-zinc-500"
+                        className="size-3.5 shrink-0"
                         strokeWidth={2.25}
                         aria-hidden
                       />
