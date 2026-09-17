@@ -33,7 +33,7 @@ export function OperatorAccountLogo({
         fill
         sizes={`${size}px`}
         unoptimized
-        className={`bg-transparent object-contain ${pad}`}
+        className={`bg-transparent object-contain brightness-0 invert ${pad}`}
       />
     </span>
   );
