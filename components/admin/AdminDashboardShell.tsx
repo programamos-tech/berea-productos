@@ -49,6 +49,7 @@ export function AdminDashboardShell({
   accountBrand: {
     name: string;
     logoSrc: string;
+    plateColor: string;
   };
   branchContext: BranchContext;
 }) {

@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 import { AdminGlobalSearch } from "@/components/admin/AdminGlobalSearch";
 import { AdminNotificationBell } from "@/components/admin/AdminNotificationBell";
@@ -6,6 +5,7 @@ import { AdminThemeToggle } from "@/components/admin/AdminThemeToggle";
 import { AdminUserAvatar } from "@/components/admin/AdminUserAvatar";
 import { AdminUserMenu } from "@/components/admin/AdminUserMenu";
 import { LeaveAccountButton } from "@/components/admin/LeaveAccountButton";
+import { OperatorAccountLogo } from "@/components/admin/OperatorAccountLogo";
 
 type AdminTopBarProps = {
   showOrderNotifications?: boolean;
@@ -19,6 +19,7 @@ type AdminTopBarProps = {
   accountBrand: {
     name: string;
     logoSrc: string;
+    plateColor: string;
   };
 };
 
@@ -50,13 +51,11 @@ export function AdminTopBar({
           className="flex shrink-0 items-center rounded-md outline-none transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-zinc-400/50 lg:hidden"
           title={accountBrand.name}
         >
-          <Image
+          <OperatorAccountLogo
             src={accountBrand.logoSrc}
-            alt={accountBrand.name}
-            width={64}
-            height={64}
-            className="size-8 rounded-md object-cover sm:size-9"
-            priority
+            name={accountBrand.name}
+            size={40}
+            plateColor={accountBrand.plateColor}
           />
         </Link>
 

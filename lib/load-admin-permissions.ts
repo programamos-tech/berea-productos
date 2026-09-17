@@ -25,6 +25,7 @@ export type AdminSession = {
   tenantSlug: string;
   tenantName: string;
   tenantLogoSrc: string;
+  tenantLogoPlate: string;
   displayName: string;
   email: string;
   isPlatformOperator: boolean;
@@ -141,6 +142,7 @@ async function loadAdminPermissionsUncached(): Promise<AdminSession | null> {
     tenantSlug,
     tenantName,
     tenantLogoSrc: chrome.logoSrc,
+    tenantLogoPlate: chrome.plateColor,
     displayName,
     email,
     isPlatformOperator,

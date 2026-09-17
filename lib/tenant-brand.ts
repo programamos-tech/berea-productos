@@ -135,7 +135,26 @@ const ACCOUNT_LOGO_BY_SLUG: Record<string, string> = {
 export type AdminAccountChrome = {
   name: string;
   logoSrc: string;
+  /** Fondo del recuadro del logo en backoffice (color de marca). */
+  plateColor: string;
 };
+
+const HEX_COLOR = /^#[0-9a-f]{6}$/i;
+
+const ACCOUNT_PLATE_BY_SLUG: Record<string, string> = {
+  aleya: "#FF76A1",
+  "estacion-iphone": "#111111",
+  "berea-tech": "#0F766E",
+};
+
+export function adminLogoPlateColor(
+  slug: string,
+  primaryColor?: string,
+): string {
+  const color = String(primaryColor ?? "").trim();
+  if (HEX_COLOR.test(color)) return color.toUpperCase();
+  return ACCOUNT_PLATE_BY_SLUG[slug] ?? "#18181B";
+}
 
 /** Logo and trade name for the admin sidebar / account picker. */
 export function adminAccountChrome(input: {
@@ -151,6 +170,7 @@ export function adminAccountChrome(input: {
     logoSrc: logoPath
       ? resolveInvoiceLogoSrc(logoPath)
       : adminTenantLogoPath,
+    plateColor: adminLogoPlateColor(input.slug, parsed.primary_color),
   };
 }
 

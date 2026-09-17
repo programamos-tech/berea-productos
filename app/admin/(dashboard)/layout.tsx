@@ -97,6 +97,7 @@ export default async function AdminDashboardLayout({
       accountBrand={{
         name: perm.tenantName,
         logoSrc: perm.tenantLogoSrc,
+        plateColor: perm.tenantLogoPlate,
       }}
       branchContext={perm.branchContext}
     >

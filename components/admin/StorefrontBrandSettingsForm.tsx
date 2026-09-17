@@ -128,15 +128,19 @@ export function StorefrontBrandSettingsForm({
             Logo del catálogo
           </label>
           <div className="mt-2 flex items-center gap-4">
-            <Image
-              src={preview}
-              alt="Vista previa del logo"
-              width={160}
-              height={80}
-              unoptimized
-              className="h-16 w-auto max-w-[10rem] bg-transparent object-contain object-left"
-              style={{ backgroundColor: "transparent" }}
-            />
+            <div
+              className="flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-xl p-2.5"
+              style={{ backgroundColor: color }}
+            >
+              <Image
+                src={preview}
+                alt="Vista previa del logo"
+                width={160}
+                height={80}
+                unoptimized
+                className="h-full w-full bg-transparent object-contain"
+              />
+            </div>
             <div className="min-w-0 flex-1">
               <input
                 id="storefront-logo"
@@ -156,7 +160,7 @@ export function StorefrontBrandSettingsForm({
                 className="block w-full text-xs text-zinc-600 file:mr-3 file:rounded-lg file:border-0 file:bg-zinc-900 file:px-3 file:py-2 file:text-xs file:font-medium file:text-white dark:text-zinc-300 dark:file:bg-zinc-100 dark:file:text-zinc-900"
               />
               <p className="mt-1.5 text-[11px] text-zinc-500">
-                Al elegir un logo proponemos un color; puedes ajustarlo antes de guardar.
+                En el catálogo el logo va sin recuadro. Aquí se muestra sobre el color de la cuenta.
               </p>
             </div>
           </div>

@@ -132,7 +132,7 @@ export default async function AdminCuentaDetallePage({
 
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex min-w-0 items-start gap-4">
-          <OperatorAccountLogo src={row.logoSrc} name={row.tradeName} size={64} />
+          <OperatorAccountLogo src={row.logoSrc} name={row.tradeName} size={64} plateColor={row.plateColor} />
           <div className="min-w-0">
             <h1 className={adminPageTitleClass}>{row.holderName}</h1>
             <p className="mt-1 truncate text-base font-medium text-zinc-900 dark:text-zinc-100">

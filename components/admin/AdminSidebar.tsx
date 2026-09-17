@@ -9,6 +9,7 @@ import {
   filterAdminNavSections,
 } from "@/components/admin/admin-nav-config";
 import { BranchSwitcher } from "@/components/admin/BranchSwitcher";
+import { OperatorAccountLogo } from "@/components/admin/OperatorAccountLogo";
 import {
   adminProductBrand,
   adminSidebarLogoPath,
@@ -56,6 +57,7 @@ const sidebarBorder = "border-zinc-200 dark:border-zinc-800/90";
 type AccountBrand = {
   name: string;
   logoSrc: string;
+  plateColor: string;
 };
 
 function SidebarProductBrand({ account }: { account: AccountBrand }) {
@@ -65,16 +67,12 @@ function SidebarProductBrand({ account }: { account: AccountBrand }) {
       prefetch
       className="inline-flex rounded-md outline-none transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-zinc-400/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--admin-sidebar-bg)]"
     >
-      <span className="relative size-14 overflow-hidden rounded-xl ring-1 ring-zinc-200/80 dark:ring-zinc-700/80">
-        <Image
-          src={account.logoSrc}
-          alt={account.name}
-          width={112}
-          height={112}
-          className="size-full object-cover"
-          priority
-        />
-      </span>
+      <OperatorAccountLogo
+        src={account.logoSrc}
+        name={account.name}
+        size={56}
+        plateColor={account.plateColor}
+      />
     </Link>
   );
 }
@@ -97,15 +95,12 @@ function SidebarTenantAccount({
 
   return (
     <div className={cardClass}>
-      <span className="relative flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-md ring-1 ring-zinc-200/80 dark:ring-zinc-700">
-        <Image
-          src={branchLogo}
-          alt={`Logo de ${branchContext.active.name}`}
-          width={64}
-          height={64}
-          className="size-full object-cover"
-        />
-      </span>
+      <OperatorAccountLogo
+        src={branchLogo}
+        name={branchContext.active.name}
+        size={32}
+        plateColor={account.plateColor}
+      />
       <span className="min-w-0 flex-1">
         <span className="block text-[9px] font-semibold uppercase tracking-[0.12em] text-zinc-500 dark:text-zinc-400">
           Sucursal activa

@@ -8,6 +8,7 @@ export type OperatorAccountRow = {
   id: string;
   slug: string;
   logoSrc: string;
+  plateColor: string;
   holderName: string;
   tradeName: string;
   email: string | null;
@@ -104,6 +105,7 @@ export function toOperatorAccountRow(row: {
     id: row.id,
     slug: row.slug,
     logoSrc: chrome.logoSrc,
+    plateColor: chrome.plateColor,
     holderName: accountHolderLabel(row.account_holder_name),
     tradeName: chrome.name,
     email: row.account_holder_email?.trim() || null,
