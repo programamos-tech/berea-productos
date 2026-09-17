@@ -1,4 +1,5 @@
 import { AdminUserAvatar } from "@/components/admin/AdminUserAvatar";
+import { CatalogPublicLink } from "@/components/admin/CatalogPublicLink";
 import { StorefrontBrandSettingsForm } from "@/components/admin/StorefrontBrandSettingsForm";
 import {
   collaboratorJobRoleLabel,
@@ -14,6 +15,7 @@ import {
 import { loadAdminPermissions } from "@/lib/load-admin-permissions";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { buildStorefrontChrome } from "@/lib/storefront-brand";
+import { tenantCatalogUrl } from "@/lib/tenancy";
 import { redirect } from "next/navigation";
 
 function formatDate(iso: string | null | undefined): string {
@@ -63,7 +65,7 @@ export default async function AdminCuentaPage({
       .maybeSingle(),
     supabase
       .from("tenants")
-      .select("brand,storefront_config")
+      .select("brand,storefront_config,custom_domains")
       .eq("id", perm.tenantId)
       .maybeSingle(),
   ]);
@@ -187,6 +189,14 @@ export default async function AdminCuentaPage({
               Logo, color y datos públicos de tu tienda en línea.
             </p>
           </div>
+          <CatalogPublicLink
+            url={tenantCatalogUrl(
+              perm.tenantSlug,
+              Array.isArray(tenant?.custom_domains)
+                ? (tenant.custom_domains as string[])
+                : [],
+            )}
+          />
           <StorefrontBrandSettingsForm
             initial={{
               tradeName: storefrontChrome.name,

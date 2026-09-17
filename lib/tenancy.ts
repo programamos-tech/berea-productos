@@ -122,3 +122,14 @@ export function isPlatformProductHost(
 export function tenantProductHost(slug: string): string {
   return `${slug}.${PLATFORM_PRODUCT_HOST}`;
 }
+
+/** URL pública del catálogo (dominio propio si existe; si no, subdominio Berea). */
+export function tenantCatalogUrl(
+  slug: string,
+  customDomains?: readonly string[] | null,
+): string {
+  const custom = (customDomains ?? [])
+    .map((domain) => normalizeHost(String(domain)))
+    .find(Boolean);
+  return `https://${custom || tenantProductHost(slug)}`;
+}
