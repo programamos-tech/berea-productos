@@ -11,6 +11,7 @@ type Props = {
   quantity: number;
   maxStock: number;
   fragrance?: string | null;
+  color?: string | null;
 };
 
 export function CheckoutLineControls({
@@ -18,6 +19,7 @@ export function CheckoutLineControls({
   quantity,
   maxStock,
   fragrance,
+  color,
 }: Props) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -38,6 +40,7 @@ export function CheckoutLineControls({
                 productId,
                 quantity - 1,
                 fragrance ?? undefined,
+                color ?? undefined,
               ).then(() => router.refresh());
             })
           }
@@ -58,6 +61,7 @@ export function CheckoutLineControls({
                 productId,
                 quantity + 1,
                 fragrance ?? undefined,
+                color ?? undefined,
               ).then(() => router.refresh());
             })
           }
@@ -83,6 +87,7 @@ export function CheckoutLineControls({
                 productId,
                 0,
                 fragrance ?? undefined,
+                color ?? undefined,
               ).then(() => router.refresh());
             })
           }

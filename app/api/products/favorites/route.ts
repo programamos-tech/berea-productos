@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCachedStorefrontCouponDiscounts } from "@/lib/store-public-cache";
-import { createStorefrontAnonClient, storefrontTenantSlugFromHeaders } from "@/lib/storefront-tenant";
-import { filterRowsWithStorefrontImage } from "@/lib/storefront-product-image";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getStorefrontTenant } from "@/lib/storefront-tenant";
 import { withStorefrontBranchStock } from "@/lib/storefront-branch-inventory";
 
 const UUID_RE =
@@ -28,47 +28,33 @@ export async function GET(request: Request) {
     return NextResponse.json({ products: [] });
   }
 
-  const slug = storefrontTenantSlugFromHeaders(request.headers);
-  let supabase;
-  try {
-    supabase = createStorefrontAnonClient(slug);
-  } catch {
-    return NextResponse.json(
-      { error: "Missing Supabase env" },
-      { status: 500 },
-    );
-  }
+  const supabase = await createSupabaseServerClient();
+  const tenant = await getStorefrontTenant();
 
-  const { data: tenant } = await supabase
-    .from("tenants")
-    .select("id")
-    .eq("slug", slug)
-    .maybeSingle();
-
-  let query = supabase
+  const { data, error } = await supabase
     .from("products")
     .select(
-      "id,name,brand,description,price_cents,has_vat,image_path,stock_quantity,size_options,size_value,size_unit,fragrance_options",
+      "id,name,brand,description,price_cents,has_vat,image_path,stock_quantity,size_options,size_value,size_unit,fragrance_options,colors",
     )
     .eq("is_published", true)
+    .eq("tenant_id", tenant.id)
     .in("id", ids);
-  if (tenant?.id) query = query.eq("tenant_id", tenant.id);
-  const { data, error } = await query;
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  const scopedData = tenant?.id
-    ? await withStorefrontBranchStock(supabase, String(tenant.id), data ?? [])
-    : data ?? [];
+  const scopedData = await withStorefrontBranchStock(
+    supabase,
+    tenant.id,
+    data ?? [],
+  );
   const byId = new Map(scopedData.map((p) => [p.id as string, p]));
   const couponPctByProductId = await getCachedStorefrontCouponDiscounts();
-  const products = filterRowsWithStorefrontImage(
-    ids
-      .map((id) => byId.get(id))
-      .filter((p): p is NonNullable<typeof p> => p != null),
-  ).map((p) => ({
+  const products = ids
+    .map((id) => byId.get(id))
+    .filter((p): p is NonNullable<typeof p> => p != null)
+    .map((p) => ({
       ...p,
       coupon_discount_percent: couponPctByProductId[p.id as string] ?? 0,
     }));

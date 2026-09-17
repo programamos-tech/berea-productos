@@ -21,6 +21,7 @@ import {
 } from "@/lib/storefront-gross-price";
 import { expandFragranceLabels } from "@/lib/fragrance-options";
 import { catalogSizeSummaryLine } from "@/lib/product-size-options";
+import { productColorLabels } from "@/lib/product-colors";
 import {
   storagePublicObjectUrl,
 } from "@/lib/storage-public-url";
@@ -42,6 +43,7 @@ type Product = {
   size_value?: number | null;
   size_unit?: string | null;
   fragrance_options?: string[] | null;
+  colors?: unknown;
 };
 
 function productRequiresFragranceChoice(product: Product): boolean {
@@ -51,6 +53,14 @@ function productRequiresFragranceChoice(product: Product): boolean {
       )
     : [];
   return expandFragranceLabels(raw).length > 1;
+}
+
+function listingColorOptions(product: Product): string[] {
+  return productColorLabels(product.colors);
+}
+
+function productRequiresColorChoice(product: Product): boolean {
+  return listingColorOptions(product).length > 1;
 }
 
 function showcaseBrandLabel(product: Product): string {
@@ -196,6 +206,8 @@ function CatalogProductCard({
 
   const titleWithSize = sizeLine ? `${product.name} · ${sizeLine}` : product.name;
   const needsFragranceOnPdp = productRequiresFragranceChoice(product);
+  const needsColorOnPdp = productRequiresColorChoice(product);
+  const listingColor = listingColorOptions(product)[0] ?? "";
 
   const imageBgClass = accentImageBg
     ? "bg-[var(--store-image-well-tint)]"
@@ -280,12 +292,16 @@ function CatalogProductCard({
           <p className="mt-4 text-center text-[10px] font-medium uppercase tracking-[0.12em] text-stone-400">
             Agotado
           </p>
-        ) : needsFragranceOnPdp ? (
+        ) : needsFragranceOnPdp || needsColorOnPdp ? (
           <Link
             href={`/products/${product.id}`}
             className="mt-auto block border border-[var(--store-accent)] bg-white py-2.5 text-center text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--store-accent)] transition hover:bg-[var(--store-accent)] hover:text-white"
           >
-            Elegir fragancia
+            {needsColorOnPdp && needsFragranceOnPdp
+              ? "Elegir opciones"
+              : needsColorOnPdp
+                ? "Elegir color"
+                : "Elegir fragancia"}
           </Link>
         ) : inCart ? (
           <div
@@ -303,7 +319,7 @@ function CatalogProductCard({
                   );
                 })
               }
-              className="flex size-9 shrink-0 items-center justify-center text-[var(--store-accent)] transition hover:bg-[#fff4f8] disabled:opacity-40"
+              className="flex size-9 shrink-0 items-center justify-center text-[var(--store-accent)] transition hover:bg-[var(--store-wash)] disabled:opacity-40"
               aria-label={
                 cartQuantity <= 1 ? "Quitar de la bolsa" : "Restar una unidad"
               }
@@ -323,7 +339,7 @@ function CatalogProductCard({
                   );
                 })
               }
-              className="flex size-9 shrink-0 items-center justify-center text-[var(--store-accent)] transition hover:bg-[#fff4f8] disabled:opacity-40"
+              className="flex size-9 shrink-0 items-center justify-center text-[var(--store-accent)] transition hover:bg-[var(--store-wash)] disabled:opacity-40"
               aria-label="Sumar una unidad"
             >
               <Plus className="size-4" strokeWidth={1.5} aria-hidden />
@@ -340,6 +356,9 @@ function CatalogProductCard({
           >
             <input type="hidden" name="productId" value={product.id} />
             <input type="hidden" name="quantity" value="1" />
+            {listingColor ? (
+              <input type="hidden" name="color" value={listingColor} />
+            ) : null}
             <button
               type="submit"
               className="w-full bg-[var(--store-accent)] py-2.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-white transition hover:bg-[var(--store-accent-hover)]"

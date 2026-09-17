@@ -64,7 +64,7 @@ export function CartUpsellScroller({
   if (products.length === 0) return null;
 
   const arrowBtnClass =
-    "flex size-8 shrink-0 items-center justify-center border border-stone-300 text-stone-600 transition hover:border-[var(--store-accent)] hover:bg-[#fff8fb] hover:text-[var(--store-accent)]";
+    "flex size-8 shrink-0 items-center justify-center border border-stone-300 text-stone-600 transition hover:border-[var(--store-accent)] hover:bg-[var(--store-wash)] hover:text-[var(--store-accent)]";
 
   return (
     <section className={className} aria-labelledby={titleId}>

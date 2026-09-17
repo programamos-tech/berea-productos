@@ -57,7 +57,7 @@ export function StoreWelcomeDiscountBanner({
   if (!visible) return null;
 
   return (
-    <div className="border-b border-[#ffd6e8]/80 bg-[#fff8fb]">
+    <div className="border-b border-[var(--store-accent)]/25 bg-[var(--store-wash)]">
       <div className={`${storeShellClass} relative py-2.5 pr-11 sm:pr-12`}>
         <p className="flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1 text-center text-[11px] font-medium uppercase leading-snug tracking-[0.14em] text-stone-700 sm:text-xs sm:tracking-[0.16em]">
           <span className="max-w-[min(100%,38rem)]">{message}</span>

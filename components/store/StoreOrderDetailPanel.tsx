@@ -194,7 +194,7 @@ export function StoreOrderDetailPanel({
             {displayHint}
           </p>
           {needsProofHint ? (
-            <p className="max-w-2xl rounded-xl border border-[var(--store-accent)]/30 bg-[#fff8fb] px-3 py-2.5 text-sm font-medium text-stone-800">
+            <p className="max-w-2xl rounded-xl border border-[var(--store-accent)]/30 bg-[var(--store-wash)] px-3 py-2.5 text-sm font-medium text-stone-800">
               Para finalizar tu pedido debes transferir y{" "}
               <strong className="text-[var(--store-brand)]">enviar el comprobante de pago</strong>
               . Baja y completa el paso de transferencia.

@@ -13,6 +13,13 @@ export const PRODUCT_COLOR_OPTIONS = [
   "Plateado",
 ] as const;
 
+export function productColorLabels(colors: unknown): string[] {
+  if (!Array.isArray(colors)) return [];
+  return colors
+    .filter((c): c is string => typeof c === "string" && c.trim().length > 0)
+    .map((c) => c.trim());
+}
+
 export function productColorSwatchClass(color: string): string {
   switch (color.trim().toLowerCase()) {
     case "negro":

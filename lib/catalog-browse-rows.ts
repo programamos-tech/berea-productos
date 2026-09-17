@@ -1,11 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { mergeCategoryRowsForFilterMenu } from "@/lib/product-listing-facets";
 import { expandCategoryIdsFromRows } from "@/lib/store-category-group";
-import { withStorefrontImage } from "@/lib/storefront-product-image";
 import { withStorefrontBranchStock } from "@/lib/storefront-branch-inventory";
 
 const PRODUCT_SELECT =
-  "id,name,brand,price_cents,has_vat,image_path,stock_quantity,size_options,size_value,size_unit,fragrance_options,created_at";
+  "id,name,brand,price_cents,has_vat,image_path,stock_quantity,size_options,size_value,size_unit,fragrance_options,colors,created_at";
 
 /** Vista previa por categoría en carrusel horizontal. */
 export const CATALOG_ROW_PREVIEW_LIMIT = 8;
@@ -23,6 +22,7 @@ export type CatalogBrowseProductRow = {
   size_value: number | null;
   size_unit: string | null;
   fragrance_options: string[] | null;
+  colors?: string[] | null;
   created_at?: string;
 };
 
@@ -99,9 +99,9 @@ async function fetchCatalogBrowsePreviewRowsFallback(
       .select(`${PRODUCT_SELECT},category_id,created_at`)
       .eq("is_published", true)
       .eq("category_id", cat.id);
-    const { data } = await withStorefrontImage(
-      tenantId ? productQuery.eq("tenant_id", tenantId) : productQuery,
-    )
+    const { data } = await (tenantId
+      ? productQuery.eq("tenant_id", tenantId)
+      : productQuery)
       .order("created_at", { ascending: false })
       .limit(CATALOG_ROW_PREVIEW_LIMIT + 1);
     if (data?.length) rows.push(...(data as BrowsePreviewRow[]));
@@ -113,7 +113,7 @@ async function fetchCatalogBrowsePreviewRowsFallback(
     .eq("is_published", true)
     .is("category_id", null);
   if (tenantId) uncatQuery = uncatQuery.eq("tenant_id", tenantId);
-  const { data: uncategorized } = await withStorefrontImage(uncatQuery)
+  const { data: uncategorized } = await uncatQuery
     .order("created_at", { ascending: false })
     .limit(CATALOG_ROW_PREVIEW_LIMIT + 1);
 

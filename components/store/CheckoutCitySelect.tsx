@@ -134,7 +134,7 @@ export function CheckoutCitySelect({
                     className={`flex w-full items-center justify-between gap-3 px-4 py-2.5 text-left text-[13px] transition ${
                       selected
                         ? "bg-[var(--store-accent)]/10 font-medium text-[var(--store-brand)]"
-                        : "text-stone-800 hover:bg-[#fff8fb]"
+                        : "text-stone-800 hover:bg-[var(--store-wash)]"
                     }`}
                     onClick={() => pick(m.id)}
                   >

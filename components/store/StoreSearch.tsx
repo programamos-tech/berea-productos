@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Search } from "lucide-react";
 import type { FormEvent } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useStorefrontBrand } from "@/components/store/StorefrontBrandProvider";
 import { formatCop } from "@/lib/money";
 import { storefrontListGrossUnitCents } from "@/lib/storefront-gross-price";
 import { pseudoReviewCount } from "@/lib/pseudo-review";
@@ -17,6 +18,7 @@ import {
   STORE_HEADER_ICON_SM,
   STORE_HEADER_ICON_STROKE,
 } from "@/lib/store-header-icons";
+import { TENANT_SLUG_HEADER } from "@/lib/tenancy";
 
 type ProductRow = {
   id: string;
@@ -78,7 +80,7 @@ function SearchResultsPanel({
                 <Link
                   href={`/products/${p.id}`}
                   onClick={onPick}
-                  className="flex items-center gap-3 px-3 py-2.5 transition hover:bg-[#fff4f8]"
+                  className="flex items-center gap-3 px-3 py-2.5 transition hover:bg-[var(--store-wash)]"
                 >
                   <div className="relative size-12 shrink-0 overflow-hidden rounded-lg bg-stone-100 ring-1 ring-stone-200/80">
                     {img ? (
@@ -136,6 +138,7 @@ export function StoreSearch({
   onNavigate?: () => void;
 }) {
   const router = useRouter();
+  const chrome = useStorefrontBrand();
   const [query, setQuery] = useState("");
   const [debounced, setDebounced] = useState("");
   const [open, setOpen] = useState(false);
@@ -164,6 +167,7 @@ export function StoreSearch({
       try {
         const res = await fetch(
           `/api/products/search?q=${encodeURIComponent(debounced)}`,
+          { headers: { [TENANT_SLUG_HEADER]: chrome.tenantSlug } },
         );
         const data = (await res.json()) as { products?: ProductRow[] };
         if (!cancelled) {
@@ -183,7 +187,7 @@ export function StoreSearch({
     return () => {
       cancelled = true;
     };
-  }, [debounced]);
+  }, [chrome.tenantSlug, debounced]);
 
   const close = useCallback(() => setOpen(false), []);
 
@@ -290,7 +294,7 @@ export function StoreSearch({
     return (
       <div
         ref={wrapRef}
-        className="relative hidden min-w-0 lg:block lg:max-w-[12rem] xl:max-w-[16rem]"
+        className="relative hidden min-w-0 md:block md:max-w-[10rem] lg:max-w-[12rem] xl:max-w-[16rem]"
       >
         <form
           onSubmit={onSubmit}
@@ -326,7 +330,7 @@ export function StoreSearch({
     <div ref={wrapRef} className="relative min-w-0 w-full max-w-none flex-1 lg:min-w-[12rem]">
       <form
         onSubmit={onSubmit}
-        className="flex items-center gap-2 rounded-full border border-stone-200 bg-[#fff9fb] py-2 pl-4 pr-3 shadow-sm"
+        className="flex items-center gap-2 rounded-full border border-stone-200 bg-[var(--store-wash)] py-2 pl-4 pr-3 shadow-sm"
       >
         <input
           ref={inputRef}

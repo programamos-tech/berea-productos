@@ -35,6 +35,7 @@ export type CartDrawerItem = {
   kitId?: string;
   quantity: number;
   fragrance: string | null;
+  color: string | null;
   name: string;
   priceCents: number;
   listPriceCents?: number | null;
@@ -46,12 +47,6 @@ export type CartDrawerItem = {
 };
 
 export type CartDrawerSuggestion = StoreCartUpsellProduct;
-
-function firstColorLabel(colors: unknown): string | null {
-  if (!Array.isArray(colors) || colors.length === 0) return null;
-  const c = colors[0];
-  return typeof c === "string" && c.trim() ? c.trim() : null;
-}
 
 /**
  * Drawer de bolsa: lectura rápida del cookie + 1 query de productos
@@ -163,10 +158,12 @@ export async function GET(request: Request) {
     subtotalNetCents += lineNetCents;
     subtotalVatCents += Math.max(0, lineTotalCents - lineNetCents);
     const frag = line.fragrance?.trim() || null;
+    const color = line.color?.trim() || null;
     items.push({
       productId: line.productId,
       quantity: line.quantity,
       fragrance: frag,
+      color,
       name: p.name,
       priceCents: payableGrossUnit,
       listPriceCents: null,
@@ -175,7 +172,7 @@ export async function GET(request: Request) {
         p.fragrance_option_images,
         frag ?? undefined,
       ),
-      firstColor: firstColorLabel(p.colors),
+      firstColor: color,
       lineTotalCents,
       listLineTotalCents: null,
       maxStock: Math.max(0, Math.floor(Number(p.stock_quantity ?? 0))),
@@ -199,6 +196,7 @@ export async function GET(request: Request) {
       kitId: kit.id,
       quantity: q,
       fragrance: null,
+      color: null,
       name: kit.name,
       priceCents: unit,
       imagePath: kit.image_path,

@@ -24,7 +24,11 @@ export type StorefrontTheme = {
   foreground: string;
   announcement: string;
   imageTint: string;
+  wash: string;
 };
+
+/** Cookie para pintar overlay de checkout / vars en html antes de React. */
+export const STORE_THEME_COOKIE = "berea_store_theme";
 
 export type StorefrontChrome = {
   tenantId: string;
@@ -101,6 +105,23 @@ export function buildStorefrontTheme(primaryRaw?: string): StorefrontTheme {
     foreground: readableForeground(primary),
     announcement: mix(primary, 255, 0.9),
     imageTint: mix(primary, 255, 0.82),
+    wash: mix(primary, 255, 0.92),
+  };
+}
+
+export function storefrontCssVars(
+  theme: StorefrontTheme,
+): Record<`--${string}`, string> {
+  return {
+    "--store-accent": theme.primary,
+    "--store-accent-hover": theme.primaryHover,
+    "--store-brand": theme.primary,
+    "--store-brand-hover": theme.primaryHover,
+    "--store-header-bg": theme.primary,
+    "--store-header-fg": theme.foreground,
+    "--store-announcement-bg": theme.announcement,
+    "--store-image-well-tint": theme.imageTint,
+    "--store-wash": theme.wash,
   };
 }
 

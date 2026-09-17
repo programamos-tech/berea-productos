@@ -1,4 +1,6 @@
-import { storeBrand } from "@/lib/brand";
+"use client";
+
+import { useStorefrontBrand } from "@/components/store/StorefrontBrandProvider";
 
 /**
  * Pantalla a viewport completo (cubre navbar/footer) mientras carga /checkout.
@@ -11,10 +13,11 @@ export function CheckoutRouteLoadingScreen({
   message?: string;
   footnote?: string;
 }) {
+  const chrome = useStorefrontBrand();
   return (
     <div
       data-checkout-loading
-      className="fixed inset-0 z-[200] flex items-center justify-center bg-[#fff8fb] px-6"
+      className="fixed inset-0 z-[200] flex items-center justify-center bg-[var(--store-wash)] px-6"
       role="status"
       aria-live="polite"
       aria-busy="true"
@@ -26,7 +29,7 @@ export function CheckoutRouteLoadingScreen({
         />
         <div className="relative">
           <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--store-brand)]">
-            {storeBrand}
+            {chrome.name}
           </p>
           <div className="mx-auto mt-8 flex size-14 items-center justify-center">
             <span

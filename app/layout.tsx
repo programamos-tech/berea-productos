@@ -95,6 +95,7 @@ export default function RootLayout({
             "--store-image-well": STORE_IMAGE_WELL,
             "--store-image-well-tint": STORE_IMAGE_WELL_TINT,
             "--store-announcement-bg": STORE_ANNOUNCEMENT_BG,
+            "--store-wash": "#FFF5F8",
           } as CSSProperties
         }
       >

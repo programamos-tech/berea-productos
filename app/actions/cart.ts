@@ -3,8 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import {
-  cartLinesMatchFragrance,
   cartLinesMatchKit,
+  cartLinesMatchProduct,
   getCart,
   isCartKitLine,
   isCartProductLine,
@@ -15,13 +15,13 @@ import { getStorefrontTenant } from "@/lib/storefront-tenant";
 import { withStorefrontBranchStock } from "@/lib/storefront-branch-inventory";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { expandFragranceLabels } from "@/lib/fragrance-options";
+import { productColorLabels } from "@/lib/product-colors";
 import { fetchKitWithItems } from "@/lib/load-product-kits";
 import {
   kitIsAvailable,
   maxKitsAvailableFromItems,
 } from "@/lib/product-kits";
 import { normalizeStorefrontCartLines } from "@/lib/storefront-cart";
-import { productHasStorefrontImage } from "@/lib/storefront-product-image";
 
 function revalidateStoreCart() {
   revalidatePath("/products");
@@ -44,6 +44,7 @@ export async function addToCart(
   productId: string,
   quantity: number,
   fragrance?: string,
+  color?: string,
 ) {
   await syncCartCookieIfStale();
   const q = Math.max(1, Math.floor(quantity || 1));
@@ -51,17 +52,19 @@ export async function addToCart(
     typeof fragrance === "string" && fragrance.trim()
       ? fragrance.trim()
       : undefined;
+  const col =
+    typeof color === "string" && color.trim() ? color.trim() : undefined;
   const supabase = await createSupabaseServerClient();
   const tenant = await getStorefrontTenant();
   const { data: row } = await supabase
     .from("products")
-    .select("stock_quantity, fragrance_options, image_path")
+    .select("stock_quantity, fragrance_options, colors")
     .eq("id", productId)
     .eq("is_published", true)
     .eq("tenant_id", tenant.id)
     .maybeSingle();
 
-  if (!row || !productHasStorefrontImage(row.image_path)) return;
+  if (!row) return;
   const [scopedRow] = await withStorefrontBranchStock(
     supabase,
     tenant.id,
@@ -76,6 +79,15 @@ export async function addToCart(
   const fragOpts = expandFragranceLabels(fragOptsRaw);
   if (fragOpts.length > 1 && !frag) return;
 
+  const colorOpts = productColorLabels(row.colors);
+  if (colorOpts.length > 1 && !col) return;
+  const resolvedColor =
+    col && colorOpts.includes(col)
+      ? col
+      : colorOpts.length === 1
+        ? colorOpts[0]
+        : col;
+
   const stock = Math.max(0, Math.floor(Number(scopedRow?.stock_quantity ?? 0)));
   if (stock <= 0) return;
 
@@ -84,13 +96,22 @@ export async function addToCart(
   const i = next.findIndex(
     (l) =>
       isCartProductLine(l) &&
-      cartLinesMatchFragrance(l, { productId, fragrance: frag }),
+      cartLinesMatchProduct(l, {
+        productId,
+        fragrance: frag,
+        color: resolvedColor,
+      }),
   );
   const current = i >= 0 ? next[i]!.quantity : 0;
   const newQty = Math.min(current + q, stock);
   if (newQty <= 0) return;
 
-  const line: CartLine = { productId, quantity: newQty, fragrance: frag };
+  const line: CartLine = {
+    productId,
+    quantity: newQty,
+    fragrance: frag,
+    color: resolvedColor,
+  };
   if (i >= 0) next[i] = line;
   else next.push(line);
 
@@ -102,6 +123,7 @@ export async function setLineQuantity(
   productId: string,
   quantity: number,
   fragrance?: string,
+  color?: string,
 ) {
   await syncCartCookieIfStale();
   const raw = Math.floor(quantity);
@@ -109,6 +131,8 @@ export async function setLineQuantity(
     typeof fragrance === "string" && fragrance.trim()
       ? fragrance.trim()
       : undefined;
+  const col =
+    typeof color === "string" && color.trim() ? color.trim() : undefined;
   const supabase = await createSupabaseServerClient();
   const tenant = await getStorefrontTenant();
   const { data: row } = await supabase
@@ -132,23 +156,34 @@ export async function setLineQuantity(
     next = cart.filter(
       (l) =>
         !isCartProductLine(l) ||
-        !cartLinesMatchFragrance(l, { productId, fragrance: frag }),
+        !cartLinesMatchProduct(l, {
+          productId,
+          fragrance: frag,
+          color: col,
+        }),
     );
   } else {
     const q = Math.min(raw, stock);
     const idx = cart.findIndex(
       (l) =>
         isCartProductLine(l) &&
-        cartLinesMatchFragrance(l, { productId, fragrance: frag }),
+        cartLinesMatchProduct(l, {
+          productId,
+          fragrance: frag,
+          color: col,
+        }),
     );
     if (idx >= 0) {
       next = cart.map((l, i) =>
         i === idx && isCartProductLine(l)
-          ? { ...l, quantity: q, fragrance: frag ?? l.fragrance }
+          ? { ...l, quantity: q, fragrance: frag ?? l.fragrance, color: col ?? l.color }
           : l,
       );
     } else {
-      next = [...cart, { productId, quantity: q, fragrance: frag }];
+      next = [
+        ...cart,
+        { productId, quantity: q, fragrance: frag, color: col },
+      ];
     }
   }
   await setCart(next);
@@ -159,11 +194,13 @@ export async function addToCartFromForm(formData: FormData) {
   const productId = String(formData.get("productId") ?? "");
   const qty = Number(formData.get("quantity") ?? 1);
   const fragranceRaw = String(formData.get("fragrance") ?? "").trim();
+  const colorRaw = String(formData.get("color") ?? "").trim();
   if (!productId) return;
   await addToCart(
     productId,
     Number.isFinite(qty) ? qty : 1,
     fragranceRaw || undefined,
+    colorRaw || undefined,
   );
 }
 
@@ -181,7 +218,7 @@ export async function buyNowFromDetail(formData: FormData) {
   const tenant = await getStorefrontTenant();
   const { data: row } = await supabase
     .from("products")
-    .select("stock_quantity, fragrance_options")
+    .select("stock_quantity, fragrance_options, colors")
     .eq("id", productId)
     .eq("is_published", true)
     .eq("tenant_id", tenant.id)
@@ -204,7 +241,12 @@ export async function buyNowFromDetail(formData: FormData) {
     : [];
   const fragOpts = expandFragranceLabels(fragOptsRaw);
   const fragranceRaw = String(formData.get("fragrance") ?? "").trim();
+  const colorRaw = String(formData.get("color") ?? "").trim();
   if (fragOpts.length > 1 && !fragranceRaw) {
+    redirect(`/products/${productId}`);
+  }
+  const colorOpts = productColorLabels(row.colors);
+  if (colorOpts.length > 1 && !colorRaw) {
     redirect(`/products/${productId}`);
   }
 
@@ -214,6 +256,9 @@ export async function buyNowFromDetail(formData: FormData) {
       productId,
       quantity: qty,
       fragrance: fragranceRaw || undefined,
+      color:
+        colorRaw ||
+        (colorOpts.length === 1 ? colorOpts[0] : undefined),
     },
   ]);
   revalidateStoreCart();
@@ -224,8 +269,14 @@ export async function updateLineFromForm(formData: FormData) {
   const productId = String(formData.get("productId") ?? "");
   const q = Number(formData.get("quantity") ?? 0);
   const fragranceRaw = String(formData.get("fragrance") ?? "").trim();
+  const colorRaw = String(formData.get("color") ?? "").trim();
   if (!productId) return;
-  await setLineQuantity(productId, q, fragranceRaw || undefined);
+  await setLineQuantity(
+    productId,
+    q,
+    fragranceRaw || undefined,
+    colorRaw || undefined,
+  );
 }
 
 export async function addKitToCart(kitId: string, quantity: number) {

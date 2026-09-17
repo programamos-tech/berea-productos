@@ -10,6 +10,7 @@ import {
 } from "@/lib/platform-operator";
 import {
   DEFAULT_TENANT_SLUG,
+  publicHostname,
   resolveTenantFromHost,
   TENANT_SLUG_HEADER,
 } from "@/lib/tenancy";
@@ -19,7 +20,7 @@ export async function createSupabaseServerClient() {
   const headerList = await headers();
   const tenantSlug =
     headerList.get(TENANT_SLUG_HEADER)?.trim() ||
-    resolveTenantFromHost(headerList.get("host")).slug ||
+    resolveTenantFromHost(publicHostname(headerList)).slug ||
     DEFAULT_TENANT_SLUG;
   const actingTenantId = headerList.get(ACTING_TENANT_HEADER)?.trim() ?? "";
   const activeBranchId = headerList.get(ACTIVE_BRANCH_HEADER)?.trim() ?? "";

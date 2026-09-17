@@ -68,6 +68,7 @@ export function CatalogBrowseSections({
                         size_value: p.size_value,
                         size_unit: p.size_unit,
                         fragrance_options: p.fragrance_options,
+                        colors: p.colors,
                       }}
                     />
                   </RevealOnScroll>
@@ -133,6 +134,7 @@ function CatalogRowProductSlot({
           size_value: product.size_value,
           size_unit: product.size_unit,
           fragrance_options: product.fragrance_options,
+          colors: product.colors,
         }}
       />
     </RevealOnScroll>

@@ -118,7 +118,7 @@ export function StoreNavDropdowns({
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto px-0 pb-5 pt-1">
-          <ul className="border-b border-rose-200/35 md:hidden">
+          <ul className="border-b border-[var(--store-accent)]/15 md:hidden">
             <li>
               {searchOpen ? (
                 <div className="space-y-2 px-4 py-3">
@@ -166,7 +166,7 @@ export function StoreNavDropdowns({
               Catálogo.
             </p>
           ) : (
-            <ul className="divide-y divide-rose-200/35">
+            <ul className="divide-y divide-[var(--store-accent)]/15">
               {menuCategories.map((c) => (
                 <li key={c.id}>
                   <Link
@@ -187,8 +187,8 @@ export function StoreNavDropdowns({
           )}
 
           <ul
-            className={`divide-y divide-rose-200/35 ${
-              menuCategories.length > 0 ? "border-t border-rose-200/35" : ""
+            className={`divide-y divide-[var(--store-accent)]/15 ${
+              menuCategories.length > 0 ? "border-t border-[var(--store-accent)]/15" : ""
             }`}
           >
             <li>
@@ -207,7 +207,7 @@ export function StoreNavDropdowns({
             </li>
           </ul>
 
-          <div className="mx-4 my-2 h-px bg-rose-200/40" aria-hidden />
+          <div className="mx-4 my-2 h-px bg-[var(--store-accent)]/20" aria-hidden />
 
           <Link
             href="/products"

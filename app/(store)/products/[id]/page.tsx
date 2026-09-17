@@ -10,7 +10,6 @@ import {
   normalizeSizeOptionsFromRow,
 } from "@/lib/product-size-options";
 import { fetchStorefrontCouponDiscountPercentForProduct } from "@/lib/store-coupons";
-import { productHasStorefrontImage } from "@/lib/storefront-product-image";
 import { storeShellClass } from "@/lib/store-theme";
 import { withStorefrontBranchStock } from "@/lib/storefront-branch-inventory";
 
@@ -40,7 +39,7 @@ export default async function ProductDetailPage({ params }: Props) {
     .eq("tenant_id", tenant.id)
     .maybeSingle();
 
-  if (!product || !productHasStorefrontImage(product.image_path)) notFound();
+  if (!product) notFound();
   const [productWithStock] = await withStorefrontBranchStock(
     supabase,
     tenant.id,

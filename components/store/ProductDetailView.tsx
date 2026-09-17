@@ -400,6 +400,11 @@ export function ProductDetailView({
               name="fragrance"
               value={selectedFragranceForCart}
             />
+            <input
+              type="hidden"
+              name="color"
+              value={selectedColorLabel ?? ""}
+            />
 
             <div className="flex max-w-xs items-center justify-between gap-4 border-b border-stone-200 pb-3">
               <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-stone-600">

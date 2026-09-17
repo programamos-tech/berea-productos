@@ -11,3 +11,16 @@ export function adminProductsNameReferenceOrIlikeFilter(qTrimmed: string): strin
   const inner = escapePostgrestOrQuotedLiteral(qTrimmed);
   return `name.ilike."%${inner}%",reference.ilike."%${inner}%"`;
 }
+
+/** Búsqueda de vitrina: nombre, marca y referencia. */
+export function storefrontProductsSearchOrIlikeFilter(qTrimmed: string): string {
+  const inner = escapePostgrestOrQuotedLiteral(qTrimmed);
+  return `name.ilike."%${inner}%",brand.ilike."%${inner}%",reference.ilike."%${inner}%"`;
+}
+
+export function storefrontProductsSearchNameBrandOrIlikeFilter(
+  qTrimmed: string,
+): string {
+  const inner = escapePostgrestOrQuotedLiteral(qTrimmed);
+  return `name.ilike."%${inner}%",brand.ilike."%${inner}%"`;
+}

@@ -70,13 +70,7 @@ const sidebarInputClass =
 const primaryBtnClass =
   "w-full bg-[var(--store-accent)] py-4 text-center text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[var(--store-accent-hover)]";
 const secondaryBtnClass =
-  "flex w-full items-center justify-center border border-[var(--store-accent)] bg-white py-3.5 text-center text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--store-accent)] transition hover:bg-[#fff8fb]";
-
-function firstColorLabel(colors: unknown): string | null {
-  if (!Array.isArray(colors) || colors.length === 0) return null;
-  const c = colors[0];
-  return typeof c === "string" && c.trim() ? c.trim() : null;
-}
+  "flex w-full items-center justify-center border border-[var(--store-accent)] bg-white py-3.5 text-center text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--store-accent)] transition hover:bg-[var(--store-wash)]";
 
 function productShortRef(id: string): string {
   return `#${id.replace(/-/g, "").slice(0, 10).toUpperCase()}`;
@@ -256,7 +250,7 @@ function CheckoutBolsaVaciaView({
             </Link>
             <Link
               href="/"
-              className="inline-flex items-center justify-center border border-[var(--store-accent)] bg-white px-6 py-3.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--store-accent)] transition hover:bg-[#fff8fb]"
+              className="inline-flex items-center justify-center border border-[var(--store-accent)] bg-white px-6 py-3.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--store-accent)] transition hover:bg-[var(--store-wash)]"
             >
               Ir al inicio
             </Link>
@@ -616,19 +610,19 @@ export default async function CheckoutPage({
                       0,
                       Math.floor(Number(p.stock_quantity ?? 0)),
                     );
-                    const color = firstColorLabel(row.colors);
+                    const color = line.color?.trim() || null;
                     const showWholesaleLine =
                       wholesaleDisplayPct > 0 && catalogListLineGross > sub;
 
                     return (
                       <li
-                        key={`${p.id}-${frag ?? ""}`}
+                        key={`${p.id}-${frag ?? ""}-${color ?? ""}`}
                         className="flex flex-col gap-6 py-10 first:pt-0 sm:flex-row sm:items-start sm:justify-between sm:gap-8"
                       >
                         <div className="flex min-w-0 flex-1 gap-5 sm:gap-8">
                           <Link
                             href={`/products/${p.id}`}
-                            className="relative aspect-[3/4] w-[6.75rem] shrink-0 overflow-hidden bg-[#f0eeeb] sm:w-28"
+                            className="relative aspect-[3/4] w-[6.75rem] shrink-0 overflow-hidden bg-[var(--store-image-well)] sm:w-28"
                           >
                             {img ? (
                               <Image
@@ -679,6 +673,7 @@ export default async function CheckoutPage({
                               quantity={line.quantity}
                               maxStock={maxStock}
                               fragrance={frag}
+                              color={color}
                             />
                           </div>
                         </div>
@@ -711,7 +706,7 @@ export default async function CheckoutPage({
                         <div className="flex min-w-0 flex-1 gap-5 sm:gap-8">
                           <Link
                             href={`/kits/${kit.id}`}
-                            className="relative aspect-[3/4] w-[6.75rem] shrink-0 overflow-hidden bg-[#f0eeeb] sm:w-28"
+                            className="relative aspect-[3/4] w-[6.75rem] shrink-0 overflow-hidden bg-[var(--store-image-well)] sm:w-28"
                           >
                             {img ? (
                               <Image

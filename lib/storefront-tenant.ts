@@ -1,6 +1,7 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import {
   DEFAULT_TENANT_SLUG,
+  publicHostname,
   resolveTenantFromHost,
   TENANT_SLUG_HEADER,
 } from "@/lib/tenancy";
@@ -11,7 +12,7 @@ export function storefrontTenantSlugFromHeaders(
 ): string {
   return (
     headerList.get(TENANT_SLUG_HEADER)?.trim() ||
-    resolveTenantFromHost(headerList.get("host")).slug ||
+    resolveTenantFromHost(publicHostname(headerList)).slug ||
     DEFAULT_TENANT_SLUG
   );
 }

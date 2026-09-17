@@ -288,6 +288,7 @@ export type CatalogGridProduct = {
   size_value: number | null;
   size_unit: string | null;
   fragrance_options: string[] | null;
+  colors?: string[] | null;
 };
 
 /** Catálogo completo (scroll): todos los productos publicados. */
@@ -298,7 +299,7 @@ export async function getCachedAllCatalogProducts() {
       const { data } = await publicSupabase(tenant.slug)
           .from("products")
           .select(
-            "id,name,brand,price_cents,has_vat,image_path,stock_quantity,size_options,size_value,size_unit,fragrance_options",
+            "id,name,brand,price_cents,has_vat,image_path,stock_quantity,size_options,size_value,size_unit,fragrance_options,colors",
           )
           .eq("is_published", true)
           .eq("tenant_id", tenant.id)

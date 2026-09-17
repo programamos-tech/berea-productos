@@ -38,6 +38,9 @@ import { STORE_CARD_PRIORITY_COUNT } from "@/lib/store-image";
 import { storeShellClass } from "@/lib/store-theme";
 import { withStorefrontBranchStock } from "@/lib/storefront-branch-inventory";
 import { storefrontListGrossUnitCents } from "@/lib/storefront-gross-price";
+import {
+  storefrontProductsSearchOrIlikeFilter,
+} from "@/lib/admin-product-search-filter";
 
 /** Productos por página en listado filtrado (antes hasta 300 en un solo HTML). */
 const CATALOG_PAGE_SIZE = 24;
@@ -106,7 +109,7 @@ type Props = {
 export default async function ProductsPage({ searchParams }: Props) {
   const sp = await searchParams;
   const qRaw = sp.q;
-  const q = typeof qRaw === "string" ? qRaw.trim() : "";
+  const q = typeof qRaw === "string" ? qRaw.trim().replace(/[%_\\,]/g, "").slice(0, 80) : "";
   const sortRaw = sp.sort;
   const sort =
     typeof sortRaw === "string" && sortRaw.trim()
@@ -216,6 +219,7 @@ export default async function ProductsPage({ searchParams }: Props) {
     size_value: number | null;
     size_unit: string | null;
     fragrance_options: string[] | null;
+    colors?: string[] | null;
     created_at: string;
   };
 
@@ -229,7 +233,7 @@ export default async function ProductsPage({ searchParams }: Props) {
         .from("products")
         .select(
           // Sin `description`: no se muestra en cards y ahorra HTML/RSC.
-          "id,name,brand,price_cents,has_vat,image_path,stock_quantity,size_options,size_value,size_unit,fragrance_options,created_at",
+          "id,name,brand,price_cents,has_vat,image_path,stock_quantity,size_options,size_value,size_unit,fragrance_options,colors,created_at",
           { count: "exact" },
         )
         .eq("is_published", true)
@@ -275,7 +279,7 @@ export default async function ProductsPage({ searchParams }: Props) {
     }
 
     if (q) {
-      query = query.ilike("name", `%${q}%`);
+      query = query.or(storefrontProductsSearchOrIlikeFilter(q));
     }
 
     switch (sort) {
@@ -472,6 +476,7 @@ export default async function ProductsPage({ searchParams }: Props) {
                               size_value: p.size_value,
                               size_unit: p.size_unit,
                               fragrance_options: p.fragrance_options,
+                              colors: p.colors,
                             }}
                           />
                         </RevealOnScroll>
@@ -529,6 +534,7 @@ export default async function ProductsPage({ searchParams }: Props) {
                         size_value: p.size_value,
                         size_unit: p.size_unit,
                         fragrance_options: p.fragrance_options,
+                        colors: p.colors,
                       }}
                     />
                   </RevealOnScroll>

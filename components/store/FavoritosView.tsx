@@ -48,6 +48,7 @@ type Product = {
   size_value?: number | null;
   size_unit?: string | null;
   fragrance_options?: string[] | null;
+  colors?: unknown;
   coupon_discount_percent?: number;
 };
 

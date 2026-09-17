@@ -1,9 +1,3 @@
-import Link from "next/link";
-import { Search } from "lucide-react";
-import {
-  STORE_HEADER_ICON_LG,
-  STORE_HEADER_ICON_STROKE,
-} from "@/lib/store-header-icons";
 import { getStorefrontCartItemCount } from "@/lib/storefront-cart";
 import { StoreAnnouncementBar } from "@/components/store/StoreAnnouncementBar";
 import { StoreHeaderActions } from "@/components/store/StoreHeaderActions";
@@ -43,17 +37,6 @@ export async function StoreHeader({
           </div>
 
           <div className="flex min-w-0 items-center justify-end gap-0.5 sm:gap-1 md:gap-2 lg:justify-end lg:gap-4 lg:pl-4">
-            <Link
-              href="/products"
-              className="hidden shrink-0 items-center justify-center p-1.5 text-white/90 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--store-header-bg)] md:flex lg:hidden"
-              aria-label="Buscar productos"
-            >
-              <Search
-                className={STORE_HEADER_ICON_LG}
-                strokeWidth={STORE_HEADER_ICON_STROKE}
-                aria-hidden
-              />
-            </Link>
             <StoreSearch variant="minimal" />
             <StoreHeaderActions cartItemCount={cartItemCount} />
           </div>

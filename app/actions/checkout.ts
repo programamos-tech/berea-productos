@@ -302,12 +302,14 @@ export async function startCheckout(formData: FormData) {
     const sub = unit * line.quantity;
     total += sub;
     const frag = line.fragrance?.trim();
+    const col = line.color?.trim();
+    const extras = [frag, col].filter(Boolean).join(" · ");
     lines.push({
       product_id: p.id,
       kit_id: null,
       quantity: line.quantity,
       unit_price_cents: unit,
-      product_name_snapshot: frag ? `${p.name} (${frag})` : p.name,
+      product_name_snapshot: extras ? `${p.name} (${extras})` : p.name,
       kit_component_deductions: null,
     });
   }

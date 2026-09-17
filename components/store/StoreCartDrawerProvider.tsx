@@ -37,6 +37,7 @@ export type StoreCartDrawerItem = {
   kitId?: string;
   quantity: number;
   fragrance: string | null;
+  color: string | null;
   name: string;
   priceCents: number;
   listPriceCents?: number | null;
@@ -86,7 +87,7 @@ function DrawerLine({
       <div className="flex gap-4">
         <Link
           href={href}
-          className="relative aspect-[3/4] w-[4.75rem] shrink-0 overflow-hidden bg-[#f0eeeb] sm:w-20"
+          className="relative aspect-[3/4] w-[4.75rem] shrink-0 overflow-hidden bg-[var(--store-image-well)] sm:w-20"
         >
           {img ? (
             <Image
@@ -124,10 +125,10 @@ function DrawerLine({
                   {item.fragrance}
                 </p>
               ) : null}
-              {item.firstColor ? (
+              {item.color || item.firstColor ? (
                 <p>
                   <span className="text-stone-500">Color:</span>{" "}
-                  {item.firstColor}
+                  {item.color || item.firstColor}
                 </p>
               ) : null}
               <div className="flex flex-wrap items-center gap-3 pt-2">
@@ -364,6 +365,7 @@ export function StoreCartDrawerProvider({
               item.productId,
               nextQty,
               item.fragrance ?? undefined,
+              item.color ?? item.firstColor ?? undefined,
             );
           }
           await reloadCart("quiet");
@@ -457,7 +459,7 @@ export function StoreCartDrawerProvider({
                         key={
                           item.kitId
                             ? `kit-${item.kitId}`
-                            : `${item.productId}-${item.fragrance ?? ""}`
+                            : `${item.productId}-${item.fragrance ?? ""}-${item.color ?? item.firstColor ?? ""}`
                         }
                         item={item}
                         pending={linePending}

@@ -189,7 +189,7 @@ export function StoreDateInput({
                 <button
                   type="button"
                   onClick={() => setView((v) => new Date(v.getFullYear(), v.getMonth() - 1, 1))}
-                  className="shrink-0 rounded-md px-2 py-1 text-stone-600 transition hover:bg-[#fff4f8] hover:text-[var(--store-accent)]"
+                  className="shrink-0 rounded-md px-2 py-1 text-stone-600 transition hover:bg-[var(--store-wash)] hover:text-[var(--store-accent)]"
                   aria-label="Mes anterior"
                 >
                   ←
@@ -200,7 +200,7 @@ export function StoreDateInput({
                 <button
                   type="button"
                   onClick={() => setView((v) => new Date(v.getFullYear(), v.getMonth() + 1, 1))}
-                  className="shrink-0 rounded-md px-2 py-1 text-stone-600 transition hover:bg-[#fff4f8] hover:text-[var(--store-accent)]"
+                  className="shrink-0 rounded-md px-2 py-1 text-stone-600 transition hover:bg-[var(--store-wash)] hover:text-[var(--store-accent)]"
                   aria-label="Mes siguiente"
                 >
                   →
@@ -237,7 +237,7 @@ export function StoreDateInput({
                           : active
                             ? "bg-[var(--store-accent)] font-semibold text-white"
                             : inMonth
-                              ? "text-stone-800 hover:bg-[#fff4f8] hover:text-[var(--store-accent)]"
+                              ? "text-stone-800 hover:bg-[var(--store-wash)] hover:text-[var(--store-accent)]"
                               : "text-stone-400 hover:bg-stone-50",
                       ].join(" ")}
                     >
@@ -269,7 +269,7 @@ export function StoreDateInput({
                         setOpen(false);
                       }
                     }}
-                    className="rounded-md px-2 py-1 text-xs font-semibold uppercase tracking-wide text-[var(--store-accent)] transition hover:bg-[#fff4f8]"
+                    className="rounded-md px-2 py-1 text-xs font-semibold uppercase tracking-wide text-[var(--store-accent)] transition hover:bg-[var(--store-wash)]"
                   >
                     Hoy
                   </button>

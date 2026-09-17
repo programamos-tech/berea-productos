@@ -7,6 +7,8 @@ export type CartProductLine = {
   quantity: number;
   /** Etiqueta de fragancia elegida en PDP (debe coincidir con `fragrance_options`). */
   fragrance?: string;
+  /** Color elegido en PDP / ficha (debe coincidir con `colors`). */
+  color?: string;
 };
 
 export type CartKitLine = {
@@ -31,6 +33,16 @@ export function cartLinesMatchFragrance(
   return (
     a.productId === b.productId &&
     (a.fragrance ?? "").trim() === (b.fragrance ?? "").trim()
+  );
+}
+
+export function cartLinesMatchProduct(
+  a: Pick<CartProductLine, "productId" | "fragrance" | "color">,
+  b: Pick<CartProductLine, "productId" | "fragrance" | "color">,
+): boolean {
+  return (
+    cartLinesMatchFragrance(a, b) &&
+    (a.color ?? "").trim() === (b.color ?? "").trim()
   );
 }
 
@@ -66,7 +78,11 @@ function parseCartLine(raw: unknown): CartLine | null {
     typeof row.fragrance === "string" && row.fragrance.trim()
       ? row.fragrance.trim()
       : undefined;
-  return { productId, quantity, fragrance };
+  const color =
+    typeof row.color === "string" && row.color.trim()
+      ? row.color.trim()
+      : undefined;
+  return { productId, quantity, fragrance, color };
 }
 
 export async function getCart(): Promise<CartLine[]> {
@@ -120,6 +136,7 @@ export function normalizeCartForCheckout(
         productId: line.productId,
         quantity: q,
         ...(line.fragrance ? { fragrance: line.fragrance } : {}),
+        ...(line.color ? { color: line.color } : {}),
       });
     }
   }
