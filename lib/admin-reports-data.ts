@@ -173,6 +173,21 @@ async function fetchReportExpenses(
   fetchFrom: string,
   fetchTo: string,
 ): Promise<{ rows: Record<string, unknown>[]; error: string | null }> {
+  const withKind = await supabase
+    .from("store_expenses")
+    .select(
+      "id,concept,category,amount_cents,payment_method,notes,expense_date,created_at,is_cancelled,expense_kind",
+    )
+    .gte("expense_date", fetchFrom)
+    .lte("expense_date", fetchTo)
+    .order("expense_date", { ascending: false })
+    .order("created_at", { ascending: false })
+    .limit(1500);
+
+  if (!withKind.error) {
+    return { rows: (withKind.data ?? []) as Record<string, unknown>[], error: null };
+  }
+
   const withCancelled = await supabase
     .from("store_expenses")
     .select(
@@ -887,6 +902,11 @@ async function fetchAdminReportViaLegacy(
 
   for (const e of expenses) {
     if ((e as { is_cancelled?: boolean }).is_cancelled === true) continue;
+    // Solo gastos operativos; no sumar egresos (impuestos / proveedores).
+    const kind = String((e as { expense_kind?: unknown }).expense_kind ?? "gasto")
+      .trim()
+      .toLowerCase();
+    if (kind === "egreso") continue;
     const raw =
       typeof e.expense_date === "string" && String(e.expense_date).length >= 10
         ? String(e.expense_date).slice(0, 10)

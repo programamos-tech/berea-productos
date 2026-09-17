@@ -89,7 +89,7 @@ function Metric({
   );
 }
 
-/** Barrita del mix de egresos: caja (coral) + cuentas (zinc suave). Solo en vista tienda. */
+/** Barrita del mix de gastos: caja (coral) + cuentas (zinc suave). Solo en vista tienda. */
 function EgresosMixHint({
   egresosEfectivoCents,
   egresosTransferCents,
@@ -101,7 +101,7 @@ function EgresosMixHint({
   const transfer = Math.max(0, egresosTransferCents);
   const total = cash + transfer;
   if (total <= 0) {
-    return <span>Sin egresos</span>;
+    return <span>Sin gastos</span>;
   }
   const cashPct = (cash / total) * 100;
   const transferPct = (transfer / total) * 100;
@@ -379,7 +379,7 @@ export async function ReportsDashboardBody({
           ) : null}
 
           <Metric
-            label="Egresos"
+            label="Gastos"
             icon={ArrowDownLeft}
             staggerMs={isTienda ? 60 : 50}
             hint={
@@ -401,7 +401,7 @@ export async function ReportsDashboardBody({
 
           {isTienda ? (
             <Metric
-              label={gananciaNeta < 0 ? "Pérdida" : "Ganancia"}
+              label="Utilidad"
               icon={gananciaNeta < 0 ? TrendingDown : TrendingUp}
               staggerMs={70}
               iconClassName={
