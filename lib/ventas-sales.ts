@@ -103,14 +103,23 @@ export function ventaFormaPagoTone(
   wompiReference: string | null | undefined,
   opts?: VentaFormaPagoOpts,
 ): { label: string; className: string } {
+  const { label } = ventaFormaPagoBadge(wompiReference, opts);
   const r = wompiReference?.trim() ?? "";
   if (r === "POS:credit") {
-    return ventaFormaPagoBadge(wompiReference, opts);
+    return {
+      label,
+      className: "font-medium text-amber-700 dark:text-amber-300",
+    };
   }
-  const { label } = ventaFormaPagoBadge(wompiReference, opts);
+  if (r === "POS:quotation") {
+    return {
+      label,
+      className: "font-medium text-violet-700 dark:text-violet-300",
+    };
+  }
   return {
     label,
-    className: "font-medium text-zinc-700 dark:text-zinc-300",
+    className: "font-medium text-sky-700 dark:text-sky-300",
   };
 }
 

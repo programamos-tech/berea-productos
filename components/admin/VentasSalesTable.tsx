@@ -8,6 +8,7 @@ import {
   Eye,
   FileText,
   Globe,
+  HandCoins,
   Layers,
   type LucideIcon,
 } from "lucide-react";
@@ -45,7 +46,7 @@ function ventaPagoIcon(
     return { Icon: Layers, label: "Mixto" };
   }
   if (r === "POS:credit") {
-    return { Icon: ClipboardList, label: "Crédito" };
+    return { Icon: HandCoins, label: "Crédito" };
   }
   if (r === "POS:quotation") {
     return { Icon: FileText, label: "Cotización" };
