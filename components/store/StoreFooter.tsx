@@ -148,33 +148,13 @@ export function StoreFooter({ chrome }: { chrome: StorefrontChrome }) {
 
       {/* 2 · Legal */}
       <div className="border-t border-white/15">
-        <div className={`${storeShellClass} flex flex-col gap-4 py-5 pr-20 sm:flex-row sm:items-center sm:justify-between sm:gap-6 sm:pr-24 lg:pr-28`}>
-          <p className="text-[11px] text-white/70 sm:text-xs">
-            © {year} {chrome.copyrightHolder}. Todos los derechos reservados.
-          </p>
-          <div className="flex w-full flex-col items-start gap-3 sm:w-auto sm:flex-row sm:items-center sm:justify-end sm:gap-8">
-            <nav
-              aria-label="Legal y equipo"
-              className="flex flex-wrap justify-start gap-x-6 gap-y-2 text-[11px] sm:text-xs"
-            >
-              <Link href="/privacidad" className={footerLinkMuted}>
-                Privacidad
-              </Link>
-              <Link href="/terminos" className={footerLinkMuted}>
-                Términos de uso
-              </Link>
-              <Link href="/cookies" className={footerLinkMuted}>
-                Cookies
-              </Link>
-              <Link
-                href="/admin"
-                className={`${footerLinkMuted} font-semibold text-white/90`}
-              >
-                Backoffice
-              </Link>
-            </nav>
-            <div className="flex shrink-0 flex-col items-start gap-1 sm:items-end">
-              <span className="text-[8px] font-medium uppercase tracking-[0.16em] text-white/40">
+        <div className={`${storeShellClass} flex flex-col gap-4 py-5 pr-20 sm:flex-row sm:items-center sm:justify-between sm:gap-8 sm:pr-24 lg:pr-28`}>
+          <div className="flex min-w-0 flex-col items-start gap-2.5">
+            <p className="text-[11px] text-white/70 sm:text-xs">
+              © {year} {chrome.copyrightHolder}. Todos los derechos reservados.
+            </p>
+            <p className="flex items-center gap-2">
+              <span className="text-[8px] font-medium uppercase tracking-[0.18em] text-white/40">
                 Powered by
               </span>
               <Image
@@ -183,11 +163,31 @@ export function StoreFooter({ chrome }: { chrome: StorefrontChrome }) {
                 width={280}
                 height={146}
                 unoptimized
-                className="h-5 w-auto max-w-[6.75rem] bg-transparent object-contain opacity-60 brightness-0 invert sm:h-[1.35rem]"
+                className="h-7 w-auto max-w-[8.5rem] bg-transparent object-contain object-left opacity-75 sm:h-8"
                 style={{ backgroundColor: "transparent" }}
               />
-            </div>
+            </p>
           </div>
+          <nav
+            aria-label="Legal y equipo"
+            className="flex flex-wrap justify-start gap-x-6 gap-y-2 text-[11px] sm:justify-end sm:text-xs"
+          >
+            <Link href="/privacidad" className={footerLinkMuted}>
+              Privacidad
+            </Link>
+            <Link href="/terminos" className={footerLinkMuted}>
+              Términos de uso
+            </Link>
+            <Link href="/cookies" className={footerLinkMuted}>
+              Cookies
+            </Link>
+            <Link
+              href="/admin"
+              className={`${footerLinkMuted} font-semibold text-white/90`}
+            >
+              Backoffice
+            </Link>
+          </nav>
         </div>
       </div>
     </footer>
