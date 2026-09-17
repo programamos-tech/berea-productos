@@ -4,6 +4,7 @@ import { CustomerDetailHeaderActions } from "@/components/admin/CustomerDetailHe
 import { fetchAdminCustomerDetail } from "@/lib/supabase/admin-customer-detail";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { formatCop } from "@/lib/money";
+import { fetchCustomerCreditDebtCents } from "@/lib/admin-order-credits";
 import { formatStoreDateTime } from "@/lib/store-datetime-format";
 import {
   averageTicketByCalendarDayFromPaidOrders,
@@ -60,7 +61,10 @@ export default async function AdminCustomerDetailPage({
   const sp = await searchParams;
 
   const supabase = await createSupabaseServerClient();
-  const { detail, error } = await fetchAdminCustomerDetail(supabase, id);
+  const [{ detail, error }, creditDebtCents] = await Promise.all([
+    fetchAdminCustomerDetail(supabase, id),
+    fetchCustomerCreditDebtCents(supabase, id),
+  ]);
 
   if (error && error.message?.toLowerCase().includes("customers")) {
     return (
@@ -400,7 +404,7 @@ export default async function AdminCustomerDetailPage({
         </span>
       </div>
 
-      <div className="grid shrink-0 grid-cols-2 gap-x-5 gap-y-3 sm:grid-cols-3 xl:grid-cols-6">
+      <div className="grid shrink-0 grid-cols-2 gap-x-5 gap-y-3 sm:grid-cols-3 xl:grid-cols-7">
         <div className="min-w-0">
           <p className={labelClass}>Compras</p>
           <p className="mt-1 text-xl font-semibold tabular-nums tracking-tight text-zinc-900 dark:text-zinc-50">
@@ -446,6 +450,20 @@ export default async function AdminCustomerDetailPage({
           <p className="mt-1 text-xl font-semibold tabular-nums tracking-tight text-zinc-900 dark:text-zinc-50">
             {domiCount}
           </p>
+        </div>
+        <div className="min-w-0">
+          <p className={labelClass}>Deuda crédito</p>
+          <p className="mt-1 text-xl font-semibold tabular-nums tracking-tight text-zinc-900 dark:text-zinc-50">
+            {creditDebtCents > 0 ? formatCop(creditDebtCents) : "—"}
+          </p>
+          {creditDebtCents > 0 ? (
+            <Link
+              href={`/admin/creditos?cliente=${encodeURIComponent(id)}`}
+              className="mt-0.5 inline-block text-[11px] font-medium text-zinc-600 underline-offset-2 hover:underline dark:text-zinc-300"
+            >
+              Ver créditos
+            </Link>
+          ) : null}
         </div>
       </div>
 

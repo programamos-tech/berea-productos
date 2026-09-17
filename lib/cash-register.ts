@@ -392,7 +392,7 @@ export async function fetchCashDayLiveTotals(
     };
   }
 
-  const [ordersRes, expensesRes] = await Promise.all([
+  const [ordersRes, expensesRes, paymentsRes] = await Promise.all([
     supabase
       .from("orders")
       .select(
@@ -408,6 +408,11 @@ export async function fetchCashDayLiveTotals(
       .eq("expense_scope", "diario")
       .eq("is_cancelled", false)
       .order("created_at", { ascending: true }),
+    supabase
+      .from("order_payments")
+      .select("amount_cents,payment_method")
+      .gte("paid_at", bounds.gte)
+      .lt("paid_at", bounds.lt),
   ]);
 
   if (ordersRes.error) {
@@ -415,6 +420,9 @@ export async function fetchCashDayLiveTotals(
   }
   if (expensesRes.error) {
     console.error("fetchCashDayLiveTotals expenses", expensesRes.error);
+  }
+  if (paymentsRes.error) {
+    console.error("fetchCashDayLiveTotals payments", paymentsRes.error);
   }
 
   const orders = (ordersRes.data ?? []) as Array<
@@ -435,6 +443,16 @@ export async function fetchCashDayLiveTotals(
     salesTotal +=
       b.cashCents + b.transferCents + b.mixedCents + b.otherCents;
     if (row.id) orderIds.push(String(row.id));
+  }
+
+  for (const pay of paymentsRes.data ?? []) {
+    const amount = Math.max(0, Math.floor(Number(pay.amount_cents ?? 0)));
+    if (amount <= 0) continue;
+    const method = String(pay.payment_method ?? "").trim().toLowerCase();
+    if (method === "cash") salesCash += amount;
+    else if (method === "transfer") salesTransfer += amount;
+    else continue;
+    salesTotal += amount;
   }
 
   let expensesCash = 0;

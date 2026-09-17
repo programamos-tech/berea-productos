@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 import {
   OrderInvoicePrintButton,
   OrderInvoiceStatusSelect,
@@ -119,6 +120,10 @@ export type OrderInvoiceDetailViewProps = {
   fulfillmentStatus?: string | null;
   /** Enlace al listado Ventas (p. ej. misma página y filtros). */
   ventasListHref?: string;
+  /** Texto del listado en el breadcrumb. */
+  listLabel?: string;
+  /** Bloque extra (crédito: saldo, abonos). */
+  creditExtras?: React.ReactNode;
   /** Marca de tirilla/factura (tenant brand → env fallback). */
   invoiceBrand?: InvoiceBrandFields;
   convertError?: string | null;
@@ -238,6 +243,8 @@ export function OrderInvoiceDetailView(props: OrderInvoiceDetailViewProps) {
     checkoutPaymentMethod = null,
     fulfillmentStatus = null,
     ventasListHref = "/admin/ventas",
+    listLabel = "Ventas",
+    creditExtras,
     invoiceBrand,
     convertError = null,
     justInvoiced = false,
@@ -378,7 +385,7 @@ export function OrderInvoiceDetailView(props: OrderInvoiceDetailViewProps) {
               href={ventasListHref}
               className="hover:text-zinc-800 dark:hover:text-zinc-200"
             >
-              Ventas
+              {listLabel}
             </Link>
             <span className="mx-1.5 text-zinc-400">/</span>
             {docNoun} #{invoiceRef}
@@ -780,6 +787,7 @@ export function OrderInvoiceDetailView(props: OrderInvoiceDetailViewProps) {
                     orderId={orderId}
                     invoiceRef={invoiceRef}
                     customerEmail={customerEmail}
+                    customerName={customerName}
                     totalCents={totalCents}
                   />
                 ) : (
@@ -838,6 +846,10 @@ export function OrderInvoiceDetailView(props: OrderInvoiceDetailViewProps) {
           </aside>
         </div>
       </div>
+
+      {creditExtras ? (
+        <div className="print:hidden">{creditExtras}</div>
+      ) : null}
 
       {/* PRINT-ONLY: tablas + totales (pantalla ya tiene layout compacto arriba) */}
       <div className="hidden print:block">

@@ -11,6 +11,7 @@ import {
 } from "@/lib/admin-report-range";
 import {
   fetchOrderItemsInChunks,
+  fetchOrderPaymentsInReportYmdWindow,
   fetchOrdersCreatedInReportYmdWindow,
 } from "@/lib/admin-fetch-orders-for-report";
 import { formatCop } from "@/lib/money";
@@ -754,7 +755,7 @@ async function fetchAdminReportViaLegacy(
     productCount: 0,
   };
 
-  const [stockTotals, expensesRes, ordersResult] = await Promise.all([
+  const [stockTotals, expensesRes, ordersResult, paymentsResult] = await Promise.all([
     skipStock ? Promise.resolve(emptyStock) : fetchStockInvestmentTotals(supabase),
     fetchReportExpenses(supabase, fetchFrom, fetchTo),
     fetchOrdersCreatedInReportYmdWindow(
@@ -763,6 +764,7 @@ async function fetchAdminReportViaLegacy(
       fetchTo,
       "id,status,total_cents,created_at,wompi_reference,pos_mixed_cash_cents,pos_mixed_transfer_cents",
     ),
+    fetchOrderPaymentsInReportYmdWindow(supabase, fetchFrom, fetchTo),
   ]);
 
   const expenses = expensesRes.rows;
@@ -805,6 +807,16 @@ async function fetchAdminReportViaLegacy(
     } else if (o.status === "cancelled") {
       anuladas += 1;
     }
+  }
+
+  for (const pay of paymentsResult.rows ?? []) {
+    const dk = pay.paid_at ? reportCalendarDayKeyFromIso(pay.paid_at) : "";
+    if (!pay.paid_at || !dayInRange(dk, rangeFrom, rangeTo)) continue;
+    const amount = Math.max(0, Math.floor(Number(pay.amount_cents ?? 0)));
+    if (amount <= 0) continue;
+    const method = String(pay.payment_method ?? "").trim().toLowerCase();
+    if (method === "cash") efectivo += amount;
+    else if (method === "transfer") transferencia += amount;
   }
 
   const paidPeriodOrders = orders.filter(

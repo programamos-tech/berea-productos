@@ -66,6 +66,8 @@ export const PERMISSION_KEYS = [
   "reportes_tienda",
   "ventas_ver",
   "ventas_crear",
+  "creditos_ver",
+  "creditos_abonar",
   "clientes_ver",
   "clientes_crear",
   "clientes_editar",
@@ -121,6 +123,8 @@ export const PERMISSION_MODULES: PermissionModule[] = [
     items: [
       { key: "ventas_ver", label: "Ventas" },
       { key: "ventas_crear", label: "Crear ventas" },
+      { key: "creditos_ver", label: "Ver créditos" },
+      { key: "creditos_abonar", label: "Registrar abonos" },
     ],
   },
   {
@@ -228,6 +232,8 @@ export function defaultPermissionsSales(): PermissionMap {
   const m = allFalse();
   m.ventas_ver = true;
   m.ventas_crear = true;
+  m.creditos_ver = true;
+  m.creditos_abonar = true;
   m.clientes_ver = true;
   m.clientes_crear = true;
   m.clientes_editar = true;

@@ -35,6 +35,8 @@ function paymentMethodLabel(raw: string): string {
       return "Transferencia";
     case "mixed":
       return "Mixto (efectivo + transferencia)";
+    case "credit":
+      return "Crédito";
     default:
       return raw;
   }
@@ -148,6 +150,19 @@ export function getActivityDetailRows(
         value: formatMoneyCOP(mixedTransfer),
       });
     }
+    const creditCash = num(m.credit_cash_cents);
+    const creditTransfer = num(m.credit_transfer_cents);
+    if (pm === "credit") {
+      if (creditCash != null && creditCash > 0) {
+        rows.push({ label: "Abono efectivo", value: formatMoneyCOP(creditCash) });
+      }
+      if (creditTransfer != null && creditTransfer > 0) {
+        rows.push({
+          label: "Abono transferencia",
+          value: formatMoneyCOP(creditTransfer),
+        });
+      }
+    }
     const lines = num(m.line_items);
     if (lines != null) rows.push({ label: "Líneas en factura", value: String(lines) });
     const cid = str(m.customer_id);
@@ -172,6 +187,21 @@ export function getActivityDetailRows(
     if (stockTrace) {
       rows.push({ label: "Stock", value: stockTraceSummaryLabel(stockTrace) });
     }
+  }
+
+  if (action === "credit_payment") {
+    const amount = num(m.amount_cents);
+    if (amount != null) {
+      rows.push({ label: "Abono", value: formatMoneyCOP(amount) });
+    }
+    const pm = str(m.payment_method);
+    if (pm) rows.push({ label: "Método", value: paymentMethodLabel(pm) });
+    const pending = num(m.pending_cents);
+    if (pending != null) {
+      rows.push({ label: "Pendiente", value: formatMoneyCOP(pending) });
+    }
+    const notes = str(m.notes);
+    if (notes) rows.push({ label: "Notas", value: notes });
   }
 
   if (action === "cash_session_opened" || action === "cash_session_closed") {

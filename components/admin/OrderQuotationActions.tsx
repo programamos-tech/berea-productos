@@ -5,25 +5,39 @@ import { useState, useTransition } from "react";
 import { convertQuotationToSaleAction } from "@/app/actions/admin/quotation";
 import { productInputClass as inputClass } from "@/components/admin/product-form-primitives";
 import { adminButtonCancelClass } from "@/lib/admin-ui";
+import { isDefaultPosCustomerName } from "@/lib/pos-default-customer";
 
 /** Acciones de cotización: facturar y descargar PDF membretado. */
 export function OrderQuotationActions({
   orderId,
   invoiceRef,
   totalCents,
+  customerName,
 }: {
   orderId: string;
   invoiceRef: string;
   /** Reservado para reactivar envío por correo. */
   customerEmail?: string | null;
+  customerName?: string | null;
   totalCents: number;
 }) {
   const [facturarOpen, setFacturarOpen] = useState(false);
-  const [payment, setPayment] = useState<"cash" | "transfer" | "mixed">("cash");
+  const [payment, setPayment] = useState<"cash" | "transfer" | "mixed" | "credit">(
+    "cash",
+  );
   const [mixedCash, setMixedCash] = useState("");
   const [mixedTransfer, setMixedTransfer] = useState("");
+  const [creditCash, setCreditCash] = useState("");
+  const [creditTransfer, setCreditTransfer] = useState("");
   const [downloadError, setDownloadError] = useState<string | null>(null);
   const [downloading, startDownload] = useTransition();
+
+  const creditCashCents = Math.max(0, Math.floor(Number(creditCash) || 0));
+  const creditTransferCents = Math.max(0, Math.floor(Number(creditTransfer) || 0));
+  const creditDownCents = creditCashCents + creditTransferCents;
+  const creditPendingCents = Math.max(0, totalCents - creditDownCents);
+  const creditCustomerBlocked = isDefaultPosCustomerName(customerName ?? "");
+  const creditDownOk = creditDownCents < totalCents;
 
   function downloadQuotationPdf() {
     setDownloadError(null);
@@ -119,13 +133,16 @@ export function OrderQuotationActions({
                   name="payment_method"
                   value={payment}
                   onChange={(e) =>
-                    setPayment(e.target.value as "cash" | "transfer" | "mixed")
+                    setPayment(
+                      e.target.value as "cash" | "transfer" | "mixed" | "credit",
+                    )
                   }
                   className={inputClass}
                 >
                   <option value="cash">Efectivo</option>
                   <option value="transfer">Transferencia</option>
                   <option value="mixed">Mixto</option>
+                  <option value="credit">Crédito</option>
                 </select>
               </div>
               {payment === "mixed" ? (
@@ -165,10 +182,79 @@ export function OrderQuotationActions({
                   <input type="hidden" name="mixed_transfer_cents" value="0" />
                 </>
               )}
+              {payment === "credit" ? (
+                <div className="space-y-3">
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                    La venta cuenta hoy. Caja solo se mueve con el abono inicial.
+                    El resto queda como deuda.
+                  </p>
+                  {creditCustomerBlocked ? (
+                    <p className="text-xs font-medium text-amber-700 dark:text-amber-300">
+                      Esta cotización está a nombre de Cliente Final. Elegí un
+                      cliente nominado antes de facturar a crédito.
+                    </p>
+                  ) : null}
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
+                        Abono efectivo
+                      </label>
+                      <input
+                        name="credit_cash_cents"
+                        type="number"
+                        min={0}
+                        value={creditCash}
+                        onChange={(e) => setCreditCash(e.target.value)}
+                        className={inputClass}
+                        placeholder="0"
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
+                        Abono transferencia
+                      </label>
+                      <input
+                        name="credit_transfer_cents"
+                        type="number"
+                        min={0}
+                        value={creditTransfer}
+                        onChange={(e) => setCreditTransfer(e.target.value)}
+                        className={inputClass}
+                        placeholder="0"
+                      />
+                    </div>
+                  </div>
+                  <p className="text-sm tabular-nums text-zinc-700 dark:text-zinc-300">
+                    Pendiente:{" "}
+                    <span className="font-semibold">
+                      {new Intl.NumberFormat("es-CO", {
+                        style: "currency",
+                        currency: "COP",
+                        maximumFractionDigits: 0,
+                      }).format(creditPendingCents)}
+                    </span>
+                  </p>
+                  {!creditDownOk && totalCents > 0 ? (
+                    <p className="text-xs font-medium text-amber-700 dark:text-amber-300">
+                      El abono tiene que ser menor al total. Si cubre todo, usá
+                      Efectivo, Transferencia o Mixto.
+                    </p>
+                  ) : null}
+                </div>
+              ) : (
+                <>
+                  <input type="hidden" name="credit_cash_cents" value="0" />
+                  <input type="hidden" name="credit_transfer_cents" value="0" />
+                </>
+              )}
               <div className="flex gap-2 pt-1">
                 <button
                   type="submit"
-                  className="flex-1 rounded-lg border border-[var(--admin-coral)] bg-[var(--admin-coral)] py-2.5 text-sm font-semibold text-white transition hover:border-[var(--admin-coral-hover)] hover:bg-[var(--admin-coral-hover)]"
+                  disabled={
+                    payment === "credit" &&
+                    (creditCustomerBlocked || !creditDownOk)
+                  }
+                  className="flex-1 rounded-lg border border-[var(--admin-coral)] bg-[var(--admin-coral)] py-2.5 text-sm font-semibold text-white transition hover:border-[var(--admin-coral-hover)] hover:bg-[var(--admin-coral-hover)] disabled:opacity-50"
                 >
                   Confirmar factura
                 </button>

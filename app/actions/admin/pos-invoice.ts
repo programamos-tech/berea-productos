@@ -33,6 +33,11 @@ import { unitPriceGrossCents } from "@/lib/product-vat-price";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { fetchCurrentBranchInventoryMap } from "@/lib/branch-inventory";
+import { insertOrderCreditPayments } from "@/lib/insert-order-credit-payments";
+import {
+  isDefaultPosCustomerName,
+} from "@/lib/pos-default-customer";
+import { POS_CREDIT_REF } from "@/lib/order-credit";
 
 export type PosInvoiceKitLinePayload = {
   kitId: string;
@@ -56,11 +61,15 @@ export type PosInvoicePayload = {
   documentKind?: "sale" | "quotation";
   /** Editar cotización existente (solo con documentKind quotation). */
   quotationOrderId?: string | null;
-  paymentMethod: "cash" | "transfer" | "mixed";
+  paymentMethod: "cash" | "transfer" | "mixed" | "credit";
   /** Solo si paymentMethod === "mixed": centavos en efectivo. */
   mixedCashCents?: number;
   /** Solo si paymentMethod === "mixed": centavos en transferencia. */
   mixedTransferCents?: number;
+  /** Abono inicial en efectivo si paymentMethod === "credit". */
+  creditCashCents?: number;
+  /** Abono inicial en transferencia si paymentMethod === "credit". */
+  creditTransferCents?: number;
   shippingAddress: string | null;
   shippingPhone: string | null;
   /** Token de un solo uso para evitar doble factura por doble clic. */
@@ -211,7 +220,8 @@ export async function createPosInvoiceAction(formData: FormData) {
     !isQuotation &&
     paymentMethod !== "cash" &&
     paymentMethod !== "transfer" &&
-    paymentMethod !== "mixed"
+    paymentMethod !== "mixed" &&
+    paymentMethod !== "credit"
   ) {
     redirectFail("validation");
   }
@@ -244,6 +254,13 @@ export async function createPosInvoiceAction(formData: FormData) {
   const { data: customer, error: cErr } = customerRes;
   if (cErr || !customer) redirectFail("customer");
   const customerRow = customer;
+  if (
+    !isQuotation &&
+    paymentMethod === "credit" &&
+    isDefaultPosCustomerName(String(customerRow.name ?? ""))
+  ) {
+    redirectFail("credit_customer");
+  }
   const wholesalePct = wholesaleDiscountPercentFromRow(
     customerRow as {
       customer_kind?: string | null;
@@ -398,7 +415,11 @@ export async function createPosInvoiceAction(formData: FormData) {
         ? String(customerRow.phone).trim() || null
         : null;
 
-  const wompiRef = isQuotation ? "POS:quotation" : `POS:${paymentMethod}`;
+  const wompiRef = isQuotation
+    ? "POS:quotation"
+    : paymentMethod === "credit"
+      ? POS_CREDIT_REF
+      : `POS:${paymentMethod}`;
 
   let posMixedCashCents: number | null = null;
   let posMixedTransferCents: number | null = null;
@@ -416,6 +437,18 @@ export async function createPosInvoiceAction(formData: FormData) {
     }
     posMixedCashCents = cash;
     posMixedTransferCents = transfer;
+  }
+
+  let creditCashCents = 0;
+  let creditTransferCents = 0;
+  if (!isQuotation && paymentMethod === "credit") {
+    creditCashCents = Math.max(0, Math.floor(Number(payload.creditCashCents ?? 0)));
+    creditTransferCents = Math.max(
+      0,
+      Math.floor(Number(payload.creditTransferCents ?? 0)),
+    );
+    const down = creditCashCents + creditTransferCents;
+    if (down >= totalCents) redirectFail("credit_full");
   }
 
   let orderId: string;
@@ -628,6 +661,25 @@ export async function createPosInvoiceAction(formData: FormData) {
     }
   }
 
+  if (!isQuotation && paymentMethod === "credit") {
+    const payRows = [
+      ...(creditCashCents > 0
+        ? [{ amountCents: creditCashCents, paymentMethod: "cash" as const }]
+        : []),
+      ...(creditTransferCents > 0
+        ? [{ amountCents: creditTransferCents, paymentMethod: "transfer" as const }]
+        : []),
+    ];
+    if (payRows.length > 0) {
+      const payResult = await insertOrderCreditPayments(supabase, {
+        orderId,
+        createdBy: userId,
+        payments: payRows,
+      });
+      if (payResult !== "ok") redirectFail("db");
+    }
+  }
+
   const totalFormatted = new Intl.NumberFormat("es-CO", {
     style: "currency",
     currency: "COP",
@@ -658,6 +710,12 @@ export async function createPosInvoiceAction(formData: FormData) {
             mixed_transfer_cents: posMixedTransferCents,
           }
         : {}),
+      ...(paymentMethod === "credit"
+        ? {
+            credit_cash_cents: creditCashCents,
+            credit_transfer_cents: creditTransferCents,
+          }
+        : {}),
       line_items: lines.length,
       kit_lines: kitLines.length,
       submission_id: submissionId || null,
@@ -665,6 +723,15 @@ export async function createPosInvoiceAction(formData: FormData) {
     },
   });
   revalidatePath("/admin/ventas");
+  revalidatePath("/admin/creditos");
+  revalidatePath("/admin/caja");
   revalidatePath(`/admin/orders/${orderId}`);
-  redirect(`/admin/orders/${orderId}${isEditingQuotation ? "?updated=1" : ""}`);
+  if (!isQuotation && paymentMethod === "credit") {
+    revalidatePath(`/admin/creditos/${orderId}`);
+  }
+  redirect(
+    !isQuotation && paymentMethod === "credit"
+      ? `/admin/creditos/${orderId}`
+      : `/admin/orders/${orderId}${isEditingQuotation ? "?updated=1" : ""}`,
+  );
 }

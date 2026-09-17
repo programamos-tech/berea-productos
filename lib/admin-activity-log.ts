@@ -9,6 +9,7 @@ export const ADMIN_ACTIVITY_ACTIONS = [
   "stock_transferred",
   "sale_created",
   "sale_cancelled",
+  "credit_payment",
   "cash_session_opened",
   "cash_session_closed",
 ] as const;
@@ -122,6 +123,8 @@ export function actionTypeLabel(action: AdminActivityAction): string {
       return "Nueva venta";
     case "sale_cancelled":
       return "Anulación de venta";
+    case "credit_payment":
+      return "Abono a crédito";
     case "cash_session_opened":
       return "Apertura de caja";
     case "cash_session_closed":

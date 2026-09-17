@@ -37,6 +37,8 @@ function dotClass(action: AdminActivityAction): string {
   switch (action) {
     case "sale_created":
       return "bg-emerald-500";
+    case "credit_payment":
+      return "bg-emerald-500";
     case "sale_cancelled":
       return "bg-red-500";
     case "stock_adjusted":

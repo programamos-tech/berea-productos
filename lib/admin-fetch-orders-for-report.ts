@@ -41,6 +41,55 @@ export async function fetchOrdersCreatedInReportYmdWindow(
   return { rows: out, error: null };
 }
 
+export async function fetchOrderPaymentsInReportYmdWindow(
+  supabase: SupabaseClient,
+  fromYmd: string,
+  toYmd: string,
+): Promise<{
+  rows: Array<{ amount_cents: number; payment_method: string; paid_at: string }>;
+  error: string | null;
+}> {
+  const bounds = createdAtBoundsForReportYmdRange(fromYmd, toYmd);
+  if (!bounds) return { rows: [], error: null };
+  const out: Array<{
+    amount_cents: number;
+    payment_method: string;
+    paid_at: string;
+  }> = [];
+  let start = 0;
+  for (;;) {
+    const { data, error } = await supabase
+      .from("order_payments")
+      .select("amount_cents,payment_method,paid_at")
+      .gte("paid_at", bounds.gte)
+      .lt("paid_at", bounds.lt)
+      .order("paid_at", { ascending: true })
+      .range(start, start + ORDERS_PAGE_SIZE - 1);
+    if (error) return { rows: out, error: error.message };
+    const chunk = (data ?? []) as Array<{
+      amount_cents?: number;
+      payment_method?: string;
+      paid_at?: string;
+    }>;
+    for (const row of chunk) {
+      out.push({
+        amount_cents: Math.max(0, Math.floor(Number(row.amount_cents ?? 0))),
+        payment_method: String(row.payment_method ?? ""),
+        paid_at: String(row.paid_at ?? ""),
+      });
+    }
+    if (chunk.length < ORDERS_PAGE_SIZE) break;
+    start += ORDERS_PAGE_SIZE;
+    if (out.length > 100_000) {
+      return {
+        rows: out,
+        error: "Demasiados abonos en el rango (>100k); acotá las fechas.",
+      };
+    }
+  }
+  return { rows: out, error: null };
+}
+
 export async function fetchOrderItemsInChunks(
   supabase: SupabaseClient,
   orderIds: string[],

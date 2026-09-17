@@ -59,6 +59,10 @@ export function posPaymentBreakdownForOrder(
     }
     return { ...empty, mixedCents: total };
   }
+  // Crédito: el dinero entra por order_payments, no por el total de la orden.
+  if (ref === "POS:credit" || ref === "POS:quotation") {
+    return empty;
+  }
   if (ref.startsWith("POS:")) {
     return { ...empty, mixedCents: total };
   }

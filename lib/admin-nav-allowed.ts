@@ -8,6 +8,7 @@ import type {
 const NAV_HREFS_WITH_PERMISSION: { href: string; keys: PermissionKey[] }[] = [
   { href: "/admin", keys: ["inicio_reportes"] },
   { href: "/admin/ventas", keys: ["ventas_ver"] },
+  { href: "/admin/creditos", keys: ["creditos_ver"] },
   { href: "/admin/caja", keys: ["caja_ver"] },
   { href: "/admin/egresos", keys: ["egresos_ver"] },
   { href: "/admin/products", keys: ["inventario_ver"] },

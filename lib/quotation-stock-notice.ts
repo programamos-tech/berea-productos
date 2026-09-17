@@ -73,6 +73,10 @@ export function quotationConvertErrorMessage(code: string | undefined): string |
       return "No se pudo guardar la factura. Intentá de nuevo.";
     case "stock":
       return "No había stock suficiente para facturar. Revisá local y bodega e intentá de nuevo.";
+    case "credit_customer":
+      return "Las facturas a crédito requieren un cliente nominado. No uses Cliente Final.";
+    case "credit_full":
+      return "Si el abono cubre el total, usá Efectivo, Transferencia o Mixto.";
     default:
       return null;
   }

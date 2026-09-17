@@ -120,6 +120,8 @@ export async function updateAdminOrderStatus(
     revalidatePath(`/admin/orders/${id}`);
     revalidatePath("/admin/orders");
     revalidatePath("/admin/ventas");
+    revalidatePath("/admin/creditos");
+    revalidatePath(`/admin/creditos/${id}`);
     revalidatePath("/pedido");
     revalidatePath("/cuenta/pedidos");
     revalidatePath(`/cuenta/pedidos/${id}`);

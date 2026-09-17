@@ -1,0 +1,296 @@
+import { notFound, redirect } from "next/navigation";
+import { OrderCreditPanel } from "@/components/admin/OrderCreditPanel";
+import { OrderInvoiceDetailView } from "@/components/admin/OrderInvoiceDetailView";
+import { fetchOrderCreditPaymentsMap } from "@/lib/admin-order-credits";
+import { resolveProfileName } from "@/lib/cash-close-report";
+import { isPosCreditSale, mapOrderCreditPaymentRows } from "@/lib/order-credit";
+import { decodeQuotationStockNotices } from "@/lib/quotation-stock-notice";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getInvoiceLayoutForRequest, getTenantBrandForRequest } from "@/lib/tenant-context";
+import { ventaNumeroReferencia } from "@/lib/ventas-sales";
+
+type ItemRow = {
+  id: string;
+  quantity: number;
+  unit_price_cents: number;
+  product_name_snapshot: string;
+  product_id: string | null;
+  line_discount_percent: number | null;
+  line_discount_amount_cents: number | null;
+  products: { reference: string } | { reference: string }[] | null;
+};
+
+function productRefFromRow(row: ItemRow): string | null {
+  const raw = row.products;
+  const p = Array.isArray(raw) ? raw[0] : raw;
+  if (!p || typeof p !== "object") return null;
+  const ref = "reference" in p && typeof p.reference === "string" ? p.reference.trim() : "";
+  return ref.length > 0 ? ref : null;
+}
+
+export async function AdminOrderInvoiceScreen({
+  orderId,
+  searchParams,
+  listHref,
+  listLabel,
+  requireCredit = false,
+  creditVariant = "summary",
+  canRegisterCredit = false,
+}: {
+  orderId: string;
+  searchParams: Record<string, string | string[] | undefined>;
+  listHref: string;
+  listLabel: string;
+  requireCredit?: boolean;
+  creditVariant?: "full" | "summary";
+  canRegisterCredit?: boolean;
+}) {
+  const supabase = await createSupabaseServerClient();
+
+  const [{ data: order }, { data: itemsRaw }] = await Promise.all([
+    supabase.from("orders").select("*").eq("id", orderId).maybeSingle(),
+    supabase
+      .from("order_items")
+      .select(
+        "id, quantity, unit_price_cents, product_name_snapshot, product_id, line_discount_percent, line_discount_amount_cents, products(reference)",
+      )
+      .eq("order_id", orderId),
+  ]);
+
+  if (!order) notFound();
+
+  const wompiReference =
+    order.wompi_reference != null ? String(order.wompi_reference) : null;
+  const isCredit = isPosCreditSale(wompiReference);
+  if (requireCredit && !isCredit) {
+    redirect(`/admin/orders/${orderId}`);
+  }
+
+  const items = (itemsRaw ?? []) as unknown as ItemRow[];
+
+  const lines = items.map((it) => ({
+    id: String(it.id),
+    name: String(it.product_name_snapshot ?? "Producto"),
+    reference: productRefFromRow(it),
+    quantity: Number(it.quantity ?? 0),
+    unitPriceCents: Number(it.unit_price_cents ?? 0),
+    lineDiscountPercent:
+      it.line_discount_percent != null && Number(it.line_discount_percent) > 0
+        ? Number(it.line_discount_percent)
+        : null,
+    lineDiscountAmountCents: Math.max(0, Number(it.line_discount_amount_cents ?? 0)),
+  }));
+
+  const invoiceRef = ventaNumeroReferencia(
+    orderId,
+    "wompi_transaction_id" in order && order.wompi_transaction_id != null
+      ? String(order.wompi_transaction_id)
+      : null,
+  );
+
+  const customerId =
+    order.customer_id != null && String(order.customer_id).trim().length > 0
+      ? String(order.customer_id)
+      : null;
+
+  const checkoutPm =
+    "checkout_payment_method" in order && order.checkout_payment_method != null
+      ? String(order.checkout_payment_method)
+      : null;
+
+  const needsTransferProofs = checkoutPm === "transfer";
+
+  const [customerRes, proofsRes, saleActorRes, creditPays] = await Promise.all([
+    customerId
+      ? supabase
+          .from("customers")
+          .select("phone,document_id,shipping_address,shipping_city")
+          .eq("id", customerId)
+          .maybeSingle()
+      : Promise.resolve({ data: null }),
+    needsTransferProofs
+      ? supabase
+          .from("order_transfer_proofs")
+          .select("storage_path, original_filename, created_at")
+          .eq("order_id", orderId)
+          .order("created_at", { ascending: true })
+      : Promise.resolve({
+          data: [] as {
+            storage_path: string;
+            original_filename: string | null;
+            created_at: string;
+          }[],
+        }),
+    supabase
+      .from("admin_activity_log")
+      .select("actor_id")
+      .eq("action_type", "sale_created")
+      .eq("entity_type", "order")
+      .eq("entity_id", orderId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    isCredit
+      ? fetchOrderCreditPaymentsMap(supabase, [orderId])
+      : Promise.resolve(new Map()),
+  ]);
+
+  const sellerActorId =
+    saleActorRes.data?.actor_id != null
+      ? String(saleActorRes.data.actor_id)
+      : null;
+  const sellerName = sellerActorId
+    ? await resolveProfileName(supabase, sellerActorId)
+    : null;
+
+  let customerDocumentId: string | null = null;
+  let customerPhoneFromProfile: string | null = null;
+  let customerAddressFromProfile: string | null = null;
+
+  const cust = customerRes.data;
+  if (cust) {
+    const doc = cust.document_id != null ? String(cust.document_id).trim() : "";
+    if (doc.length > 0) customerDocumentId = doc;
+    const phone = cust.phone != null ? String(cust.phone).trim() : "";
+    if (phone.length > 0) customerPhoneFromProfile = phone;
+    const addrParts = [cust.shipping_city, cust.shipping_address]
+      .map((v) => (v != null ? String(v).trim() : ""))
+      .filter((v) => v.length > 0);
+    if (addrParts.length > 0) customerAddressFromProfile = addrParts.join(" · ");
+  }
+
+  const orderShippingPhone =
+    order.shipping_phone != null ? String(order.shipping_phone).trim() : "";
+  const orderShippingAddress =
+    order.shipping_address != null ? String(order.shipping_address).trim() : "";
+  const orderShippingCity =
+    order.shipping_city != null ? String(order.shipping_city).trim() : "";
+  const orderShippingNeighborhood =
+    "shipping_neighborhood" in order && order.shipping_neighborhood != null
+      ? String(order.shipping_neighborhood).trim()
+      : "";
+  const orderShippingReference =
+    "shipping_reference" in order && order.shipping_reference != null
+      ? String(order.shipping_reference).trim()
+      : "";
+  const orderAddressLine = [
+    orderShippingCity,
+    orderShippingAddress,
+    orderShippingNeighborhood ? `Barrio ${orderShippingNeighborhood}` : "",
+    orderShippingReference ? `Ref. ${orderShippingReference}` : "",
+  ]
+    .filter((v) => v.length > 0)
+    .join(" · ");
+  const customerAddress =
+    orderAddressLine.length > 0 ? orderAddressLine : customerAddressFromProfile;
+  const customerPhone =
+    orderShippingPhone.length > 0 ? orderShippingPhone : customerPhoneFromProfile;
+
+  let transferProofAttachments: {
+    signedUrl: string;
+    createdAt: string;
+    filename: string | null;
+  }[] = [];
+
+  if (needsTransferProofs) {
+    const bucket = supabase.storage.from("order-payment-proofs");
+    const rows = proofsRes.data ?? [];
+    transferProofAttachments = (
+      await Promise.all(
+        rows.map(async (row) => {
+          const path = String(row.storage_path);
+          const signed = await bucket.createSignedUrl(path, 3600);
+          if (signed.error || !signed.data?.signedUrl) return null;
+          return {
+            signedUrl: signed.data.signedUrl,
+            createdAt: String(row.created_at),
+            filename:
+              row.original_filename != null ? String(row.original_filename) : null,
+          };
+        }),
+      )
+    ).filter((x): x is NonNullable<typeof x> => x != null);
+  }
+
+  const [invoiceBrand, invoiceLayout] = await Promise.all([
+    getTenantBrandForRequest(),
+    getInvoiceLayoutForRequest(),
+  ]);
+
+  const payments =
+    creditPays.get(orderId) ??
+    mapOrderCreditPaymentRows([]);
+  const errorRaw = searchParams.error;
+  const errorCode = typeof errorRaw === "string" ? errorRaw : null;
+
+  return (
+    <OrderInvoiceDetailView
+      orderId={orderId}
+      invoiceRef={invoiceRef}
+      status={String(order.status)}
+      customerName={String(order.customer_name ?? "")}
+      customerEmail={String(order.customer_email ?? "")}
+      customerId={customerId}
+      sellerName={sellerName}
+      totalCents={Number(order.total_cents ?? 0)}
+      createdAt={String(order.created_at)}
+      wompiReference={wompiReference}
+      shippingAddress={
+        order.shipping_address != null ? String(order.shipping_address) : null
+      }
+      shippingCity={
+        order.shipping_city != null ? String(order.shipping_city) : null
+      }
+      shippingNeighborhood={
+        orderShippingNeighborhood.length > 0 ? orderShippingNeighborhood : null
+      }
+      shippingReference={
+        orderShippingReference.length > 0 ? orderShippingReference : null
+      }
+      shippingCents={Number(
+        "shipping_cents" in order ? (order.shipping_cents ?? 0) : 0,
+      )}
+      customerDocumentId={customerDocumentId}
+      customerPhone={customerPhone}
+      customerAddress={customerAddress}
+      shippingPhone={
+        order.shipping_phone != null ? String(order.shipping_phone) : null
+      }
+      cancellationReason={
+        order.cancellation_reason != null
+          ? String(order.cancellation_reason)
+          : null
+      }
+      lines={lines}
+      transferProofAttachments={transferProofAttachments}
+      checkoutPaymentMethod={checkoutPm}
+      fulfillmentStatus={
+        "fulfillment_status" in order && order.fulfillment_status != null
+          ? String(order.fulfillment_status)
+          : null
+      }
+      ventasListHref={listHref}
+      listLabel={listLabel}
+      invoiceBrand={invoiceBrand}
+      invoiceLayout={invoiceLayout}
+      convertError={errorCode}
+      justInvoiced={searchParams.facturada === "1"}
+      stockNotices={decodeQuotationStockNotices(
+        typeof searchParams.stock === "string" ? searchParams.stock : undefined,
+      )}
+      creditExtras={
+        isCredit ? (
+          <OrderCreditPanel
+            orderId={orderId}
+            totalCents={Number(order.total_cents ?? 0)}
+            orderStatus={String(order.status)}
+            payments={payments}
+            canRegister={canRegisterCredit}
+            variant={creditVariant}
+            errorCode={errorCode}
+          />
+        ) : null
+      }
+    />
+  );
+}

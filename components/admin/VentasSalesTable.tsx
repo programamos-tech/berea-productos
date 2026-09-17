@@ -44,6 +44,9 @@ function ventaPagoIcon(
   if (r === "POS:mixed") {
     return { Icon: Layers, label: "Mixto" };
   }
+  if (r === "POS:credit") {
+    return { Icon: ClipboardList, label: "Crédito" };
+  }
   if (r === "POS:quotation") {
     return { Icon: FileText, label: "Cotización" };
   }

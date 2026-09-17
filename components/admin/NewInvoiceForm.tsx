@@ -21,6 +21,7 @@ import {
 } from "@/components/admin/product-form-primitives";
 import { adminButtonCancelClass } from "@/lib/admin-ui";
 import { formatCop, parseCopInputDigitsToInt } from "@/lib/money";
+import { isDefaultPosCustomerName } from "@/lib/pos-default-customer";
 import {
   parseStoreCustomerKind,
   unitPriceAfterWholesaleCents,
@@ -169,7 +170,7 @@ function lineVatCents(line: CartLine, wholesalePct: number): number {
   return (ug - du) * line.quantity;
 }
 
-type PaymentTab = "cash" | "transfer" | "mixed";
+type PaymentTab = "cash" | "transfer" | "mixed" | "credit";
 
 function IconCoin() {
   return (
@@ -196,6 +197,15 @@ function IconGrid() {
       <rect x="14" y="4" width="6" height="6" rx="1" />
       <rect x="4" y="14" width="6" height="6" rx="1" />
       <rect x="14" y="14" width="6" height="6" rx="1" />
+    </svg>
+  );
+}
+
+function IconNotebook() {
+  return (
+    <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth={1.8}>
+      <path d="M6 4h12v16H6z" />
+      <path d="M9 8h6M9 12h6M9 16h4" strokeLinecap="round" />
     </svg>
   );
 }
@@ -327,6 +337,10 @@ function errorMessage(code: string | undefined): string | null {
       return "Esa cotización ya no se puede editar (fue facturada o anulada).";
     case "missing":
       return "No se encontró la cotización.";
+    case "credit_customer":
+      return "Las facturas a crédito requieren un cliente nominado. No uses Cliente Final.";
+    case "credit_full":
+      return "Si el abono cubre el total, usa Efectivo, Transferencia o Mixto.";
     case "db":
       return adminCreateFailedMessage("sale");
     default:
@@ -477,6 +491,8 @@ export function NewInvoiceForm({
   const [transferRef, setTransferRef] = useState("");
   const [mixedCashRaw, setMixedCashRaw] = useState("");
   const [mixedTransferRaw, setMixedTransferRaw] = useState("");
+  const [creditCashRaw, setCreditCashRaw] = useState("");
+  const [creditTransferRaw, setCreditTransferRaw] = useState("");
 
   const closeQuickCustomerModal = useCallback(() => {
     setQuickModalOpen(false);
@@ -903,6 +919,14 @@ export function NewInvoiceForm({
   const cashGivenCents = parseCopInputDigitsToInt(cashGivenRaw);
   const mixedCashCents = parseCopInputDigitsToInt(mixedCashRaw);
   const mixedTransferCents = parseCopInputDigitsToInt(mixedTransferRaw);
+  const creditCashCents = parseCopInputDigitsToInt(creditCashRaw);
+  const creditTransferCents = parseCopInputDigitsToInt(creditTransferRaw);
+  const creditDownCents = creditCashCents + creditTransferCents;
+  const creditPendingCents = Math.max(0, totalCents - creditDownCents);
+  const creditCustomerBlocked =
+    payment === "credit" &&
+    (customer == null || isDefaultPosCustomerName(customer.name));
+  const creditDownOk = creditDownCents < totalCents;
 
   const changeCents =
     payment === "cash" && cashGivenCents >= totalCents
@@ -914,7 +938,12 @@ export function NewInvoiceForm({
 
   /** Efectivo y transferencia no exigen campos extra; el monto en efectivo es solo ayuda para el vuelto. */
   const paymentOk =
-    documentKind === "quotation" || payment !== "mixed" || mixedOk;
+    documentKind === "quotation" ||
+    (payment === "mixed"
+      ? mixedOk
+      : payment === "credit"
+        ? creditDownOk && !creditCustomerBlocked
+        : true);
 
   const canSubmit =
     customer !== null &&
@@ -1123,6 +1152,12 @@ export function NewInvoiceForm({
             mixedTransferCents: mixedTransferCents,
           }
         : {}),
+      ...(payment === "credit"
+        ? {
+            creditCashCents: creditCashCents,
+            creditTransferCents: creditTransferCents,
+          }
+        : {}),
       shippingAddress: address,
       shippingPhone: phone,
       submissionId,
@@ -1137,6 +1172,8 @@ export function NewInvoiceForm({
     editQuotation?.orderId,
     mixedCashCents,
     mixedTransferCents,
+    creditCashCents,
+    creditTransferCents,
     shipChoice,
     shipOptions,
     customerWholesalePct,
@@ -1702,7 +1739,12 @@ export function NewInvoiceForm({
                     <button
                       key={tab.id}
                       type="button"
-                      onClick={() => setDocumentKind(tab.id)}
+                      onClick={() => {
+                        setDocumentKind(tab.id);
+                        if (tab.id === "quotation" && payment === "credit") {
+                          setPayment("cash");
+                        }
+                      }}
                       className={[
                         "flex flex-1 flex-col items-center justify-center gap-0.5 rounded-md px-2 py-2 text-center transition",
                         active ? segmentBtnActive : segmentBtnIdle,
@@ -1734,6 +1776,7 @@ export function NewInvoiceForm({
                     { id: "cash" as const, label: "Efectivo", icon: <IconCoin /> },
                     { id: "transfer" as const, label: "Transferencia", icon: <IconCard /> },
                     { id: "mixed" as const, label: "Mixto", icon: <IconGrid /> },
+                    { id: "credit" as const, label: "Crédito", icon: <IconNotebook /> },
                   ] as const
                 ).map((tab) => {
                   const active = payment === tab.id;
@@ -1815,6 +1858,54 @@ export function NewInvoiceForm({
                   {!mixedOk && totalCents > 0 ? (
                     <p className="text-xs font-medium text-amber-700 dark:text-amber-300">
                       La suma debe ser {formatCop(totalCents)}.
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
+
+              {payment === "credit" ? (
+                <div className="mt-4 space-y-3">
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                    La venta cuenta hoy y baja stock. Caja solo se mueve con el
+                    abono inicial. El resto queda como deuda del cliente.
+                  </p>
+                  {creditCustomerBlocked ? (
+                    <p className="text-xs font-medium text-amber-700 dark:text-amber-300">
+                      Elegí un cliente nominado. Cliente Final no puede llevar crédito.
+                    </p>
+                  ) : null}
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div>
+                      <label className={labelClass}>Abono efectivo</label>
+                      <input
+                        value={creditCashRaw}
+                        onChange={(e) => setCreditCashRaw(e.target.value)}
+                        inputMode="numeric"
+                        placeholder="0"
+                        className={inputClass}
+                      />
+                    </div>
+                    <div>
+                      <label className={labelClass}>Abono transferencia</label>
+                      <input
+                        value={creditTransferRaw}
+                        onChange={(e) => setCreditTransferRaw(e.target.value)}
+                        inputMode="numeric"
+                        placeholder="0"
+                        className={inputClass}
+                      />
+                    </div>
+                  </div>
+                  <p className="text-sm tabular-nums text-zinc-700 dark:text-zinc-300">
+                    Pendiente:{" "}
+                    <span className="font-semibold text-zinc-900 dark:text-zinc-100">
+                      {formatCop(creditPendingCents)}
+                    </span>
+                  </p>
+                  {!creditDownOk && totalCents > 0 ? (
+                    <p className="text-xs font-medium text-amber-700 dark:text-amber-300">
+                      El abono tiene que ser menor al total. Si cubre todo, usá
+                      Efectivo, Transferencia o Mixto.
                     </p>
                   ) : null}
                 </div>

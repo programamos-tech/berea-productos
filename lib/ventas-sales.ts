@@ -29,6 +29,7 @@ export function ventaFormaPagoLabel(
   if (r === "POS:cash") return "Efectivo";
   if (r === "POS:transfer") return "Transferencia";
   if (r === "POS:mixed") return "Mixto";
+  if (r === "POS:credit") return "Crédito";
   if (r === "POS:quotation") return "Cotización";
   if (r.startsWith("POS:")) return "Mostrador";
   if (opts?.checkoutPaymentMethod === "transfer") return "Transferencia (web)";
@@ -60,6 +61,13 @@ export function ventaFormaPagoBadge(
       label: "Mixto",
       className:
         "bg-zinc-100 text-zinc-800 ring-1 ring-zinc-200/80 dark:bg-zinc-800/80 dark:text-zinc-100 dark:ring-zinc-600/70",
+    };
+  }
+  if (r === "POS:credit") {
+    return {
+      label: "Crédito",
+      className:
+        "bg-amber-50 text-amber-900 ring-1 ring-amber-100 dark:bg-amber-950/45 dark:text-amber-100 dark:ring-amber-800/50",
     };
   }
   if (r === "POS:quotation") {
@@ -95,6 +103,10 @@ export function ventaFormaPagoTone(
   wompiReference: string | null | undefined,
   opts?: VentaFormaPagoOpts,
 ): { label: string; className: string } {
+  const r = wompiReference?.trim() ?? "";
+  if (r === "POS:credit") {
+    return ventaFormaPagoBadge(wompiReference, opts);
+  }
   const { label } = ventaFormaPagoBadge(wompiReference, opts);
   return {
     label,

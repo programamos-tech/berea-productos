@@ -71,6 +71,16 @@ export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
         ),
       },
       {
+        href: "/admin/creditos",
+        label: "Créditos",
+        icon: (
+          <Icon>
+            <path d="M6 4h12v16H6z" />
+            <path d="M9 8h6M9 12h6M9 16h4" />
+          </Icon>
+        ),
+      },
+      {
         href: "/admin/egresos",
         label: "Gastos",
         icon: (
@@ -193,6 +203,7 @@ export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
 const PRODUCTS_HREF = "/admin/products";
 const KITS_HREF = "/admin/kits";
 const VENTAS_HREF = "/admin/ventas";
+const CREDITOS_HREF = "/admin/creditos";
 const ORDERS_HREF = "/admin/orders";
 const CUSTOMERS_HREF = "/admin/customers";
 const USUARIOS_HREF = "/admin/usuarios";
@@ -226,6 +237,11 @@ export function adminNavItemActive(
   }
   if (href === USUARIOS_HREF) {
     return pathname === USUARIOS_HREF || pathname.startsWith(`${USUARIOS_HREF}/`);
+  }
+  if (href === CREDITOS_HREF) {
+    return (
+      pathname === CREDITOS_HREF || pathname.startsWith(`${CREDITOS_HREF}/`)
+    );
   }
   if (href === VENTAS_HREF) {
     return (

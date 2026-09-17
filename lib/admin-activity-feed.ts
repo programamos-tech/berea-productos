@@ -14,10 +14,13 @@ export type ActivityFeedItem = {
   href: string | null;
 };
 
-export function activityEntityHref(row: Pick<AdminActivityLogRow, "entity_type" | "entity_id">): string | null {
+export function activityEntityHref(row: Pick<AdminActivityLogRow, "entity_type" | "entity_id" | "action_type">): string | null {
   if (!row.entity_id) return null;
   switch (row.entity_type) {
     case "order":
+      if (row.action_type === "credit_payment") {
+        return `/admin/creditos/${row.entity_id}`;
+      }
       return `/admin/orders/${row.entity_id}`;
     case "product":
       return `/admin/products/${row.entity_id}/edit`;

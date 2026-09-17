@@ -12,6 +12,9 @@ import {
   requireAdminPermission,
 } from "@/lib/require-admin-permission";
 import { sendHtmlEmail } from "@/lib/email/send";
+import { insertOrderCreditPayments } from "@/lib/insert-order-credit-payments";
+import { isDefaultPosCustomerName } from "@/lib/pos-default-customer";
+import { POS_CREDIT_REF } from "@/lib/order-credit";
 import {
   expandKitLinesToProductQty,
   type KitComponentDeduction,
@@ -51,7 +54,8 @@ export async function convertQuotationToSaleAction(formData: FormData) {
   if (
     paymentMethod !== "cash" &&
     paymentMethod !== "transfer" &&
-    paymentMethod !== "mixed"
+    paymentMethod !== "mixed" &&
+    paymentMethod !== "credit"
   ) {
     redirectOrder(orderId, "payment");
   }
@@ -61,6 +65,19 @@ export async function convertQuotationToSaleAction(formData: FormData) {
   );
   const mixedTransfer = Math.floor(
     Number.parseInt(String(formData.get("mixed_transfer_cents") ?? "0"), 10) || 0,
+  );
+  const creditCash = Math.max(
+    0,
+    Math.floor(
+      Number.parseInt(String(formData.get("credit_cash_cents") ?? "0"), 10) || 0,
+    ),
+  );
+  const creditTransfer = Math.max(
+    0,
+    Math.floor(
+      Number.parseInt(String(formData.get("credit_transfer_cents") ?? "0"), 10) ||
+        0,
+    ),
   );
 
   const { data: order, error: oErr } = await supabase
@@ -79,6 +96,14 @@ export async function convertQuotationToSaleAction(formData: FormData) {
   const totalCents = Math.max(0, Math.floor(Number(order.total_cents ?? 0)));
   if (paymentMethod === "mixed" && mixedCash + mixedTransfer !== totalCents) {
     redirectOrder(orderId, "payment");
+  }
+  if (paymentMethod === "credit") {
+    if (isDefaultPosCustomerName(String(order.customer_name ?? ""))) {
+      redirectOrder(orderId, "credit_customer");
+    }
+    if (creditCash + creditTransfer >= totalCents) {
+      redirectOrder(orderId, "credit_full");
+    }
   }
 
   const { data: items, error: iErr } = await supabase
@@ -308,7 +333,8 @@ export async function convertQuotationToSaleAction(formData: FormData) {
     .from("orders")
     .update({
       status: "paid",
-      wompi_reference: `POS:${paymentMethod}`,
+      wompi_reference:
+        paymentMethod === "credit" ? POS_CREDIT_REF : `POS:${paymentMethod}`,
       ...(paymentMethod === "mixed"
         ? {
             pos_mixed_cash_cents: mixedCash,
@@ -328,6 +354,27 @@ export async function convertQuotationToSaleAction(formData: FormData) {
     console.error("convertQuotationToSaleAction update", updErr);
     await undoStockDecrement();
     redirectOrder(orderId, "db");
+  }
+
+  if (paymentMethod === "credit") {
+    const payRows = [
+      ...(creditCash > 0
+        ? [{ amountCents: creditCash, paymentMethod: "cash" as const }]
+        : []),
+      ...(creditTransfer > 0
+        ? [{ amountCents: creditTransfer, paymentMethod: "transfer" as const }]
+        : []),
+    ];
+    if (payRows.length > 0) {
+      const payResult = await insertOrderCreditPayments(supabase, {
+        orderId,
+        createdBy: userId,
+        payments: payRows,
+      });
+      if (payResult !== "ok") {
+        console.error("convertQuotationToSaleAction credit payments");
+      }
+    }
   }
 
   const stockTrace = buildPosSaleStockTrace({
@@ -372,6 +419,12 @@ export async function convertQuotationToSaleAction(formData: FormData) {
       from_quotation: true,
       payment_method: paymentMethod,
       total_cents: totalCents,
+      ...(paymentMethod === "credit"
+        ? {
+            credit_cash_cents: creditCash,
+            credit_transfer_cents: creditTransfer,
+          }
+        : {}),
       stock_shortages: stockNotices,
       ...activityStockTraceToMetadata(stockTrace),
     },
@@ -379,11 +432,20 @@ export async function convertQuotationToSaleAction(formData: FormData) {
 
   revalidatePath("/admin/ventas");
   revalidatePath(`/admin/orders/${orderId}`);
+  revalidatePath("/admin/caja");
+  if (paymentMethod === "credit") {
+    revalidatePath("/admin/creditos");
+    revalidatePath(`/admin/creditos/${orderId}`);
+  }
   const qs = new URLSearchParams({ facturada: "1" });
   if (stockNotices.length > 0) {
     qs.set("stock", encodeQuotationStockNotices(stockNotices));
   }
-  redirect(`/admin/orders/${orderId}?${qs.toString()}`);
+  redirect(
+    paymentMethod === "credit"
+      ? `/admin/creditos/${orderId}?${qs.toString()}`
+      : `/admin/orders/${orderId}?${qs.toString()}`,
+  );
 }
 
 export async function sendQuotationEmailAction(formData: FormData): Promise<

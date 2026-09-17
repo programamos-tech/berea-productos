@@ -1,0 +1,144 @@
+import Link from "next/link";
+import { OrderCreditAbonoForm } from "@/components/admin/OrderCreditAbonoForm";
+import { formatCop } from "@/lib/money";
+import {
+  orderCreditPaymentMethodLabel,
+  orderCreditPendingCents,
+  orderCreditUiStatus,
+  orderCreditUiStatusBadge,
+  sumOrderCreditPaidCents,
+  type OrderCreditPayment,
+} from "@/lib/order-credit";
+import { formatStoreDateTime } from "@/lib/store-datetime-format";
+
+function creditErrorMessage(code: string | undefined): string | null {
+  switch (code) {
+    case "abono":
+      return "Revisá el monto y el método del abono.";
+    case "overpay":
+      return "El abono no puede ser mayor al saldo pendiente.";
+    case "paid":
+      return "Esta factura ya no tiene saldo pendiente.";
+    case "cancelled":
+      return "No se puede abonar una factura anulada.";
+    case "not_credit":
+      return "Esta factura no es a crédito.";
+    case "missing":
+      return "No se encontró la factura.";
+    case "db":
+      return "No se pudo guardar el abono. Intentá de nuevo.";
+    default:
+      return null;
+  }
+}
+
+export function OrderCreditPanel({
+  orderId,
+  totalCents,
+  orderStatus,
+  payments,
+  canRegister,
+  variant = "full",
+  errorCode,
+}: {
+  orderId: string;
+  totalCents: number;
+  orderStatus: string;
+  payments: OrderCreditPayment[];
+  canRegister: boolean;
+  variant?: "full" | "summary";
+  errorCode?: string | null;
+}) {
+  const paidCents = sumOrderCreditPaidCents(payments);
+  const pendingCents = orderCreditPendingCents(totalCents, paidCents);
+  const uiStatus = orderCreditUiStatus({
+    orderStatus,
+    pendingCents,
+  });
+  const badge = orderCreditUiStatusBadge(uiStatus);
+  const errorMessage = creditErrorMessage(errorCode ?? undefined);
+
+  return (
+    <section className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-700/80 dark:bg-zinc-900">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
+            Crédito
+          </p>
+          <p className="mt-1 flex flex-wrap items-center gap-2 text-sm">
+            <span
+              className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${badge.className}`}
+            >
+              {badge.label}
+            </span>
+            <span className="tabular-nums text-zinc-700 dark:text-zinc-300">
+              Pagado {formatCop(paidCents)}
+            </span>
+            <span className="text-zinc-300 dark:text-zinc-600" aria-hidden>
+              ·
+            </span>
+            <span className="font-semibold tabular-nums text-zinc-900 dark:text-zinc-100">
+              Pendiente {formatCop(pendingCents)}
+            </span>
+          </p>
+        </div>
+        {variant === "summary" ? (
+          <Link
+            href={`/admin/creditos/${orderId}`}
+            className="text-sm font-medium text-zinc-800 underline-offset-2 hover:underline dark:text-zinc-200"
+          >
+            Ver en Créditos
+          </Link>
+        ) : canRegister && pendingCents > 0 && uiStatus === "pending" ? (
+          <OrderCreditAbonoForm orderId={orderId} pendingCents={pendingCents} />
+        ) : null}
+      </div>
+
+      {errorMessage ? (
+        <p className="mt-3 text-sm text-red-700 dark:text-red-300" role="alert">
+          {errorMessage}
+        </p>
+      ) : null}
+
+      {variant === "full" ? (
+        <div className="mt-4">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
+            Abonos
+          </p>
+          {payments.length === 0 ? (
+            <p className="mt-2 text-sm text-zinc-500">Todavía no hay abonos.</p>
+          ) : (
+            <ul className="mt-2 divide-y divide-zinc-100 dark:divide-zinc-800">
+              {payments.map((p) => (
+                <li
+                  key={p.id}
+                  className="flex flex-wrap items-baseline justify-between gap-2 py-2 text-sm"
+                >
+                  <div>
+                    <p className="font-medium tabular-nums text-zinc-900 dark:text-zinc-100">
+                      {formatCop(p.amountCents)}
+                    </p>
+                    <p className="text-xs text-zinc-500">
+                      {orderCreditPaymentMethodLabel(p.paymentMethod)}
+                      {p.paidAt
+                        ? ` · ${formatStoreDateTime(p.paidAt, {
+                            day: "numeric",
+                            month: "short",
+                            hour: "numeric",
+                            minute: "2-digit",
+                          })}`
+                        : null}
+                    </p>
+                    {p.notes ? (
+                      <p className="mt-0.5 text-xs text-zinc-500">{p.notes}</p>
+                    ) : null}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      ) : null}
+    </section>
+  );
+}
