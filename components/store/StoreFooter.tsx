@@ -148,14 +148,14 @@ export function StoreFooter({ chrome }: { chrome: StorefrontChrome }) {
 
       {/* 2 · Legal */}
       <div className="border-t border-white/15">
-        <div className={`${storeShellClass} flex flex-col gap-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:gap-6`}>
+        <div className={`${storeShellClass} flex flex-col gap-4 py-5 pr-20 sm:flex-row sm:items-center sm:justify-between sm:gap-6 sm:pr-24 lg:pr-28`}>
           <p className="text-[11px] text-white/70 sm:text-xs">
             © {year} {chrome.copyrightHolder}. Todos los derechos reservados.
           </p>
-          <div className="flex w-full flex-col items-end gap-4 sm:w-auto sm:flex-row sm:items-center sm:justify-end sm:gap-8">
+          <div className="flex w-full flex-col items-start gap-3 sm:w-auto sm:flex-row sm:items-center sm:justify-end sm:gap-8">
             <nav
               aria-label="Legal y equipo"
-              className="flex flex-wrap justify-end gap-x-6 gap-y-2 text-[11px] sm:text-xs"
+              className="flex flex-wrap justify-start gap-x-6 gap-y-2 text-[11px] sm:text-xs"
             >
               <Link href="/privacidad" className={footerLinkMuted}>
                 Privacidad
@@ -173,8 +173,8 @@ export function StoreFooter({ chrome }: { chrome: StorefrontChrome }) {
                 Backoffice
               </Link>
             </nav>
-            <div className="flex shrink-0 flex-col items-end gap-1 sm:pl-1">
-              <span className="text-[8px] font-medium uppercase tracking-[0.16em] text-white/45">
+            <div className="flex shrink-0 flex-col items-start gap-1 sm:items-end">
+              <span className="text-[8px] font-medium uppercase tracking-[0.16em] text-white/40">
                 Powered by
               </span>
               <Image
@@ -183,7 +183,7 @@ export function StoreFooter({ chrome }: { chrome: StorefrontChrome }) {
                 width={280}
                 height={146}
                 unoptimized
-                className="h-5 w-auto max-w-[7.25rem] bg-transparent object-contain object-right opacity-70 sm:h-6"
+                className="h-5 w-auto max-w-[6.75rem] bg-transparent object-contain opacity-60 brightness-0 invert sm:h-[1.35rem]"
                 style={{ backgroundColor: "transparent" }}
               />
             </div>
