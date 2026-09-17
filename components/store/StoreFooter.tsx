@@ -36,8 +36,10 @@ export function StoreFooter({ chrome }: { chrome: StorefrontChrome }) {
                   src={chrome.logoSrc}
                   alt={chrome.name}
                   width={560}
-                  height={308}
-                  className="h-[4.5rem] w-auto max-w-[min(88vw,20rem)] rounded-2xl bg-white/95 px-5 py-2 object-contain object-center shadow-sm sm:h-20 sm:max-w-[min(85vw,24rem)] md:h-[5.25rem] lg:h-24 lg:max-w-[min(80vw,28rem)] xl:h-28 xl:max-w-[32rem]"
+                  height={200}
+                  unoptimized
+                  className="h-14 w-auto max-w-[min(88vw,20rem)] bg-transparent object-contain object-center sm:h-16 sm:max-w-[min(85vw,24rem)] md:h-[4.5rem] lg:h-20 lg:max-w-[min(80vw,28rem)] xl:h-24 xl:max-w-[32rem]"
+                  style={{ backgroundColor: "transparent" }}
                 />
               </Link>
             </div>
