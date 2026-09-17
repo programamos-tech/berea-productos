@@ -84,9 +84,9 @@ export const adminTenantLogoPath =
   process.env.NEXT_PUBLIC_ADMIN_TENANT_LOGO?.trim() ||
   "/logo-aleyashop-mark.png";
 
-/** Firma Berea (“Experiencia por”). Prioridad: `NEXT_PUBLIC_BEREA_LOGO`, luego `logo-berea12.png`. */
+/** Firma Berea House (wordmark transparente). Override: `NEXT_PUBLIC_BEREA_LOGO`. */
 export const bereaSignaturePath =
-  process.env.NEXT_PUBLIC_BEREA_LOGO?.trim() || "/logo-berea12.png";
+  process.env.NEXT_PUBLIC_BEREA_LOGO?.trim() || "/logo-berea-productos-v3.png";
 
 /**
  * Nombre en el pie © (independiente del nombre corto de marca si usás env de plantilla).

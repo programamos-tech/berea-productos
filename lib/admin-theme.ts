@@ -42,7 +42,7 @@ export const ADMIN_BRAND_LOGO_ON_SIDEBAR_CLASS = "";
 export const ADMIN_BEREA_SIGNATURE_ON_SIDEBAR_CLASS =
   "invert mix-blend-multiply";
 
-/** Tamaño del wordmark Berea (firma) junto a “Experiencia por”. */
+/** Tamaño del wordmark Berea House. */
 export const ADMIN_BEREA_MARK_IMG_CLASS =
   "block h-8 w-auto max-w-[9.5rem] object-contain object-center sm:h-9 sm:max-w-[10.5rem]";
 

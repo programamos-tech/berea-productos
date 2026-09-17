@@ -1,10 +1,8 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useState, useSyncExternalStore } from "react";
 
-import { bereaSignaturePath } from "@/lib/brand";
 import {
   STORE_POLICY_LINKS,
   acceptAllStorePolicies,
@@ -117,19 +115,6 @@ export function StoreCookiesBanner({
           >
             Solo esenciales
           </button>
-        </div>
-
-        <div className="hidden shrink-0 items-center gap-2 border-l border-[var(--store-brand)]/25 pl-5 xl:flex">
-          <span className="text-[8px] font-medium uppercase tracking-[0.2em] text-stone-500">
-            Experiencia por
-          </span>
-          <Image
-            src={bereaSignaturePath}
-            alt="Berea"
-            width={320}
-            height={82}
-            className="h-7 w-auto max-w-[5.5rem] object-contain invert mix-blend-multiply opacity-85"
-          />
         </div>
       </div>
     </aside>

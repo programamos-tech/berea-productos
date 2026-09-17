@@ -1,8 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import {
-  bereaSignaturePath,
-} from "@/lib/brand";
+import { adminProductBrand, adminSidebarLogoPath } from "@/lib/brand";
 import { storeShellClass } from "@/lib/store-theme";
 import type { StorefrontChrome } from "@/lib/storefront-brand";
 
@@ -175,16 +173,18 @@ export function StoreFooter({ chrome }: { chrome: StorefrontChrome }) {
                 Backoffice
               </Link>
             </nav>
-            <div className="group shrink-0 sm:pl-1">
-              <span className="mb-1 block text-right text-[8px] font-semibold uppercase tracking-[0.18em] text-white/65">
-                Powered by Berea House
+            <div className="flex shrink-0 flex-col items-end gap-1 sm:pl-1">
+              <span className="text-[8px] font-medium uppercase tracking-[0.16em] text-white/45">
+                Powered by
               </span>
               <Image
-                src={bereaSignaturePath}
-                alt="Berea — diseño y desarrollo de software a la medida"
-                width={320}
-                height={82}
-                className="h-10 w-auto max-w-[15rem] origin-right object-contain object-right opacity-[0.88] transition-[opacity,filter] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:opacity-100 group-hover:[filter:brightness(1.06)_contrast(1.03)_drop-shadow(0_12px_28px_rgba(0,0,0,0.18))] sm:h-12 sm:max-w-[18rem]"
+                src={adminSidebarLogoPath}
+                alt={adminProductBrand}
+                width={280}
+                height={146}
+                unoptimized
+                className="h-5 w-auto max-w-[7.25rem] bg-transparent object-contain object-right opacity-70 sm:h-6"
+                style={{ backgroundColor: "transparent" }}
               />
             </div>
           </div>
