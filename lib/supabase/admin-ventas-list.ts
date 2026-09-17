@@ -41,6 +41,9 @@ function applyVentaPagoFilter(query: any, payment: VentaPagoFilter) {
   if (payment === "mixed") {
     return query.eq("wompi_reference", "POS:mixed");
   }
+  if (payment === "credit") {
+    return query.eq("wompi_reference", "POS:credit");
+  }
   if (payment === "online") {
     return query.not("wompi_reference", "like", "POS:%");
   }

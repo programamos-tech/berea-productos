@@ -187,6 +187,7 @@ export function VentasFiltersBar({
           <option value="cash">Efectivo</option>
           <option value="transfer">Transferencia</option>
           <option value="mixed">Mixto</option>
+          <option value="credit">Crédito</option>
           <option value="online">En línea</option>
         </select>
       </div>

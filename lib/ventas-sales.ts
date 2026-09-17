@@ -123,7 +123,13 @@ export function ventaFormaPagoTone(
   };
 }
 
-export type VentaPagoFilter = "all" | "cash" | "transfer" | "mixed" | "online";
+export type VentaPagoFilter =
+  | "all"
+  | "cash"
+  | "transfer"
+  | "mixed"
+  | "credit"
+  | "online";
 
 export function matchesVentaPagoFilter(
   wompiReference: string | null | undefined,
@@ -145,6 +151,7 @@ export function matchesVentaPagoFilter(
     return false;
   }
   if (filter === "mixed") return r === "POS:mixed";
+  if (filter === "credit") return r === "POS:credit";
   return true;
 }
 
