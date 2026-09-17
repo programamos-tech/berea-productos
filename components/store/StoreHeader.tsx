@@ -4,8 +4,6 @@ import {
   STORE_HEADER_ICON_LG,
   STORE_HEADER_ICON_STROKE,
 } from "@/lib/store-header-icons";
-import type { User } from "@supabase/supabase-js";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getStorefrontCartItemCount } from "@/lib/storefront-cart";
 import { StoreAnnouncementBar } from "@/components/store/StoreAnnouncementBar";
 import { StoreHeaderActions } from "@/components/store/StoreHeaderActions";
@@ -16,36 +14,15 @@ import { getCachedStoreCategoriesWithCounts } from "@/lib/store-public-cache";
 import { storeShellClass } from "@/lib/store-theme";
 import type { StorefrontChrome } from "@/lib/storefront-brand";
 
-function accountFirstNameFromUser(user: User | null): string | null {
-  if (!user) return null;
-  const meta = user.user_metadata as Record<string, unknown> | undefined;
-  const full =
-    typeof meta?.full_name === "string"
-      ? meta.full_name
-      : typeof meta?.name === "string"
-        ? meta.name
-        : null;
-  const part = full?.trim().split(/\s+/).filter(Boolean)[0];
-  if (part) return part.length > 18 ? `${part.slice(0, 18)}…` : part;
-  const local = user.email?.split("@")[0];
-  if (local) return local.length > 18 ? `${local.slice(0, 18)}…` : local;
-  return null;
-}
-
 export async function StoreHeader({
   chrome,
 }: {
   chrome: StorefrontChrome;
 }) {
-  const supabase = await createSupabaseServerClient();
-  const [menuCategories, cartItemCount, { data: { user } }] = await Promise.all([
+  const [menuCategories, cartItemCount] = await Promise.all([
     getCachedStoreCategoriesWithCounts(),
     getStorefrontCartItemCount(),
-    supabase.auth.getUser(),
   ]);
-  const userIconHref = user ? "/cuenta" : "/cuenta/entrar";
-  const userIconLabel = user ? "Mi cuenta" : "Iniciar sesión";
-  const accountFirstName = accountFirstNameFromUser(user);
 
   return (
     <header>
@@ -54,11 +31,7 @@ export async function StoreHeader({
       <div className="border-b border-white/20 bg-[var(--store-header-bg)] text-[var(--store-header-fg)]">
         <div className={`${storeShellClass} grid grid-cols-[auto_1fr_auto] items-center gap-x-2 py-3 sm:gap-x-3 md:py-3.5 lg:grid-cols-[1fr_auto_1fr] lg:gap-x-6 lg:py-5`}>
           <div className="flex min-w-0 items-center justify-start lg:pr-4">
-            <StoreNavDropdowns
-              menuCategories={menuCategories}
-              accountHref={userIconHref}
-              accountLabel={userIconLabel}
-            />
+            <StoreNavDropdowns menuCategories={menuCategories} />
           </div>
 
           <div className="flex min-w-0 justify-center px-1 sm:px-2">
@@ -82,14 +55,7 @@ export async function StoreHeader({
               />
             </Link>
             <StoreSearch variant="minimal" />
-            <StoreHeaderActions
-              isLoggedIn={!!user}
-              cartItemCount={cartItemCount}
-              userIconHref={userIconHref}
-              userIconLabel={userIconLabel}
-              accountFirstName={accountFirstName}
-              guestOpensAuthDrawer={!user}
-            />
+            <StoreHeaderActions cartItemCount={cartItemCount} />
           </div>
         </div>
       </div>

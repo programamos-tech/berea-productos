@@ -6,20 +6,70 @@ import {
   useCallback,
   useEffect,
   useId,
-  useRef,
   useState,
   type Dispatch,
   type SetStateAction,
 } from "react";
 import { useRouter } from "next/navigation";
+import { formatCop } from "@/lib/money";
 import type { SizeFacetOption } from "@/lib/product-listing-facets";
 
 const SORT_OPTIONS: { value: string; label: string }[] = [
-  { value: "newest", label: "Destacados" },
-  { value: "price_asc", label: "Menor precio" },
-  { value: "price_desc", label: "Mayor precio" },
-  { value: "name", label: "Nombre A-Z" },
+  { value: "price_asc", label: "Más económicos" },
+  { value: "price_desc", label: "Más caros" },
+  { value: "newest", label: "Recientes" },
+  { value: "name", label: "A-Z" },
 ];
+
+function roundCop(n: number) {
+  if (n >= 100_000) return Math.round(n / 10_000) * 10_000;
+  if (n >= 10_000) return Math.round(n / 5_000) * 5_000;
+  return Math.round(n / 1_000) * 1_000;
+}
+
+function priceQuickFilters(min: number, max: number) {
+  if (!(max > 0) || max <= min) return [];
+  const span = max - min;
+  const low = Math.max(min + 1, roundCop(min + span * 0.34));
+  const high = Math.min(max - 1, roundCop(min + span * 0.66));
+  if (low <= min || high >= max || low >= high) {
+    const mid = roundCop((min + max) / 2);
+    return [
+      {
+        id: "eco",
+        label: `Hasta ${formatCop(mid)}`,
+        min: null as number | null,
+        max: mid,
+      },
+      {
+        id: "high",
+        label: `Desde ${formatCop(mid)}`,
+        min: mid,
+        max: null as number | null,
+      },
+    ];
+  }
+  return [
+    {
+      id: "eco",
+      label: `Hasta ${formatCop(low)}`,
+      min: null as number | null,
+      max: low,
+    },
+    {
+      id: "mid",
+      label: `${formatCop(low)} – ${formatCop(high)}`,
+      min: low,
+      max: high,
+    },
+    {
+      id: "high",
+      label: `Desde ${formatCop(high)}`,
+      min: high,
+      max: null as number | null,
+    },
+  ];
+}
 
 function buildListingQuery(opts: {
   lockedCategoryId: string | null;
@@ -49,9 +99,9 @@ function buildListingQuery(opts: {
 }
 
 function parsePriceInput(raw: string): number | null {
-  const s = raw.trim().replace(/\./g, "").replace(",", "");
-  if (!s) return null;
-  const n = Math.floor(Number(s));
+  const digits = raw.replace(/\D/g, "");
+  if (!digits) return null;
+  const n = Number.parseInt(digits, 10);
   if (!Number.isFinite(n) || n < 0) return null;
   return Math.min(n, 999_999_999);
 }
@@ -86,7 +136,6 @@ export function ProductsListingControls({
   const router = useRouter();
   const baseId = useId();
   const [filterOpen, setFilterOpen] = useState(false);
-  const [sortOpen, setSortOpen] = useState(false);
   const [draftBrands, setDraftBrands] = useState<Set<string>>(
     () => new Set(selection.brands),
   );
@@ -106,7 +155,9 @@ export function ProductsListingControls({
     selection.priceMax != null ? String(selection.priceMax) : "",
   );
 
-  const sortPanelRef = useRef<HTMLDivElement>(null);
+  const sortLabel =
+    SORT_OPTIONS.find((o) => o.value === sort)?.label ?? "Recientes";
+  const quickPrices = priceQuickFilters(facets.priceMin, facets.priceMax);
 
   useEffect(() => {
     setDraftBrands(new Set(selection.brands));
@@ -142,7 +193,6 @@ export function ProductsListingControls({
           q: searchQuery,
         }),
       );
-      setSortOpen(false);
       setFilterOpen(false);
     },
     [
@@ -158,20 +208,6 @@ export function ProductsListingControls({
       sort,
     ],
   );
-
-  useEffect(() => {
-    if (!sortOpen) return;
-    function onDoc(e: MouseEvent) {
-      if (
-        sortPanelRef.current &&
-        !sortPanelRef.current.contains(e.target as Node)
-      ) {
-        setSortOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", onDoc);
-    return () => document.removeEventListener("mousedown", onDoc);
-  }, [sortOpen]);
 
   useEffect(() => {
     if (!filterOpen) return;
@@ -190,9 +226,6 @@ export function ProductsListingControls({
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, [filterOpen]);
-
-  const sortLabel =
-    SORT_OPTIONS.find((o) => o.value === sort)?.label ?? "Destacados";
 
   const showCategorySection =
     !lockedCategoryId && facets.categories.length > 0;
@@ -258,59 +291,33 @@ export function ProductsListingControls({
 
   return (
     <>
-      <div className="flex items-center justify-end gap-0 px-2 py-1 sm:px-4 sm:py-1.5">
-        <div className="flex items-center gap-1 text-[11px] font-semibold tracking-[0.18em] text-stone-800 sm:text-xs sm:tracking-[0.2em]">
-          <button
-            type="button"
-            onClick={() => setFilterOpen(true)}
-            className="border-0 bg-transparent px-2 py-1.5 uppercase shadow-none outline-none transition-colors hover:bg-transparent hover:text-stone-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-400/35 focus-visible:ring-offset-0"
-          >
-            Filtrar
-          </button>
-          <span className="text-stone-300 uppercase" aria-hidden>
-            {" | "}
-          </span>
-          <div className="relative" ref={sortPanelRef}>
-            <button
-              type="button"
-              id={`${baseId}-sort-trigger`}
-              aria-expanded={sortOpen}
-              aria-haspopup="listbox"
-              onClick={() => setSortOpen((v) => !v)}
-              className="border-0 bg-transparent px-2 py-1.5 uppercase shadow-none outline-none transition-colors hover:bg-transparent hover:text-stone-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-400/35 focus-visible:ring-offset-0"
-            >
-              Ordenar
-            </button>
-            {sortOpen ? (
-              <ul
-                role="listbox"
-                aria-labelledby={`${baseId}-sort-trigger`}
-                className="absolute right-0 z-50 mt-1 min-w-[12rem] rounded-md border border-stone-200 bg-white py-1 shadow-lg"
+      <div className="flex flex-col gap-3 px-2 py-2 sm:flex-row sm:items-center sm:justify-between sm:px-4 sm:py-3">
+        <div className="flex min-w-0 flex-wrap items-center gap-1.5 sm:gap-2">
+          {SORT_OPTIONS.map((opt) => {
+            const active = sort === opt.value;
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => navigate({ sort: opt.value })}
+                className={`rounded-full border px-3 py-1.5 text-[11px] font-medium tracking-wide transition sm:text-xs ${
+                  active
+                    ? "border-[var(--store-accent)] bg-[var(--store-accent)] text-white"
+                    : "border-stone-200 bg-white text-stone-700 hover:border-[var(--store-accent)]/40"
+                }`}
               >
-                {SORT_OPTIONS.map((opt) => (
-                  <li key={opt.value} role="none">
-                    <button
-                      type="button"
-                      role="option"
-                      aria-selected={sort === opt.value}
-                      onClick={() => navigate({ sort: opt.value })}
-                      className={`flex w-full items-center gap-2 px-4 py-2.5 text-left text-[13px] font-normal tracking-normal normal-case text-stone-800 transition hover:bg-[#fff8fb] ${
-                        sort === opt.value ? "bg-[#fff4f8] font-medium" : ""
-                      }`}
-                    >
-                      {sort === opt.value ? (
-                        <span className="text-[var(--store-accent)]">✓</span>
-                      ) : (
-                        <span className="w-[1em]" aria-hidden />
-                      )}
-                      {opt.label}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            ) : null}
-          </div>
+                {opt.label}
+              </button>
+            );
+          })}
         </div>
+        <button
+          type="button"
+          onClick={() => setFilterOpen(true)}
+          className="self-end rounded-full border border-stone-200 bg-white px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-800 transition hover:border-stone-400 sm:self-auto sm:text-xs"
+        >
+          Filtrar
+        </button>
       </div>
 
       <div
@@ -381,31 +388,61 @@ export function ProductsListingControls({
               <section
                 className={`pb-8 ${showCategorySection ? "mt-8 border-b border-stone-100" : "border-b border-stone-100"}`}
               >
-                <p className={sectionTitle}>Precio (COP)</p>
+                <p className={sectionTitle}>Precio</p>
                 <p className="mt-2 text-xs text-stone-500">
-                  En esta vista hay productos entre{" "}
-                  <span className="tabular-nums font-medium text-stone-700">
-                    {facets.priceMin.toLocaleString("es-CO")}
-                  </span>{" "}
-                  y{" "}
-                  <span className="tabular-nums font-medium text-stone-700">
-                    {facets.priceMax.toLocaleString("es-CO")}
-                  </span>
-                  .
+                  Productos entre {formatCop(facets.priceMin)} y{" "}
+                  {formatCop(facets.priceMax)}.
                 </p>
+                {quickPrices.length > 0 ? (
+                  <div className="mt-4 flex flex-col gap-2">
+                    {quickPrices.map((preset) => {
+                      const active =
+                        (preset.min == null
+                          ? selection.priceMin == null
+                          : selection.priceMin === preset.min) &&
+                        (preset.max == null
+                          ? selection.priceMax == null
+                          : selection.priceMax === preset.max) &&
+                        (preset.min != null || preset.max != null);
+                      return (
+                        <button
+                          key={preset.id}
+                          type="button"
+                          onClick={() => {
+                            setDraftPriceMin(
+                              preset.min != null ? String(preset.min) : "",
+                            );
+                            setDraftPriceMax(
+                              preset.max != null ? String(preset.max) : "",
+                            );
+                            navigate({
+                              priceMin: preset.min,
+                              priceMax: preset.max,
+                              sort:
+                                preset.id === "high" ? "price_desc" : "price_asc",
+                            });
+                          }}
+                          className={chipClass(Boolean(active))}
+                        >
+                          {preset.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : null}
                 <div className="mt-4 grid grid-cols-2 gap-3">
                   <div>
                     <label
                       htmlFor={`${baseId}-pmin`}
                       className="text-[10px] font-semibold uppercase tracking-wide text-stone-500"
                     >
-                      Mínimo
+                      Desde
                     </label>
                     <input
                       id={`${baseId}-pmin`}
                       type="text"
                       inputMode="numeric"
-                      placeholder={String(facets.priceMin)}
+                      placeholder={formatCop(facets.priceMin)}
                       value={draftPriceMin}
                       onChange={(e) => setDraftPriceMin(e.target.value)}
                       className="mt-1 w-full rounded border border-stone-200 px-2 py-2 text-sm tabular-nums text-stone-900 outline-none focus:border-stone-400"
@@ -416,13 +453,13 @@ export function ProductsListingControls({
                       htmlFor={`${baseId}-pmax`}
                       className="text-[10px] font-semibold uppercase tracking-wide text-stone-500"
                     >
-                      Máximo
+                      Hasta
                     </label>
                     <input
                       id={`${baseId}-pmax`}
                       type="text"
                       inputMode="numeric"
-                      placeholder={String(facets.priceMax)}
+                      placeholder={formatCop(facets.priceMax)}
                       value={draftPriceMax}
                       onChange={(e) => setDraftPriceMax(e.target.value)}
                       className="mt-1 w-full rounded border border-stone-200 px-2 py-2 text-sm tabular-nums text-stone-900 outline-none focus:border-stone-400"

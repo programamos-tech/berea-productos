@@ -37,9 +37,40 @@ import {
 import { STORE_CARD_PRIORITY_COUNT } from "@/lib/store-image";
 import { storeShellClass } from "@/lib/store-theme";
 import { withStorefrontBranchStock } from "@/lib/storefront-branch-inventory";
+import { storefrontListGrossUnitCents } from "@/lib/storefront-gross-price";
 
 /** Productos por página en listado filtrado (antes hasta 300 en un solo HTML). */
 const CATALOG_PAGE_SIZE = 24;
+
+function catalogUnitPrice(p: {
+  price_cents: number;
+  has_vat?: boolean | null;
+}) {
+  return storefrontListGrossUnitCents(p.price_cents, p.has_vat);
+}
+
+function sortCatalogRows<
+  T extends { name: string; price_cents: number; has_vat?: boolean | null },
+>(rows: T[], sort: string): T[] {
+  if (sort === "newest" || rows.length < 2) return rows;
+  const copy = [...rows];
+  if (sort === "price_asc") {
+    copy.sort(
+      (a, b) =>
+        catalogUnitPrice(a) - catalogUnitPrice(b) ||
+        a.name.localeCompare(b.name, "es"),
+    );
+  } else if (sort === "price_desc") {
+    copy.sort(
+      (a, b) =>
+        catalogUnitPrice(b) - catalogUnitPrice(a) ||
+        a.name.localeCompare(b.name, "es"),
+    );
+  } else if (sort === "name") {
+    copy.sort((a, b) => a.name.localeCompare(b.name, "es"));
+  }
+  return copy;
+}
 
 /** Legacy (`size_value`/`size_unit`) o cualquier entrada en `size_options`. */
 function productMatchesSizeFilterClause(s: {
@@ -169,8 +200,7 @@ export default async function ProductsPage({ searchParams }: Props) {
     activeSizes.length > 0 ||
     filterCategoryIds.length > 0 ||
     priceMin != null ||
-    priceMax != null ||
-    sort !== "newest";
+    priceMax != null;
 
   const catalogBrowseMode = !categoryView && !hasListingFilters;
 
@@ -307,10 +337,11 @@ export default async function ProductsPage({ searchParams }: Props) {
   if (currentPage !== page && listResult.total > 0) {
     listResult = await fetchFilteredList(currentPage);
   }
-  const [list, catalogProducts] = await Promise.all([
+  const [list, catalogProductsRawStock] = await Promise.all([
     withStorefrontBranchStock(supabase, tenant.id, listResult.products),
     withStorefrontBranchStock(supabase, tenant.id, catalogProductsRaw),
   ]);
+  const catalogProducts = sortCatalogRows(catalogProductsRawStock, sort);
 
   const invalidCategory = Boolean(categoryId && !categoryName);
 

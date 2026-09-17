@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ChevronRight, Heart, Menu, Search, UserRound, X } from "lucide-react";
+import { ChevronRight, Heart, Menu, Search, X } from "lucide-react";
 import { useCallback, useEffect, useId, useState } from "react";
 import {
   STORE_HEADER_ICON_LG,
@@ -16,12 +16,8 @@ const drawerLinkClass =
 
 export function StoreNavDropdowns({
   menuCategories,
-  accountHref = "/cuenta/entrar",
-  accountLabel = "Mi cuenta",
 }: {
   menuCategories: StoreCategoryMenuItem[];
-  accountHref?: string;
-  accountLabel?: string;
 }) {
   const chrome = useStorefrontBrand();
   const [open, setOpen] = useState(false);
@@ -158,15 +154,6 @@ export function StoreNavDropdowns({
                 <span className="inline-flex items-center gap-3">
                   <Heart className="size-[18px] text-stone-500" strokeWidth={1.5} aria-hidden />
                   Favoritos
-                </span>
-                <ChevronRight className="size-4 shrink-0 text-stone-400" strokeWidth={1.5} aria-hidden />
-              </Link>
-            </li>
-            <li>
-              <Link href={accountHref} onClick={close} className={drawerLinkClass}>
-                <span className="inline-flex items-center gap-3">
-                  <UserRound className="size-[18px] text-stone-500" strokeWidth={1.5} aria-hidden />
-                  {accountLabel}
                 </span>
                 <ChevronRight className="size-4 shrink-0 text-stone-400" strokeWidth={1.5} aria-hidden />
               </Link>
