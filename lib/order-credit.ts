@@ -6,12 +6,17 @@ export type OrderCreditPaymentMethod = "cash" | "transfer";
 
 export type OrderCreditUiStatus = "pending" | "paid" | "cancelled";
 
+export const CREDIT_PAYMENT_CANCELLATION_REASON_MIN_LENGTH = 8;
+
 export type OrderCreditPayment = {
   id: string;
   amountCents: number;
   paymentMethod: OrderCreditPaymentMethod;
   notes: string | null;
   paidAt: string;
+  isCancelled: boolean;
+  cancellationReason: string | null;
+  cancelledAt: string | null;
 };
 
 export function isPosCreditSale(
@@ -41,10 +46,16 @@ export function orderCreditPaymentMethodLabel(
 }
 
 export function sumOrderCreditPaidCents(
-  payments: ReadonlyArray<{ amountCents?: number; amount_cents?: number }>,
+  payments: ReadonlyArray<{
+    amountCents?: number;
+    amount_cents?: number;
+    isCancelled?: boolean;
+    is_cancelled?: boolean;
+  }>,
 ): number {
   let paid = 0;
   for (const row of payments) {
+    if (row.isCancelled === true || row.is_cancelled === true) continue;
     const n = Number(row.amountCents ?? row.amount_cents ?? 0);
     if (Number.isFinite(n) && n > 0) paid += Math.floor(n);
   }
@@ -99,6 +110,9 @@ export function mapOrderCreditPaymentRows(
     payment_method?: unknown;
     notes?: unknown;
     paid_at?: unknown;
+    is_cancelled?: unknown;
+    cancellation_reason?: unknown;
+    cancelled_at?: unknown;
   }>,
 ): OrderCreditPayment[] {
   return rows.map((row) => ({
@@ -107,5 +121,14 @@ export function mapOrderCreditPaymentRows(
     paymentMethod: parseOrderCreditPaymentMethod(String(row.payment_method ?? "")) ?? "cash",
     notes: row.notes != null && String(row.notes).trim() ? String(row.notes).trim() : null,
     paidAt: String(row.paid_at ?? ""),
+    isCancelled: row.is_cancelled === true,
+    cancellationReason:
+      row.cancellation_reason != null && String(row.cancellation_reason).trim()
+        ? String(row.cancellation_reason).trim()
+        : null,
+    cancelledAt:
+      row.cancelled_at != null && String(row.cancelled_at).trim()
+        ? String(row.cancelled_at)
+        : null,
   }));
 }

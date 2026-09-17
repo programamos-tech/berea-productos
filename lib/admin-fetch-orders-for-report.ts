@@ -61,6 +61,7 @@ export async function fetchOrderPaymentsInReportYmdWindow(
     const { data, error } = await supabase
       .from("order_payments")
       .select("amount_cents,payment_method,paid_at")
+      .eq("is_cancelled", false)
       .gte("paid_at", bounds.gte)
       .lt("paid_at", bounds.lt)
       .order("paid_at", { ascending: true })

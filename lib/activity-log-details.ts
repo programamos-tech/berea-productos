@@ -204,6 +204,17 @@ export function getActivityDetailRows(
     if (notes) rows.push({ label: "Notas", value: notes });
   }
 
+  if (action === "credit_payment_cancelled") {
+    const amount = num(m.amount_cents);
+    if (amount != null) {
+      rows.push({ label: "Abono anulado", value: formatMoneyCOP(amount) });
+    }
+    const pm = str(m.payment_method);
+    if (pm) rows.push({ label: "Método", value: paymentMethodLabel(pm) });
+    const reason = str(m.cancellation_reason);
+    if (reason) rows.push({ label: "Motivo", value: reason });
+  }
+
   if (action === "cash_session_opened" || action === "cash_session_closed") {
     const day = str(m.business_day);
     if (day) rows.push({ label: "Día", value: day });

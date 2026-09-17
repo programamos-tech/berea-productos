@@ -43,7 +43,9 @@ export async function fetchOrderCreditPaymentsMap(
     const part = orderIds.slice(i, i + chunkSize);
     const { data, error } = await supabase
       .from("order_payments")
-      .select("id,order_id,amount_cents,payment_method,notes,paid_at")
+      .select(
+        "id,order_id,amount_cents,payment_method,notes,paid_at,is_cancelled,cancellation_reason,cancelled_at",
+      )
       .in("order_id", part)
       .order("paid_at", { ascending: true });
     if (error) {

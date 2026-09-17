@@ -124,7 +124,7 @@ export const PERMISSION_MODULES: PermissionModule[] = [
       { key: "ventas_ver", label: "Ventas" },
       { key: "ventas_crear", label: "Crear ventas" },
       { key: "creditos_ver", label: "Ver créditos" },
-      { key: "creditos_abonar", label: "Registrar abonos" },
+      { key: "creditos_abonar", label: "Registrar y anular abonos" },
     ],
   },
   {

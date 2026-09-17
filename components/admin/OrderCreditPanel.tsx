@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { OrderCreditAbonoForm } from "@/components/admin/OrderCreditAbonoForm";
+import { OrderCreditCancelButton } from "@/components/admin/OrderCreditCancelButton";
 import { formatCop } from "@/lib/money";
 import {
   orderCreditPaymentMethodLabel,
@@ -100,11 +101,10 @@ export function OrderCreditPanel({
         </p>
       ) : null}
 
-      {variant === "full" ? (
-        <div className="mt-4">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
-            Abonos
-          </p>
+      <div className="mt-4">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
+          Abonos
+        </p>
           {payments.length === 0 ? (
             <p className="mt-2 text-sm text-zinc-500">Todavía no hay abonos.</p>
           ) : (
@@ -112,11 +112,22 @@ export function OrderCreditPanel({
               {payments.map((p) => (
                 <li
                   key={p.id}
-                  className="flex flex-wrap items-baseline justify-between gap-2 py-2 text-sm"
+                  className="flex flex-wrap items-start justify-between gap-2 py-2 text-sm"
                 >
-                  <div>
-                    <p className="font-medium tabular-nums text-zinc-900 dark:text-zinc-100">
+                  <div className="min-w-0">
+                    <p
+                      className={`font-medium tabular-nums ${
+                        p.isCancelled
+                          ? "text-zinc-400 line-through dark:text-zinc-500"
+                          : "text-zinc-900 dark:text-zinc-100"
+                      }`}
+                    >
                       {formatCop(p.amountCents)}
+                      {p.isCancelled ? (
+                        <span className="ml-2 text-[11px] font-semibold uppercase tracking-wide text-red-700 no-underline dark:text-red-400">
+                          Anulado
+                        </span>
+                      ) : null}
                     </p>
                     <p className="text-xs text-zinc-500">
                       {orderCreditPaymentMethodLabel(p.paymentMethod)}
@@ -132,13 +143,24 @@ export function OrderCreditPanel({
                     {p.notes ? (
                       <p className="mt-0.5 text-xs text-zinc-500">{p.notes}</p>
                     ) : null}
+                    {p.isCancelled && p.cancellationReason ? (
+                      <p className="mt-0.5 text-xs text-red-700 dark:text-red-400">
+                        Motivo: {p.cancellationReason}
+                      </p>
+                    ) : null}
                   </div>
+                  {!p.isCancelled && orderStatus !== "cancelled" ? (
+                    <OrderCreditCancelButton
+                      paymentId={p.id}
+                      amountCents={p.amountCents}
+                      canCancel={canRegister}
+                    />
+                  ) : null}
                 </li>
               ))}
             </ul>
           )}
         </div>
-      ) : null}
     </section>
   );
 }

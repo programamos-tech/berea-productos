@@ -87,6 +87,8 @@ function actionIcon(action: AdminActivityAction): typeof IconUser {
       return IconCancel;
     case "credit_payment":
       return IconSale;
+    case "credit_payment_cancelled":
+      return IconCancel;
     case "cash_session_opened":
     case "cash_session_closed":
       return IconCash;
@@ -104,7 +106,10 @@ function entityLink(row: AdminActivityLogRow): { href: string; label: string } |
     case "product":
       return { href: `/admin/products/${id}/edit`, label: "Producto" };
     case "order":
-      if (row.action_type === "credit_payment") {
+      if (
+        row.action_type === "credit_payment" ||
+        row.action_type === "credit_payment_cancelled"
+      ) {
         return { href: `/admin/creditos/${id}`, label: "Crédito" };
       }
       return { href: `/admin/orders/${id}`, label: "Factura" };

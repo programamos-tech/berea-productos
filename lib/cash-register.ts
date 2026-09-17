@@ -411,6 +411,7 @@ export async function fetchCashDayLiveTotals(
     supabase
       .from("order_payments")
       .select("amount_cents,payment_method")
+      .eq("is_cancelled", false)
       .gte("paid_at", bounds.gte)
       .lt("paid_at", bounds.lt),
   ]);

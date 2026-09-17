@@ -1,5 +1,6 @@
 import { AdminOrderInvoiceScreen } from "@/components/admin/AdminOrderInvoiceScreen";
 import { safeAdminVentasListReturnPath } from "@/lib/admin-ventas-list-url";
+import { loadAdminPermissions } from "@/lib/load-admin-permissions";
 
 export const dynamic = "force-dynamic";
 
@@ -11,6 +12,7 @@ type Props = {
 export default async function AdminOrderDetailPage({ params, searchParams }: Props) {
   const { id } = await params;
   const sp = await searchParams;
+  const perm = await loadAdminPermissions();
   return (
     <AdminOrderInvoiceScreen
       orderId={id}
@@ -18,6 +20,7 @@ export default async function AdminOrderDetailPage({ params, searchParams }: Pro
       listHref={safeAdminVentasListReturnPath(sp.returnTo)}
       listLabel="Ventas"
       creditVariant="summary"
+      canRegisterCredit={Boolean(perm?.permissions.creditos_abonar)}
     />
   );
 }

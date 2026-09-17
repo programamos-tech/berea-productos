@@ -18,7 +18,10 @@ export function activityEntityHref(row: Pick<AdminActivityLogRow, "entity_type" 
   if (!row.entity_id) return null;
   switch (row.entity_type) {
     case "order":
-      if (row.action_type === "credit_payment") {
+      if (
+        row.action_type === "credit_payment" ||
+        row.action_type === "credit_payment_cancelled"
+      ) {
         return `/admin/creditos/${row.entity_id}`;
       }
       return `/admin/orders/${row.entity_id}`;
