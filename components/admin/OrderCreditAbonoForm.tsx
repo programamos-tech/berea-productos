@@ -1,12 +1,47 @@
 "use client";
 
 import { useState } from "react";
+import { useFormStatus } from "react-dom";
+import { Loader2 } from "lucide-react";
 import { registerOrderCreditPaymentAction } from "@/app/actions/admin/order-credit";
 import {
   ProductMoneyInput,
   productInputOnWhiteClass,
 } from "@/components/admin/product-form-primitives";
-import { formatCop } from "@/lib/money";
+
+function AbonoSubmitButton() {
+  const { pending } = useFormStatus();
+  return (
+    <button
+      type="submit"
+      disabled={pending}
+      className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg border border-[var(--admin-coral)] bg-[var(--admin-coral)] py-2.5 text-sm font-semibold text-white transition hover:border-[var(--admin-coral-hover)] hover:bg-[var(--admin-coral-hover)] disabled:pointer-events-none disabled:opacity-70"
+    >
+      {pending ? (
+        <>
+          <Loader2 className="size-4 shrink-0 animate-spin" strokeWidth={2.25} aria-hidden />
+          Guardando…
+        </>
+      ) : (
+        "Guardar abono"
+      )}
+    </button>
+  );
+}
+
+function AbonoCloseButton({ onClose }: { onClose: () => void }) {
+  const { pending } = useFormStatus();
+  return (
+    <button
+      type="button"
+      disabled={pending}
+      onClick={onClose}
+      className="rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-sm text-zinc-800 transition hover:bg-zinc-50 disabled:pointer-events-none disabled:opacity-70 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-200"
+    >
+      Cerrar
+    </button>
+  );
+}
 
 export function OrderCreditAbonoForm({
   orderId,
@@ -34,11 +69,7 @@ export function OrderCreditAbonoForm({
       </button>
       {open ? (
         <div className="absolute right-0 z-30 mt-2 w-[min(100vw-2rem,22rem)] rounded-xl border border-zinc-200 bg-white p-4 shadow-xl dark:border-zinc-700 dark:bg-zinc-900">
-          <p className="text-xs text-zinc-500 dark:text-zinc-400">
-            Pendiente {formatCop(pendingCents)}. El monto se formatea con puntos
-            de miles (ej. 1.000.000).
-          </p>
-          <form action={registerOrderCreditPaymentAction} className="mt-4 space-y-3">
+          <form action={registerOrderCreditPaymentAction} className="space-y-3">
             <input type="hidden" name="order_id" value={orderId} />
             <div>
               <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
@@ -82,19 +113,8 @@ export function OrderCreditAbonoForm({
               />
             </div>
             <div className="flex gap-2 pt-1">
-              <button
-                type="submit"
-                className="flex-1 rounded-lg border border-[var(--admin-coral)] bg-[var(--admin-coral)] py-2.5 text-sm font-semibold text-white transition hover:border-[var(--admin-coral-hover)] hover:bg-[var(--admin-coral-hover)]"
-              >
-                Guardar abono
-              </button>
-              <button
-                type="button"
-                onClick={() => setOpen(false)}
-                className="rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-sm text-zinc-800 transition hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-200"
-              >
-                Cerrar
-              </button>
+              <AbonoSubmitButton />
+              <AbonoCloseButton onClose={() => setOpen(false)} />
             </div>
           </form>
         </div>
