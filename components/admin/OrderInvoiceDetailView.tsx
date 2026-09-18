@@ -779,12 +779,14 @@ export function OrderInvoiceDetailView(props: OrderInvoiceDetailViewProps) {
               <p className={labelClass}>Método de pago</p>
               <p className={`mt-1.5 text-sm ${pagoTone.className}`}>{pagoTone.label}</p>
             </div>
+            {creditExtras ? null : (
             <div>
               <p className={labelClass}>Estado del pago</p>
               <p className={`mt-1.5 text-sm ${pagoRecibido.className}`}>
                 {pagoRecibido.label}
               </p>
             </div>
+            )}
 
             <div>
               <p className={labelClass}>Impresión</p>

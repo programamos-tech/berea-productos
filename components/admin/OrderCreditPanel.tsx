@@ -5,6 +5,7 @@ import { formatCop } from "@/lib/money";
 import {
   orderCreditPaymentMethodLabel,
   orderCreditPendingCents,
+  orderCreditPendingToneClass,
   orderCreditUiStatus,
   orderCreditUiStatusBadge,
   sumOrderCreditPaidCents,
@@ -63,10 +64,7 @@ export function OrderCreditPanel({
     <section className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-700/80 dark:bg-zinc-900">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
-            Crédito
-          </p>
-          <p className="mt-1 flex flex-wrap items-center gap-2 text-sm">
+          <p className="flex flex-wrap items-center gap-2 text-sm">
             <span
               className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${badge.className}`}
             >
@@ -78,7 +76,7 @@ export function OrderCreditPanel({
             <span className="text-zinc-300 dark:text-zinc-600" aria-hidden>
               ·
             </span>
-            <span className="font-semibold tabular-nums text-zinc-900 dark:text-zinc-100">
+            <span className={orderCreditPendingToneClass(uiStatus)}>
               Pendiente {formatCop(pendingCents)}
             </span>
           </p>

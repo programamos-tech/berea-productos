@@ -2,7 +2,10 @@ import Link from "next/link";
 import { Eye } from "lucide-react";
 import { StaticCopCents } from "@/components/admin/ReportsAnimatedFigures";
 import type { CreditListRow } from "@/lib/admin-order-credits";
-import { orderCreditUiStatusBadge } from "@/lib/order-credit";
+import {
+  orderCreditPendingToneClass,
+  orderCreditUiStatusBadge,
+} from "@/lib/order-credit";
 import { formatVentaFecha, ventaNumeroReferencia } from "@/lib/ventas-sales";
 
 const thClass =
@@ -50,7 +53,7 @@ export function CreditosTable({ rows }: { rows: CreditListRow[] }) {
                       {badge.label}
                     </span>
                     <span className="mx-1.5 text-zinc-400">·</span>
-                    <span className="tabular-nums text-zinc-600 dark:text-zinc-300">
+                    <span className={`tabular-nums ${orderCreditPendingToneClass(row.uiStatus)}`}>
                       Pendiente{" "}
                       <StaticCopCents cents={row.pendingCents} />
                     </span>
@@ -111,7 +114,9 @@ export function CreditosTable({ rows }: { rows: CreditListRow[] }) {
                   <td className="py-2.5 pr-4 text-right tabular-nums text-zinc-600 dark:text-zinc-300">
                     <StaticCopCents cents={row.paidCents} />
                   </td>
-                  <td className="py-2.5 pr-4 text-right font-medium tabular-nums text-zinc-900 dark:text-zinc-100">
+                  <td
+                    className={`py-2.5 pr-4 text-right ${orderCreditPendingToneClass(row.uiStatus)}`}
+                  >
                     <StaticCopCents cents={row.pendingCents} />
                   </td>
                   <td className="py-2.5 pr-4">

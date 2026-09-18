@@ -78,6 +78,17 @@ export function orderCreditUiStatus(args: {
   return "pending";
 }
 
+/** Color del saldo pendiente: naranja si hay deuda, verde si está pagada. */
+export function orderCreditPendingToneClass(status: OrderCreditUiStatus): string {
+  if (status === "paid") {
+    return "font-semibold tabular-nums text-emerald-700 dark:text-emerald-400";
+  }
+  if (status === "cancelled") {
+    return "font-semibold tabular-nums text-red-600 dark:text-red-400";
+  }
+  return "font-semibold tabular-nums text-orange-600 dark:text-orange-400";
+}
+
 export function orderCreditUiStatusBadge(status: OrderCreditUiStatus): {
   label: string;
   className: string;
