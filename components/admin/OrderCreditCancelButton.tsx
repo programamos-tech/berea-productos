@@ -3,12 +3,16 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import { Trash2 } from "lucide-react";
 import { cancelOrderCreditPayment } from "@/app/actions/admin/order-credit";
 import { AdminPortalRoot } from "@/components/admin/AdminPortalRoot";
 import { productInputClass as inputClass } from "@/components/admin/product-form-primitives";
 import { CREDIT_PAYMENT_CANCELLATION_REASON_MIN_LENGTH } from "@/lib/order-credit";
 import { adminButtonCancelClass } from "@/lib/admin-ui";
 import { formatCop } from "@/lib/money";
+
+const iconBtnClass =
+  "inline-flex size-8 items-center justify-center rounded-lg text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-900 disabled:pointer-events-none disabled:opacity-40 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100";
 
 function CancelCreditPaymentModal({
   open,
@@ -186,9 +190,11 @@ export function OrderCreditCancelButton({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="text-xs font-medium text-red-700 underline-offset-2 hover:underline dark:text-red-400"
+        className={iconBtnClass}
+        title="Anular abono"
+        aria-label="Anular abono"
       >
-        Anular
+        <Trash2 className="size-4" strokeWidth={2} aria-hidden />
       </button>
       <CancelCreditPaymentModal
         open={open}
