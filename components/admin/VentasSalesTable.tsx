@@ -1,18 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import {
-  ArrowLeftRight,
-  Banknote,
-  ClipboardList,
-  Eye,
-  FileText,
-  Globe,
-  HandCoins,
-  Layers,
-  type LucideIcon,
-} from "lucide-react";
+import { Eye } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { ventaPagoIcon } from "@/lib/venta-pago-icon";
 import {
   formatVentaFecha,
   ventaEstadoTone,
@@ -31,31 +22,6 @@ export type VentaOrderRow = {
   wompi_transaction_id?: string | null;
   customer_email: string | null;
 };
-
-function ventaPagoIcon(
-  wompiReference: string | null | undefined,
-): { Icon: LucideIcon; label: string } {
-  const r = wompiReference?.trim() ?? "";
-  if (r === "POS:cash") {
-    return { Icon: Banknote, label: "Efectivo" };
-  }
-  if (r === "POS:transfer") {
-    return { Icon: ArrowLeftRight, label: "Transferencia" };
-  }
-  if (r === "POS:mixed") {
-    return { Icon: Layers, label: "Mixto" };
-  }
-  if (r === "POS:credit") {
-    return { Icon: HandCoins, label: "Crédito" };
-  }
-  if (r === "POS:quotation") {
-    return { Icon: FileText, label: "Cotización" };
-  }
-  if (r.startsWith("POS:")) {
-    return { Icon: ClipboardList, label: "Mostrador" };
-  }
-  return { Icon: Globe, label: "En línea" };
-}
 
 const thClass =
   "pb-2 pr-4 text-left text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500";

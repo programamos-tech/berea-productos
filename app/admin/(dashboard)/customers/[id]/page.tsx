@@ -12,7 +12,13 @@ import {
   ticketTrendMonthOverMonthPercent,
 } from "@/lib/customer-ticket-trend";
 import { CustomerTicketTrendChart } from "@/components/admin/CustomerTicketTrendChart";
-import { ventaFormaPagoBadge, ventaNumeroReferencia } from "@/lib/ventas-sales";
+import { isPosCreditSale } from "@/lib/order-credit";
+import { ventaPagoIcon } from "@/lib/venta-pago-icon";
+import {
+  ventaCreditoToneClass,
+  ventaFormaPagoBadge,
+  ventaNumeroReferencia,
+} from "@/lib/ventas-sales";
 import { isDomicilioOrder } from "@/lib/customer-order-classification";
 
 export const dynamic = "force-dynamic";
@@ -453,7 +459,13 @@ export default async function AdminCustomerDetailPage({
         </div>
         <div className="min-w-0">
           <p className={labelClass}>Deuda crédito</p>
-          <p className="mt-1 text-xl font-semibold tabular-nums tracking-tight text-zinc-900 dark:text-zinc-50">
+          <p
+            className={`mt-1 text-xl tabular-nums tracking-tight ${
+              creditDebtCents > 0
+                ? ventaCreditoToneClass
+                : "font-semibold text-zinc-900 dark:text-zinc-50"
+            }`}
+          >
             {creditDebtCents > 0 ? formatCop(creditDebtCents) : "—"}
           </p>
           {creditDebtCents > 0 ? (
@@ -559,6 +571,9 @@ export default async function AdminCustomerDetailPage({
                     const pago = ventaFormaPagoBadge(o.wompi_reference, {
                       checkoutPaymentMethod: o.checkout_payment_method,
                     });
+                    const pagoIcon = ventaPagoIcon(o.wompi_reference);
+                    const PagoIcon = pagoIcon.Icon;
+                    const isCredit = isPosCreditSale(o.wompi_reference);
                     return (
                       <tr
                         key={o.id}
@@ -567,9 +582,14 @@ export default async function AdminCustomerDetailPage({
                         <td className="py-1.5 pr-3 align-middle">
                           <Link
                             href={`/admin/orders/${o.id}`}
-                            className="font-medium text-zinc-900 hover:underline dark:text-zinc-100"
+                            className="inline-flex items-center gap-2 font-medium text-zinc-900 hover:underline dark:text-zinc-100"
                           >
-                            #{ref}
+                            <PagoIcon
+                              className="size-4 shrink-0 text-zinc-400 dark:text-zinc-500"
+                              strokeWidth={2.25}
+                              aria-label={pagoIcon.label}
+                            />
+                            <span>#{ref}</span>
                           </Link>
                           <span className="mt-0.5 block text-[11px] text-zinc-400">
                             {pago.label}
@@ -581,7 +601,13 @@ export default async function AdminCustomerDetailPage({
                         <td className="py-1.5 pr-3 align-middle text-zinc-600 dark:text-zinc-300">
                           {st}
                         </td>
-                        <td className="py-1.5 text-right align-middle tabular-nums text-zinc-900 dark:text-zinc-100">
+                        <td
+                          className={`py-1.5 text-right align-middle tabular-nums ${
+                            isCredit
+                              ? ventaCreditoToneClass
+                              : "text-zinc-900 dark:text-zinc-100"
+                          }`}
+                        >
                           {formatCop(Number(o.total_cents ?? 0))}
                         </td>
                       </tr>
