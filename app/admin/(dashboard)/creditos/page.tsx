@@ -1,28 +1,20 @@
-import Link from "next/link";
+import { Suspense } from "react";
+import {
+  CreditosFiltersBar,
+  CreditosRefreshButton,
+} from "@/components/admin/CreditosFiltersBar";
 import { CreditosTable } from "@/components/admin/CreditosTable";
 import {
   fetchAdminCreditsList,
   parseCreditListFilter,
-  type CreditListFilter,
 } from "@/lib/admin-order-credits";
 import {
-  adminFilterInputClass,
   adminPageSubtitleClass,
   adminPageTitleClass,
-  adminToolbarBtnActiveClass,
-  adminToolbarBtnBaseClass,
-  adminToolbarBtnIdleClass,
 } from "@/lib/admin-ui";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
-
-const FILTERS: { id: CreditListFilter; label: string }[] = [
-  { id: "pending", label: "Pendientes" },
-  { id: "paid", label: "Pagadas" },
-  { id: "cancelled", label: "Anuladas" },
-  { id: "all", label: "Todas" },
-];
 
 type Props = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -47,73 +39,41 @@ export default async function AdminCreditosPage({ searchParams }: Props) {
   });
 
   return (
-    <div className="flex min-h-0 flex-col gap-4">
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
+    <div className="flex w-full min-w-0 max-w-none flex-col gap-4">
+      <header className="flex shrink-0 flex-wrap items-center justify-between gap-2 gap-y-2">
+        <div className="min-w-0">
           <h1 className={adminPageTitleClass}>Créditos</h1>
           <p className={adminPageSubtitleClass}>
             Facturas a crédito y abonos. El saldo baja con cada cobro.
           </p>
         </div>
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <CreditosRefreshButton />
+        </div>
       </header>
 
-      <form className="flex flex-wrap items-end gap-2" method="get">
-        {filter !== "pending" ? (
-          <input type="hidden" name="estado" value={filter} />
-        ) : null}
-        {customerId ? (
-          <input type="hidden" name="cliente" value={customerId} />
-        ) : null}
-        <div className="min-w-[12rem] flex-1">
-          <label className="mb-1 block text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
-            Cliente
-          </label>
-          <input
-            name="q"
-            defaultValue={qRaw}
-            placeholder="Buscar por nombre"
-            className={adminFilterInputClass}
-          />
-        </div>
-        <button
-          type="submit"
-          className={`${adminToolbarBtnBaseClass} ${adminToolbarBtnIdleClass}`}
-        >
-          Buscar
-        </button>
-      </form>
+      <Suspense
+        fallback={
+          <div
+            role="status"
+            className="h-16 animate-pulse rounded-lg bg-zinc-100/80 dark:bg-zinc-800/60 motion-reduce:animate-none"
+          >
+            <span className="sr-only">Cargando filtros…</span>
+          </div>
+        }
+      >
+        <CreditosFiltersBar initialQ={qRaw} />
+      </Suspense>
 
-      <div className="flex flex-wrap gap-1.5">
-        {FILTERS.map((f) => {
-          const active = filter === f.id;
-          const params = new URLSearchParams();
-          if (f.id !== "pending") params.set("estado", f.id);
-          if (qRaw) params.set("q", qRaw);
-          if (customerId) params.set("cliente", customerId);
-          const href = params.size
-            ? `/admin/creditos?${params.toString()}`
-            : "/admin/creditos";
-          return (
-            <Link
-              key={f.id}
-              href={href}
-              className={`${adminToolbarBtnBaseClass} ${
-                active ? adminToolbarBtnActiveClass : adminToolbarBtnIdleClass
-              }`}
-            >
-              {f.label}
-            </Link>
-          );
-        })}
-      </div>
-
-      {error ? (
-        <p className="text-sm text-amber-700 dark:text-amber-300">
-          No se pudieron cargar los créditos. Revisá permisos y migraciones.
-        </p>
-      ) : (
-        <CreditosTable rows={rows} />
-      )}
+      <section className="min-h-0 border-t border-zinc-200/70 pt-4 dark:border-zinc-800">
+        {error ? (
+          <p className="text-sm text-amber-700 dark:text-amber-300">
+            No se pudieron cargar los créditos. Revisá permisos y migraciones.
+          </p>
+        ) : (
+          <CreditosTable rows={rows} />
+        )}
+      </section>
     </div>
   );
 }
