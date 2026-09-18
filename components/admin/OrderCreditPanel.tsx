@@ -59,25 +59,19 @@ export function OrderCreditPanel({
   });
   const badge = orderCreditUiStatusBadge(uiStatus);
   const errorMessage = creditErrorMessage(errorCode ?? undefined);
+  const labelClass =
+    "text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500";
 
   return (
     <section className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-700/80 dark:bg-zinc-900">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="flex flex-wrap items-center gap-2 text-sm">
+          <p className={labelClass}>Saldo</p>
+          <p className="mt-1 flex flex-wrap items-center gap-2">
             <span
               className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${badge.className}`}
             >
               {badge.label}
-            </span>
-            <span className="tabular-nums text-zinc-700 dark:text-zinc-300">
-              Pagado {formatCop(paidCents)}
-            </span>
-            <span className="text-zinc-300 dark:text-zinc-600" aria-hidden>
-              ·
-            </span>
-            <span className={orderCreditPendingToneClass(uiStatus)}>
-              Pendiente {formatCop(pendingCents)}
             </span>
           </p>
         </div>
@@ -91,6 +85,29 @@ export function OrderCreditPanel({
         ) : canRegister && pendingCents > 0 && uiStatus === "pending" ? (
           <OrderCreditAbonoForm orderId={orderId} pendingCents={pendingCents} />
         ) : null}
+      </div>
+
+      <div className="mt-4 grid grid-cols-3 gap-3 border-t border-zinc-100 pt-4 dark:border-zinc-800">
+        <div>
+          <p className={labelClass}>Total</p>
+          <p className="mt-1 text-lg font-semibold tabular-nums tracking-tight text-zinc-900 dark:text-zinc-50 sm:text-xl">
+            {formatCop(totalCents)}
+          </p>
+        </div>
+        <div>
+          <p className={labelClass}>Pagado</p>
+          <p className="mt-1 text-lg font-semibold tabular-nums tracking-tight text-zinc-800 dark:text-zinc-200 sm:text-xl">
+            {formatCop(paidCents)}
+          </p>
+        </div>
+        <div>
+          <p className={labelClass}>Pendiente</p>
+          <p
+            className={`mt-1 text-xl tabular-nums tracking-tight sm:text-2xl ${orderCreditPendingToneClass(uiStatus)}`}
+          >
+            {formatCop(pendingCents)}
+          </p>
+        </div>
       </div>
 
       {errorMessage ? (
