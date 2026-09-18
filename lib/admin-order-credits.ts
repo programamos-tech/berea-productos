@@ -47,7 +47,7 @@ export async function fetchOrderCreditPaymentsMap(
         "id,order_id,amount_cents,payment_method,notes,paid_at,is_cancelled,cancellation_reason,cancelled_at",
       )
       .in("order_id", part)
-      .order("paid_at", { ascending: true });
+      .order("paid_at", { ascending: false });
     if (error) {
       console.error("fetchOrderCreditPaymentsMap", error.message);
       continue;
