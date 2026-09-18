@@ -33,6 +33,7 @@ export async function fetchCashRegisters(
   let query = supabase
     .from("cash_registers")
     .select("id,name,assigned_user_id,sort_order,is_active,created_at")
+    .order("is_active", { ascending: false })
     .order("sort_order", { ascending: true })
     .order("created_at", { ascending: true });
   if (opts?.activeOnly !== false) {

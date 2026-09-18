@@ -41,6 +41,13 @@ function redirectCaja(error?: string): never {
   redirect("/admin/caja");
 }
 
+function redirectCajaPuntos(error?: string): never {
+  const params = new URLSearchParams();
+  params.set("nuevo", "1");
+  if (error) params.set("error", error);
+  redirect(`/admin/caja?${params.toString()}`);
+}
+
 export async function openCashRegisterSession(formData: FormData) {
   const supabase = await createSupabaseServerClient();
   const perm = await requireAdminPermission("caja_gestionar");
@@ -386,15 +393,15 @@ export async function loadCashCloseBlindSummary(
 
 export async function createCashRegisterAction(formData: FormData) {
   const perm = await requireAdminPermission("caja_gestionar");
-  if (!canViewAllCashRegisters(perm.jobRole)) redirectCaja("forbidden");
+  if (!canViewAllCashRegisters(perm.jobRole)) redirectCajaPuntos("forbidden");
   const supabase = await createSupabaseServerClient();
 
   const name = String(formData.get("name") ?? "").trim().slice(0, 40);
-  const assignedRaw = String(formData.get("assigned_user_id") ?? "").trim();
-  const assignedUserId = assignedRaw.length > 0 ? assignedRaw : null;
-  if (name.length < 2) redirectCaja("register_name");
+  const assignedUserId = String(formData.get("assigned_user_id") ?? "").trim();
+  if (name.length < 2) redirectCajaPuntos("register_name");
+  if (!assignedUserId) redirectCajaPuntos("register_assignee");
 
-  const existing = await fetchCashRegisters(supabase, { activeOnly: true });
+  const existing = await fetchCashRegisters(supabase, { activeOnly: false });
   const sortOrder =
     existing.reduce((max, row) => Math.max(max, row.sort_order), 0) + 1;
 
@@ -406,25 +413,25 @@ export async function createCashRegisterAction(formData: FormData) {
   });
   if (error) {
     console.error("createCashRegisterAction", error);
-    if (String(error.code ?? "") === "23505") redirectCaja("register_taken");
-    redirectCaja("db");
+    if (String(error.code ?? "") === "23505") redirectCajaPuntos("register_taken");
+    redirectCajaPuntos("db");
   }
 
   revalidatePath("/admin/caja");
-  redirectCaja();
+  redirectCajaPuntos();
 }
 
 export async function updateCashRegisterAction(formData: FormData) {
   const perm = await requireAdminPermission("caja_gestionar");
-  if (!canViewAllCashRegisters(perm.jobRole)) redirectCaja("forbidden");
+  if (!canViewAllCashRegisters(perm.jobRole)) redirectCajaPuntos("forbidden");
   const supabase = await createSupabaseServerClient();
 
   const id = String(formData.get("cash_register_id") ?? "").trim();
   const name = String(formData.get("name") ?? "").trim().slice(0, 40);
-  const assignedRaw = String(formData.get("assigned_user_id") ?? "").trim();
-  const assignedUserId = assignedRaw.length > 0 ? assignedRaw : null;
-  if (!id) redirectCaja("no_register");
-  if (name.length < 2) redirectCaja("register_name");
+  const assignedUserId = String(formData.get("assigned_user_id") ?? "").trim();
+  if (!id) redirectCajaPuntos("no_register");
+  if (name.length < 2) redirectCajaPuntos("register_name");
+  if (!assignedUserId) redirectCajaPuntos("register_assignee");
 
   const { error } = await supabase
     .from("cash_registers")
@@ -435,10 +442,47 @@ export async function updateCashRegisterAction(formData: FormData) {
     .eq("id", id);
   if (error) {
     console.error("updateCashRegisterAction", error);
-    if (String(error.code ?? "") === "23505") redirectCaja("register_taken");
-    redirectCaja("db");
+    if (String(error.code ?? "") === "23505") redirectCajaPuntos("register_taken");
+    redirectCajaPuntos("db");
   }
 
   revalidatePath("/admin/caja");
-  redirectCaja();
+  redirectCajaPuntos();
+}
+
+export async function setCashRegisterActiveAction(formData: FormData) {
+  const perm = await requireAdminPermission("caja_gestionar");
+  if (!canViewAllCashRegisters(perm.jobRole)) redirectCajaPuntos("forbidden");
+  const supabase = await createSupabaseServerClient();
+
+  const id = String(formData.get("cash_register_id") ?? "").trim();
+  const nextActive = String(formData.get("is_active") ?? "") === "1";
+  if (!id) redirectCajaPuntos("no_register");
+
+  const current = await fetchCashRegisterById(supabase, id);
+  if (!current) redirectCajaPuntos("no_register");
+
+  if (!nextActive) {
+    const open = await fetchCashSessionForRegisterDay(
+      supabase,
+      id,
+      todayBusinessDayYmd(),
+    );
+    if (open?.status === "open") redirectCajaPuntos("register_open");
+  } else if (!current.assigned_user_id) {
+    redirectCajaPuntos("register_assignee");
+  }
+
+  const { error } = await supabase
+    .from("cash_registers")
+    .update({ is_active: nextActive })
+    .eq("id", id);
+  if (error) {
+    console.error("setCashRegisterActiveAction", error);
+    if (String(error.code ?? "") === "23505") redirectCajaPuntos("register_taken");
+    redirectCajaPuntos("db");
+  }
+
+  revalidatePath("/admin/caja");
+  redirectCajaPuntos();
 }

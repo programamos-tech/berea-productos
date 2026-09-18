@@ -3,7 +3,7 @@ import { Eye } from "lucide-react";
 import { Suspense } from "react";
 import { unstable_noStore as noStore } from "next/cache";
 import { CashRegisterFiltersBar } from "@/components/admin/CashRegisterFiltersBar";
-import { CashRegisterManagePanel } from "@/components/admin/CashRegisterManagePanel";
+import { CashRegisterManageModalHost } from "@/components/admin/CashRegisterManagePanel";
 import { CashRegisterPageChrome } from "@/components/admin/CashRegisterPageChrome";
 import { StaticCopCents, StaticInteger } from "@/components/admin/ReportsAnimatedFigures";
 import {
@@ -63,8 +63,10 @@ function errorMessage(code: string | undefined): string | null {
       return "Esa caja está asignada a otra cajera.";
     case "pick_register":
       return "Elegí qué punto de caja querés abrir.";
-    case "register_name":
-      return "El nombre de la caja no es válido.";
+    case "register_assignee":
+      return "Cada caja debe tener una cajera o vendedora asignada.";
+    case "register_open":
+      return "Cerrá esa caja antes de desactivarla.";
     case "register_taken":
       return "Ya existe una caja con ese nombre o esa cajera ya tiene un punto asignado.";
     case "forbidden":
@@ -106,6 +108,9 @@ export default async function AdminCajaPage({
   const sp = await searchParams;
   const errRaw = typeof sp.error === "string" ? sp.error : undefined;
   const banner = errorMessage(errRaw);
+  const openNuevo = viewAll && String(sp.nuevo ?? "") === "1";
+  const registerErrorBanner = openNuevo ? banner : null;
+  const pageBanner = openNuevo ? null : banner;
   const pageRaw = typeof sp.page === "string" ? Number(sp.page) : 1;
   const requestedPage =
     Number.isFinite(pageRaw) && pageRaw >= 1 ? Math.floor(pageRaw) : 1;
@@ -299,6 +304,22 @@ export default async function AdminCajaPage({
 
   return (
     <div className="flex min-h-0 w-full max-w-none flex-col gap-4">
+      {viewAll ? (
+        <CashRegisterManageModalHost
+          open={openNuevo}
+          registers={registers}
+          assignees={assignees.filter((person) => {
+            const role = person.job_role;
+            if (role === "sales" || role === "owner" || role === "admin") {
+              return true;
+            }
+            return registers.some((row) => row.assigned_user_id === person.id);
+          })}
+          openRegisterIds={openSessions.map((row) => row.cash_register_id)}
+          errorBanner={registerErrorBanner}
+        />
+      ) : null}
+
       <CashRegisterPageChrome
         canManage={canManage}
         todayAlreadyClosed={!viewAll && todayAlreadyClosed}
@@ -311,7 +332,7 @@ export default async function AdminCajaPage({
         openedAtLabel={openedAtLabel}
         openedByLabel={openedByLabel}
         blind={previewBlind ?? blind}
-        errorBanner={banner}
+        errorBanner={pageBanner}
         suggestedOpeningFloatCents={suggestedOpeningFloatCents}
         cashRegisterId={focusRegisterId}
         cashRegisterName={
@@ -320,13 +341,13 @@ export default async function AdminCajaPage({
           null
         }
         registers={canOpenToday ? availableToOpen.map((row) => ({ id: row.id, name: row.name })) : []}
-        autoOpenModal={!viewAll || Boolean(closeParam) || previewClose}
+        autoOpenModal={
+          !openNuevo && (!viewAll || Boolean(closeParam) || previewClose)
+        }
         previewClose={Boolean(previewClose)}
+        canCreateRegisters={viewAll && canManage}
+        newRegisterHref="/admin/caja?nuevo=1"
       />
-
-      {viewAll ? (
-        <CashRegisterManagePanel registers={activeRegisters} assignees={assignees} />
-      ) : null}
 
       {viewAll && activeRegisters.length > 0 ? (
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">

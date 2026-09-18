@@ -38,6 +38,8 @@ type Props = {
   autoOpenModal?: boolean;
   /** Solo UI: muestra el modal de cierre con datos congelados, sin submit. */
   previewClose?: boolean;
+  canCreateRegisters?: boolean;
+  newRegisterHref?: string;
 };
 
 export function CashRegisterPageChrome({
@@ -58,6 +60,8 @@ export function CashRegisterPageChrome({
   registers = [],
   autoOpenModal = true,
   previewClose = false,
+  canCreateRegisters = false,
+  newRegisterHref = "/admin/caja?nuevo=1",
 }: Props) {
   const [panelOpen, setPanelOpen] = useState(Boolean(autoOpenModal && modalMode));
 
@@ -99,6 +103,11 @@ export function CashRegisterPageChrome({
         </div>
 
         <div className="flex flex-wrap items-center justify-end gap-2">
+          {canCreateRegisters ? (
+            <Link href={newRegisterHref} className={`${btnBase} ${btnIdle}`}>
+              + Nueva caja
+            </Link>
+          ) : null}
           {todayAlreadyClosed && todaySessionId ? (
             <>
               <Link
