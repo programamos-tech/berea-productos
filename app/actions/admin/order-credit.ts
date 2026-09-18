@@ -2,7 +2,7 @@
 
 import { logAdminActivity } from "@/lib/admin-activity-log";
 import { insertOrderCreditPayments } from "@/lib/insert-order-credit-payments";
-import { formatCop } from "@/lib/money";
+import { formatCop, parseCopInputDigitsToInt } from "@/lib/money";
 import {
   CREDIT_PAYMENT_CANCELLATION_REASON_MIN_LENGTH,
   isPosCreditSale,
@@ -34,7 +34,7 @@ export async function registerOrderCreditPaymentAction(formData: FormData) {
   const orderId = String(formData.get("order_id") ?? "").trim();
   const amount = Math.max(
     0,
-    Math.floor(Number.parseInt(String(formData.get("amount_cents") ?? "0"), 10) || 0),
+    parseCopInputDigitsToInt(String(formData.get("amount_cents") ?? "0")),
   );
   const paymentMethod = parseOrderCreditPaymentMethod(
     String(formData.get("payment_method") ?? ""),
