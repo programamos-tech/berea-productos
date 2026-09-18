@@ -31,6 +31,9 @@ type Props = {
   blind?: CashDayBlindSummary | null;
   errorBanner?: string | null;
   suggestedOpeningFloatCents?: number;
+  cashRegisterId?: string | null;
+  cashRegisterName?: string | null;
+  registers?: Array<{ id: string; name: string }>;
   /** Abrir el modal al cargar cuando toca operar. */
   autoOpenModal?: boolean;
   /** Solo UI: muestra el modal de cierre con datos congelados, sin submit. */
@@ -50,6 +53,9 @@ export function CashRegisterPageChrome({
   blind,
   errorBanner,
   suggestedOpeningFloatCents = 0,
+  cashRegisterId = null,
+  cashRegisterName = null,
+  registers = [],
   autoOpenModal = true,
   previewClose = false,
 }: Props) {
@@ -65,7 +71,7 @@ export function CashRegisterPageChrome({
   const openDisabledReason = !canManage
     ? "Sin permiso para gestionar caja"
     : hasOpenSession
-      ? "Ya hay una caja abierta"
+      ? "Esta caja ya está abierta"
       : todayAlreadyClosed
         ? "Hoy ya cerró · se habilita mañana a las 12:00 a. m. (Colombia)"
         : null;
@@ -86,7 +92,9 @@ export function CashRegisterPageChrome({
             Caja
           </h1>
           <p className={adminPageSubtitleClass}>
-            Apertura, cierre y arqueo del efectivo del día
+            {cashRegisterName
+              ? `${cashRegisterName} · apertura, cierre y arqueo del efectivo`
+              : "Apertura, cierre y arqueo del efectivo del día"}
           </p>
         </div>
 
@@ -153,6 +161,9 @@ export function CashRegisterPageChrome({
           errorBanner={errorBanner}
           defaultOpen={panelOpen}
           suggestedOpeningFloatCents={suggestedOpeningFloatCents}
+          cashRegisterId={cashRegisterId}
+          cashRegisterName={cashRegisterName}
+          registers={registers}
           hideStickyBanner
           previewClose={previewClose}
           onDismissed={() => setPanelOpen(false)}

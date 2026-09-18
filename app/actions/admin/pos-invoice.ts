@@ -11,6 +11,7 @@ import {
   verifyRowCountAtLeastInDev,
 } from "@/lib/admin-insert-verify";
 import { requireAdminPermission, assertCashRegisterOpenForStaff } from "@/lib/require-admin-permission";
+import { fetchActorOpenCashSession } from "@/lib/cash-register";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
   unitPriceAfterWholesaleCents,
@@ -175,6 +176,11 @@ export async function createPosInvoiceAction(formData: FormData) {
   if (!isQuotation) {
     await assertCashRegisterOpenForStaff();
   }
+
+  const actorSession = isQuotation
+    ? null
+    : await fetchActorOpenCashSession(supabase, userId);
+  const cashRegisterSessionId = actorSession?.id ?? null;
 
   if (isEditingQuotation && !isQuotation) redirectFail("validation");
 
@@ -501,6 +507,9 @@ export async function createPosInvoiceAction(formData: FormData) {
               pos_mixed_transfer_cents: posMixedTransferCents,
             }
           : {}),
+        ...(!isQuotation && cashRegisterSessionId
+          ? { cash_register_session_id: cashRegisterSessionId }
+          : {}),
       })
       .select("id")
       .single();
@@ -675,6 +684,7 @@ export async function createPosInvoiceAction(formData: FormData) {
         orderId,
         createdBy: userId,
         payments: payRows,
+        cashRegisterSessionId,
       });
       if (payResult !== "ok") redirectFail("db");
     }

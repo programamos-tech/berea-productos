@@ -139,8 +139,12 @@ function SectionTitle({
 
 export function CashRegisterOpenForm({
   suggestedOpeningFloatCents = 0,
+  cashRegisterId = null,
+  registers = [],
 }: {
   suggestedOpeningFloatCents?: number;
+  cashRegisterId?: string | null;
+  registers?: Array<{ id: string; name: string }>;
 }) {
   const [floatCents, setFloatCents] = useState(
     Math.max(0, Math.floor(suggestedOpeningFloatCents)),
@@ -164,6 +168,31 @@ export function CashRegisterOpenForm({
       }}
     >
       <input type="hidden" name="submission_id" value={submissionId} />
+      {registers.length > 1 ? (
+        <div>
+          <label className={labelClass} htmlFor="cash_register_id">
+            Punto de caja
+          </label>
+          <select
+            id="cash_register_id"
+            name="cash_register_id"
+            defaultValue={cashRegisterId ?? registers[0]?.id}
+            className={`${productInputClass} mt-2`}
+          >
+            {registers.map((row) => (
+              <option key={row.id} value={row.id}>
+                {row.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      ) : cashRegisterId || registers[0]?.id ? (
+        <input
+          type="hidden"
+          name="cash_register_id"
+          value={cashRegisterId ?? registers[0]?.id}
+        />
+      ) : null}
       <p className="text-sm leading-snug text-zinc-600 dark:text-zinc-300">
         Confirmá el arrastre del cierre anterior. El cambio de $100.000 no se
         carga acá.

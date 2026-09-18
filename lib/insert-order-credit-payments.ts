@@ -14,8 +14,10 @@ export async function insertOrderCreditPayments(
     orderId: string;
     createdBy: string;
     payments: OrderCreditPaymentInsert[];
+    cashRegisterSessionId?: string | null;
   },
 ): Promise<"ok" | "db"> {
+  const sessionId = String(args.cashRegisterSessionId ?? "").trim() || null;
   const rows = args.payments
     .map((p) => ({
       order_id: args.orderId,
@@ -23,6 +25,7 @@ export async function insertOrderCreditPayments(
       payment_method: p.paymentMethod,
       notes: p.notes?.trim() || null,
       created_by: args.createdBy,
+      cash_register_session_id: sessionId,
     }))
     .filter((p) => p.amount_cents > 0);
   if (rows.length === 0) return "ok";

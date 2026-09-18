@@ -9,6 +9,7 @@ import {
 } from "@/lib/pos-payment-breakdown";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { fetchCurrentBranchInventoryMap } from "@/lib/branch-inventory";
+import { fetchAssignedCashRegister } from "@/lib/cash-registers";
 
 export type CashSessionStatus = "open" | "closed";
 
@@ -30,6 +31,7 @@ export type CashExpenseLine = {
 
 export type CashRegisterSessionRow = {
   id: string;
+  cash_register_id: string;
   business_day: string;
   status: CashSessionStatus;
   opening_float_cents: number;
@@ -183,7 +185,7 @@ export function closedSessionToBlindSummary(
 }
 
 const SESSION_SELECT =
-  "id,business_day,status,opening_float_cents,opened_at,opened_by,sales_count,sales_total_cents,sales_cash_cents,sales_transfer_cents,sales_mixed_cents,sales_other_cents,expenses_cash_cents,expenses_other_cents,expected_cash_cents,counted_cash_cents,cash_difference_cents,units_sold,stock_out_lines,expense_lines,notes,closed_at,closed_by,created_at";
+  "id,cash_register_id,business_day,status,opening_float_cents,opened_at,opened_by,sales_count,sales_total_cents,sales_cash_cents,sales_transfer_cents,sales_mixed_cents,sales_other_cents,expenses_cash_cents,expenses_other_cents,expected_cash_cents,counted_cash_cents,cash_difference_cents,units_sold,stock_out_lines,expense_lines,notes,closed_at,closed_by,created_at";
 
 function parseStockLines(raw: unknown): CashStockOutLine[] {
   if (!Array.isArray(raw)) return [];
@@ -279,6 +281,7 @@ function parseExpenseLines(raw: unknown): CashExpenseLine[] {
 export function mapCashSessionRow(raw: Record<string, unknown>): CashRegisterSessionRow {
   return {
     id: String(raw.id),
+    cash_register_id: String(raw.cash_register_id ?? ""),
     business_day: String(raw.business_day).slice(0, 10),
     status: raw.status === "closed" ? "closed" : "open",
     opening_float_cents: Math.max(0, Math.floor(Number(raw.opening_float_cents ?? 0))),
@@ -372,6 +375,7 @@ export async function fetchCashDayLiveTotals(
   supabase: SupabaseClient,
   businessDayYmd: string,
   openingFloatCents: number,
+  opts?: { sessionId?: string | null },
 ): Promise<CashDayLiveTotals> {
   const bounds = createdAtBoundsForReportYmdRange(businessDayYmd, businessDayYmd);
   if (!bounds) {
@@ -392,28 +396,38 @@ export async function fetchCashDayLiveTotals(
     };
   }
 
+  const sessionId = String(opts?.sessionId ?? "").trim();
+  const ordersQuery = supabase
+    .from("orders")
+    .select(
+      "id,status,total_cents,wompi_reference,pos_mixed_cash_cents,pos_mixed_transfer_cents,created_at",
+    )
+    .eq("status", "paid")
+    .gte("created_at", bounds.gte)
+    .lt("created_at", bounds.lt);
+  const expensesQuery = supabase
+    .from("store_expenses")
+    .select("id,concept,amount_cents,payment_method,expense_date,is_cancelled,expense_scope")
+    .eq("expense_date", businessDayYmd)
+    .eq("expense_scope", "diario")
+    .eq("is_cancelled", false)
+    .order("created_at", { ascending: true });
+  const paymentsQuery = supabase
+    .from("order_payments")
+    .select("amount_cents,payment_method")
+    .eq("is_cancelled", false)
+    .gte("paid_at", bounds.gte)
+    .lt("paid_at", bounds.lt);
+  if (sessionId) {
+    ordersQuery.eq("cash_register_session_id", sessionId);
+    expensesQuery.eq("cash_register_session_id", sessionId);
+    paymentsQuery.eq("cash_register_session_id", sessionId);
+  }
+
   const [ordersRes, expensesRes, paymentsRes] = await Promise.all([
-    supabase
-      .from("orders")
-      .select(
-        "id,status,total_cents,wompi_reference,pos_mixed_cash_cents,pos_mixed_transfer_cents,created_at",
-      )
-      .eq("status", "paid")
-      .gte("created_at", bounds.gte)
-      .lt("created_at", bounds.lt),
-    supabase
-      .from("store_expenses")
-      .select("id,concept,amount_cents,payment_method,expense_date,is_cancelled,expense_scope")
-      .eq("expense_date", businessDayYmd)
-      .eq("expense_scope", "diario")
-      .eq("is_cancelled", false)
-      .order("created_at", { ascending: true }),
-    supabase
-      .from("order_payments")
-      .select("amount_cents,payment_method")
-      .eq("is_cancelled", false)
-      .gte("paid_at", bounds.gte)
-      .lt("paid_at", bounds.lt),
+    ordersQuery,
+    expensesQuery,
+    paymentsQuery,
   ]);
 
   if (ordersRes.error) {
@@ -573,17 +587,20 @@ export async function fetchCashDayLiveTotals(
   };
 }
 
-/** Contado del último cierre: arrastre sugerido al abrir la caja del día. */
+/** Contado del último cierre: arrastre sugerido al abrir ese punto de caja. */
 export async function fetchSuggestedOpeningFloatCents(
   supabase: SupabaseClient,
+  cashRegisterId?: string | null,
 ): Promise<number> {
-  const { data, error } = await supabase
+  let query = supabase
     .from("cash_register_sessions")
     .select("counted_cash_cents,business_day")
     .eq("status", "closed")
     .order("business_day", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    .limit(1);
+  const registerId = String(cashRegisterId ?? "").trim();
+  if (registerId) query = query.eq("cash_register_id", registerId);
+  const { data, error } = await query.maybeSingle();
   if (error) {
     console.error("fetchSuggestedOpeningFloatCents", error);
     return 0;
@@ -593,7 +610,7 @@ export async function fetchSuggestedOpeningFloatCents(
 
 /**
  * Arrastre de efectivo al inicio de un rango de reportes:
- * fondo de apertura de la caja de `rangeFrom`, o contado del último cierre anterior.
+ * suma de fondos de las cajas de `rangeFrom`, o contado del último cierre por punto.
  */
 export async function fetchCashArrastreCentsForReportStart(
   supabase: SupabaseClient,
@@ -602,54 +619,159 @@ export async function fetchCashArrastreCentsForReportStart(
   const day = rangeFromYmd.slice(0, 10);
   if (!day) return 0;
 
-  const onDay = await fetchCashSessionForBusinessDay(supabase, day);
-  if (onDay) {
-    return Math.max(0, Math.floor(Number(onDay.opening_float_cents ?? 0)));
+  const onDay = await fetchCashSessionsForBusinessDay(supabase, day);
+  if (onDay.length > 0) {
+    return onDay.reduce(
+      (sum, row) => sum + Math.max(0, Math.floor(Number(row.opening_float_cents ?? 0))),
+      0,
+    );
   }
 
   const { data, error } = await supabase
     .from("cash_register_sessions")
-    .select("counted_cash_cents,business_day")
+    .select("cash_register_id,counted_cash_cents,business_day")
     .eq("status", "closed")
     .lt("business_day", day)
-    .order("business_day", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    .order("business_day", { ascending: false });
   if (error) {
     console.error("fetchCashArrastreCentsForReportStart", error);
     return 0;
   }
-  return Math.max(0, Math.floor(Number(data?.counted_cash_cents ?? 0)));
+  const seen = new Set<string>();
+  let sum = 0;
+  for (const row of data ?? []) {
+    const registerId = String(row.cash_register_id ?? "").trim();
+    if (!registerId || seen.has(registerId)) continue;
+    seen.add(registerId);
+    sum += Math.max(0, Math.floor(Number(row.counted_cash_cents ?? 0)));
+  }
+  return sum;
+}
+
+export async function fetchCashSessionsForBusinessDay(
+  supabase: SupabaseClient,
+  businessDayYmd: string,
+): Promise<CashRegisterSessionRow[]> {
+  const day = businessDayYmd.slice(0, 10);
+  const { data, error } = await supabase
+    .from("cash_register_sessions")
+    .select(SESSION_SELECT)
+    .eq("business_day", day)
+    .order("opened_at", { ascending: true });
+  if (error) {
+    console.error("fetchCashSessionsForBusinessDay", error);
+    return [];
+  }
+  return (data ?? []).map((row) => mapCashSessionRow(row as Record<string, unknown>));
 }
 
 export async function fetchCashSessionForBusinessDay(
   supabase: SupabaseClient,
   businessDayYmd: string,
 ): Promise<CashRegisterSessionRow | null> {
+  const rows = await fetchCashSessionsForBusinessDay(supabase, businessDayYmd);
+  return rows[0] ?? null;
+}
+
+export async function fetchCashSessionForRegisterDay(
+  supabase: SupabaseClient,
+  cashRegisterId: string,
+  businessDayYmd: string,
+): Promise<CashRegisterSessionRow | null> {
+  const registerId = String(cashRegisterId ?? "").trim();
   const day = businessDayYmd.slice(0, 10);
+  if (!registerId || !day) return null;
   const { data, error } = await supabase
     .from("cash_register_sessions")
     .select(SESSION_SELECT)
+    .eq("cash_register_id", registerId)
     .eq("business_day", day)
     .maybeSingle();
   if (error) {
-    console.error("fetchCashSessionForBusinessDay", error);
+    console.error("fetchCashSessionForRegisterDay", error);
     return null;
   }
   if (!data) return null;
   return mapCashSessionRow(data as Record<string, unknown>);
 }
 
-export async function fetchOpenCashSession(
+export async function fetchOpenCashSessions(
   supabase: SupabaseClient,
-): Promise<CashRegisterSessionRow | null> {
+): Promise<CashRegisterSessionRow[]> {
   const { data, error } = await supabase
     .from("cash_register_sessions")
     .select(SESSION_SELECT)
     .eq("status", "open")
+    .order("opened_at", { ascending: true });
+  if (error) {
+    console.error("fetchOpenCashSessions", error);
+    return [];
+  }
+  return (data ?? []).map((row) => mapCashSessionRow(row as Record<string, unknown>));
+}
+
+export async function fetchOpenCashSession(
+  supabase: SupabaseClient,
+): Promise<CashRegisterSessionRow | null> {
+  const rows = await fetchOpenCashSessions(supabase);
+  return rows[0] ?? null;
+}
+
+/** Caja abierta de esta cajera (punto asignado, o la que ella misma abrió). */
+export async function fetchActorOpenCashSession(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<CashRegisterSessionRow | null> {
+  const uid = String(userId ?? "").trim();
+  if (!uid) return null;
+  const assigned = await fetchAssignedCashRegister(supabase, uid);
+  if (assigned) {
+    const { data, error } = await supabase
+      .from("cash_register_sessions")
+      .select(SESSION_SELECT)
+      .eq("status", "open")
+      .eq("cash_register_id", assigned.id)
+      .maybeSingle();
+    if (error) {
+      console.error("fetchActorOpenCashSession assigned", error);
+    } else if (data) {
+      return mapCashSessionRow(data as Record<string, unknown>);
+    }
+  }
+  const { data, error } = await supabase
+    .from("cash_register_sessions")
+    .select(SESSION_SELECT)
+    .eq("status", "open")
+    .eq("opened_by", uid)
     .maybeSingle();
   if (error) {
-    console.error("fetchOpenCashSession", error);
+    console.error("fetchActorOpenCashSession opened_by", error);
+    return null;
+  }
+  if (!data) return null;
+  return mapCashSessionRow(data as Record<string, unknown>);
+}
+
+export async function fetchStaffCashSessionForToday(
+  supabase: SupabaseClient,
+  userId: string,
+  businessDayYmd: string,
+): Promise<CashRegisterSessionRow | null> {
+  const uid = String(userId ?? "").trim();
+  const day = businessDayYmd.slice(0, 10);
+  if (!uid || !day) return null;
+  const assigned = await fetchAssignedCashRegister(supabase, uid);
+  if (assigned) {
+    return fetchCashSessionForRegisterDay(supabase, assigned.id, day);
+  }
+  const { data, error } = await supabase
+    .from("cash_register_sessions")
+    .select(SESSION_SELECT)
+    .eq("business_day", day)
+    .eq("opened_by", uid)
+    .maybeSingle();
+  if (error) {
+    console.error("fetchStaffCashSessionForToday", error);
     return null;
   }
   if (!data) return null;

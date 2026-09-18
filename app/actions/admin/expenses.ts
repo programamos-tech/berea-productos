@@ -13,6 +13,7 @@ import {
   fetchStoreExpenseConcepts,
   isConceptAllowedForKind,
 } from "@/lib/store-expense-concepts";
+import { fetchActorOpenCashSession } from "@/lib/cash-register";
 import { loadAdminPermissions } from "@/lib/load-admin-permissions";
 import {
   assertCashRegisterOpenForStaff,
@@ -30,7 +31,7 @@ function revalidateEgresosList() {
 }
 
 export async function createStoreExpense(formData: FormData) {
-  await requireAdminPermission("egresos_crear");
+  const perm = await requireAdminPermission("egresos_crear");
   const supabase = await createSupabaseServerClient();
 
   const concept = String(formData.get("concept") ?? "").trim();
@@ -74,6 +75,11 @@ export async function createStoreExpense(formData: FormData) {
     await assertCashRegisterOpenForStaff();
   }
 
+  const actorSession =
+    expenseScope === "diario"
+      ? await fetchActorOpenCashSession(supabase, perm.userId)
+      : null;
+
   const categoryRaw = String(formData.get("category") ?? "").trim();
   const category =
     categoryRaw ||
@@ -114,6 +120,9 @@ export async function createStoreExpense(formData: FormData) {
       expense_date: expenseDate,
       expense_kind: expenseKind,
       expense_scope: expenseScope,
+      ...(actorSession?.id
+        ? { cash_register_session_id: actorSession.id }
+        : {}),
     })
     .select("id")
     .single();

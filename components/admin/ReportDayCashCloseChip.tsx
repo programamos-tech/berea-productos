@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { fetchCashSessionForBusinessDay } from "@/lib/cash-register";
+import { fetchCashSessionsForBusinessDay } from "@/lib/cash-register";
 import { formatCop } from "@/lib/money";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -9,9 +9,10 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
  */
 export async function ReportDayCashCloseChip({ dayYmd }: { dayYmd: string }) {
   const supabase = await createSupabaseServerClient();
-  const session = await fetchCashSessionForBusinessDay(supabase, dayYmd);
+  const sessions = await fetchCashSessionsForBusinessDay(supabase, dayYmd);
+  const href = `/admin/caja?from=${encodeURIComponent(dayYmd)}&to=${encodeURIComponent(dayYmd)}`;
 
-  if (!session) {
+  if (sessions.length === 0) {
     return (
       <Link
         href="/admin/caja"
@@ -22,38 +23,71 @@ export async function ReportDayCashCloseChip({ dayYmd }: { dayYmd: string }) {
     );
   }
 
-  if (session.status === "open") {
+  if (sessions.some((session) => session.status === "open")) {
+    const openCount = sessions.filter((session) => session.status === "open").length;
     return (
       <Link
         href="/admin/caja"
         className="inline-flex items-center gap-1.5 rounded-full border border-amber-200/80 bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-900 transition hover:border-amber-300 hover:bg-amber-100/80 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-100 dark:hover:bg-amber-950/60"
       >
-        Caja abierta
+        {openCount === 1 ? "Caja abierta" : `${openCount} cajas abiertas`}
       </Link>
     );
   }
 
-  const diff = session.cash_difference_cents;
-  const href = `/admin/caja/${session.id}`;
-
-  if (diff == null || diff === 0) {
+  if (sessions.length === 1) {
+    const session = sessions[0]!;
+    const diff = session.cash_difference_cents;
+    const detailHref = `/admin/caja/${session.id}`;
+    if (diff == null || diff === 0) {
+      return (
+        <Link
+          href={detailHref}
+          className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200/80 bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-800 transition hover:border-emerald-300 hover:bg-emerald-100/80 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-200 dark:hover:bg-emerald-950/60"
+        >
+          Cierre OK
+        </Link>
+      );
+    }
+    if (diff < 0) {
+      return (
+        <Link
+          href={detailHref}
+          className="inline-flex items-center gap-1.5 rounded-full border border-red-200/80 bg-red-50 px-2.5 py-1 text-[11px] font-semibold text-red-800 transition hover:border-red-300 hover:bg-red-100/80 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200 dark:hover:bg-red-950/60"
+        >
+          Faltante {formatCop(Math.abs(diff))}
+        </Link>
+      );
+    }
     return (
       <Link
-        href={href}
-        className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200/80 bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-800 transition hover:border-emerald-300 hover:bg-emerald-100/80 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-200 dark:hover:bg-emerald-950/60"
+        href={detailHref}
+        className="inline-flex items-center gap-1.5 rounded-full border border-amber-200/80 bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-900 transition hover:border-amber-300 hover:bg-amber-100/80 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-100 dark:hover:bg-amber-950/60"
       >
-        Cierre OK
+        Sobrante {formatCop(diff)}
       </Link>
     );
   }
 
-  if (diff < 0) {
+  const missing = sessions.filter((session) => (session.cash_difference_cents ?? 0) < 0);
+  const extra = sessions.filter((session) => (session.cash_difference_cents ?? 0) > 0);
+  if (missing.length > 0) {
     return (
       <Link
         href={href}
         className="inline-flex items-center gap-1.5 rounded-full border border-red-200/80 bg-red-50 px-2.5 py-1 text-[11px] font-semibold text-red-800 transition hover:border-red-300 hover:bg-red-100/80 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200 dark:hover:bg-red-950/60"
       >
-        Faltante {formatCop(Math.abs(diff))}
+        {missing.length} faltante{missing.length === 1 ? "" : "s"}
+      </Link>
+    );
+  }
+  if (extra.length > 0) {
+    return (
+      <Link
+        href={href}
+        className="inline-flex items-center gap-1.5 rounded-full border border-amber-200/80 bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-900 transition hover:border-amber-300 hover:bg-amber-100/80 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-100 dark:hover:bg-amber-950/60"
+      >
+        {extra.length} sobrante{extra.length === 1 ? "" : "s"}
       </Link>
     );
   }
@@ -61,9 +95,9 @@ export async function ReportDayCashCloseChip({ dayYmd }: { dayYmd: string }) {
   return (
     <Link
       href={href}
-      className="inline-flex items-center gap-1.5 rounded-full border border-amber-200/80 bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-900 transition hover:border-amber-300 hover:bg-amber-100/80 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-100 dark:hover:bg-amber-950/60"
+      className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200/80 bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-800 transition hover:border-emerald-300 hover:bg-emerald-100/80 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-200 dark:hover:bg-emerald-950/60"
     >
-      Sobrante {formatCop(diff)}
+      {sessions.length} cierres OK
     </Link>
   );
 }

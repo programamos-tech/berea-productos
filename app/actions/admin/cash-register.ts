@@ -10,15 +10,22 @@ import {
   sendCashCloseReportEmail,
 } from "@/lib/cash-close-report";
 import {
+  fetchActorOpenCashSession,
   fetchCashDayLiveTotals,
   fetchCashSessionById,
-  fetchOpenCashSession,
+  fetchCashSessionForRegisterDay,
   todayBusinessDayYmd,
   toBlindCashSummary,
   type CashDayBlindSummary,
 } from "@/lib/cash-register";
+import {
+  canViewAllCashRegisters,
+  fetchAssignedCashRegister,
+  fetchCashRegisterById,
+  fetchCashRegisters,
+} from "@/lib/cash-registers";
 import { formatCop } from "@/lib/money";
-import { assertActionPermission } from "@/lib/require-admin-permission";
+import { assertActionPermission, requireAdminPermission } from "@/lib/require-admin-permission";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -36,61 +43,97 @@ function redirectCaja(error?: string): never {
 
 export async function openCashRegisterSession(formData: FormData) {
   const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/admin/login");
-  await assertActionPermission("caja_gestionar");
+  const perm = await requireAdminPermission("caja_gestionar");
+  const userId = perm.userId;
+  const isManager = canViewAllCashRegisters(perm.jobRole);
 
   const openingFloat = parseNonNegCents(formData.get("opening_float_cents"));
   if (openingFloat < 0) redirectCaja("float");
 
-  const claim = await claimAdminFormToken(
-    supabase,
-    readSubmissionToken(formData),
-    "cash_register_open",
-  );
-  if (claim === "duplicate") redirectCaja();
-  if (claim === "error") redirectCaja("token");
+  const requestedRegisterId = String(formData.get("cash_register_id") ?? "").trim();
+  const registers = await fetchCashRegisters(supabase, { activeOnly: true });
+  if (registers.length === 0) redirectCaja("no_register");
 
-  const existing = await fetchOpenCashSession(supabase);
-  if (existing) redirectCaja("already_open");
+  const assigned = await fetchAssignedCashRegister(supabase, userId);
+  let target = assigned ?? null;
+  if (requestedRegisterId) {
+    const requested =
+      registers.find((row) => row.id === requestedRegisterId) ??
+      (await fetchCashRegisterById(supabase, requestedRegisterId));
+    if (!requested || !requested.is_active) redirectCaja("no_register");
+    if (
+      !isManager &&
+      assigned &&
+      assigned.id !== requested.id
+    ) {
+      redirectCaja("not_yours");
+    }
+    if (
+      !isManager &&
+      requested.assigned_user_id &&
+      requested.assigned_user_id !== userId
+    ) {
+      redirectCaja("not_yours");
+    }
+    target = requested;
+  } else if (!target) {
+    const unassigned = registers.filter((row) => !row.assigned_user_id);
+    if (unassigned.length === 1) target = unassigned[0]!;
+    else if (isManager && registers.length === 1) target = registers[0]!;
+    else redirectCaja(isManager ? "pick_register" : "no_register");
+  }
 
   const businessDay = todayBusinessDayYmd();
-  const { data: dayTaken } = await supabase
-    .from("cash_register_sessions")
-    .select("id,status")
-    .eq("business_day", businessDay)
-    .maybeSingle();
+  const dayTaken = await fetchCashSessionForRegisterDay(
+    supabase,
+    target.id,
+    businessDay,
+  );
   if (dayTaken) {
     redirectCaja(dayTaken.status === "closed" ? "day_closed" : "already_open");
   }
 
+  const alreadyMine = await fetchActorOpenCashSession(supabase, userId);
+  if (alreadyMine) redirectCaja("already_open");
+
+  const claim = await claimAdminFormToken(
+    supabase,
+    readSubmissionToken(formData),
+    `cash_register_open:${target.id}`,
+  );
+  if (claim === "duplicate") redirectCaja();
+  if (claim === "error") redirectCaja("token");
+
   const { data: inserted, error } = await supabase
     .from("cash_register_sessions")
     .insert({
+      cash_register_id: target.id,
       business_day: businessDay,
       status: "open",
       opening_float_cents: openingFloat,
-      opened_by: user.id,
+      opened_by: userId,
     })
     .select("id")
     .single();
 
   if (error || !inserted?.id) {
     console.error("openCashRegisterSession", error);
+    const code = String(error?.code ?? "");
+    if (code === "23505") redirectCaja("already_open");
     redirectCaja("db");
   }
 
   await logAdminActivity(supabase, {
-    actorId: user.id,
+    actorId: userId,
     actionType: "cash_session_opened",
     entityType: "cash_session",
     entityId: String(inserted.id),
-    summary: `Caja abierta · arrastre ${formatCop(openingFloat)}`,
+    summary: `${target.name} abierta · arrastre ${formatCop(openingFloat)}`,
     metadata: {
       business_day: businessDay,
       opening_float_cents: openingFloat,
+      cash_register_id: target.id,
+      cash_register_name: target.name,
     },
   });
 
@@ -115,13 +158,8 @@ export async function closeCashRegisterSession(formData: FormData) {
   if (!sessionId) redirectCaja("session");
   if (countedCash < 0) redirectCaja("counted");
 
-  const { data: session, error: fetchErr } = await supabase
-    .from("cash_register_sessions")
-    .select("id,status,business_day,opening_float_cents,opened_by,opened_at")
-    .eq("id", sessionId)
-    .maybeSingle();
-
-  if (fetchErr || !session) redirectCaja("session");
+  const session = await fetchCashSessionById(supabase, sessionId);
+  if (!session) redirectCaja("session");
   if (session.status !== "open") redirectCaja("not_open");
 
   const openingFloat = Math.max(
@@ -129,7 +167,12 @@ export async function closeCashRegisterSession(formData: FormData) {
     Math.floor(Number(session.opening_float_cents ?? 0)),
   );
   const businessDay = String(session.business_day).slice(0, 10);
-  const live = await fetchCashDayLiveTotals(supabase, businessDay, openingFloat);
+  const live = await fetchCashDayLiveTotals(
+    supabase,
+    businessDay,
+    openingFloat,
+    { sessionId },
+  );
   const expected = live.expectedCashCents;
   // Esperado = arrastre (día anterior) + cobros − egresos. Contar toda la plata de negocio en gaveta (sin los 100k de cambio).
   const difference = countedCash - expected;
@@ -195,6 +238,7 @@ export async function closeCashRegisterSession(formData: FormData) {
     summary: `Caja cerrada · ${diffLabel} · ${live.unitsSold} ud · ${live.expenseLines.length} egresos`,
     metadata: {
       business_day: businessDay,
+      cash_register_id: session.cash_register_id ?? null,
       opening_float_cents: openingFloat,
       expected_cash_cents: expected,
       counted_cash_cents: countedCash,
@@ -335,6 +379,66 @@ export async function loadCashCloseBlindSummary(
     supabase,
     session.business_day,
     openingFloat,
+    { sessionId },
   );
   return toBlindCashSummary(live, openingFloat);
+}
+
+export async function createCashRegisterAction(formData: FormData) {
+  const perm = await requireAdminPermission("caja_gestionar");
+  if (!canViewAllCashRegisters(perm.jobRole)) redirectCaja("forbidden");
+  const supabase = await createSupabaseServerClient();
+
+  const name = String(formData.get("name") ?? "").trim().slice(0, 40);
+  const assignedRaw = String(formData.get("assigned_user_id") ?? "").trim();
+  const assignedUserId = assignedRaw.length > 0 ? assignedRaw : null;
+  if (name.length < 2) redirectCaja("register_name");
+
+  const existing = await fetchCashRegisters(supabase, { activeOnly: true });
+  const sortOrder =
+    existing.reduce((max, row) => Math.max(max, row.sort_order), 0) + 1;
+
+  const { error } = await supabase.from("cash_registers").insert({
+    name,
+    assigned_user_id: assignedUserId,
+    sort_order: sortOrder,
+    is_active: true,
+  });
+  if (error) {
+    console.error("createCashRegisterAction", error);
+    if (String(error.code ?? "") === "23505") redirectCaja("register_taken");
+    redirectCaja("db");
+  }
+
+  revalidatePath("/admin/caja");
+  redirectCaja();
+}
+
+export async function updateCashRegisterAction(formData: FormData) {
+  const perm = await requireAdminPermission("caja_gestionar");
+  if (!canViewAllCashRegisters(perm.jobRole)) redirectCaja("forbidden");
+  const supabase = await createSupabaseServerClient();
+
+  const id = String(formData.get("cash_register_id") ?? "").trim();
+  const name = String(formData.get("name") ?? "").trim().slice(0, 40);
+  const assignedRaw = String(formData.get("assigned_user_id") ?? "").trim();
+  const assignedUserId = assignedRaw.length > 0 ? assignedRaw : null;
+  if (!id) redirectCaja("no_register");
+  if (name.length < 2) redirectCaja("register_name");
+
+  const { error } = await supabase
+    .from("cash_registers")
+    .update({
+      name,
+      assigned_user_id: assignedUserId,
+    })
+    .eq("id", id);
+  if (error) {
+    console.error("updateCashRegisterAction", error);
+    if (String(error.code ?? "") === "23505") redirectCaja("register_taken");
+    redirectCaja("db");
+  }
+
+  revalidatePath("/admin/caja");
+  redirectCaja();
 }

@@ -3,6 +3,7 @@ import { Eye } from "lucide-react";
 import { Suspense } from "react";
 import { unstable_noStore as noStore } from "next/cache";
 import { CashRegisterFiltersBar } from "@/components/admin/CashRegisterFiltersBar";
+import { CashRegisterManagePanel } from "@/components/admin/CashRegisterManagePanel";
 import { CashRegisterPageChrome } from "@/components/admin/CashRegisterPageChrome";
 import { StaticCopCents, StaticInteger } from "@/components/admin/ReportsAnimatedFigures";
 import {
@@ -12,13 +13,19 @@ import {
 import {
   closedSessionToBlindSummary,
   fetchCashDayLiveTotals,
-  fetchCashSessionForBusinessDay,
+  fetchCashSessionsForBusinessDay,
   fetchCashSessionsPage,
-  fetchOpenCashSession,
+  fetchOpenCashSessions,
   fetchSuggestedOpeningFloatCents,
   toBlindCashSummary,
   type CashSessionStatus,
 } from "@/lib/cash-register";
+import {
+  canViewAllCashRegisters,
+  fetchAssignedCashRegister,
+  fetchCashRegisterAssigneeOptions,
+  fetchCashRegisters,
+} from "@/lib/cash-registers";
 import { formatCop } from "@/lib/money";
 import { requireAdminAnyPermission } from "@/lib/require-admin-permission";
 import { formatStoreDateTime } from "@/lib/store-datetime-format";
@@ -35,9 +42,9 @@ function errorMessage(code: string | undefined): string | null {
     case "counted":
       return "El efectivo contado no es válido.";
     case "already_open":
-      return "Ya hay una caja abierta.";
+      return "Esa caja ya está abierta.";
     case "day_closed":
-      return "Este día ya tiene un cierre. La próxima caja se puede abrir mañana a partir de las 12:00 a. m. (hora Colombia).";
+      return "Esa caja ya cerró hoy. Se puede volver a abrir mañana a partir de las 12:00 a. m. (hora Colombia).";
     case "not_open":
       return "La sesión ya no está abierta.";
     case "session":
@@ -49,7 +56,19 @@ function errorMessage(code: string | undefined): string | null {
     case "notes_required":
       return "La nota del cierre es obligatoria. Escribí un resumen o comentario e intentá de nuevo.";
     case "need_open":
-      return "Primero abrí la caja del día para poder facturar y usar el panel.";
+      return "Primero abrí tu caja del día para poder facturar y usar el panel.";
+    case "no_register":
+      return "No tenés un punto de caja asignado. Pedile al propietario que te asigne uno.";
+    case "not_yours":
+      return "Esa caja está asignada a otra cajera.";
+    case "pick_register":
+      return "Elegí qué punto de caja querés abrir.";
+    case "register_name":
+      return "El nombre de la caja no es válido.";
+    case "register_taken":
+      return "Ya existe una caja con ese nombre o esa cajera ya tiene un punto asignado.";
+    case "forbidden":
+      return "Solo el propietario o un administrador pueden crear y asignar cajas.";
     default:
       return null;
   }
@@ -83,6 +102,7 @@ export default async function AdminCajaPage({
   noStore();
   const perm = await requireAdminAnyPermission(["caja_ver", "caja_gestionar"]);
   const canManage = Boolean(perm.permissions.caja_gestionar);
+  const viewAll = canViewAllCashRegisters(perm.jobRole);
   const sp = await searchParams;
   const errRaw = typeof sp.error === "string" ? sp.error : undefined;
   const banner = errorMessage(errRaw);
@@ -108,13 +128,58 @@ export default async function AdminCajaPage({
 
   const supabase = await createSupabaseServerClient();
   const today = todayYmdInReportStore();
-  const [open, todaySession, firstPage, suggestedOpeningFloatCents] =
+  const closeParam = typeof sp.close === "string" ? sp.close.trim() : "";
+  const [
+    registers,
+    assignees,
+    assigned,
+    openSessions,
+    todaySessions,
+    firstPage,
+  ] =
     await Promise.all([
-      fetchOpenCashSession(supabase),
-      fetchCashSessionForBusinessDay(supabase, today),
+      fetchCashRegisters(supabase, { activeOnly: false }),
+      viewAll
+        ? fetchCashRegisterAssigneeOptions(supabase, perm.tenantId)
+        : Promise.resolve([]),
+      fetchAssignedCashRegister(supabase, perm.userId),
+      fetchOpenCashSessions(supabase),
+      fetchCashSessionsForBusinessDay(supabase, today),
       fetchCashSessionsPage(supabase, { ...listOpts, page: requestedPage }),
-      fetchSuggestedOpeningFloatCents(supabase),
     ]);
+
+  const myToday = assigned
+    ? (todaySessions.find((row) => row.cash_register_id === assigned.id) ??
+      null)
+    : (todaySessions.find((row) => row.opened_by === perm.userId) ?? null);
+  const myOpen =
+    myToday?.status === "open"
+      ? myToday
+      : (openSessions.find((row) =>
+          assigned
+            ? row.cash_register_id === assigned.id
+            : row.opened_by === perm.userId,
+        ) ?? null);
+
+  const closeTarget =
+    openSessions.find((row) => row.id === closeParam) ??
+    (!viewAll ? myOpen : null);
+  const open = closeTarget ?? (!viewAll ? myOpen : null);
+
+  const registerById = new Map(registers.map((row) => [row.id, row]));
+  const activeRegisters = registers.filter((row) => row.is_active);
+  const focusRegisterId =
+    open?.cash_register_id ||
+    assigned?.id ||
+    activeRegisters.find(
+      (row) =>
+        !todaySessions.some((session) => session.cash_register_id === row.id),
+    )?.id ||
+    null;
+  const suggestedOpeningFloatCents = await fetchSuggestedOpeningFloatCents(
+    supabase,
+    focusRegisterId,
+  );
 
   const sessionsTotal = firstPage.total;
   const totalPages = Math.max(1, Math.ceil(sessionsTotal / PAGE_SIZE));
@@ -134,8 +199,13 @@ export default async function AdminCajaPage({
   ];
   const profileIds = [
     ...new Set([
-      ...(open?.opened_by ? [open.opened_by] : []),
+      ...openSessions.map((row) => row.opened_by),
+      ...todaySessions.map((row) => row.opened_by),
+      ...recent.map((s) => s.opened_by),
       ...closedByIds,
+      ...registers
+        .map((row) => row.assigned_user_id)
+        .filter((id): id is string => Boolean(id)),
     ]),
   ];
   const { data: profileRows } =
@@ -165,6 +235,7 @@ export default async function AdminCajaPage({
         supabase,
         open.business_day,
         open.opening_float_cents,
+        { sessionId: open.id },
       )
     : null;
   const blind = live
@@ -184,27 +255,36 @@ export default async function AdminCajaPage({
 
   const dayLabel = prettyReportDayShortLabel(open?.business_day ?? today);
   const todayLabel = prettyReportDayShortLabel(today);
-  const todayAlreadyClosed = !open && todaySession?.status === "closed";
-  const canOpenToday = canManage && !open && !todayAlreadyClosed;
+  const todayAlreadyClosed = !myOpen && myToday?.status === "closed";
+  const availableToOpen = activeRegisters.filter(
+    (row) =>
+      !todaySessions.some((session) => session.cash_register_id === row.id),
+  );
+  const canOpenToday =
+    canManage &&
+    availableToOpen.length > 0 &&
+    (viewAll || (!todayAlreadyClosed && !myOpen));
   const previewClose =
     typeof sp.preview === "string" &&
     sp.preview === "cierre" &&
     todayAlreadyClosed &&
-    Boolean(todaySession);
+    Boolean(myToday);
 
   const previewBlind =
-    previewClose && todaySession
-      ? closedSessionToBlindSummary(todaySession)
-      : null;
+    previewClose && myToday ? closedSessionToBlindSummary(myToday) : null;
 
   const modalMode =
     previewClose
       ? ("close" as const)
-      : open && canManage && blind
+      : closeTarget && canManage && blind
         ? ("close" as const)
-        : canOpenToday
-          ? ("open" as const)
-          : null;
+        : !viewAll && myOpen && canManage && blind
+          ? ("close" as const)
+          : canOpenToday
+            ? ("open" as const)
+            : null;
+
+  const chromeOpen = closeTarget ?? (!viewAll ? myOpen : null);
 
   function buildPageHref(p: number): string {
     const params = new URLSearchParams();
@@ -221,21 +301,103 @@ export default async function AdminCajaPage({
     <div className="flex min-h-0 w-full max-w-none flex-col gap-4">
       <CashRegisterPageChrome
         canManage={canManage}
-        todayAlreadyClosed={todayAlreadyClosed}
-        hasOpenSession={Boolean(open)}
-        todaySessionId={todaySession?.id ?? null}
+        todayAlreadyClosed={!viewAll && todayAlreadyClosed}
+        hasOpenSession={Boolean(chromeOpen)}
+        todaySessionId={myToday?.id ?? null}
         todayLabel={todayLabel}
         modalMode={modalMode}
         businessDayLabel={dayLabel}
-        sessionId={previewClose ? todaySession?.id : open?.id}
+        sessionId={previewClose ? myToday?.id : chromeOpen?.id}
         openedAtLabel={openedAtLabel}
         openedByLabel={openedByLabel}
         blind={previewBlind ?? blind}
         errorBanner={banner}
         suggestedOpeningFloatCents={suggestedOpeningFloatCents}
-        autoOpenModal={Boolean(modalMode)}
+        cashRegisterId={focusRegisterId}
+        cashRegisterName={
+          (focusRegisterId && registerById.get(focusRegisterId)?.name) ||
+          assigned?.name ||
+          null
+        }
+        registers={canOpenToday ? availableToOpen.map((row) => ({ id: row.id, name: row.name })) : []}
+        autoOpenModal={!viewAll || Boolean(closeParam) || previewClose}
         previewClose={Boolean(previewClose)}
       />
+
+      {viewAll ? (
+        <CashRegisterManagePanel registers={activeRegisters} assignees={assignees} />
+      ) : null}
+
+      {viewAll && activeRegisters.length > 0 ? (
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {activeRegisters.map((row) => {
+            const session =
+              openSessions.find((s) => s.cash_register_id === row.id) ??
+              todaySessions.find((s) => s.cash_register_id === row.id) ??
+              null;
+            const assigneeId = row.assigned_user_id;
+            const assignee = assigneeId
+              ? (profileLabel.get(assigneeId) ?? "Sin nombre")
+              : "Sin asignar";
+            const openedBy = session?.opened_by
+              ? (profileLabel.get(session.opened_by) ?? null)
+              : null;
+            return (
+              <article
+                key={row.id}
+                className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                      {row.name}
+                    </h3>
+                    <p className="mt-0.5 text-xs text-zinc-500">{assignee}</p>
+                  </div>
+                  <span
+                    className={
+                      session?.status === "open"
+                        ? "text-xs font-medium text-amber-700 dark:text-amber-300"
+                        : session?.status === "closed"
+                          ? "text-xs font-medium text-zinc-500"
+                          : "text-xs font-medium text-zinc-400"
+                    }
+                  >
+                    {session?.status === "open"
+                      ? "Abierta"
+                      : session?.status === "closed"
+                        ? "Cerrada"
+                        : "Sin abrir"}
+                  </span>
+                </div>
+                {openedBy ? (
+                  <p className="mt-2 text-xs text-zinc-500">
+                    Abrió {openedBy}
+                  </p>
+                ) : null}
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {session?.status === "open" ? (
+                    <Link
+                      href={`/admin/caja?close=${session.id}`}
+                      className="inline-flex h-8 items-center rounded-lg border border-zinc-900 bg-zinc-900 px-3 text-xs font-medium text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900"
+                    >
+                      Cerrar
+                    </Link>
+                  ) : null}
+                  {session?.status === "closed" ? (
+                    <Link
+                      href={`/admin/caja/${session.id}`}
+                      className="inline-flex h-8 items-center rounded-lg border border-zinc-300 px-3 text-xs font-medium text-zinc-800 dark:border-zinc-600 dark:text-zinc-100"
+                    >
+                      Ver cierre
+                    </Link>
+                  ) : null}
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      ) : null}
 
       {!open && !canManage && !todayAlreadyClosed ? (
         <p className="text-sm text-zinc-500">
@@ -281,6 +443,7 @@ export default async function AdminCajaPage({
                 <thead>
                   <tr className="border-b border-zinc-200/70 text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500 dark:border-zinc-800">
                     <th className="px-3 pb-2 font-semibold first:pl-0">Día</th>
+                    <th className="px-3 pb-2 font-semibold">Caja</th>
                     <th className="px-3 pb-2 font-semibold">Estado</th>
                     <th className="px-3 pb-2 font-semibold">Cerró</th>
                     <th className="px-3 pb-2 text-right font-semibold">Transfer.</th>
@@ -307,6 +470,9 @@ export default async function AdminCajaPage({
                       >
                         <td className="whitespace-nowrap px-3 py-2.5 text-zinc-900 first:pl-0 dark:text-zinc-100">
                           {prettyReportDayShortLabel(s.business_day)}
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-2.5 text-zinc-700 dark:text-zinc-200">
+                          {registerById.get(s.cash_register_id)?.name ?? "Caja"}
                         </td>
                         <td className="px-3 py-2.5">
                           <span

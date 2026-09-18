@@ -35,6 +35,8 @@ export function AdminDashboardShell({
     businessDayLabel: string;
     displayName: string | null;
     suggestedOpeningFloatCents?: number;
+    cashRegisterId?: string | null;
+    cashRegisterName?: string | null;
   } | null;
   /** Usuario autenticado para el menú superior (nombre + email). */
   sessionUser: {
@@ -108,6 +110,8 @@ export function AdminDashboardShell({
             businessDayLabel={cashGate.businessDayLabel}
             displayName={cashGate.displayName}
             suggestedOpeningFloatCents={cashGate.suggestedOpeningFloatCents ?? 0}
+            cashRegisterId={cashGate.cashRegisterId ?? null}
+            cashRegisterName={cashGate.cashRegisterName ?? null}
           />
         ) : null}
       </div>

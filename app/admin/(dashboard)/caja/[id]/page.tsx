@@ -11,6 +11,7 @@ import {
   enrichStockOutLinesRemaining,
   fetchCashSessionById,
 } from "@/lib/cash-register";
+import { fetchCashRegisterById } from "@/lib/cash-registers";
 import { resolveProfileName } from "@/lib/cash-close-report";
 import { cashCloseReportRecipientsLabel } from "@/lib/email/send";
 import { requireAdminAnyPermission } from "@/lib/require-admin-permission";
@@ -38,9 +39,12 @@ export default async function AdminCajaDetailPage({
     redirect("/admin/caja");
   }
 
-  const [stockOutLines, closedByLabel] = await Promise.all([
+  const [stockOutLines, closedByLabel, register] = await Promise.all([
     enrichStockOutLinesRemaining(supabase, session.stock_out_lines),
     resolveProfileName(supabase, session.closed_by),
+    session.cash_register_id
+      ? fetchCashRegisterById(supabase, session.cash_register_id)
+      : Promise.resolve(null),
   ]);
 
   const dayLabel = prettyReportDayShortLabel(session.business_day);
@@ -109,7 +113,7 @@ export default async function AdminCajaDetailPage({
             {dayLabel}
           </p>
           <h1 className="mt-0.5 text-lg font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 sm:text-xl">
-            Registro del {dayLabel}
+            {register?.name ? `${register.name} · ` : ""}Registro del {dayLabel}
           </h1>
           <p className="mt-0.5 text-xs text-zinc-500">
             Cerrado por{" "}

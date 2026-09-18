@@ -20,6 +20,7 @@ import {
   type KitComponentDeduction,
   type ProductKitRow,
 } from "@/lib/product-kits";
+import { fetchActorOpenCashSession } from "@/lib/cash-register";
 import { fetchCurrentBranchInventoryMap } from "@/lib/branch-inventory";
 import { fetchKitsByIdsWithItems } from "@/lib/load-product-kits";
 import {
@@ -47,6 +48,8 @@ export async function convertQuotationToSaleAction(formData: FormData) {
   const { userId } = await requireAdminPermission("ventas_crear");
   await assertCashRegisterOpenForStaff();
   const supabase = await createSupabaseServerClient();
+  const actorSession = await fetchActorOpenCashSession(supabase, userId);
+  const cashRegisterSessionId = actorSession?.id ?? null;
 
   const orderId = String(formData.get("order_id") ?? "").trim();
   const paymentMethod = String(formData.get("payment_method") ?? "").trim();
@@ -344,6 +347,9 @@ export async function convertQuotationToSaleAction(formData: FormData) {
             pos_mixed_cash_cents: null,
             pos_mixed_transfer_cents: null,
           }),
+      ...(cashRegisterSessionId
+        ? { cash_register_session_id: cashRegisterSessionId }
+        : {}),
     })
     .eq("id", orderId)
     .eq("status", "quotation")
@@ -370,6 +376,7 @@ export async function convertQuotationToSaleAction(formData: FormData) {
         orderId,
         createdBy: userId,
         payments: payRows,
+        cashRegisterSessionId,
       });
       if (payResult !== "ok") {
         console.error("convertQuotationToSaleAction credit payments");

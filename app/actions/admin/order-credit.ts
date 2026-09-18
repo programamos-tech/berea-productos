@@ -3,6 +3,7 @@
 import { logAdminActivity } from "@/lib/admin-activity-log";
 import { insertOrderCreditPayments } from "@/lib/insert-order-credit-payments";
 import { formatCop, parseCopInputDigitsToInt } from "@/lib/money";
+import { fetchActorOpenCashSession } from "@/lib/cash-register";
 import {
   CREDIT_PAYMENT_CANCELLATION_REASON_MIN_LENGTH,
   isPosCreditSale,
@@ -48,6 +49,8 @@ export async function registerOrderCreditPaymentAction(formData: FormData) {
     await assertCashRegisterOpenForStaff();
   }
 
+  const actorSession = await fetchActorOpenCashSession(supabase, userId);
+
   const { data: order, error: oErr } = await supabase
     .from("orders")
     .select("id,status,total_cents,wompi_reference,customer_name,customer_id")
@@ -81,6 +84,7 @@ export async function registerOrderCreditPaymentAction(formData: FormData) {
     orderId,
     createdBy: userId,
     payments: [{ amountCents: amount, paymentMethod, notes }],
+    cashRegisterSessionId: actorSession?.id ?? null,
   });
   if (payResult !== "ok") redirectCredit(orderId, "db");
 

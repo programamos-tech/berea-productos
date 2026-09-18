@@ -10,17 +10,19 @@ import {
   EXPENSE_CONCEPT_SUPPLIER_PAYMENT,
   mapSupplierPaymentMethodToExpense,
 } from "@/lib/expense-concepts";
+import { fetchActorOpenCashSession } from "@/lib/cash-register";
+import { loadAdminPermissions } from "@/lib/load-admin-permissions";
 import {
   assertActionPermission,
   assertCashRegisterOpenForStaff,
 } from "@/lib/require-admin-permission";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
   DEFAULT_SUPPLIER_VAT_BPS,
   supplierInvoiceFolioFromIssueDate,
   supplierLineGrossCents,
   supplierLineNetCents,
 } from "@/lib/supplier-invoices";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -264,6 +266,11 @@ export async function registerSupplierInvoicePaymentAction(formData: FormData) {
   const noteParts = [`Proveedor ${supplierName}`, `Factura ${folio}`];
   if (notes) noteParts.push(notes);
 
+  const perm = await loadAdminPermissions();
+  const actorSession = perm
+    ? await fetchActorOpenCashSession(supabase, perm.userId)
+    : null;
+
   const { error: expenseErr } = await supabase.from("store_expenses").insert({
     concept: EXPENSE_CONCEPT_SUPPLIER_PAYMENT,
     category: "insumos",
@@ -274,6 +281,9 @@ export async function registerSupplierInvoicePaymentAction(formData: FormData) {
     supplier_invoice_payment_id: paymentId,
     expense_kind: "egreso",
     expense_scope: "diario",
+    ...(actorSession?.id
+      ? { cash_register_session_id: actorSession.id }
+      : {}),
   });
 
   if (expenseErr) {
