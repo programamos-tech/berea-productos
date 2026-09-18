@@ -124,6 +124,8 @@ export type OrderInvoiceDetailViewProps = {
   listLabel?: string;
   /** Bloque extra (crédito: saldo, abonos). */
   creditExtras?: React.ReactNode;
+  /** Saldo pendiente de factura a crédito (para Estado del pago). */
+  creditPendingCents?: number | null;
   /** Marca de tirilla/factura (tenant brand → env fallback). */
   invoiceBrand?: InvoiceBrandFields;
   convertError?: string | null;
@@ -245,6 +247,7 @@ export function OrderInvoiceDetailView(props: OrderInvoiceDetailViewProps) {
     ventasListHref = "/admin/ventas",
     listLabel = "Ventas",
     creditExtras,
+    creditPendingCents = null,
     invoiceBrand,
     convertError = null,
     justInvoiced = false,
@@ -281,7 +284,11 @@ export function OrderInvoiceDetailView(props: OrderInvoiceDetailViewProps) {
   const pagoTone = ventaFormaPagoTone(wompiReference, {
     checkoutPaymentMethod: checkoutPaymentMethod ?? undefined,
   });
-  const pagoRecibido = ventaPagoRecibidoTone(status, wompiReference);
+  const pagoRecibido = ventaPagoRecibidoTone(
+    status,
+    wompiReference,
+    creditPendingCents ?? undefined,
+  );
 
   const subtotalLines = lines.reduce(
     (s, l) => s + l.unitPriceCents * l.quantity,

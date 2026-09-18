@@ -3,7 +3,12 @@ import { OrderCreditPanel } from "@/components/admin/OrderCreditPanel";
 import { OrderInvoiceDetailView } from "@/components/admin/OrderInvoiceDetailView";
 import { fetchOrderCreditPaymentsMap } from "@/lib/admin-order-credits";
 import { resolveProfileName } from "@/lib/cash-close-report";
-import { isPosCreditSale, mapOrderCreditPaymentRows } from "@/lib/order-credit";
+import {
+  isPosCreditSale,
+  mapOrderCreditPaymentRows,
+  orderCreditPendingCents,
+  sumOrderCreditPaidCents,
+} from "@/lib/order-credit";
 import { decodeQuotationStockNotices } from "@/lib/quotation-stock-notice";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getInvoiceLayoutForRequest, getTenantBrandForRequest } from "@/lib/tenant-context";
@@ -222,6 +227,12 @@ export async function AdminOrderInvoiceScreen({
     mapOrderCreditPaymentRows([]);
   const errorRaw = searchParams.error;
   const errorCode = typeof errorRaw === "string" ? errorRaw : null;
+  const creditPendingCents = isCredit
+    ? orderCreditPendingCents(
+        Number(order.total_cents ?? 0),
+        sumOrderCreditPaidCents(payments),
+      )
+    : null;
 
   return (
     <OrderInvoiceDetailView
@@ -278,6 +289,7 @@ export async function AdminOrderInvoiceScreen({
       stockNotices={decodeQuotationStockNotices(
         typeof searchParams.stock === "string" ? searchParams.stock : undefined,
       )}
+      creditPendingCents={creditPendingCents}
       creditExtras={
         isCredit ? (
           <OrderCreditPanel

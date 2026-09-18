@@ -214,15 +214,17 @@ export function ventaPagoRecibidoBadge(status: string): { label: string; classNa
 export function ventaPagoRecibidoTone(
   status: string,
   wompiReference?: string | null,
+  creditPendingCents?: number,
 ): {
   label: string;
   className: string;
 } {
+  let cobroStatus = status;
   if (isPosCreditSale(wompiReference) && status !== "cancelled") {
-    return { label: "Crédito", className: ventaCreditoToneClass };
+    cobroStatus = (creditPendingCents ?? 0) > 0 ? "pending" : "paid";
   }
-  const { label } = ventaPagoRecibidoBadge(status);
-  switch (status) {
+  const { label } = ventaPagoRecibidoBadge(cobroStatus);
+  switch (cobroStatus) {
     case "paid":
       return {
         label,
@@ -298,13 +300,7 @@ export function ventaEstadoBadge(status: string): { label: string; className: st
 }
 
 /** Color de letra + bold (sin pastilla), para listados limpios. */
-export function ventaEstadoTone(
-  status: string,
-  wompiReference?: string | null,
-): { label: string; className: string } {
-  if (isPosCreditSale(wompiReference) && status !== "cancelled") {
-    return { label: "Crédito", className: ventaCreditoToneClass };
-  }
+export function ventaEstadoTone(status: string): { label: string; className: string } {
   const { label } = ventaEstadoBadge(status);
   switch (status) {
     case "paid":
