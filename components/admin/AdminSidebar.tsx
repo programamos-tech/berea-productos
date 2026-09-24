@@ -68,13 +68,29 @@ function SidebarProductBrand({ account }: { account: AccountBrand }) {
       prefetch
       className="inline-flex rounded-md outline-none transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-zinc-400/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--admin-sidebar-bg)]"
     >
-      <OperatorAccountLogo
-        src={account.logoSrc}
-        name={account.name}
-        size={56}
-        plateColor={account.plateColor}
-        fullColor={account.logoFullColor}
-      />
+      {account.logoFullColor ? (
+        <span
+          className="relative block h-14 w-28 overflow-hidden rounded-xl"
+          style={{ backgroundColor: account.plateColor }}
+        >
+          <Image
+            src={account.logoSrc}
+            alt={account.name}
+            fill
+            sizes="76px"
+            unoptimized
+            className="object-contain p-1.5"
+          />
+        </span>
+      ) : (
+        <OperatorAccountLogo
+          src={account.logoSrc}
+          name={account.name}
+          size={56}
+          plateColor={account.plateColor}
+          fullColor={account.logoFullColor}
+        />
+      )}
     </Link>
   );
 }
