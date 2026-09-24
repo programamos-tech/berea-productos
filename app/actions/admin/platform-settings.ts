@@ -54,18 +54,19 @@ export async function updateInvoiceLayoutAction(formData: FormData) {
   redirect("/admin/configuracion?notice=saved");
 }
 
-export async function updateKitsEnabledAction(formData: FormData) {
+export async function updateKitsEnabledAction(
+  enabled: boolean,
+): Promise<{ ok: true } | { ok: false }> {
   const session = await requireAdminSession();
   if (session.jobRole !== "owner" && !session.isPlatformOperator) {
-    redirect("/admin/configuracion?notice=forbidden");
+    return { ok: false };
   }
 
-  const enabled = String(formData.get("enabled") ?? "") === "1";
   let service: ReturnType<typeof createSupabaseServiceClient>;
   try {
     service = createSupabaseServiceClient();
   } catch {
-    redirect("/admin/configuracion?notice=error");
+    return { ok: false };
   }
 
   const { data: tenant } = await service
@@ -73,7 +74,7 @@ export async function updateKitsEnabledAction(formData: FormData) {
     .select("id, disabled_modules")
     .eq("id", session.tenantId)
     .maybeSingle();
-  if (!tenant?.id) redirect("/admin/configuracion?notice=error");
+  if (!tenant?.id) return { ok: false };
 
   const next = withModuleDisabled(
     parseDisabledAccountModules(tenant.disabled_modules),
@@ -81,38 +82,44 @@ export async function updateKitsEnabledAction(formData: FormData) {
     enabled,
   );
 
-  const { error } = await service
+  const { data: updated, error } = await service
     .from("tenants")
     .update({ disabled_modules: next })
-    .eq("id", tenant.id);
-  if (error) redirect("/admin/configuracion?notice=error");
+    .eq("id", tenant.id)
+    .select("id")
+    .maybeSingle();
+  if (error || !updated?.id) return { ok: false };
 
   revalidatePath("/admin", "layout");
   revalidatePath("/admin/configuracion");
   revalidatePath("/admin/kits");
   revalidatePath("/admin/ventas/nueva");
-  redirect("/admin/configuracion?notice=saved");
+  return { ok: true };
 }
 
-export async function updateProductCatalogFieldAction(formData: FormData) {
+export async function updateProductCatalogFieldAction(
+  fieldId: string,
+  enabled: boolean,
+): Promise<{ ok: true } | { ok: false }> {
   const session = await requireAdminSession();
   if (session.jobRole !== "owner" && !session.isPlatformOperator) {
-    redirect("/admin/configuracion?notice=forbidden");
+    return { ok: false };
+  }
+  if (!isProductCatalogFieldId(fieldId)) return { ok: false };
+
+  let service: ReturnType<typeof createSupabaseServiceClient>;
+  try {
+    service = createSupabaseServiceClient();
+  } catch {
+    return { ok: false };
   }
 
-  const fieldId = String(formData.get("field_id") ?? "").trim();
-  if (!isProductCatalogFieldId(fieldId)) {
-    redirect("/admin/configuracion?notice=error");
-  }
-  const enabled = String(formData.get("enabled") ?? "") === "1";
-
-  const supabase = await createSupabaseServerClient();
-  const { data: tenant } = await supabase
+  const { data: tenant } = await service
     .from("tenants")
     .select("storefront_config")
     .eq("id", session.tenantId)
     .maybeSingle();
-  if (!tenant) redirect("/admin/configuracion?notice=error");
+  if (!tenant) return { ok: false };
 
   const current =
     tenant.storefront_config &&
@@ -123,7 +130,7 @@ export async function updateProductCatalogFieldAction(formData: FormData) {
   const fields = parseProductCatalogFields(current);
   fields[fieldId] = enabled;
 
-  const { error } = await supabase
+  const { data: updated, error } = await service
     .from("tenants")
     .update({
       storefront_config: {
@@ -131,28 +138,37 @@ export async function updateProductCatalogFieldAction(formData: FormData) {
         product_fields: fields,
       },
     })
-    .eq("id", session.tenantId);
-  if (error) redirect("/admin/configuracion?notice=error");
+    .eq("id", session.tenantId)
+    .select("id")
+    .maybeSingle();
+  if (error || !updated?.id) return { ok: false };
 
   revalidatePath("/admin/configuracion");
   revalidatePath("/admin/products");
-  redirect("/admin/configuracion?notice=saved");
+  return { ok: true };
 }
 
-export async function updateHigherSalePriceAction(formData: FormData) {
+export async function updateHigherSalePriceAction(
+  enabled: boolean,
+): Promise<{ ok: true } | { ok: false }> {
   const session = await requireAdminSession();
   if (session.jobRole !== "owner" && !session.isPlatformOperator) {
-    redirect("/admin/configuracion?notice=forbidden");
+    return { ok: false };
   }
 
-  const enabled = String(formData.get("enabled") ?? "") === "1";
-  const supabase = await createSupabaseServerClient();
-  const { data: tenant } = await supabase
+  let service: ReturnType<typeof createSupabaseServiceClient>;
+  try {
+    service = createSupabaseServiceClient();
+  } catch {
+    return { ok: false };
+  }
+
+  const { data: tenant } = await service
     .from("tenants")
     .select("storefront_config")
     .eq("id", session.tenantId)
     .maybeSingle();
-  if (!tenant) redirect("/admin/configuracion?notice=error");
+  if (!tenant) return { ok: false };
 
   const current =
     tenant.storefront_config &&
@@ -161,7 +177,7 @@ export async function updateHigherSalePriceAction(formData: FormData) {
       ? (tenant.storefront_config as Record<string, unknown>)
       : {};
 
-  const { error } = await supabase
+  const { data: updated, error } = await service
     .from("tenants")
     .update({
       storefront_config: {
@@ -169,10 +185,12 @@ export async function updateHigherSalePriceAction(formData: FormData) {
         pos_allow_higher_price: enabled,
       },
     })
-    .eq("id", session.tenantId);
-  if (error) redirect("/admin/configuracion?notice=error");
+    .eq("id", session.tenantId)
+    .select("id")
+    .maybeSingle();
+  if (error || !updated?.id) return { ok: false };
 
   revalidatePath("/admin/configuracion");
   revalidatePath("/admin/ventas/nueva");
-  redirect("/admin/configuracion?notice=saved");
+  return { ok: true };
 }
