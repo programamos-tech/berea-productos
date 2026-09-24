@@ -1,6 +1,7 @@
 import Image from "next/image";
 import type { ReactNode } from "react";
 import { AdminThemeToggle } from "@/components/admin/AdminThemeToggle";
+import { LoginPhrases } from "@/components/admin/LoginPhrases";
 import { adminProductBrand, adminSidebarLogoPath } from "@/lib/brand";
 
 /** Chrome de autenticación (login en split) y picker de cuentas (canvas). */
@@ -64,9 +65,7 @@ export function AdminAuthShell({
             className="h-auto w-full max-w-[16rem] object-contain sm:max-w-[20rem] lg:max-w-[22rem]"
             priority
           />
-          <p className="mt-8 max-w-[16rem] text-center text-sm font-medium text-white/95">
-            Factura y lleva tu negocio.
-          </p>
+          <LoginPhrases />
         </aside>
 
         <main className="relative flex min-w-0 flex-1 flex-col justify-center px-6 py-12 sm:px-10 lg:px-16">
