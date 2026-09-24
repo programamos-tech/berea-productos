@@ -8,6 +8,7 @@ import {
 } from "@/components/admin/ReportsAnimatedFigures";
 import { type ReportVista } from "@/lib/admin-report-range";
 import { fetchAdminReportDashboardData } from "@/lib/admin-reports-data";
+import { loadAdminPermissions } from "@/lib/load-admin-permissions";
 import {
   fetchCashArrastreCentsForReportStart,
   fetchCashDayLiveTotals,
@@ -248,6 +249,8 @@ export async function ReportsDashboardBody({
     stockInversionGross,
   } = report;
 
+  const perm = await loadAdminPermissions();
+  const canSeeExpenses = Boolean(perm?.permissions.egresos_ver);
   const isTienda = vista === "tienda";
   const transferenciaShown = transferencia;
   const isSingleDayPeriod = !isTienda && rangeFrom === rangeTo;
@@ -279,7 +282,13 @@ export async function ReportsDashboardBody({
 
       <div
         className={`grid grid-cols-2 gap-x-4 gap-y-4 sm:gap-x-6 sm:gap-y-5 md:grid-cols-3 ${
-          isTienda ? "xl:grid-cols-7" : "xl:grid-cols-6"
+          isTienda
+            ? canSeeExpenses
+              ? "xl:grid-cols-7"
+              : "xl:grid-cols-5"
+            : canSeeExpenses
+              ? "xl:grid-cols-6"
+              : "xl:grid-cols-5"
         }`}
       >
           <Metric
@@ -378,6 +387,7 @@ export async function ReportsDashboardBody({
             </Metric>
           ) : null}
 
+          {canSeeExpenses ? (
           <Metric
             label="Gastos"
             icon={ArrowDownLeft}
@@ -398,8 +408,10 @@ export async function ReportsDashboardBody({
           >
             <StaticCopCents cents={egresosPeriod} />
           </Metric>
+          ) : null}
 
           {isTienda ? (
+            canSeeExpenses ? (
             <Metric
               label="Utilidad"
               icon={gananciaNeta < 0 ? TrendingDown : TrendingUp}
@@ -431,6 +443,7 @@ export async function ReportsDashboardBody({
                 <StaticCopCents cents={Math.abs(gananciaNeta)} />
               </span>
             </Metric>
+            ) : null
           ) : (
             <Metric label="Dinero en caja" icon={Wallet} staggerMs={60}>
               <StaticCopCents

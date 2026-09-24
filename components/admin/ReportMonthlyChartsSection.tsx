@@ -5,6 +5,7 @@ import {
   pulseHighlightYearMonth,
 } from "@/lib/admin-report-monthly-pulse";
 import { fetchAdminReportTops } from "@/lib/admin-report-tops";
+import { loadAdminPermissions } from "@/lib/load-admin-permissions";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { cache, Suspense } from "react";
 
@@ -62,7 +63,10 @@ async function ReportPulseChart({
   rangeTo: string;
 }) {
   try {
-    const pulse = await getMonthlyPulse(todayKey);
+    const [pulse, perm] = await Promise.all([
+      getMonthlyPulse(todayKey),
+      loadAdminPermissions(),
+    ]);
     return (
       <div className="reports-chart-reveal w-full min-w-0 shrink-0">
         <ReportMonthlyResultChart
@@ -72,6 +76,7 @@ async function ReportPulseChart({
             rangeTo,
             todayKey,
           )}
+          showExpenses={Boolean(perm?.permissions.egresos_ver)}
         />
       </div>
     );

@@ -26,6 +26,10 @@ import {
   ProductSizeRows,
   type SizeRowState,
 } from "@/components/admin/ProductSizeRows";
+import {
+  defaultProductCatalogFields,
+  type ProductCatalogFields,
+} from "@/lib/product-catalog-fields";
 
 const filterLabelClass =
   "mb-1.5 block text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500";
@@ -69,6 +73,7 @@ type Props = {
   categories: ProductCategoryOption[];
   initial: Initial;
   currentImageUrl: string | null;
+  catalogFields?: ProductCatalogFields;
 };
 
 export function EditProductHeader({
@@ -170,6 +175,7 @@ export function EditProductForm({
   categories,
   initial,
   currentImageUrl,
+  catalogFields = defaultProductCatalogFields(),
 }: Props) {
   const [name, setName] = useState(initial.name);
   const [reference, setReference] = useState(initial.reference);
@@ -241,6 +247,7 @@ export function EditProductForm({
                   className={inputClass}
                 />
               </div>
+              {catalogFields.brand ? (
               <div>
                 <label htmlFor="ep-brand" className={filterLabelClass}>
                   Marca
@@ -253,6 +260,7 @@ export function EditProductForm({
                   className={inputClass}
                 />
               </div>
+              ) : null}
               <div className="sm:col-span-2">
                 <label htmlFor="ep-desc" className={filterLabelClass}>
                   Descripción
@@ -319,6 +327,7 @@ export function EditProductForm({
               </div>
             </div>
 
+            {catalogFields.category ? (
             <div>
               <label htmlFor="ep-cat" className={filterLabelClass}>
                 Categoría
@@ -338,23 +347,34 @@ export function EditProductForm({
                 ))}
               </select>
             </div>
+            ) : null}
           </div>
         </section>
 
+        {catalogFields.sizes || catalogFields.fragrances ? (
         <section className={`${sectionClass} mt-6`}>
           <h2 className={sectionTitle}>Presentaciones</h2>
           <div className="mt-4 space-y-5">
+            {catalogFields.sizes ? (
             <ProductSizeRows initialRows={initial.sizeRows} />
-            {initial.colors.map((color) => (
-              <input key={color} type="hidden" name="colors" value={color} />
-            ))}
+            ) : null}
+            {catalogFields.colors
+              ? initial.colors.map((color) => (
+                  <input key={color} type="hidden" name="colors" value={color} />
+                ))
+              : null}
+            {catalogFields.fragrances ? (
             <ProductFragranceRows initialRows={initial.fragranceRows} />
+            ) : null}
           </div>
         </section>
+        ) : null}
 
         <section className={`${sectionClass} mt-6`}>
           <h2 className={sectionTitle}>Opciones</h2>
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            {catalogFields.expiration ? (
+            <>
             <label className="flex items-center gap-2 text-sm text-zinc-800 dark:text-zinc-200">
               <input
                 type="checkbox"
@@ -383,6 +403,8 @@ export function EditProductForm({
                 required={false}
               />
             </div>
+            </>
+            ) : null}
             <label className="flex items-center gap-2 text-sm text-zinc-800 dark:text-zinc-200">
               <input
                 type="checkbox"
@@ -473,12 +495,14 @@ export function EditProductForm({
                 {reference.trim() || "—"}
               </dd>
             </div>
+            {catalogFields.category ? (
             <div className="flex justify-between gap-3">
               <dt className="text-zinc-500">Categoría</dt>
               <dd className="max-w-[55%] truncate text-right text-zinc-800 dark:text-zinc-200">
                 {categoryLabel}
               </dd>
             </div>
+            ) : null}
             <div className="flex justify-between gap-3">
               <dt className="text-zinc-500">Stock punto</dt>
               <dd className="tabular-nums text-zinc-800 dark:text-zinc-200">

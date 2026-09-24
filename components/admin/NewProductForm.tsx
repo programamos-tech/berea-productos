@@ -23,6 +23,10 @@ import { PRODUCT_COLOR_OPTIONS, productColorSwatchClass } from "@/lib/product-co
 import type { FragranceRowInitial } from "@/components/admin/ProductFragranceRows";
 import { ProductFragranceRows } from "@/components/admin/ProductFragranceRows";
 import { ProductSizeRows } from "@/components/admin/ProductSizeRows";
+import {
+  defaultProductCatalogFields,
+  type ProductCatalogFields,
+} from "@/lib/product-catalog-fields";
 
 export type ProductCategoryOption = { id: string; name: string };
 
@@ -34,8 +38,10 @@ const summaryInset =
 
 export function NewProductForm({
   categories,
+  catalogFields = defaultProductCatalogFields(),
 }: {
   categories: ProductCategoryOption[];
+  catalogFields?: ProductCatalogFields;
 }) {
   const [name, setName] = useState("");
   const [reference, setReference] = useState("");
@@ -150,6 +156,7 @@ export function NewProductForm({
                 </p>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
+                {catalogFields.brand ? (
                 <div>
                   <label htmlFor="np-brand" className={labelClass}>
                     Marca (opcional)
@@ -163,6 +170,8 @@ export function NewProductForm({
                     className={inputClass}
                   />
                 </div>
+                ) : null}
+                {catalogFields.category ? (
                 <div>
                   <label htmlFor="np-cat" className={labelClass}>
                     Categoría (opcional)
@@ -182,13 +191,18 @@ export function NewProductForm({
                     ))}
                   </select>
                 </div>
+                ) : null}
               </div>
+              {catalogFields.sizes || catalogFields.colors ? (
               <div className="grid gap-4 sm:grid-cols-2">
+                {catalogFields.sizes ? (
                 <div className="sm:col-span-2">
                   <ProductSizeRows
                     initialRows={[{ value: "", unit: "ml" }]}
                   />
                 </div>
+                ) : null}
+                {catalogFields.colors ? (
                 <div className="sm:col-span-2">
                   <label className={labelClass}>
                     Colores (opcional)
@@ -226,13 +240,19 @@ export function NewProductForm({
                     })}
                   </div>
                 </div>
+                ) : null}
               </div>
+              ) : null}
+              {catalogFields.fragrances ? (
               <ProductFragranceRows
                 initialRows={
                   [{ label: "", existingImagePath: null, previewUrl: null }] satisfies FragranceRowInitial[]
                 }
               />
+              ) : null}
               <div className="grid gap-4 sm:grid-cols-2">
+                {catalogFields.expiration ? (
+                <>
                 <label className="flex items-center gap-2 text-sm text-zinc-800 dark:text-zinc-200">
                   <input
                     type="checkbox"
@@ -259,6 +279,8 @@ export function NewProductForm({
                     required={false}
                   />
                 </div>
+                </>
+                ) : null}
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <label className="flex items-center gap-2 text-sm text-zinc-800 dark:text-zinc-200">
@@ -394,12 +416,14 @@ export function NewProductForm({
                     {reference.trim() || "—"}
                   </dd>
                 </div>
+                {catalogFields.category ? (
                 <div className="flex justify-between gap-2">
                   <dt className="text-zinc-500 dark:text-zinc-400">Categoría</dt>
                   <dd className="max-w-[55%] truncate text-right text-zinc-800 dark:text-zinc-100">
                     {categoryLabel}
                   </dd>
                 </div>
+                ) : null}
                 <div className="flex justify-between gap-2">
                   <dt className="text-zinc-500 dark:text-zinc-400">Stock sucursal</dt>
                   <dd className="tabular-nums text-zinc-900 dark:text-zinc-100">

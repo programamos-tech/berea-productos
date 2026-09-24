@@ -1,5 +1,7 @@
 import { InvoiceLayoutSettings } from "@/components/admin/InvoiceLayoutSettings";
 import { KitsModuleSettings } from "@/components/admin/KitsModuleSettings";
+import { ProductCatalogFieldSettings } from "@/components/admin/ProductCatalogFieldSettings";
+import { parseProductCatalogFields } from "@/lib/product-catalog-fields";
 import {
   adminPageSubtitleClass,
   adminPageTitleClass,
@@ -29,6 +31,7 @@ export default async function AdminConfiguracionPage({
     .eq("id", perm.tenantId)
     .maybeSingle();
   const invoiceLayout = parseInvoiceLayout(tenant?.storefront_config);
+  const productFields = parseProductCatalogFields(tenant?.storefront_config);
 
   return (
     <div className="flex flex-col gap-4 lg:gap-5">
@@ -68,18 +71,26 @@ export default async function AdminConfiguracionPage({
         <h2 className="text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
           Módulos
         </h2>
-        <p className="mt-1 mb-5 text-sm text-zinc-500 dark:text-zinc-400">
-          Lo que apagues deja de verse en el menú y en las ventas de esta cuenta.
-        </p>
+        <div className="mt-4">
         <KitsModuleSettings
           enabled={!perm.disabledModules.includes("kits")}
           canEdit={canEdit}
         />
+        </div>
         {!canEdit ? (
           <p className="mt-4 text-xs text-zinc-500">
             Solo el propietario puede encender o apagar Kits.
           </p>
         ) : null}
+      </section>
+
+      <section className={`${adminPanelClass} p-4 sm:p-5`}>
+        <h2 className="text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
+          Producto
+        </h2>
+        <div className="mt-4">
+          <ProductCatalogFieldSettings fields={productFields} canEdit={canEdit} />
+        </div>
       </section>
 
       <section className={`${adminPanelClass} p-4 sm:p-5`}>

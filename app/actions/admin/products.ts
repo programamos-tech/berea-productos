@@ -11,6 +11,11 @@ import {
   parseSizeOptionsFromFormData,
 } from "@/lib/product-size-options";
 import { SALE_VAT_PERCENT } from "@/lib/product-vat-price";
+import {
+  omitDisabledProductCatalogFields,
+  parseProductCatalogFields,
+} from "@/lib/product-catalog-fields";
+import { loadAdminPermissions } from "@/lib/load-admin-permissions";
 import { assertActionPermission } from "@/lib/require-admin-permission";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { revalidateStoreCatalogTags } from "@/lib/revalidate-store-cache";
@@ -20,6 +25,18 @@ import { randomUUID } from "node:crypto";
 
 function revalidateStoreProductCache() {
   revalidateStoreCatalogTags();
+}
+
+async function loadCatalogFieldsForActor() {
+  const perm = await loadAdminPermissions();
+  if (!perm) return parseProductCatalogFields(null);
+  const supabase = await createSupabaseServerClient();
+  const { data } = await supabase
+    .from("tenants")
+    .select("storefront_config")
+    .eq("id", perm.tenantId)
+    .maybeSingle();
+  return parseProductCatalogFields(data?.storefront_config);
 }
 
 function extFromFilename(name: string) {
@@ -384,6 +401,7 @@ export async function createProduct(formData: FormData) {
     is_published: isPublished,
   };
 
+  const catalogFields = await loadCatalogFieldsForActor();
   const payloads: Record<string, unknown>[] = [
     extendedRow,
     extendedRowNoSizeOptions,
@@ -391,7 +409,7 @@ export async function createProduct(formData: FormData) {
     baseRowNoSizeOptions,
     legacyStockRow,
     legacyStockRowNoCategory,
-  ];
+  ].map((payload) => omitDisabledProductCatalogFields(payload, catalogFields));
 
   let row: { id: string } | null = null;
   let error: { message?: string; code?: string } | null = null;
@@ -504,14 +522,17 @@ export async function updateProduct(productId: string, formData: FormData) {
     redirect(`/admin/products/${productId}/edit?error=reference`);
   }
 
-  const fragrance_option_images = await buildFragranceOptionImagesFromForm(
-    supabase,
-    productId,
-    formData,
-    fragrance_options,
-  );
+  const catalogFields = await loadCatalogFieldsForActor();
+  const fragrance_option_images = catalogFields.fragrances
+    ? await buildFragranceOptionImagesFromForm(
+        supabase,
+        productId,
+        formData,
+        fragrance_options,
+      )
+    : {};
 
-  const baseUpdate = {
+  const baseUpdate = omitDisabledProductCatalogFields({
     name,
     description,
     price_cents,
@@ -529,15 +550,15 @@ export async function updateProduct(productId: string, formData: FormData) {
     colors,
     fragrance_options,
     fragrance_option_images,
-  };
+  }, catalogFields);
 
-  const extendedUpdate = {
+  const extendedUpdate = omitDisabledProductCatalogFields({
     ...baseUpdate,
     reference,
     brand,
     cost_cents,
     cost_gross_cents,
-  };
+  }, catalogFields);
 
   let { error } = await supabase
     .from("products")

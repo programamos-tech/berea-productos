@@ -12,6 +12,7 @@ import {
   SIZE_UNITS,
 } from "@/lib/product-size-options";
 import { storagePublicObjectUrl } from "@/lib/storage-public-url";
+import { parseProductCatalogFields } from "@/lib/product-catalog-fields";
 import { requireAdminPermission } from "@/lib/require-admin-permission";
 import { SALE_VAT_PERCENT } from "@/lib/product-vat-price";
 import { fetchCurrentBranchInventoryMap } from "@/lib/branch-inventory";
@@ -93,19 +94,24 @@ function shortSku(id: string) {
 }
 
 export default async function EditProductPage({ params, searchParams }: Props) {
-  await requireAdminPermission("productos_editar");
+  const perm = await requireAdminPermission("productos_editar");
   const { id } = await params;
   const sp = await searchParams;
   const error = typeof sp.error === "string" ? sp.error : undefined;
 
   const supabase = await createSupabaseServerClient();
-  const [{ data: product }, { data: categories }] = await Promise.all([
+  const [{ data: product }, { data: categories }, { data: tenant }] = await Promise.all([
     supabase.from("products").select("*").eq("id", id).maybeSingle(),
     supabase
       .from("categories")
       .select("id,name")
       .order("sort_order", { ascending: true })
       .order("name", { ascending: true }),
+    supabase
+      .from("tenants")
+      .select("storefront_config")
+      .eq("id", perm.tenantId)
+      .maybeSingle(),
   ]);
 
   if (!product) notFound();
@@ -147,6 +153,7 @@ export default async function EditProductPage({ params, searchParams }: Props) {
         formAction={boundUpdate}
         categories={cats}
         currentImageUrl={img}
+        catalogFields={parseProductCatalogFields(tenant?.storefront_config)}
         initial={{
           name: p.name,
           reference: p.reference ?? "",

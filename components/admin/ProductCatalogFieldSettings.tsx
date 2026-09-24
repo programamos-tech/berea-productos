@@ -1,13 +1,20 @@
 "use client";
 
 import { useFormStatus } from "react-dom";
-import { updateKitsEnabledAction } from "@/app/actions/admin/platform-settings";
+import { updateProductCatalogFieldAction } from "@/app/actions/admin/platform-settings";
+import {
+  PRODUCT_CATALOG_FIELDS,
+  type ProductCatalogFieldId,
+  type ProductCatalogFields,
+} from "@/lib/product-catalog-fields";
 
-function KitsSwitch({
+function FieldSwitch({
   enabled,
+  label,
   canEdit,
 }: {
   enabled: boolean;
+  label: string;
   canEdit: boolean;
 }) {
   const { pending } = useFormStatus();
@@ -16,7 +23,7 @@ function KitsSwitch({
       type="submit"
       role="switch"
       aria-checked={enabled}
-      aria-label={`Kits: ${enabled ? "encendido" : "apagado"}`}
+      aria-label={`${label}: ${enabled ? "encendido" : "apagado"}`}
       disabled={!canEdit || pending}
       className={[
         "relative inline-flex h-7 w-12 shrink-0 items-center rounded-full border transition",
@@ -36,23 +43,51 @@ function KitsSwitch({
   );
 }
 
-export function KitsModuleSettings({
+export function ProductCatalogFieldSettings({
+  fields,
+  canEdit,
+}: {
+  fields: ProductCatalogFields;
+  canEdit: boolean;
+}) {
+  return (
+    <ul className="divide-y divide-zinc-100 dark:divide-zinc-800">
+      {PRODUCT_CATALOG_FIELDS.map((field) => (
+        <li key={field.id} className="py-3 first:pt-0 last:pb-0">
+          <CatalogFieldRow
+            id={field.id}
+            label={field.label}
+            enabled={fields[field.id]}
+            canEdit={canEdit}
+          />
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function CatalogFieldRow({
+  id,
+  label,
   enabled,
   canEdit,
 }: {
+  id: ProductCatalogFieldId;
+  label: string;
   enabled: boolean;
   canEdit: boolean;
 }) {
   return (
     <form
-      action={updateKitsEnabledAction}
+      action={updateProductCatalogFieldAction}
       className="flex items-center justify-between gap-4"
     >
+      <input type="hidden" name="field_id" value={id} />
       <input type="hidden" name="enabled" value={enabled ? "0" : "1"} />
       <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
-        Kits
+        {label}
       </p>
-      <KitsSwitch enabled={enabled} canEdit={canEdit} />
+      <FieldSwitch enabled={enabled} label={label} canEdit={canEdit} />
     </form>
   );
 }

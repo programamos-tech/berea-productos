@@ -432,20 +432,20 @@ export default async function AdminProductsPage({
                 <div className="hidden min-w-0 overflow-x-auto lg:block">
                   <table className="w-full min-w-[960px] table-fixed text-left text-sm">
                     <colgroup>
-                      <col className="w-[12%]" />
-                      <col className="w-[25%]" />
-                      <col className="w-[17%]" />
-                      <col className="w-[8%]" />
-                      <col className="w-[13%]" />
-                      <col className="w-[12%]" />
-                      <col className="w-[13%]" />
+                      <col className="w-[5.5rem]" />
+                      <col />
+                      <col className="w-[16%]" />
+                      <col className="w-[6.5rem]" />
+                      <col className="w-[9.5rem]" />
+                      <col className="w-[8.5rem]" />
+                      <col className="w-[7.5rem]" />
                     </colgroup>
                     <thead>
                       <tr className="border-b border-zinc-200/70 dark:border-zinc-800">
-                        <th className={thClass}>Referencia</th>
+                        <th className={`${thClass} w-[5.5rem]`}>Referencia</th>
                         <th className={thClass}>Producto</th>
                         <th className={thClass}>Catálogo</th>
-                        <th className={`${thClass} text-right`}>Stock</th>
+                        <th className={`${thClass} w-[6.5rem] text-right`}>Stock</th>
                         <th className={thClass}>Estado del stock</th>
                         <th className={`${thClass} text-right`}>Precio de venta</th>
                         <th className={`${thClass} pr-2 text-right`}>Acciones</th>
@@ -458,7 +458,7 @@ export default async function AdminProductsPage({
                           className="border-b border-zinc-100/80 last:border-0 transition hover:bg-zinc-50/50 dark:border-zinc-800/80 dark:hover:bg-zinc-900/40"
                         >
                           <td
-                            className={`${tdClass} font-mono text-xs tabular-nums text-zinc-600 dark:text-zinc-400`}
+                            className={`${tdClass} w-[5.5rem] whitespace-nowrap font-mono text-xs tabular-nums text-zinc-600 dark:text-zinc-400`}
                           >
                             {p.code}
                           </td>
@@ -474,7 +474,7 @@ export default async function AdminProductsPage({
                             {p.categoryName}
                           </td>
                           <td
-                            className={`${tdClass} text-right tabular-nums font-medium text-zinc-800 dark:text-zinc-200`}
+                            className={`${tdClass} text-right text-base font-semibold tabular-nums text-zinc-900 dark:text-zinc-50`}
                           >
                             <StaticInteger value={p.stock_local} />
                           </td>

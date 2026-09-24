@@ -37,25 +37,31 @@ function smoothLine(pts: Array<{ x: number; y: number }>): string {
 export function ReportMonthlyResultChart({
   months,
   highlightYearMonth,
+  showExpenses = true,
 }: {
   months: MonthlyPulsePoint[];
   highlightYearMonth?: string | null;
+  showExpenses?: boolean;
 }) {
   if (months.length === 0) {
     return (
       <div className="flex min-h-[12rem] w-full flex-col justify-center">
         <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-          Ingresos vs egresos
+          {showExpenses ? "Ingresos vs egresos" : "Ingresos"}
         </h2>
         <p className="mt-2 text-sm text-zinc-500">
-          Cuando haya ventas, verás si cada mes entra más de lo que sale.
+          {showExpenses
+            ? "Cuando haya ventas, verás si cada mes entra más de lo que sale."
+            : "Cuando haya ventas, verás cómo entran mes a mes."}
         </p>
       </div>
     );
   }
 
   const maxVal = Math.max(
-    ...months.map((m) => Math.max(m.ingresosConIva, m.egresos)),
+    ...months.map((m) =>
+      showExpenses ? Math.max(m.ingresosConIva, m.egresos) : m.ingresosConIva,
+    ),
     1,
   );
   const yMax = maxVal * 1.08;
@@ -100,10 +106,12 @@ export function ReportMonthlyResultChart({
     <div className="flex w-full min-w-0 flex-col">
       <div className="mb-2 min-w-0 shrink-0">
         <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-          Ingresos vs egresos
+          {showExpenses ? "Ingresos vs egresos" : "Ingresos"}
         </h2>
         <p className="mt-0.5 text-[11px] leading-snug text-zinc-500">
-          Lo que entra a la caja de ventas vs lo que sale en gastos
+          {showExpenses
+            ? "Lo que entra a la caja de ventas vs lo que sale en gastos"
+            : "Lo que entra a la caja de ventas"}
         </p>
       </div>
 
@@ -159,6 +167,7 @@ export function ReportMonthlyResultChart({
         })}
 
         <path d={areaPath} fill={`url(#${fillId})`} />
+        {showExpenses ? (
         <path
           d={egresosPath}
           fill="none"
@@ -168,6 +177,7 @@ export function ReportMonthlyResultChart({
           strokeLinecap="round"
           strokeLinejoin="round"
         />
+        ) : null}
         <path
           d={ingresosPath}
           fill="none"
@@ -184,7 +194,11 @@ export function ReportMonthlyResultChart({
             <g key={m.yearMonth}>
               <a
                 href={monthHref(m.yearMonth, m.isCurrent)}
-                aria-label={`${m.label}: ingresos ${formatCop(m.ingresosConIva)}, egresos ${formatCop(m.egresos)}`}
+                aria-label={
+                  showExpenses
+                    ? `${m.label}: ingresos ${formatCop(m.ingresosConIva)}, egresos ${formatCop(m.egresos)}`
+                    : `${m.label}: ingresos ${formatCop(m.ingresosConIva)}`
+                }
               >
                 {selected ? (
                   <circle
@@ -204,6 +218,7 @@ export function ReportMonthlyResultChart({
                   strokeWidth={1.75}
                   className="dark:fill-zinc-950"
                 />
+                {showExpenses ? (
                 <circle
                   cx={xAt(i)}
                   cy={yAt(m.egresos)}
@@ -215,8 +230,11 @@ export function ReportMonthlyResultChart({
                   strokeWidth={1.5}
                   className="dark:fill-zinc-950"
                 />
+                ) : null}
                 <title>
-                  {`${m.label}\nIngresos ${formatCop(m.ingresosConIva)}\nEgresos ${formatCop(m.egresos)}`}
+                  {showExpenses
+                    ? `${m.label}\nIngresos ${formatCop(m.ingresosConIva)}\nEgresos ${formatCop(m.egresos)}`
+                    : `${m.label}\nIngresos ${formatCop(m.ingresosConIva)}`}
                 </title>
               </a>
               <text
@@ -248,6 +266,7 @@ export function ReportMonthlyResultChart({
           />
           Ingresos
         </span>
+        {showExpenses ? (
         <span className="inline-flex items-center gap-1.5">
           <span
             className="inline-block h-0 w-4 border-t border-dashed"
@@ -256,6 +275,7 @@ export function ReportMonthlyResultChart({
           />
           Egresos
         </span>
+        ) : null}
       </div>
 
       <nav className="sr-only" aria-label="Abrir un mes">

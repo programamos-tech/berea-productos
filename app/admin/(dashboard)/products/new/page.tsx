@@ -1,6 +1,7 @@
 import { NewProductForm, NewProductHeader } from "@/components/admin/NewProductForm";
 import { AdminNewPageShell } from "@/components/admin/AdminNewPageShell";
 import { adminCreateFailedMessage } from "@/lib/admin-create-failed-messages";
+import { parseProductCatalogFields } from "@/lib/product-catalog-fields";
 import { requireAdminPermission } from "@/lib/require-admin-permission";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -9,7 +10,7 @@ export default async function NewProductPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  await requireAdminPermission("productos_crear");
+  const perm = await requireAdminPermission("productos_crear");
   const sp = await searchParams;
   const error = typeof sp.error === "string" ? sp.error : undefined;
 
@@ -21,6 +22,12 @@ export default async function NewProductPage({
     .order("name", { ascending: true });
 
   const cats = categories ?? [];
+  const { data: tenant } = await supabase
+    .from("tenants")
+    .select("storefront_config")
+    .eq("id", perm.tenantId)
+    .maybeSingle();
+  const catalogFields = parseProductCatalogFields(tenant?.storefront_config);
 
   return (
     <AdminNewPageShell>
@@ -40,7 +47,7 @@ export default async function NewProductPage({
         </p>
       ) : null}
 
-      <NewProductForm categories={cats} />
+      <NewProductForm categories={cats} catalogFields={catalogFields} />
     </AdminNewPageShell>
   );
 }
