@@ -1,7 +1,6 @@
 import Image from "next/image";
 import type { ReactNode } from "react";
 import { AdminThemeToggle } from "@/components/admin/AdminThemeToggle";
-import { ADMIN_BRAND_LOGO_ON_SIDEBAR_CLASS } from "@/lib/admin-theme";
 import { adminProductBrand, adminSidebarLogoPath } from "@/lib/brand";
 
 /** Chrome de autenticación (login en split) y picker de cuentas (canvas). */
@@ -65,27 +64,22 @@ export function AdminAuthShell({
       </div>
 
       <div className="relative z-10 flex min-h-dvh flex-col lg:flex-row">
-        <aside className="relative flex shrink-0 flex-col overflow-hidden border-b border-zinc-200/80 bg-zinc-900 text-zinc-100 lg:min-h-dvh lg:w-[42%] lg:max-w-xl lg:flex-none lg:border-b-0 lg:border-r lg:border-r-zinc-800">
-          <div
-            aria-hidden
-            className="pointer-events-none absolute -left-24 top-1/4 size-[28rem] rounded-full bg-[var(--admin-coral)]/25 blur-3xl"
-          />
-          <div
-            aria-hidden
-            className="pointer-events-none absolute -bottom-32 right-0 size-[22rem] rounded-full bg-zinc-600/40 blur-3xl"
-          />
-          <div className="relative flex flex-col justify-center px-8 py-10 sm:px-12 lg:flex-1 lg:py-20 lg:pl-14 lg:pr-10 xl:pl-20">
+        <aside className="relative flex shrink-0 flex-col border-b border-zinc-200/80 bg-[#f7f7f5] text-zinc-900 lg:min-h-dvh lg:w-[42%] lg:max-w-xl lg:flex-none lg:border-b-0 lg:border-r">
+          <div className="flex flex-col justify-center px-8 py-12 sm:px-12 lg:flex-1 lg:py-20 lg:pl-14 lg:pr-10 xl:pl-20">
             <div className="mx-auto w-full max-w-sm lg:mx-0">
               <Image
                 src={adminSidebarLogoPath}
                 alt={adminProductBrand}
                 width={1200}
                 height={662}
-                className={`h-auto w-full max-w-[11rem] object-contain object-left brightness-0 invert sm:max-w-[13rem] ${ADMIN_BRAND_LOGO_ON_SIDEBAR_CLASS}`}
+                className="h-auto w-full max-w-[12.5rem] object-contain object-left sm:max-w-[15rem]"
                 priority
               />
-              <p className="mt-4 text-[10px] font-medium tracking-wide text-zinc-400 sm:whitespace-nowrap sm:text-[11px]">
-                Gestiona tu tienda de productos
+              <p className="mt-8 text-sm font-medium text-zinc-800">
+                Software para tu negocio.
+              </p>
+              <p className="mt-1.5 text-sm text-zinc-500">
+                Nuevas mejoras, pronto.
               </p>
             </div>
           </div>
