@@ -1,28 +1,23 @@
 import type { ReactNode } from "react";
-import { signOutAdmin } from "@/app/actions/admin/auth";
-import { AdminAuthShell } from "@/components/admin/AdminAuthShell";
+import { redirect } from "next/navigation";
+import { OperatorBackofficeShell } from "@/components/admin/OperatorBackofficeShell";
+import { loadAdminPermissions } from "@/lib/load-admin-permissions";
 
-export default function AdminCuentasLayout({
+export default async function AdminCuentasLayout({
   children,
 }: {
   children: ReactNode;
 }) {
+  const perm = await loadAdminPermissions();
+  if (!perm) redirect("/admin/login");
+  if (!perm.isPlatformOperator) redirect("/admin");
+
   return (
-    <AdminAuthShell
-      layout="canvas"
-      contentWidthClassName="max-w-6xl"
-      headerActions={
-        <form action={signOutAdmin}>
-          <button
-            type="submit"
-            className="rounded-lg px-3 py-2 text-sm font-medium text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-800 dark:hover:bg-zinc-900 dark:hover:text-zinc-200"
-          >
-            Cerrar sesión
-          </button>
-        </form>
-      }
+    <OperatorBackofficeShell
+      displayName={perm.displayName}
+      email={perm.email}
     >
       {children}
-    </AdminAuthShell>
+    </OperatorBackofficeShell>
   );
 }
