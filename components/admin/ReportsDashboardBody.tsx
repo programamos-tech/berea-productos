@@ -251,6 +251,7 @@ export async function ReportsDashboardBody({
 
   const perm = await loadAdminPermissions();
   const canSeeExpenses = Boolean(perm?.permissions.egresos_ver);
+  const canSeeCash = Boolean(perm?.permissions.caja_ver);
   const isTienda = vista === "tienda";
   const transferenciaShown = transferencia;
   const isSingleDayPeriod = !isTienda && rangeFrom === rangeTo;
@@ -269,7 +270,7 @@ export async function ReportsDashboardBody({
       key={`reports-kpis-${vista}-${rangeFrom}-${rangeTo}`}
       className="min-w-0 max-w-full shrink-0 overflow-x-clip"
     >
-      {isSingleDayPeriod ? (
+      {isSingleDayPeriod && canSeeCash ? (
         <div className="mb-4 flex flex-wrap items-center gap-2">
           <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
             Cierre de caja
@@ -286,9 +287,11 @@ export async function ReportsDashboardBody({
             ? canSeeExpenses
               ? "xl:grid-cols-7"
               : "xl:grid-cols-5"
-            : canSeeExpenses
+            : canSeeExpenses && canSeeCash
               ? "xl:grid-cols-6"
-              : "xl:grid-cols-5"
+              : canSeeExpenses || canSeeCash
+                ? "xl:grid-cols-5"
+                : "xl:grid-cols-4"
         }`}
       >
           <Metric
@@ -444,7 +447,7 @@ export async function ReportsDashboardBody({
               </span>
             </Metric>
             ) : null
-          ) : (
+          ) : canSeeCash ? (
             <Metric label="Dinero en caja" icon={Wallet} staggerMs={60}>
               <StaticCopCents
                 cents={cajaHoyCents}
@@ -455,7 +458,7 @@ export async function ReportsDashboardBody({
                 }
               />
             </Metric>
-          )}
+          ) : null}
 
           {isTienda ? (
             <Metric
