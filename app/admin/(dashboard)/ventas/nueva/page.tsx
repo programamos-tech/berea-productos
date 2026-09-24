@@ -1,4 +1,7 @@
-import { accountAllowsCredit } from "@/lib/admin-account-modules";
+import {
+  accountAllowsCredit,
+  accountAllowsKits,
+} from "@/lib/admin-account-modules";
 import { AdminNewPageShell } from "@/components/admin/AdminNewPageShell";
 import { NuevaFacturaPageClient } from "@/components/admin/NuevaFacturaPageClient";
 import { loadQuotationEditDraft } from "@/lib/load-quotation-edit-draft";
@@ -20,6 +23,7 @@ type Props = {
 export default async function AdminNuevaFacturaPage({ searchParams }: Props) {
   const perm = await requireAdminPermission("ventas_crear");
   const canUseCredit = accountAllowsCredit(perm.permissions);
+  const canUseKits = accountAllowsKits(perm.permissions);
   const sp = await searchParams;
   const initialError = typeof sp.error === "string" ? sp.error : undefined;
   const quotationId =
@@ -47,6 +51,7 @@ export default async function AdminNuevaFacturaPage({ searchParams }: Props) {
           initialError={initialError}
           editQuotation={loaded.draft}
           canUseCredit={canUseCredit}
+          canUseKits={canUseKits}
         />
       </AdminNewPageShell>
     );
@@ -66,6 +71,7 @@ export default async function AdminNuevaFacturaPage({ searchParams }: Props) {
         initialError={initialError}
         initialCustomerId={initialCustomerId}
         canUseCredit={canUseCredit}
+        canUseKits={canUseKits}
       />
     </AdminNewPageShell>
   );

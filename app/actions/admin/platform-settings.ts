@@ -2,9 +2,14 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import {
+  parseDisabledAccountModules,
+  withModuleDisabled,
+} from "@/lib/admin-account-modules";
 import { parseInvoiceLayout } from "@/lib/invoice-layout";
 import { requireAdminSession } from "@/lib/require-admin-permission";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseServiceClient } from "@/lib/supabase/service";
 
 export async function updateInvoiceLayoutAction(formData: FormData) {
   const session = await requireAdminSession();
@@ -42,5 +47,45 @@ export async function updateInvoiceLayoutAction(formData: FormData) {
   revalidatePath("/admin", "layout");
   revalidatePath("/admin/configuracion");
   revalidatePath("/admin/orders");
+  redirect("/admin/configuracion?notice=saved");
+}
+
+export async function updateKitsEnabledAction(formData: FormData) {
+  const session = await requireAdminSession();
+  if (session.jobRole !== "owner" && !session.isPlatformOperator) {
+    redirect("/admin/configuracion?notice=forbidden");
+  }
+
+  const enabled = String(formData.get("enabled") ?? "") === "1";
+  let service: ReturnType<typeof createSupabaseServiceClient>;
+  try {
+    service = createSupabaseServiceClient();
+  } catch {
+    redirect("/admin/configuracion?notice=error");
+  }
+
+  const { data: tenant } = await service
+    .from("tenants")
+    .select("id, disabled_modules")
+    .eq("id", session.tenantId)
+    .maybeSingle();
+  if (!tenant?.id) redirect("/admin/configuracion?notice=error");
+
+  const next = withModuleDisabled(
+    parseDisabledAccountModules(tenant.disabled_modules),
+    "kits",
+    enabled,
+  );
+
+  const { error } = await service
+    .from("tenants")
+    .update({ disabled_modules: next })
+    .eq("id", tenant.id);
+  if (error) redirect("/admin/configuracion?notice=error");
+
+  revalidatePath("/admin", "layout");
+  revalidatePath("/admin/configuracion");
+  revalidatePath("/admin/kits");
+  revalidatePath("/admin/ventas/nueva");
   redirect("/admin/configuracion?notice=saved");
 }

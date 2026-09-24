@@ -1,6 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
+import { accountAllowsKits } from "@/lib/admin-account-modules";
 import { requireAdminApiSession } from "@/lib/admin-api";
+import { loadAdminPermissions } from "@/lib/load-admin-permissions";
 import { fetchKitsByIdsWithItems } from "@/lib/load-product-kits";
 import {
   kitIsAvailable,
@@ -41,6 +43,11 @@ async function searchKitIds(supabase: SupabaseClient, raw: string): Promise<stri
 export async function GET(request: Request) {
   const gate = await requireAdminApiSession();
   if (!gate.ok) return gate.response;
+
+  const perm = await loadAdminPermissions();
+  if (!perm || !accountAllowsKits(perm.permissions)) {
+    return NextResponse.json({ kits: [] });
+  }
 
   const { searchParams } = new URL(request.url);
   const raw = searchParams.get("q")?.trim() ?? "";

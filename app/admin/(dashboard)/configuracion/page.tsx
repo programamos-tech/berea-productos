@@ -1,4 +1,5 @@
 import { InvoiceLayoutSettings } from "@/components/admin/InvoiceLayoutSettings";
+import { KitsModuleSettings } from "@/components/admin/KitsModuleSettings";
 import {
   adminPageSubtitleClass,
   adminPageTitleClass,
@@ -43,7 +44,7 @@ export default async function AdminConfiguracionPage({
           className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-950 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-100"
           role="status"
         >
-          El diseño de las facturas quedó actualizado.
+          La configuración quedó actualizada.
         </div>
       ) : null}
       {notice === "forbidden" ? (
@@ -59,9 +60,27 @@ export default async function AdminConfiguracionPage({
           className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-950 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-100"
           role="status"
         >
-          No pudimos guardar el diseño de las facturas.
+          No pudimos guardar la configuración.
         </div>
       ) : null}
+
+      <section className={`${adminPanelClass} p-4 sm:p-5`}>
+        <h2 className="text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
+          Módulos
+        </h2>
+        <p className="mt-1 mb-5 text-sm text-zinc-500 dark:text-zinc-400">
+          Lo que apagues deja de verse en el menú y en las ventas de esta cuenta.
+        </p>
+        <KitsModuleSettings
+          enabled={!perm.disabledModules.includes("kits")}
+          canEdit={canEdit}
+        />
+        {!canEdit ? (
+          <p className="mt-4 text-xs text-zinc-500">
+            Solo el propietario puede encender o apagar Kits.
+          </p>
+        ) : null}
+      </section>
 
       <section className={`${adminPanelClass} p-4 sm:p-5`}>
         <h2 className="text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500">

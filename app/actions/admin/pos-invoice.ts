@@ -1,6 +1,9 @@
 "use server";
 
-import { accountAllowsCredit } from "@/lib/admin-account-modules";
+import {
+  accountAllowsCredit,
+  accountAllowsKits,
+} from "@/lib/admin-account-modules";
 import { logAdminActivity } from "@/lib/admin-activity-log";
 import {
   activityStockTraceToMetadata,
@@ -223,6 +226,9 @@ export async function createPosInvoiceAction(formData: FormData) {
     .filter((r) => r.kitId && r.quantity > 0);
 
   if (lines.length === 0 && kitLines.length === 0) redirectFail("validation");
+  if (kitLines.length > 0 && !accountAllowsKits(perm.permissions)) {
+    redirectFail("kits_forbidden");
+  }
 
   for (const l of lines) {
     if (l.discountPercent != null) {

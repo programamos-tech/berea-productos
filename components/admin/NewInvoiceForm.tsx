@@ -341,6 +341,8 @@ function errorMessage(code: string | undefined): string | null {
       return "Las facturas a crédito requieren un cliente nominado. No uses Cliente Final.";
     case "credit_full":
       return "Si el abono cubre el total, usa Efectivo, Transferencia o Mixto.";
+    case "kits_forbidden":
+      return "Kits está apagado en Configuración. Quitá los combos de la factura.";
     case "db":
       return adminCreateFailedMessage("sale");
     default:
@@ -388,11 +390,13 @@ export function NewInvoiceForm({
   initialCustomerId,
   editQuotation,
   canUseCredit = true,
+  canUseKits = true,
 }: {
   initialError?: string;
   initialCustomerId?: string;
   editQuotation?: QuotationEditDraft;
   canUseCredit?: boolean;
+  canUseKits?: boolean;
 }) {
   const editingQuotation = Boolean(editQuotation);
   const quickNameInputRef = useRef<HTMLInputElement>(null);
@@ -789,6 +793,11 @@ export function NewInvoiceForm({
   }, [debouncedProductQ]);
 
   useEffect(() => {
+    if (!canUseKits) {
+      setKitHits([]);
+      setKitLoading(false);
+      return;
+    }
     const q = debouncedKitQ.trim();
     if (q.length < 1) {
       setKitHits([]);
@@ -822,7 +831,7 @@ export function NewInvoiceForm({
       ac.abort();
       cleanup();
     };
-  }, [debouncedKitQ]);
+  }, [debouncedKitQ, canUseKits]);
 
   useEffect(() => {
     const ac = new AbortController();
@@ -1205,7 +1214,9 @@ export function NewInvoiceForm({
           <section
             className={`${sectionClass} order-2 xl:order-none xl:col-start-1 xl:row-start-1`}
           >
-            <h2 className={sectionTitle}>Productos y kits</h2>
+            <h2 className={sectionTitle}>
+              {canUseKits ? "Productos y kits" : "Productos"}
+            </h2>
             <div className="relative mt-3">
               <input
                 value={productQuery}
@@ -1251,6 +1262,7 @@ export function NewInvoiceForm({
                 </div>
               ) : null}
             </div>
+            {canUseKits ? (
             <div className="relative mt-4">
               <input
                 value={kitQuery}
@@ -1297,6 +1309,7 @@ export function NewInvoiceForm({
                 </div>
               ) : null}
             </div>
+            ) : null}
           </section>
 
           <section
@@ -1305,7 +1318,9 @@ export function NewInvoiceForm({
             <h2 className={sectionTitle}>Ítems seleccionados</h2>
             {lines.length === 0 && kitLines.length === 0 ? (
               <p className="mt-3 text-sm text-zinc-500 dark:text-zinc-400">
-                Agrega productos o kits desde la búsqueda.
+                {canUseKits
+                  ? "Agrega productos o kits desde la búsqueda."
+                  : "Agrega productos desde la búsqueda."}
               </p>
             ) : (
               <>

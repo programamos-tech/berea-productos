@@ -182,6 +182,10 @@ export function accountAllowsCredit(permissions: PermissionMap): boolean {
   return Boolean(permissions.creditos_ver || permissions.creditos_abonar);
 }
 
+export function accountAllowsKits(permissions: PermissionMap): boolean {
+  return Boolean(permissions.kits_ver || permissions.kits_gestionar);
+}
+
 export function withModuleDisabled(
   current: readonly AccountModuleId[],
   moduleId: AccountModuleId,

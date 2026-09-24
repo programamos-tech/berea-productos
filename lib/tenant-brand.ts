@@ -131,6 +131,7 @@ const ACCOUNT_LOGO_BY_SLUG: Record<string, string> = {
   "estacion-iphone": "/logo-estacion-iphone.png",
   "berea-tech": "/logo-berea-house-mark.png",
   "toro-technology": "/logo-toro-technology.jpg",
+  "audio-mundial": "/logo-audio-mundial.png",
 };
 
 export type AdminAccountChrome = {
@@ -151,9 +152,13 @@ const ACCOUNT_PLATE_BY_SLUG: Record<string, string> = {
   "estacion-iphone": "#111111",
   "berea-tech": "#0F766E",
   "toro-technology": "#111111",
+  "audio-mundial": "#ffffff",
 };
 
-const ACCOUNT_FULL_COLOR_LOGO = new Set(["toro-technology"]);
+const ACCOUNT_FULL_COLOR_LOGO = new Set([
+  "toro-technology",
+  "audio-mundial",
+]);
 
 export function adminLogoPlateColor(
   slug: string,
