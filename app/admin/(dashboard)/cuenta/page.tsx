@@ -3,9 +3,9 @@ import { CatalogPublicLink } from "@/components/admin/CatalogPublicLink";
 import { StorefrontBrandSettingsForm } from "@/components/admin/StorefrontBrandSettingsForm";
 import {
   collaboratorJobRoleLabel,
-  PERMISSION_MODULES,
   type PermissionMap,
 } from "@/lib/admin-permissions";
+import { permissionModulesForAccount } from "@/lib/admin-account-modules";
 import {
   adminFilterLabelClass,
   adminPageSubtitleClass,
@@ -31,12 +31,17 @@ function formatDate(iso: string | null | undefined): string {
   }
 }
 
-function grantedPermissionGroups(permissions: PermissionMap) {
-  return PERMISSION_MODULES.map((mod) => ({
-    id: mod.id,
-    label: mod.label,
-    items: mod.items.filter((item) => Boolean(permissions[item.key])),
-  })).filter((mod) => mod.items.length > 0);
+function grantedPermissionGroups(
+  permissions: PermissionMap,
+  disabledModules: Parameters<typeof permissionModulesForAccount>[0],
+) {
+  return permissionModulesForAccount(disabledModules)
+    .map((mod) => ({
+      id: mod.id,
+      label: mod.label,
+      items: mod.items.filter((item) => Boolean(permissions[item.key])),
+    }))
+    .filter((mod) => mod.items.length > 0);
 }
 
 export default async function AdminCuentaPage({
@@ -81,15 +86,16 @@ export default async function AdminCuentaPage({
   const email = perm.email;
   const roleLabel = collaboratorJobRoleLabel(perm.jobRole);
   const username = profile?.login_username?.trim() || "—";
-  const permissionGroups = grantedPermissionGroups(perm.permissions);
+  const visibleModules = permissionModulesForAccount(perm.disabledModules);
+  const permissionGroups = grantedPermissionGroups(
+    perm.permissions,
+    perm.disabledModules,
+  );
   const grantedCount = permissionGroups.reduce(
     (n, g) => n + g.items.length,
     0,
   );
-  const totalCount = PERMISSION_MODULES.reduce(
-    (n, m) => n + m.items.length,
-    0,
-  );
+  const totalCount = visibleModules.reduce((n, m) => n + m.items.length, 0);
 
   const metaBits = [
     roleLabel,

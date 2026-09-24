@@ -57,7 +57,7 @@ export function OperatorAccountsTable({
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="flex min-w-0 flex-1 gap-3">
-                  <OperatorAccountLogo src={row.logoSrc} name={row.tradeName} plateColor={row.plateColor} />
+                  <OperatorAccountLogo src={row.logoSrc} name={row.tradeName} plateColor={row.plateColor} fullColor={row.logoFullColor} />
                   <div className="min-w-0 flex-1">
                     <Link
                       href={`/admin/cuentas/${row.id}`}
@@ -118,6 +118,7 @@ export function OperatorAccountsTable({
                         src={row.logoSrc}
                         name={row.tradeName}
                         plateColor={row.plateColor}
+                        fullColor={row.logoFullColor}
                       />
                       <div className="min-w-0">
                         <Link

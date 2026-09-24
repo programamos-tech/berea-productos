@@ -1,6 +1,10 @@
 import { cache } from "react";
 import { cookies, headers } from "next/headers";
 import {
+  parseDisabledAccountModules,
+  type AccountModuleId,
+} from "@/lib/admin-account-modules";
+import {
   accountHolderLabel,
   ACTING_TENANT_COOKIE,
   ACTING_TENANT_HEADER,
@@ -16,6 +20,7 @@ export type ActingCustomerTenant = {
   accountHolderName: string;
   brand: unknown;
   chrome: AdminAccountChrome;
+  disabledModules: AccountModuleId[];
 };
 
 function actingCookieOptions() {
@@ -52,7 +57,7 @@ async function resolveActingCustomerTenantUncached(): Promise<ActingCustomerTena
 
   const { data: tenant } = await supabase
     .from("tenants")
-    .select("id, slug, name, account_holder_name, brand")
+    .select("id, slug, name, account_holder_name, brand, disabled_modules")
     .eq("id", actingId)
     .eq("kind", "customer")
     .in("status", ["active", "trial"])
@@ -73,6 +78,7 @@ async function resolveActingCustomerTenantUncached(): Promise<ActingCustomerTena
       name: tenant.name as string,
       brand: tenant.brand,
     }),
+    disabledModules: parseDisabledAccountModules(tenant.disabled_modules),
   };
 }
 

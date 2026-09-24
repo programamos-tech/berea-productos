@@ -32,6 +32,10 @@ export async function generateMetadata(): Promise<Metadata> {
       template: `%s | ${chrome.name}`,
     },
     description: chrome.description,
+    icons: {
+      icon: chrome.logoSrc,
+      apple: chrome.logoSrc,
+    },
   };
 }
 

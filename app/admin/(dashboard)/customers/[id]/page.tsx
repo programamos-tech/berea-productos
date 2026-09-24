@@ -1,3 +1,5 @@
+import { accountAllowsCredit } from "@/lib/admin-account-modules";
+import { loadAdminPermissions } from "@/lib/load-admin-permissions";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CustomerDetailHeaderActions } from "@/components/admin/CustomerDetailHeaderActions";
@@ -65,6 +67,7 @@ export default async function AdminCustomerDetailPage({
 }: Props) {
   const { id } = await params;
   const sp = await searchParams;
+  const perm = await loadAdminPermissions();
 
   const supabase = await createSupabaseServerClient();
   const [{ detail, error }, creditDebtCents] = await Promise.all([
@@ -468,7 +471,7 @@ export default async function AdminCustomerDetailPage({
           >
             {creditDebtCents > 0 ? formatCop(creditDebtCents) : "—"}
           </p>
-          {creditDebtCents > 0 ? (
+          {creditDebtCents > 0 && accountAllowsCredit(perm?.permissions ?? {}) ? (
             <Link
               href={`/admin/creditos?cliente=${encodeURIComponent(id)}`}
               className="mt-0.5 inline-block text-[11px] font-medium text-zinc-600 underline-offset-2 hover:underline dark:text-zinc-300"

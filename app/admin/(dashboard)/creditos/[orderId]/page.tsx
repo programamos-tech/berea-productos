@@ -24,6 +24,7 @@ export default async function AdminCreditoDetailPage({
       requireCredit
       creditVariant="full"
       canRegisterCredit={Boolean(perm?.permissions.creditos_abonar)}
+      canUseCredit={Boolean(perm?.permissions.creditos_ver)}
     />
   );
 }

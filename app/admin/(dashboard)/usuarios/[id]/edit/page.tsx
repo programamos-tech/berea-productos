@@ -100,6 +100,7 @@ export default async function AdminEditColaboradorPage({ params, searchParams }:
         storeLabel={storeBrand}
         initial={initial}
         branches={perm.branchContext.available}
+        disabledModules={perm.disabledModules}
       />
     </div>
   );

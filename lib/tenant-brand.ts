@@ -130,6 +130,7 @@ const ACCOUNT_LOGO_BY_SLUG: Record<string, string> = {
   aleya: "/logo-aleya-wordmark.png",
   "estacion-iphone": "/logo-estacion-iphone.png",
   "berea-tech": "/logo-berea-house-mark.png",
+  "toro-technology": "/logo-toro-technology.jpg",
 };
 
 export type AdminAccountChrome = {
@@ -137,6 +138,10 @@ export type AdminAccountChrome = {
   logoSrc: string;
   /** Fondo del recuadro del logo en backoffice (color de marca). */
   plateColor: string;
+  /** Logo a color (no se convierte a blanco). */
+  logoFullColor: boolean;
+  /** Marca cuadrada: la tienda lo muestra más alto que un wordmark. */
+  logoSquare: boolean;
 };
 
 const HEX_COLOR = /^#[0-9a-f]{6}$/i;
@@ -145,7 +150,10 @@ const ACCOUNT_PLATE_BY_SLUG: Record<string, string> = {
   aleya: "#FF76A1",
   "estacion-iphone": "#111111",
   "berea-tech": "#0F766E",
+  "toro-technology": "#111111",
 };
+
+const ACCOUNT_FULL_COLOR_LOGO = new Set(["toro-technology"]);
 
 export function adminLogoPlateColor(
   slug: string,
@@ -165,12 +173,15 @@ export function adminAccountChrome(input: {
   const parsed = parseTenantBrand(input.brand);
   const logoPath =
     parsed.logo_path || ACCOUNT_LOGO_BY_SLUG[input.slug] || "";
+  const logoFullColor = ACCOUNT_FULL_COLOR_LOGO.has(input.slug);
   return {
     name: parsed.trade_name || input.name,
     logoSrc: logoPath
       ? resolveInvoiceLogoSrc(logoPath)
       : adminTenantLogoPath,
     plateColor: adminLogoPlateColor(input.slug, parsed.primary_color),
+    logoFullColor,
+    logoSquare: logoFullColor,
   };
 }
 

@@ -3,6 +3,8 @@ import { LogIn } from "lucide-react";
 import { notFound, redirect } from "next/navigation";
 import { OperatorAccountEnterButton } from "@/components/admin/OperatorAccountEnterButton";
 import { OperatorAccountLogo } from "@/components/admin/OperatorAccountLogo";
+import { OperatorAccountModulesPanel } from "@/components/admin/OperatorAccountModulesPanel";
+import { parseDisabledAccountModules } from "@/lib/admin-account-modules";
 import {
   adminFilterLabelClass,
   adminPageSubtitleClass,
@@ -52,10 +54,13 @@ function Field({
 
 export default async function AdminCuentaDetallePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { id } = await params;
+  const sp = await searchParams;
   const perm = await loadAdminPermissions();
   if (!perm) redirect("/admin/login");
   if (!perm.isPlatformOperator) redirect("/admin");
@@ -70,7 +75,7 @@ export default async function AdminCuentaDetallePage({
   const { data: tenant } = await service
     .from("tenants")
     .select(
-      "id, slug, name, status, account_holder_name, account_holder_email, brand, custom_domains, created_at",
+      "id, slug, name, status, account_holder_name, account_holder_email, brand, custom_domains, created_at, disabled_modules",
     )
     .eq("id", id)
     .eq("kind", "customer")
@@ -132,7 +137,7 @@ export default async function AdminCuentaDetallePage({
 
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex min-w-0 items-start gap-4">
-          <OperatorAccountLogo src={row.logoSrc} name={row.tradeName} size={64} plateColor={row.plateColor} />
+          <OperatorAccountLogo src={row.logoSrc} name={row.tradeName} size={64} plateColor={row.plateColor} fullColor={row.logoFullColor} />
           <div className="min-w-0">
             <h1 className={adminPageTitleClass}>{row.holderName}</h1>
             <p className="mt-1 truncate text-base font-medium text-zinc-900 dark:text-zinc-100">
@@ -155,6 +160,16 @@ export default async function AdminCuentaDetallePage({
           </OperatorAccountEnterButton>
         ) : null}
       </header>
+
+      <OperatorAccountModulesPanel
+        tenantId={row.id}
+        disabledModules={parseDisabledAccountModules(tenant.disabled_modules)}
+        errorBanner={
+          sp.error === "modules"
+            ? "No se pudo guardar los módulos. Probá de nuevo."
+            : null
+        }
+      />
 
       <section className={`${adminPanelClass} p-4 sm:p-5`}>
         <h2 className={adminFilterLabelClass}>Cliente</h2>

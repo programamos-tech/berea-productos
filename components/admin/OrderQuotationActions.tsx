@@ -13,6 +13,7 @@ export function OrderQuotationActions({
   invoiceRef,
   totalCents,
   customerName,
+  canUseCredit = true,
 }: {
   orderId: string;
   invoiceRef: string;
@@ -20,6 +21,7 @@ export function OrderQuotationActions({
   customerEmail?: string | null;
   customerName?: string | null;
   totalCents: number;
+  canUseCredit?: boolean;
 }) {
   const [facturarOpen, setFacturarOpen] = useState(false);
   const [payment, setPayment] = useState<"cash" | "transfer" | "mixed" | "credit">(
@@ -142,7 +144,7 @@ export function OrderQuotationActions({
                   <option value="cash">Efectivo</option>
                   <option value="transfer">Transferencia</option>
                   <option value="mixed">Mixto</option>
-                  <option value="credit">Crédito</option>
+                  {canUseCredit ? <option value="credit">Crédito</option> : null}
                 </select>
               </div>
               {payment === "mixed" ? (

@@ -3,6 +3,11 @@ import { loadBranchContext } from "@/lib/branch-server";
 import type { BranchContext } from "@/lib/branch-context";
 import { withTimeout } from "@/lib/async-timeout";
 import {
+  applyDisabledAccountModules,
+  parseDisabledAccountModules,
+  type AccountModuleId,
+} from "@/lib/admin-account-modules";
+import {
   mergePermissionsWithDefaults,
   normalizeCollaboratorJobRole,
   type CollaboratorJobRole,
@@ -26,6 +31,7 @@ export type AdminSession = {
   tenantName: string;
   tenantLogoSrc: string;
   tenantLogoPlate: string;
+  tenantLogoFullColor: boolean;
   displayName: string;
   email: string;
   isPlatformOperator: boolean;
@@ -39,6 +45,8 @@ export type AdminSession = {
     holderName: string;
     storeName: string;
   } | null;
+  /** Módulos apagados en la cuenta en la que opera. */
+  disabledModules: AccountModuleId[];
 };
 
 export type AdminActingSession = AdminSession & {
@@ -58,7 +66,7 @@ async function loadAdminPermissionsUncached(): Promise<AdminSession | null> {
     supabase
       .from("profiles")
       .select(
-        "permissions, job_role, tenant_id, display_name, is_platform_operator, tenants!inner(slug, name, brand)",
+        "permissions, job_role, tenant_id, display_name, is_platform_operator, tenants!inner(slug, name, brand, disabled_modules)",
       )
       .eq("id", user.id)
       .maybeSingle(),
@@ -85,8 +93,18 @@ async function loadAdminPermissionsUncached(): Promise<AdminSession | null> {
   }
 
   const tenantsJoin = row.tenants as
-    | { slug?: string; name?: string; brand?: unknown }
-    | { slug?: string; name?: string; brand?: unknown }[]
+    | {
+        slug?: string;
+        name?: string;
+        brand?: unknown;
+        disabled_modules?: unknown;
+      }
+    | {
+        slug?: string;
+        name?: string;
+        brand?: unknown;
+        disabled_modules?: unknown;
+      }[]
     | null;
   const homeTenant = Array.isArray(tenantsJoin) ? tenantsJoin[0] : tenantsJoin;
   const homeSlug = homeTenant?.slug;
@@ -121,9 +139,15 @@ async function loadAdminPermissionsUncached(): Promise<AdminSession | null> {
   }
 
   const jobRole = normalizeCollaboratorJobRole(row.job_role as string | null);
-  const permissions = mergePermissionsWithDefaults(
-    row.permissions as PermissionMap | null,
-    jobRole,
+  const disabledModules = parseDisabledAccountModules(
+    acting?.disabledModules ?? homeTenant?.disabled_modules,
+  );
+  const permissions = applyDisabledAccountModules(
+    mergePermissionsWithDefaults(
+      row.permissions as PermissionMap | null,
+      jobRole,
+    ),
+    disabledModules,
   );
 
   const email = (user.email ?? "").trim();
@@ -143,6 +167,7 @@ async function loadAdminPermissionsUncached(): Promise<AdminSession | null> {
     tenantName,
     tenantLogoSrc: chrome.logoSrc,
     tenantLogoPlate: chrome.plateColor,
+    tenantLogoFullColor: chrome.logoFullColor,
     displayName,
     email,
     isPlatformOperator,
@@ -150,6 +175,7 @@ async function loadAdminPermissionsUncached(): Promise<AdminSession | null> {
     actingAccount: acting
       ? { holderName: acting.accountHolderName, storeName: acting.name }
       : null,
+    disabledModules,
   };
 }
 

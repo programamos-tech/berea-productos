@@ -9,11 +9,13 @@ export function StoreLogoLink({
   href = "/",
   brand,
   logoPath,
+  square = false,
   className,
 }: {
   href?: string;
   brand: string;
   logoPath: string;
+  square?: boolean;
   className?: string;
 }) {
   const pathname = usePathname() || "/";
@@ -34,9 +36,13 @@ export function StoreLogoLink({
         src={logoPath}
         alt={brand}
         width={420}
-        height={150}
+        height={square ? 420 : 150}
         unoptimized
-        className="mx-auto h-11 w-auto max-w-full bg-transparent object-contain object-center sm:h-12 lg:h-[4.25rem]"
+        className={
+          square
+            ? "mx-auto h-[4.75rem] w-auto max-w-full bg-transparent object-contain object-center sm:h-20 lg:h-[5.75rem] xl:h-24"
+            : "mx-auto h-11 w-auto max-w-full bg-transparent object-contain object-center sm:h-12 lg:h-[4.25rem]"
+        }
         style={{ backgroundColor: "transparent" }}
         priority
       />

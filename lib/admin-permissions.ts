@@ -108,6 +108,10 @@ export type PermissionModule = {
   items: PermissionItem[];
 };
 
+/**
+ * Grupos de checkboxes en Equipo. Para apagar un módulo entero por cuenta
+ * (Cuentas → ficha), ver `ACCOUNT_MODULES` en `lib/admin-account-modules.ts`.
+ */
 export const PERMISSION_MODULES: PermissionModule[] = [
   {
     id: "inicio",

@@ -21,16 +21,19 @@ export function NuevaFacturaPageClient({
   initialError,
   initialCustomerId,
   editQuotation,
+  canUseCredit = true,
 }: {
   initialError?: string;
   initialCustomerId?: string;
   editQuotation?: QuotationEditDraft;
+  canUseCredit?: boolean;
 }) {
   return (
     <NuevaFacturaClient
       initialError={initialError}
       initialCustomerId={initialCustomerId}
       editQuotation={editQuotation}
+      canUseCredit={canUseCredit}
     />
   );
 }

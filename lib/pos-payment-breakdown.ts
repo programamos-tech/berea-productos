@@ -18,6 +18,14 @@ function paidTotalCents(total_cents: unknown): number {
   return Math.max(0, Math.round(Number(total_cents ?? 0)));
 }
 
+/** Crédito y cotización: el cobro cuenta el día del abono, no el de la factura. */
+export function isPosDeferredIncome(
+  wompiReference: string | null | undefined,
+): boolean {
+  const ref = (wompiReference ?? "").trim();
+  return ref === "POS:credit" || ref === "POS:quotation";
+}
+
 /**
  * Reparte el total de un pedido pagado en buckets de forma de pago.
  * Mixto con columnas guardadas → efectivo + transferencia; mixto legacy sin columnas → bucket mixto.
@@ -59,8 +67,8 @@ export function posPaymentBreakdownForOrder(
     }
     return { ...empty, mixedCents: total };
   }
-  // Crédito: el dinero entra por order_payments, no por el total de la orden.
-  if (ref === "POS:credit" || ref === "POS:quotation") {
+  // Crédito / cotización: el dinero entra por order_payments, no por el total.
+  if (isPosDeferredIncome(ref)) {
     return empty;
   }
   if (ref.startsWith("POS:")) {

@@ -3,7 +3,7 @@
 import { logAdminActivity } from "@/lib/admin-activity-log";
 import { insertOrderCreditPayments } from "@/lib/insert-order-credit-payments";
 import { formatCop, parseCopInputDigitsToInt } from "@/lib/money";
-import { fetchActorOpenCashSession } from "@/lib/cash-register";
+import { fetchOpenCashSession } from "@/lib/cash-register";
 import {
   CREDIT_PAYMENT_CANCELLATION_REASON_MIN_LENGTH,
   isPosCreditSale,
@@ -45,11 +45,9 @@ export async function registerOrderCreditPaymentAction(formData: FormData) {
   if (!orderId) redirect("/admin/creditos");
   if (amount <= 0 || !paymentMethod) redirectCredit(orderId, "abono");
 
-  if (paymentMethod === "cash") {
-    await assertCashRegisterOpenForStaff();
-  }
+  await assertCashRegisterOpenForStaff();
 
-  const actorSession = await fetchActorOpenCashSession(supabase, userId);
+  const actorSession = await fetchOpenCashSession(supabase);
 
   const { data: order, error: oErr } = await supabase
     .from("orders")

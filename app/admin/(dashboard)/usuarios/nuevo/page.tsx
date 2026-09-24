@@ -48,6 +48,7 @@ export default async function AdminNuevoColaboradorPage({ searchParams }: Props)
         mode="create"
         storeLabel={storeBrand}
         branches={perm.branchContext.available}
+        disabledModules={perm.disabledModules}
       />
     </AdminNewPageShell>
   );

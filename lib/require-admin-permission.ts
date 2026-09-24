@@ -3,7 +3,7 @@ import {
   type PermissionKey,
 } from "@/lib/admin-permissions";
 import {
-  fetchStaffCashSessionForToday,
+  fetchCashSessionForBusinessDay,
   todayBusinessDayYmd,
 } from "@/lib/cash-register";
 import {
@@ -57,11 +57,7 @@ export async function assertCashRegisterOpenForStaff(): Promise<void> {
 
   const supabase = await createSupabaseServerClient();
   const today = todayBusinessDayYmd();
-  const todaySession = await fetchStaffCashSessionForToday(
-    supabase,
-    perm.userId,
-    today,
-  );
+  const todaySession = await fetchCashSessionForBusinessDay(supabase, today);
   if (todaySession?.status === "open") return;
   redirect(
     todaySession?.status === "closed"

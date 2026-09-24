@@ -13,7 +13,7 @@ import {
   fetchStoreExpenseConcepts,
   isConceptAllowedForKind,
 } from "@/lib/store-expense-concepts";
-import { fetchActorOpenCashSession } from "@/lib/cash-register";
+import { fetchOpenCashSession } from "@/lib/cash-register";
 import { loadAdminPermissions } from "@/lib/load-admin-permissions";
 import {
   assertCashRegisterOpenForStaff,
@@ -77,7 +77,7 @@ export async function createStoreExpense(formData: FormData) {
 
   const actorSession =
     expenseScope === "diario"
-      ? await fetchActorOpenCashSession(supabase, perm.userId)
+      ? await fetchOpenCashSession(supabase)
       : null;
 
   const categoryRaw = String(formData.get("category") ?? "").trim();

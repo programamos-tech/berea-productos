@@ -7,10 +7,12 @@ export function NuevaFacturaClient({
   initialError,
   initialCustomerId,
   editQuotation,
+  canUseCredit = true,
 }: {
   initialError?: string;
   initialCustomerId?: string;
   editQuotation?: QuotationEditDraft;
+  canUseCredit?: boolean;
 }) {
   return (
     <>
@@ -19,6 +21,7 @@ export function NuevaFacturaClient({
         initialError={initialError}
         initialCustomerId={initialCustomerId}
         editQuotation={editQuotation}
+        canUseCredit={canUseCredit}
       />
     </>
   );

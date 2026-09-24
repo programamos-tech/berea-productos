@@ -23,9 +23,6 @@ type Props = {
   errorBanner?: string | null;
   defaultOpen?: boolean;
   suggestedOpeningFloatCents?: number;
-  cashRegisterId?: string | null;
-  cashRegisterName?: string | null;
-  registers?: Array<{ id: string; name: string }>;
   /** Oculta la barra sticky al cerrar el modal (la página ya muestra Abrir/Cerrar). */
   hideStickyBanner?: boolean;
   /** Solo UI: no refresca ni permite cerrar de verdad. */
@@ -44,9 +41,6 @@ export function CashRegisterSessionModal({
   errorBanner,
   defaultOpen = true,
   suggestedOpeningFloatCents = 0,
-  cashRegisterId = null,
-  cashRegisterName = null,
-  registers = [],
   hideStickyBanner = false,
   previewClose = false,
   onDismissed,
@@ -124,7 +118,7 @@ export function CashRegisterSessionModal({
         : ["Turno abierto", openedAtLabel, openedByLabel]
             .filter(Boolean)
             .join(" · ") || businessDayLabel
-      : `${cashRegisterName ? `${cashRegisterName} · ` : ""}Efectivo del día anterior · ${businessDayLabel}`;
+      : `Efectivo del día anterior · ${businessDayLabel}`;
 
   return (
     <>
@@ -199,8 +193,6 @@ export function CashRegisterSessionModal({
                       ) : null}
                       <CashRegisterOpenForm
                         suggestedOpeningFloatCents={suggestedOpeningFloatCents}
-                        cashRegisterId={cashRegisterId}
-                        registers={registers}
                       />
                     </div>
                   ) : sessionId && liveBlind ? (

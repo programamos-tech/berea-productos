@@ -42,6 +42,7 @@ export function OrderCreditPanel({
   canRegister,
   variant = "full",
   errorCode,
+  canViewCredits = true,
 }: {
   orderId: string;
   totalCents: number;
@@ -50,6 +51,7 @@ export function OrderCreditPanel({
   canRegister: boolean;
   variant?: "full" | "summary";
   errorCode?: string | null;
+  canViewCredits?: boolean;
 }) {
   const paidCents = sumOrderCreditPaidCents(payments);
   const pendingCents = orderCreditPendingCents(totalCents, paidCents);
@@ -75,7 +77,7 @@ export function OrderCreditPanel({
             </span>
           </p>
         </div>
-        {variant === "summary" ? (
+        {variant === "summary" && canViewCredits ? (
           <Link
             href={`/admin/creditos/${orderId}`}
             className="text-sm font-medium text-zinc-800 underline-offset-2 hover:underline dark:text-zinc-200"

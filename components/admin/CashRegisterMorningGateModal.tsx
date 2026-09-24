@@ -30,16 +30,12 @@ export function CashRegisterMorningGateModal({
   businessDayLabel,
   displayName,
   suggestedOpeningFloatCents = 0,
-  cashRegisterId = null,
-  cashRegisterName = null,
   demoMode = false,
 }: {
   businessDayLabel: string;
   displayName: string | null;
   /** Contado del último cierre (arrastre). */
   suggestedOpeningFloatCents?: number;
-  cashRegisterId?: string | null;
-  cashRegisterName?: string | null;
   /** Solo preview: no abre caja de verdad. */
   demoMode?: boolean;
 }) {
@@ -90,7 +86,6 @@ export function CashRegisterMorningGateModal({
               {name}
             </p>
             <p className="mt-1.5 text-sm leading-snug text-zinc-600 dark:text-zinc-300">
-              {cashRegisterName ? `${cashRegisterName} · ` : ""}
               {businessDayLabel} · confirmá el arrastre. El cambio de $100.000 no
               se carga.
             </p>
@@ -126,16 +121,7 @@ export function CashRegisterMorningGateModal({
             }}
           >
             {!demoMode ? (
-              <>
-                <input type="hidden" name="submission_id" value={submissionId} />
-                {cashRegisterId ? (
-                  <input
-                    type="hidden"
-                    name="cash_register_id"
-                    value={cashRegisterId}
-                  />
-                ) : null}
-              </>
+              <input type="hidden" name="submission_id" value={submissionId} />
             ) : null}
             <div>
               <span className={labelClass}>Efectivo del día anterior</span>

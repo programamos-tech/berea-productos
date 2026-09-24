@@ -20,6 +20,7 @@ type AdminTopBarProps = {
     name: string;
     logoSrc: string;
     plateColor: string;
+    logoFullColor?: boolean;
   };
 };
 
@@ -56,6 +57,7 @@ export function AdminTopBar({
             name={accountBrand.name}
             size={40}
             plateColor={accountBrand.plateColor}
+            fullColor={accountBrand.logoFullColor}
           />
         </Link>
 

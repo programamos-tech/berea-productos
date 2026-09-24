@@ -10,8 +10,7 @@ import {
   EXPENSE_CONCEPT_SUPPLIER_PAYMENT,
   mapSupplierPaymentMethodToExpense,
 } from "@/lib/expense-concepts";
-import { fetchActorOpenCashSession } from "@/lib/cash-register";
-import { loadAdminPermissions } from "@/lib/load-admin-permissions";
+import { fetchOpenCashSession } from "@/lib/cash-register";
 import {
   assertActionPermission,
   assertCashRegisterOpenForStaff,
@@ -266,10 +265,7 @@ export async function registerSupplierInvoicePaymentAction(formData: FormData) {
   const noteParts = [`Proveedor ${supplierName}`, `Factura ${folio}`];
   if (notes) noteParts.push(notes);
 
-  const perm = await loadAdminPermissions();
-  const actorSession = perm
-    ? await fetchActorOpenCashSession(supabase, perm.userId)
-    : null;
+  const actorSession = await fetchOpenCashSession(supabase);
 
   const { error: expenseErr } = await supabase.from("store_expenses").insert({
     concept: EXPENSE_CONCEPT_SUPPLIER_PAYMENT,

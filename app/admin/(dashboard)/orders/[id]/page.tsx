@@ -1,3 +1,4 @@
+import { accountAllowsCredit } from "@/lib/admin-account-modules";
 import { AdminOrderInvoiceScreen } from "@/components/admin/AdminOrderInvoiceScreen";
 import { safeAdminVentasListReturnPath } from "@/lib/admin-ventas-list-url";
 import { loadAdminPermissions } from "@/lib/load-admin-permissions";
@@ -21,6 +22,7 @@ export default async function AdminOrderDetailPage({ params, searchParams }: Pro
       listLabel="Ventas"
       creditVariant="summary"
       canRegisterCredit={Boolean(perm?.permissions.creditos_abonar)}
+      canUseCredit={accountAllowsCredit(perm?.permissions ?? {})}
     />
   );
 }

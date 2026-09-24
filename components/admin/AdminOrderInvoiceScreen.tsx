@@ -41,6 +41,7 @@ export async function AdminOrderInvoiceScreen({
   requireCredit = false,
   creditVariant = "summary",
   canRegisterCredit = false,
+  canUseCredit = false,
 }: {
   orderId: string;
   searchParams: Record<string, string | string[] | undefined>;
@@ -49,6 +50,7 @@ export async function AdminOrderInvoiceScreen({
   requireCredit?: boolean;
   creditVariant?: "full" | "summary";
   canRegisterCredit?: boolean;
+  canUseCredit?: boolean;
 }) {
   const supabase = await createSupabaseServerClient();
 
@@ -289,6 +291,7 @@ export async function AdminOrderInvoiceScreen({
       stockNotices={decodeQuotationStockNotices(
         typeof searchParams.stock === "string" ? searchParams.stock : undefined,
       )}
+      canUseCredit={canUseCredit}
       creditPendingCents={creditPendingCents}
       creditExtras={
         isCredit ? (
@@ -298,6 +301,7 @@ export async function AdminOrderInvoiceScreen({
             orderStatus={String(order.status)}
             payments={payments}
             canRegister={canRegisterCredit}
+            canViewCredits={canUseCredit}
             variant={creditVariant}
             errorCode={errorCode}
           />

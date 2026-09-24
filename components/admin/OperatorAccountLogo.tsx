@@ -5,11 +5,13 @@ export function OperatorAccountLogo({
   name,
   size = 56,
   plateColor = "#18181B",
+  fullColor = false,
 }: {
   src: string;
   name: string;
   size?: 32 | 40 | 56 | 64;
   plateColor?: string;
+  fullColor?: boolean;
 }) {
   const box =
     size === 32
@@ -20,7 +22,12 @@ export function OperatorAccountLogo({
           ? "size-16 rounded-xl"
           : "size-14 rounded-xl";
   const pad =
-    size === 32 || size === 40 ? "p-[14%]" : "p-[16%]";
+    fullColor
+      ? "p-0"
+      : size === 32 || size === 40
+        ? "p-[14%]"
+        : "p-[16%]";
+  const tone = fullColor ? "" : "brightness-0 invert";
 
   return (
     <span
@@ -33,7 +40,7 @@ export function OperatorAccountLogo({
         fill
         sizes={`${size}px`}
         unoptimized
-        className={`bg-transparent object-contain brightness-0 invert ${pad}`}
+        className={`bg-transparent object-contain ${tone} ${pad}`}
       />
     </span>
   );

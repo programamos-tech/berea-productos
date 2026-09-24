@@ -1,9 +1,8 @@
 import { AdminDashboardShell } from "@/components/admin/AdminDashboardShell";
 import { adminNavAllowedHrefList } from "@/lib/admin-nav-allowed";
 import { prettyReportDayShortLabel } from "@/lib/admin-report-range";
-import { fetchAssignedCashRegister } from "@/lib/cash-registers";
 import {
-  fetchStaffCashSessionForToday,
+  fetchCashSessionForBusinessDay,
   fetchSuggestedOpeningFloatCents,
   todayBusinessDayYmd,
 } from "@/lib/cash-register";
@@ -39,11 +38,7 @@ export default async function AdminDashboardLayout({
     canOnboardTenants(),
     needsCashCheck
       ? createSupabaseServerClient().then((supabase) =>
-          fetchStaffCashSessionForToday(
-            supabase,
-            perm.userId,
-            todayBusinessDayYmd(),
-          ),
+          fetchCashSessionForBusinessDay(supabase, todayBusinessDayYmd()),
         )
       : Promise.resolve(null),
   ]);
@@ -57,8 +52,6 @@ export default async function AdminDashboardLayout({
     businessDayLabel: string;
     displayName: string | null;
     suggestedOpeningFloatCents: number;
-    cashRegisterId: string | null;
-    cashRegisterName: string | null;
   } | null = null;
 
   const mustOpen = staffMustOpenCashRegister({
@@ -71,14 +64,13 @@ export default async function AdminDashboardLayout({
     allowedNavHrefs = navHrefsForCashGate(allowedNavHrefs);
     const supabase = await createSupabaseServerClient();
     const today = todayBusinessDayYmd();
-    const assigned = await fetchAssignedCashRegister(supabase, perm.userId);
     const [{ data: profile }, suggestedOpeningFloatCents] = await Promise.all([
       supabase
         .from("profiles")
         .select("display_name")
         .eq("id", perm.userId)
         .maybeSingle(),
-      fetchSuggestedOpeningFloatCents(supabase, assigned?.id ?? null),
+      fetchSuggestedOpeningFloatCents(supabase),
     ]);
     cashGate = {
       mustOpen: true,
@@ -88,8 +80,6 @@ export default async function AdminDashboardLayout({
           ? String(profile.display_name)
           : null,
       suggestedOpeningFloatCents,
-      cashRegisterId: assigned?.id ?? null,
-      cashRegisterName: assigned?.name ?? null,
     };
   }
 
@@ -108,6 +98,7 @@ export default async function AdminDashboardLayout({
         name: perm.tenantName,
         logoSrc: perm.tenantLogoSrc,
         plateColor: perm.tenantLogoPlate,
+        logoFullColor: perm.tenantLogoFullColor,
       }}
       branchContext={perm.branchContext}
     >

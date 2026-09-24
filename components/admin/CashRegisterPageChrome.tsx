@@ -31,15 +31,10 @@ type Props = {
   blind?: CashDayBlindSummary | null;
   errorBanner?: string | null;
   suggestedOpeningFloatCents?: number;
-  cashRegisterId?: string | null;
-  cashRegisterName?: string | null;
-  registers?: Array<{ id: string; name: string }>;
   /** Abrir el modal al cargar cuando toca operar. */
   autoOpenModal?: boolean;
   /** Solo UI: muestra el modal de cierre con datos congelados, sin submit. */
   previewClose?: boolean;
-  canCreateRegisters?: boolean;
-  newRegisterHref?: string;
 };
 
 export function CashRegisterPageChrome({
@@ -55,13 +50,8 @@ export function CashRegisterPageChrome({
   blind,
   errorBanner,
   suggestedOpeningFloatCents = 0,
-  cashRegisterId = null,
-  cashRegisterName = null,
-  registers = [],
   autoOpenModal = true,
   previewClose = false,
-  canCreateRegisters = false,
-  newRegisterHref = "/admin/caja?nuevo=1",
 }: Props) {
   const [panelOpen, setPanelOpen] = useState(Boolean(autoOpenModal && modalMode));
 
@@ -75,7 +65,7 @@ export function CashRegisterPageChrome({
   const openDisabledReason = !canManage
     ? "Sin permiso para gestionar caja"
     : hasOpenSession
-      ? "Esta caja ya está abierta"
+      ? "Ya hay una caja abierta"
       : todayAlreadyClosed
         ? "Hoy ya cerró · se habilita mañana a las 12:00 a. m. (Colombia)"
         : null;
@@ -96,18 +86,11 @@ export function CashRegisterPageChrome({
             Caja
           </h1>
           <p className={adminPageSubtitleClass}>
-            {cashRegisterName
-              ? `${cashRegisterName} · apertura, cierre y arqueo del efectivo`
-              : "Apertura, cierre y arqueo del efectivo del día"}
+            Apertura, cierre y arqueo del efectivo del día
           </p>
         </div>
 
         <div className="flex flex-wrap items-center justify-end gap-2">
-          {canCreateRegisters ? (
-            <Link href={newRegisterHref} className={`${btnBase} ${btnIdle}`}>
-              + Nueva caja
-            </Link>
-          ) : null}
           {todayAlreadyClosed && todaySessionId ? (
             <>
               <Link
@@ -170,9 +153,6 @@ export function CashRegisterPageChrome({
           errorBanner={errorBanner}
           defaultOpen={panelOpen}
           suggestedOpeningFloatCents={suggestedOpeningFloatCents}
-          cashRegisterId={cashRegisterId}
-          cashRegisterName={cashRegisterName}
-          registers={registers}
           hideStickyBanner
           previewClose={previewClose}
           onDismissed={() => setPanelOpen(false)}

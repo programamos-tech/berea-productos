@@ -1,5 +1,6 @@
 "use server";
 
+import { accountAllowsCredit } from "@/lib/admin-account-modules";
 import { logAdminActivity } from "@/lib/admin-activity-log";
 import {
   activityStockTraceToMetadata,
@@ -20,7 +21,7 @@ import {
   type KitComponentDeduction,
   type ProductKitRow,
 } from "@/lib/product-kits";
-import { fetchActorOpenCashSession } from "@/lib/cash-register";
+import { fetchOpenCashSession } from "@/lib/cash-register";
 import { fetchCurrentBranchInventoryMap } from "@/lib/branch-inventory";
 import { fetchKitsByIdsWithItems } from "@/lib/load-product-kits";
 import {
@@ -45,10 +46,11 @@ function redirectOrder(orderId: string, error?: string): never {
  * Convierte cotización → venta pagada: descuenta stock y marca paid.
  */
 export async function convertQuotationToSaleAction(formData: FormData) {
-  const { userId } = await requireAdminPermission("ventas_crear");
+  const perm = await requireAdminPermission("ventas_crear");
+  const { userId } = perm;
   await assertCashRegisterOpenForStaff();
   const supabase = await createSupabaseServerClient();
-  const actorSession = await fetchActorOpenCashSession(supabase, userId);
+  const actorSession = await fetchOpenCashSession(supabase);
   const cashRegisterSessionId = actorSession?.id ?? null;
 
   const orderId = String(formData.get("order_id") ?? "").trim();
@@ -61,6 +63,9 @@ export async function convertQuotationToSaleAction(formData: FormData) {
     paymentMethod !== "credit"
   ) {
     redirectOrder(orderId, "payment");
+  }
+  if (paymentMethod === "credit" && !accountAllowsCredit(perm.permissions)) {
+    redirectOrder(orderId, "credit_forbidden");
   }
 
   const mixedCash = Math.floor(

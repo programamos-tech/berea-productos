@@ -35,6 +35,7 @@ export type StorefrontChrome = {
   tenantSlug: string;
   name: string;
   logoSrc: string;
+  logoSquare: boolean;
   primaryColor: string;
   tagline: string;
   description: string;
@@ -175,6 +176,7 @@ export function buildStorefrontChrome(input: {
     tenantSlug: input.tenantSlug,
     name,
     logoSrc: account.logoSrc,
+    logoSquare: account.logoSquare,
     primaryColor,
     tagline: brand.tagline || (isAleya ? storeTagline : `Catálogo de ${name}`),
     description:

@@ -1,5 +1,6 @@
 "use server";
 
+import { accountAllowsCredit } from "@/lib/admin-account-modules";
 import { logAdminActivity } from "@/lib/admin-activity-log";
 import {
   activityStockTraceToMetadata,
@@ -11,7 +12,7 @@ import {
   verifyRowCountAtLeastInDev,
 } from "@/lib/admin-insert-verify";
 import { requireAdminPermission, assertCashRegisterOpenForStaff } from "@/lib/require-admin-permission";
-import { fetchActorOpenCashSession } from "@/lib/cash-register";
+import { fetchOpenCashSession } from "@/lib/cash-register";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
   unitPriceAfterWholesaleCents,
@@ -149,7 +150,8 @@ async function decrementPosStockLocal(
 }
 
 export async function createPosInvoiceAction(formData: FormData) {
-  const { userId } = await requireAdminPermission("ventas_crear");
+  const perm = await requireAdminPermission("ventas_crear");
+  const { userId } = perm;
   const supabase = await createSupabaseServerClient();
 
   let payload: PosInvoicePayload;
@@ -172,6 +174,14 @@ export async function createPosInvoiceAction(formData: FormData) {
     redirectError(code, isEditingQuotation ? quotationOrderId : undefined);
   }
 
+  if (
+    !isQuotation &&
+    payload.paymentMethod === "credit" &&
+    !accountAllowsCredit(perm.permissions)
+  ) {
+    redirectFail("credit_forbidden");
+  }
+
   // Cotización no exige caja abierta; la venta sí.
   if (!isQuotation) {
     await assertCashRegisterOpenForStaff();
@@ -179,7 +189,7 @@ export async function createPosInvoiceAction(formData: FormData) {
 
   const actorSession = isQuotation
     ? null
-    : await fetchActorOpenCashSession(supabase, userId);
+    : await fetchOpenCashSession(supabase);
   const cashRegisterSessionId = actorSession?.id ?? null;
 
   if (isEditingQuotation && !isQuotation) redirectFail("validation");

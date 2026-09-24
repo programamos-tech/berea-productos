@@ -14,11 +14,14 @@ import {
   productSectionTitle as sectionTitle,
 } from "@/components/admin/product-form-primitives";
 import {
+  permissionModulesForAccount,
+  type AccountModuleId,
+} from "@/lib/admin-account-modules";
+import {
   COLLABORATOR_JOB_ROLES,
   collaboratorJobRoleLabel,
   mergePermissionsWithDefaults,
   permissionsFromRoleTemplate,
-  PERMISSION_MODULES,
   type CollaboratorJobRole,
   type PermissionKey,
   type PermissionMap,
@@ -111,12 +114,14 @@ type Props = {
   storeLabel?: string;
   initial?: CollaboratorInitial;
   branches?: BranchRef[];
+  disabledModules?: AccountModuleId[];
 };
 
 export function NewCollaboraboratorForm({
   mode,
   initial,
   branches = [],
+  disabledModules = [],
 }: Props) {
   const [displayName, setDisplayName] = useState(initial?.display_name ?? "");
   const [loginUsername, setLoginUsername] = useState(initial?.login_username ?? "");
@@ -140,9 +145,13 @@ export function NewCollaboraboratorForm({
   );
 
   const payloadJson = useMemo(() => JSON.stringify(permissions), [permissions]);
+  const visibleModules = useMemo(
+    () => permissionModulesForAccount(disabledModules),
+    [disabledModules],
+  );
 
   const summaryRole = collaboratorJobRoleLabel(jobRole);
-  const grantedCount = PERMISSION_MODULES.reduce(
+  const grantedCount = visibleModules.reduce(
     (n, mod) => n + mod.items.filter((i) => Boolean(permissions[i.key])).length,
     0,
   );
@@ -396,7 +405,7 @@ export function NewCollaboraboratorForm({
             </div>
 
             <div className="mt-4 space-y-5">
-              {PERMISSION_MODULES.map((mod) => (
+              {visibleModules.map((mod) => (
                 <div key={mod.id}>
                   <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-500">
                     {mod.label}

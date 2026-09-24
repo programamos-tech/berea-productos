@@ -58,6 +58,7 @@ type AccountBrand = {
   name: string;
   logoSrc: string;
   plateColor: string;
+  logoFullColor?: boolean;
 };
 
 function SidebarProductBrand({ account }: { account: AccountBrand }) {
@@ -72,6 +73,7 @@ function SidebarProductBrand({ account }: { account: AccountBrand }) {
         name={account.name}
         size={56}
         plateColor={account.plateColor}
+        fullColor={account.logoFullColor}
       />
     </Link>
   );
@@ -88,18 +90,19 @@ function SidebarTenantAccount({
   showStorefront: boolean;
   onNavigate: () => void;
 }) {
-  const branchLogo =
-    storagePublicObjectUrl(branchContext.active.logoPath) ?? account.logoSrc;
+  const branchLogo = storagePublicObjectUrl(branchContext.active.logoPath);
+  const markSrc = branchLogo ?? account.logoSrc;
   const cardClass =
     "mt-3.5 flex w-full items-center gap-2.5 rounded-lg border border-zinc-200 bg-white px-2.5 py-2 text-left dark:border-zinc-700/70 dark:bg-zinc-900/55";
 
   return (
     <div className={cardClass}>
       <OperatorAccountLogo
-        src={branchLogo}
+        src={markSrc}
         name={branchContext.active.name}
         size={32}
-        plateColor={account.plateColor}
+        plateColor={branchLogo ? "#ffffff" : account.plateColor}
+        fullColor={Boolean(branchLogo) || account.logoFullColor}
       />
       <span className="min-w-0 flex-1">
         <span className="block text-[9px] font-semibold uppercase tracking-[0.12em] text-zinc-500 dark:text-zinc-400">

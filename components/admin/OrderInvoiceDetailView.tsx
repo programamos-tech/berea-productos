@@ -133,6 +133,7 @@ export type OrderInvoiceDetailViewProps = {
   stockNotices?: QuotationStockNotice[];
   /** Formato de factura: tira (default) u hoja carta. Las cotizaciones siempre van en hoja. */
   invoiceLayout?: InvoiceLayout;
+  canUseCredit?: boolean;
 };
 
 function IconClock({ className }: { className?: string }) {
@@ -253,6 +254,7 @@ export function OrderInvoiceDetailView(props: OrderInvoiceDetailViewProps) {
     justInvoiced = false,
     stockNotices = [],
     invoiceLayout = "ticket",
+    canUseCredit = true,
   } = props;
 
   const invoiceTradeName =
@@ -798,6 +800,7 @@ export function OrderInvoiceDetailView(props: OrderInvoiceDetailViewProps) {
                     customerEmail={customerEmail}
                     customerName={customerName}
                     totalCents={totalCents}
+                    canUseCredit={canUseCredit}
                   />
                 ) : (
                   <OrderInvoicePrintButton />

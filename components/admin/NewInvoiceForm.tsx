@@ -387,10 +387,12 @@ export function NewInvoiceForm({
   initialError,
   initialCustomerId,
   editQuotation,
+  canUseCredit = true,
 }: {
   initialError?: string;
   initialCustomerId?: string;
   editQuotation?: QuotationEditDraft;
+  canUseCredit?: boolean;
 }) {
   const editingQuotation = Boolean(editQuotation);
   const quickNameInputRef = useRef<HTMLInputElement>(null);
@@ -487,6 +489,10 @@ export function NewInvoiceForm({
   const [documentKind, setDocumentKind] = useState<"sale" | "quotation">(
     editingQuotation ? "quotation" : "sale",
   );
+
+  useEffect(() => {
+    if (!canUseCredit && payment === "credit") setPayment("cash");
+  }, [canUseCredit, payment]);
   const [cashGivenRaw, setCashGivenRaw] = useState("");
   const [transferRef, setTransferRef] = useState("");
   const [mixedCashRaw, setMixedCashRaw] = useState("");
@@ -1776,8 +1782,16 @@ export function NewInvoiceForm({
                     { id: "cash" as const, label: "Efectivo", icon: <IconCoin /> },
                     { id: "transfer" as const, label: "Transferencia", icon: <IconCard /> },
                     { id: "mixed" as const, label: "Mixto", icon: <IconGrid /> },
-                    { id: "credit" as const, label: "Crédito", icon: <IconNotebook /> },
-                  ] as const
+                    ...(canUseCredit
+                      ? [
+                          {
+                            id: "credit" as const,
+                            label: "Crédito",
+                            icon: <IconNotebook />,
+                          },
+                        ]
+                      : []),
+                  ]
                 ).map((tab) => {
                   const active = payment === tab.id;
                   return (

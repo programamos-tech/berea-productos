@@ -15,7 +15,7 @@ import {
   fetchOrdersCreatedInReportYmdWindow,
 } from "@/lib/admin-fetch-orders-for-report";
 import { formatCop } from "@/lib/money";
-import { posPaymentBreakdownForOrder } from "@/lib/pos-payment-breakdown";
+import { isPosDeferredIncome, posPaymentBreakdownForOrder } from "@/lib/pos-payment-breakdown";
 import type { TicketTrendPoint } from "@/lib/customer-ticket-trend";
 import {
   revenueNetGrossFromLines,
@@ -790,8 +790,10 @@ async function fetchAdminReportViaLegacy(
     const total = Number(o.total_cents ?? 0);
     if (o.status === "paid") {
       ventasPagadasPeriod += 1;
-      totalCobradoPedidos += total;
       const ref = String(o.wompi_reference ?? "");
+      if (!isPosDeferredIncome(ref)) {
+        totalCobradoPedidos += total;
+      }
       if (!ref.startsWith("POS:")) ventasVirtuales += total;
       const pay = posPaymentBreakdownForOrder({
         status: "paid",
@@ -814,6 +816,7 @@ async function fetchAdminReportViaLegacy(
     if (!pay.paid_at || !dayInRange(dk, rangeFrom, rangeTo)) continue;
     const amount = Math.max(0, Math.floor(Number(pay.amount_cents ?? 0)));
     if (amount <= 0) continue;
+    totalCobradoPedidos += amount;
     const method = String(pay.payment_method ?? "").trim().toLowerCase();
     if (method === "cash") efectivo += amount;
     else if (method === "transfer") transferencia += amount;
@@ -887,23 +890,32 @@ async function fetchAdminReportViaLegacy(
   let ingresosConIvaPeriod: number;
   let gananciaBruta: number;
 
+  const collectedPeriodOrders = paidPeriodOrders.filter(
+    (o) => !isPosDeferredIncome(o.wompi_reference),
+  );
+  const abonosPeriodCents = (paymentsResult.rows ?? []).reduce((sum, pay) => {
+    const dk = pay.paid_at ? reportCalendarDayKeyFromIso(pay.paid_at) : "";
+    if (!pay.paid_at || !dayInRange(dk, rangeFrom, rangeTo)) return sum;
+    return sum + Math.max(0, Math.floor(Number(pay.amount_cents ?? 0)));
+  }, 0);
+
   if (needsLineDetailForPeriod) {
     const rev = sumRevenueNetGrossForOrders(
-      paidPeriodOrders,
+      collectedPeriodOrders,
       orderItems,
       productsById,
     );
-    ingresosSinIvaPeriod = rev.net;
-    ingresosConIvaPeriod = rev.gross;
+    ingresosSinIvaPeriod = rev.net + abonosPeriodCents;
+    ingresosConIvaPeriod = rev.gross + abonosPeriodCents;
     gananciaBruta = sumGrossProfitNetOnLinesForPaidOrders(
       paidPeriodOrders,
       orderItems,
       productsById,
     );
   } else {
-    const rev = revenueNetGrossFromOrderTotals(paidPeriodOrders);
-    ingresosSinIvaPeriod = rev.net;
-    ingresosConIvaPeriod = rev.gross;
+    const rev = revenueNetGrossFromOrderTotals(collectedPeriodOrders);
+    ingresosSinIvaPeriod = rev.net + abonosPeriodCents;
+    ingresosConIvaPeriod = rev.gross + abonosPeriodCents;
     gananciaBruta = 0;
   }
 
@@ -979,12 +991,21 @@ async function fetchAdminReportViaLegacy(
   }
 
   for (const o of paidOrdersForChart) {
+    if (isPosDeferredIncome(o.wompi_reference)) continue;
     const key = reportCalendarDayKeyFromIso(o.created_at);
     const cur = incomeByDay.get(key);
     if (!cur) continue;
     const { gross } = revenueNetGrossFromLines(o, orderItems, productsById);
     cur.income += gross;
     cur.count += 1;
+  }
+
+  for (const pay of paymentsResult.rows ?? []) {
+    if (!pay.paid_at) continue;
+    const key = reportCalendarDayKeyFromIso(pay.paid_at);
+    const cur = incomeByDay.get(key);
+    if (!cur) continue;
+    cur.income += Math.max(0, Math.floor(Number(pay.amount_cents ?? 0)));
   }
 
   const {

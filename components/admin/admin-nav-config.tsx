@@ -35,6 +35,7 @@ export type AdminNavSection = {
 /**
  * Menú admin visible. Rutas en mantenimiento (banners, cupones, envíos, ajustes)
  * no se listan hasta reactivarlas.
+ * Para apagar un módulo por cuenta (Cuentas), ver lib/admin-account-modules.ts.
  */
 export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
   {
