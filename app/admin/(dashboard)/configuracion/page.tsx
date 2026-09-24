@@ -1,3 +1,4 @@
+import { HigherSalePriceSettings } from "@/components/admin/HigherSalePriceSettings";
 import { InvoiceLayoutSettings } from "@/components/admin/InvoiceLayoutSettings";
 import { KitsModuleSettings } from "@/components/admin/KitsModuleSettings";
 import { ProductCatalogFieldSettings } from "@/components/admin/ProductCatalogFieldSettings";
@@ -8,6 +9,7 @@ import {
   adminPanelClass,
 } from "@/lib/admin-ui";
 import { parseInvoiceLayout } from "@/lib/invoice-layout";
+import { accountAllowsHigherSalePrice } from "@/lib/product-vat-price";
 import { loadAdminPermissions } from "@/lib/load-admin-permissions";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
@@ -32,6 +34,7 @@ export default async function AdminConfiguracionPage({
     .maybeSingle();
   const invoiceLayout = parseInvoiceLayout(tenant?.storefront_config);
   const productFields = parseProductCatalogFields(tenant?.storefront_config);
+  const allowHigherPrice = accountAllowsHigherSalePrice(tenant?.storefront_config);
 
   return (
     <div className="flex flex-col gap-4 lg:gap-5">
@@ -90,6 +93,15 @@ export default async function AdminConfiguracionPage({
         </h2>
         <div className="mt-4">
           <ProductCatalogFieldSettings fields={productFields} canEdit={canEdit} />
+        </div>
+      </section>
+
+      <section className={`${adminPanelClass} p-4 sm:p-5`}>
+        <h2 className="text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
+          Factura
+        </h2>
+        <div className="mt-4">
+          <HigherSalePriceSettings enabled={allowHigherPrice} canEdit={canEdit} />
         </div>
       </section>
 

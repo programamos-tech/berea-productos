@@ -34,7 +34,7 @@ import {
   resolveKitSalePriceCents,
   type ProductKitRow,
 } from "@/lib/product-kits";
-import { unitPriceGrossCents } from "@/lib/product-vat-price";
+import { accountAllowsHigherSalePrice, unitPriceGrossCents, unitNetFromPosChargedUnitCents } from "@/lib/product-vat-price";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { fetchCurrentBranchInventoryMap } from "@/lib/branch-inventory";
@@ -56,6 +56,8 @@ export type PosInvoiceLinePayload = {
   discountPercent?: number | null;
   /** COP en centavos sobre neto total de línea; solo si no hay % válido. */
   discountAmountCents?: number | null;
+  /** Precio cobrado al cliente (con IVA si aplica). Solo si la cuenta lo permite y es mayor al catálogo. */
+  chargedUnitCents?: number | null;
 };
 
 export type PosInvoicePayload = {
@@ -212,7 +214,18 @@ export async function createPosInvoiceAction(formData: FormData) {
           ? Math.floor(Number(pctRaw))
           : null;
       const amt = Math.max(0, Math.floor(Number(amtRaw ?? 0)));
-      return { productId, quantity, discountPercent: pct, discountAmountCents: amt };
+      const chargedRaw = (row as { chargedUnitCents?: unknown }).chargedUnitCents;
+      const chargedUnitCents =
+        chargedRaw != null && chargedRaw !== "" && Number.isFinite(Number(chargedRaw))
+          ? Math.floor(Number(chargedRaw))
+          : null;
+      return {
+        productId,
+        quantity,
+        discountPercent: pct,
+        discountAmountCents: amt,
+        chargedUnitCents,
+      };
     })
     .filter((r) => r.productId && r.quantity > 0);
 
@@ -362,6 +375,27 @@ export async function createPosInvoiceAction(formData: FormData) {
     }
   }
 
+  const { data: tenantCfg } = await supabase
+    .from("tenants")
+    .select("storefront_config")
+    .eq("id", perm.tenantId)
+    .maybeSingle();
+  const allowHigherPrice = accountAllowsHigherSalePrice(tenantCfg?.storefront_config);
+
+  function saleNetUnit(
+    priceCatalog: number,
+    hasVat: boolean,
+    chargedUnitCents: number | null,
+  ): number {
+    const catalogNet = unitPriceAfterWholesaleCents(priceCatalog, wholesalePct);
+    if (!allowHigherPrice || chargedUnitCents == null || chargedUnitCents <= 0) {
+      return catalogNet;
+    }
+    const catalogGross = unitPriceGrossCents(catalogNet, hasVat, null);
+    if (chargedUnitCents < catalogGross) redirectFail("price_floor");
+    return unitNetFromPosChargedUnitCents(chargedUnitCents, hasVat, null);
+  }
+
   let subtotalCents = 0;
   let vatCents = 0;
   let totalCents = 0;
@@ -369,7 +403,8 @@ export async function createPosInvoiceAction(formData: FormData) {
     const p = productById.get(l.productId);
     if (!p) redirectFail("products");
     const priceCatalog = Math.max(0, Math.floor(Number(p.price_cents ?? 0)));
-    const netUnit = unitPriceAfterWholesaleCents(priceCatalog, wholesalePct);
+    const hasVat = Boolean(p.has_vat);
+    const netUnit = saleNetUnit(priceCatalog, hasVat, l.chargedUnitCents);
     const lineNetBefore = netUnit * l.quantity;
     const pctForCalc =
       l.discountPercent != null && l.discountPercent > 0 && l.discountPercent <= 100
@@ -383,7 +418,6 @@ export async function createPosInvoiceAction(formData: FormData) {
       amtForCalc,
     );
     const discNetUnit = discountedUnitNetCentsFromLine(lineNetAfter, l.quantity);
-    const hasVat = Boolean(p.has_vat);
     const unitFinal = unitPriceGrossCents(discNetUnit, hasVat, null);
     subtotalCents += lineNetAfter;
     totalCents += unitFinal * l.quantity;
@@ -540,7 +574,8 @@ export async function createPosInvoiceAction(formData: FormData) {
   const productItemRows = lines.map((l) => {
     const p = productById.get(l.productId)!;
     const priceCatalog = Math.max(0, Math.floor(Number(p.price_cents ?? 0)));
-    const netUnit = unitPriceAfterWholesaleCents(priceCatalog, wholesalePct);
+    const hasVat = Boolean(p.has_vat);
+    const netUnit = saleNetUnit(priceCatalog, hasVat, l.chargedUnitCents);
     const lineNetBefore = netUnit * l.quantity;
     const pctForCalc =
       l.discountPercent != null && l.discountPercent > 0 && l.discountPercent <= 100
@@ -553,7 +588,7 @@ export async function createPosInvoiceAction(formData: FormData) {
       amtForCalc,
     );
     const discNetUnit = discountedUnitNetCentsFromLine(lineNetAfter, l.quantity);
-    const unitFinal = unitPriceGrossCents(discNetUnit, Boolean(p.has_vat), null);
+    const unitFinal = unitPriceGrossCents(discNetUnit, hasVat, null);
     return {
       order_id: orderId,
       product_id: l.productId,

@@ -138,3 +138,41 @@ export async function updateProductCatalogFieldAction(formData: FormData) {
   revalidatePath("/admin/products");
   redirect("/admin/configuracion?notice=saved");
 }
+
+export async function updateHigherSalePriceAction(formData: FormData) {
+  const session = await requireAdminSession();
+  if (session.jobRole !== "owner" && !session.isPlatformOperator) {
+    redirect("/admin/configuracion?notice=forbidden");
+  }
+
+  const enabled = String(formData.get("enabled") ?? "") === "1";
+  const supabase = await createSupabaseServerClient();
+  const { data: tenant } = await supabase
+    .from("tenants")
+    .select("storefront_config")
+    .eq("id", session.tenantId)
+    .maybeSingle();
+  if (!tenant) redirect("/admin/configuracion?notice=error");
+
+  const current =
+    tenant.storefront_config &&
+    typeof tenant.storefront_config === "object" &&
+    !Array.isArray(tenant.storefront_config)
+      ? (tenant.storefront_config as Record<string, unknown>)
+      : {};
+
+  const { error } = await supabase
+    .from("tenants")
+    .update({
+      storefront_config: {
+        ...current,
+        pos_allow_higher_price: enabled,
+      },
+    })
+    .eq("id", session.tenantId);
+  if (error) redirect("/admin/configuracion?notice=error");
+
+  revalidatePath("/admin/configuracion");
+  revalidatePath("/admin/ventas/nueva");
+  redirect("/admin/configuracion?notice=saved");
+}

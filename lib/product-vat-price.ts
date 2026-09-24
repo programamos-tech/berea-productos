@@ -34,6 +34,30 @@ export function unitVatAmountCents(
   return Math.max(0, gross - net);
 }
 
+/** Apagado si la cuenta no guardó el flag. */
+export function accountAllowsHigherSalePrice(storefrontConfig: unknown): boolean {
+  if (!storefrontConfig || typeof storefrontConfig !== "object" || Array.isArray(storefrontConfig)) {
+    return false;
+  }
+  return (storefrontConfig as Record<string, unknown>).pos_allow_higher_price === true;
+}
+
+/**
+ * Precio cobrado (el que ve el cliente, con IVA si aplica) por encima del catálogo.
+ * Igual o menor se queda en el precio de catálogo.
+ */
+export function raisedPosUnitNetCents(
+  catalogNetCents: number,
+  hasVat: boolean | null | undefined,
+  chargedGrossCents: number | null | undefined,
+): number {
+  const catalogNet = unitPriceNetCents(catalogNetCents);
+  const catalogGross = unitPriceGrossCents(catalogNet, hasVat, null);
+  const charged = Math.round(Number(chargedGrossCents ?? 0));
+  if (!Number.isFinite(charged) || charged <= catalogGross) return catalogNet;
+  return unitNetFromPosChargedUnitCents(charged, hasVat, null);
+}
+
 /** Etiqueta de IVA en UI (no usar `vat_percent` heredado con tasas “adaptadas”). */
 export function saleVatPercentLabel(has_vat: boolean | null | undefined): number | null {
   return has_vat ? SALE_VAT_PERCENT : null;
