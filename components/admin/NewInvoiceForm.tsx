@@ -20,7 +20,13 @@ import {
   productSectionTitle as sectionTitle,
 } from "@/components/admin/product-form-primitives";
 import { adminButtonCancelClass } from "@/lib/admin-ui";
-import { formatCop, parseCopInputDigitsToInt } from "@/lib/money";
+import {
+  formatCop,
+  formatCopAmountInput,
+  parseCopDecimalInput,
+  parseCopInputDigitsToInt,
+  sanitizeCopDecimalTyping,
+} from "@/lib/money";
 import { isDefaultPosCustomerName } from "@/lib/pos-default-customer";
 import {
   parseStoreCustomerKind,
@@ -127,7 +133,7 @@ function lineUnitNetCents(
     wholesalePct,
   );
   if (!allowHigherPrice) return catalogNet;
-  const charged = parseCopInputDigitsToInt(line.chargedGrossRaw);
+  const charged = Math.round(parseCopDecimalInput(line.chargedGrossRaw));
   return raisedPosUnitNetCents(
     catalogNet,
     line.product.has_vat,
@@ -1211,7 +1217,7 @@ export function NewInvoiceForm({
             ? 0
             : effectiveLineDiscountAmountCents(l, customerWholesalePct, allowHigherPrice);
         const catalogGross = unitFinalCents(l.product, customerWholesalePct);
-        const typedGross = parseCopInputDigitsToInt(l.chargedGrossRaw);
+        const typedGross = Math.round(parseCopDecimalInput(l.chargedGrossRaw));
         const chargedUnitCents =
           allowHigherPrice && typedGross > catalogGross ? typedGross : null;
         return {
@@ -1441,17 +1447,26 @@ export function NewInvoiceForm({
                               : ""}
                           </p>
                           {allowHigherPrice ? (
-                            <label className="mt-1.5 flex max-w-[12rem] items-center gap-1.5 text-xs text-zinc-600 dark:text-zinc-300">
+                            <label className="mt-1.5 flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-300">
                               <span className="shrink-0">Cobrar</span>
                               <input
                                 type="text"
-                                inputMode="numeric"
-                                placeholder={String(unitCatalogGross)}
+                                inputMode="decimal"
+                                placeholder={formatCopAmountInput(unitCatalogGross)}
                                 value={line.chargedGrossRaw}
                                 onChange={(e) =>
-                                  setLineChargedGross(line.key, e.target.value.replace(/\D/g, ""))
+                                  setLineChargedGross(
+                                    line.key,
+                                    sanitizeCopDecimalTyping(e.target.value),
+                                  )
                                 }
-                                className="min-w-0 flex-1 rounded-md border border-zinc-200/90 bg-white px-2 py-1 tabular-nums text-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
+                                onBlur={() => {
+                                  const n = parseCopDecimalInput(line.chargedGrossRaw);
+                                  if (n > 0) {
+                                    setLineChargedGross(line.key, formatCopAmountInput(n));
+                                  }
+                                }}
+                                className="w-40 rounded-md border border-zinc-200/90 bg-white px-3 py-1.5 text-sm tabular-nums text-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
                               />
                             </label>
                           ) : null}
