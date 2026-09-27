@@ -67,7 +67,7 @@ export const adminSidebarLogoPath =
   "/logo-berea-productos-v3.png";
 
 /** Nombre del producto / sistema en el backoffice (marca Berea). */
-export const adminProductBrand = "Berea House";
+export const adminProductBrand = "Berea Facturas";
 
 /**
  * Cuenta SaaS / workspace en el sidebar.
@@ -154,7 +154,7 @@ export const storeWhatsAppPrefilledText =
   "Hola, te escribo desde la tienda de Aleya Shop. Me gustaría recibir asesoría.";
 
 /**
- * Soporte WhatsApp del backoffice Berea House (sidebar).
+ * Soporte WhatsApp del backoffice Berea Facturas (sidebar).
  * Override: `NEXT_PUBLIC_ADMIN_SUPPORT_WHATSAPP` (solo dígitos o con formato).
  */
 const adminSupportWhatsAppDigits =
@@ -169,4 +169,4 @@ export const adminSupportWhatsAppUrl = `https://wa.me/${adminSupportWhatsAppDigi
 
 export const adminSupportWhatsAppPrefilledText =
   process.env.NEXT_PUBLIC_ADMIN_SUPPORT_WHATSAPP_TEXT?.trim() ||
-  "Hola, escribo desde Berea House. Necesito ayuda con el panel.";
+  "Hola, escribo desde Berea Facturas. Necesito ayuda con el panel.";

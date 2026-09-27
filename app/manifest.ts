@@ -4,9 +4,9 @@ const TEAL = "#0197b2";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Berea House",
-    short_name: "Berea House",
-    description: "Berea House · software y escuela",
+    name: "Berea Facturas",
+    short_name: "Berea Facturas",
+    description: "Berea Facturas · Milagros Guacarí",
     start_url: "/",
     display: "standalone",
     background_color: TEAL,
