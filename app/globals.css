@@ -3,9 +3,9 @@
 /* Modo oscuro del admin: `data-admin-theme="dark"` en un ancestro (ver `AdminThemeProvider`). */
 @custom-variant dark (&:where([data-admin-theme="dark"], [data-admin-theme="dark"] *));
 
-/* Sidebar + acentos de gráfica en oscuro (teal un poco más claro). */
+/* Sidebar navy más profundo en tema oscuro; acentos de gráfica más claros. */
 [data-admin-theme="dark"] {
-  --admin-sidebar-bg: var(--admin-sidebar-bg-dark, #09090b);
+  --admin-sidebar-bg: var(--admin-sidebar-bg-dark, #072632);
   --admin-chart-line: var(--admin-coral-soft, #7ecfe0);
 }
 
