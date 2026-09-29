@@ -3,7 +3,7 @@
 /* Modo oscuro del admin: `data-admin-theme="dark"` en un ancestro (ver `AdminThemeProvider`). */
 @custom-variant dark (&:where([data-admin-theme="dark"], [data-admin-theme="dark"] *));
 
-/* Sidebar siempre charcoal; en dark theme usa el token más profundo. */
+/* Sidebar + acentos de gráfica en oscuro (teal un poco más claro). */
 [data-admin-theme="dark"] {
   --admin-sidebar-bg: var(--admin-sidebar-bg-dark, #09090b);
   --admin-chart-line: var(--admin-coral-soft, #7ecfe0);
@@ -13,11 +13,6 @@
   --background: #ffffff;
   --foreground: #292524;
   --admin-chart-line: var(--admin-coral, #0197b2);
-  --admin-sidebar-nav-active: linear-gradient(
-    90deg,
-    var(--admin-sidebar-nav-active-from, #0197b2),
-    var(--admin-sidebar-nav-active-to, #015a6e)
-  );
   /* Sin `only`: si no, los subárboles no pueden usar color-scheme dark (rompe admin oscuro / nativos). */
   color-scheme: light;
 }
@@ -238,18 +233,6 @@ body {
 .admin-sidebar-nav-scroll::-webkit-scrollbar-track {
   background: transparent !important;
   display: none !important;
-}
-
-/* Ítem activo del sidebar — gradiente horizontal marca Berea blue */
-.admin-sidebar-nav-active {
-  background-image: linear-gradient(
-    90deg,
-    var(--admin-sidebar-nav-active-from, #0197b2),
-    var(--admin-sidebar-nav-active-to, #015a6e)
-  );
-  color: #fff;
-  box-shadow: 0 8px 20px -12px
-    color-mix(in srgb, var(--admin-sidebar-nav-active-from, #0197b2) 70%, transparent);
 }
 
 /* Admin: sin barra de scroll visible en la ventana (sigue scrolleable) */

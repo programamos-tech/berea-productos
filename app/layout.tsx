@@ -15,12 +15,6 @@ import {
   ADMIN_PROFIT_DARK,
   ADMIN_SIDEBAR_BG,
   ADMIN_SIDEBAR_BG_DARK,
-  ADMIN_SIDEBAR_BORDER,
-  ADMIN_SIDEBAR_ELEVATED,
-  ADMIN_SIDEBAR_NAV_ACTIVE_FROM,
-  ADMIN_SIDEBAR_NAV_ACTIVE_TO,
-  ADMIN_SIDEBAR_NAV_MUTED,
-  ADMIN_SIDEBAR_SECTION,
   STORE_CHROME_BG,
 } from "@/lib/admin-theme";
 import { storeCheckoutBootScriptSource } from "@/lib/store-checkout-nav";
@@ -84,12 +78,6 @@ export default function RootLayout({
           {
             "--admin-sidebar-bg": ADMIN_SIDEBAR_BG,
             "--admin-sidebar-bg-dark": ADMIN_SIDEBAR_BG_DARK,
-            "--admin-sidebar-border": ADMIN_SIDEBAR_BORDER,
-            "--admin-sidebar-elevated": ADMIN_SIDEBAR_ELEVATED,
-            "--admin-sidebar-nav-muted": ADMIN_SIDEBAR_NAV_MUTED,
-            "--admin-sidebar-section": ADMIN_SIDEBAR_SECTION,
-            "--admin-sidebar-nav-active-from": ADMIN_SIDEBAR_NAV_ACTIVE_FROM,
-            "--admin-sidebar-nav-active-to": ADMIN_SIDEBAR_NAV_ACTIVE_TO,
             "--admin-coral": ADMIN_CORAL,
             "--admin-coral-hover": ADMIN_CORAL_HOVER,
             "--admin-coral-deep": ADMIN_CORAL_DEEP,
