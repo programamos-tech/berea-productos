@@ -123,7 +123,7 @@ export function BranchSwitcher({
   if (branches.length <= 1) {
     return (
       <div
-        className={`${bare ? "flex" : "hidden rounded-lg border border-zinc-200 px-2.5 py-1.5 sm:flex dark:border-zinc-700"} items-center gap-1.5 text-xs font-medium text-zinc-700 dark:text-zinc-200 ${className}`}
+        className={`${bare ? "flex text-zinc-100" : "hidden rounded-lg border border-zinc-200 px-2.5 py-1.5 text-zinc-700 sm:flex dark:border-zinc-700 dark:text-zinc-200"} items-center gap-1.5 text-xs font-medium ${className}`}
       >
         {!bare ? <MapPin className="size-3.5" aria-hidden /> : null}
         <span className="max-w-32 truncate">{active.name}</span>
@@ -139,7 +139,7 @@ export function BranchSwitcher({
         aria-haspopup="menu"
         aria-expanded={open}
         aria-controls={menuId}
-        className={`${bare ? "" : "rounded-lg border border-zinc-200 bg-white px-2 py-1.5 dark:border-zinc-700 dark:bg-zinc-900"} flex w-full items-center gap-1.5 text-left text-xs font-medium text-zinc-700 outline-none transition hover:text-zinc-950 focus-visible:ring-2 focus-visible:ring-zinc-400/50 dark:text-zinc-200 dark:hover:text-white`}
+        className={`${bare ? "text-zinc-100 hover:text-white" : "rounded-lg border border-zinc-200 bg-white px-2 py-1.5 text-zinc-700 hover:text-zinc-950 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:text-white"} flex w-full items-center gap-1.5 text-left text-xs font-medium outline-none transition focus-visible:ring-2 focus-visible:ring-zinc-400/50`}
       >
         {!bare ? <MapPin className="size-3.5 shrink-0" aria-hidden /> : null}
         <span className="min-w-0 flex-1 truncate">{active.name}</span>

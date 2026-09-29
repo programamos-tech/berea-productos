@@ -20,10 +20,10 @@ const ACCOUNT_SECTIONS = [
 
 function navClass(active: boolean) {
   return [
-    "flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] font-medium transition",
+    "flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-[13px] font-medium transition",
     active
-      ? "bg-zinc-900 text-white shadow-sm dark:bg-zinc-100 dark:text-zinc-900"
-      : "text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-300 dark:hover:bg-white/[0.06] dark:hover:text-zinc-100",
+      ? "admin-sidebar-nav-active text-white"
+      : "text-[var(--admin-sidebar-nav-muted)] hover:bg-white/[0.06] hover:text-zinc-100",
   ].join(" ");
 }
 
@@ -42,9 +42,9 @@ export function OperatorBackofficeShell({
 
   return (
     <div className="isolate flex min-h-dvh max-w-full items-stretch antialiased">
-      <aside className="fixed inset-y-0 left-0 z-[50] hidden w-64 shrink-0 flex-col border-r border-zinc-200 bg-[var(--admin-sidebar-bg)] lg:flex dark:border-zinc-800/90">
-        <div className="border-b border-zinc-200 px-4 py-4 dark:border-zinc-800/90">
-          <Link href="/admin/cuentas" className="inline-flex rounded-md outline-none focus-visible:ring-2 focus-visible:ring-zinc-400/50">
+      <aside className="fixed inset-y-0 left-0 z-[50] hidden w-64 shrink-0 flex-col border-r border-[color:var(--admin-sidebar-border)] bg-[var(--admin-sidebar-bg)] lg:flex">
+        <div className="border-b border-[color:var(--admin-sidebar-border)] px-4 py-4">
+          <Link href="/admin/cuentas" className="inline-flex rounded-md outline-none focus-visible:ring-2 focus-visible:ring-[var(--admin-coral-soft)]/40">
             <Image
               src={adminSidebarLogoPath}
               alt={adminProductBrand}
@@ -54,13 +54,13 @@ export function OperatorBackofficeShell({
               priority
             />
           </Link>
-          <p className="mt-2 text-[10px] font-medium uppercase tracking-[0.14em] text-zinc-500">
+          <p className="mt-2 text-[10px] font-medium uppercase tracking-[0.14em] text-[var(--admin-sidebar-section)]">
             Backoffice
           </p>
         </div>
-        <nav className="admin-sidebar-nav-scroll flex-1 space-y-6 overflow-y-auto px-2.5 py-4">
+        <nav className="admin-sidebar-nav-scroll flex-1 space-y-5 overflow-y-auto px-2.5 py-4">
           <div>
-            <p className="px-2.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
+            <p className="px-2.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--admin-sidebar-section)]">
               Plataforma
             </p>
             <ul className="mt-2">
@@ -74,7 +74,7 @@ export function OperatorBackofficeShell({
           </div>
           {onAccount ? (
             <div>
-              <p className="px-2.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
+              <p className="px-2.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--admin-sidebar-section)]">
                 Esta cuenta
               </p>
               <ul className="mt-2 space-y-0.5">
