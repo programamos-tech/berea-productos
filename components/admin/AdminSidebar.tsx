@@ -52,8 +52,8 @@ function IconExternalStore({ className }: { className?: string }) {
   );
 }
 
-const sidebarInkMuted = "text-slate-400";
-const sidebarBorder = "border-white/10";
+const sidebarInkMuted = "text-zinc-500";
+const sidebarBorder = "border-zinc-800";
 const sidebarBg = { backgroundColor: ADMIN_TENANT_SIDEBAR_BG };
 
 type AccountBrand = {
@@ -68,7 +68,7 @@ function SidebarProductBrand({ account }: { account: AccountBrand }) {
     <Link
       href="/admin"
       prefetch
-      className="inline-flex rounded-md outline-none transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0b1628]"
+      className="inline-flex rounded-md outline-none transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-2 focus-visible:ring-offset-[#161618]"
     >
       {account.logoFullColor ? (
         <span
@@ -111,7 +111,7 @@ function SidebarTenantAccount({
   const branchLogo = storagePublicObjectUrl(branchContext.active.logoPath);
   const markSrc = branchLogo ?? account.logoSrc;
   const cardClass =
-    "mt-3.5 flex w-full items-center gap-2.5 rounded-lg bg-[var(--admin-coral)] px-2.5 py-2 text-left shadow-sm shadow-black/20";
+    "mt-3.5 flex w-full items-center gap-2.5 rounded-lg border border-zinc-800 px-2.5 py-2 text-left";
 
   return (
     <div className={cardClass}>
@@ -123,13 +123,13 @@ function SidebarTenantAccount({
         fullColor={Boolean(branchLogo) || account.logoFullColor}
       />
       <span className="min-w-0 flex-1">
-        <span className="block text-[9px] font-semibold uppercase tracking-[0.12em] text-white/75">
+        <span className="block text-[9px] font-semibold uppercase tracking-[0.12em] text-zinc-500">
           Sucursal activa
         </span>
         <BranchSwitcher
           active={branchContext.active}
           branches={branchContext.available}
-          appearance="brand"
+          appearance="sidebar"
           className="mt-0.5 w-full"
         />
       </span>
@@ -139,7 +139,7 @@ function SidebarTenantAccount({
           prefetch
           onClick={() => onNavigate()}
           title={`Ver tienda · ${account.name}`}
-          className="shrink-0 rounded-md p-1 text-white/80 transition hover:bg-white/15 hover:text-white"
+          className="shrink-0 rounded-md p-1 text-zinc-400 transition hover:bg-white/[0.06] hover:text-white"
         >
           <IconExternalStore className="size-4" />
           <span className="sr-only">Ver tienda</span>
@@ -233,12 +233,12 @@ function SidebarSupportCard() {
           <span className="block text-[13px] font-medium text-white">
             ¿Necesitas ayuda?
           </span>
-          <span className="mt-0.5 block truncate text-[11px] text-slate-400">
+          <span className="mt-0.5 block truncate text-[11px] text-zinc-400">
             WhatsApp · {adminSupportWhatsAppDisplay}
           </span>
         </span>
         <span
-          className="shrink-0 text-slate-500 transition group-hover:text-slate-300"
+          className="shrink-0 text-zinc-500 transition group-hover:text-zinc-300"
           aria-hidden
         >
           →
@@ -266,8 +266,8 @@ function AdminSidebarInner({
     [
       "flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] font-medium transition",
       active
-        ? "bg-white/[0.12] text-white"
-        : "text-slate-300 hover:bg-white/[0.06] hover:text-white",
+        ? "bg-[var(--admin-coral)] text-white shadow-sm"
+        : "text-zinc-300 hover:bg-white/[0.06] hover:text-white",
     ].join(" ");
 
   return (
@@ -319,7 +319,7 @@ function AdminSidebarInner({
                       </span>
                     </Link>
                     {children.length > 0 ? (
-                      <ul className="mt-0.5 space-y-0.5 border-l border-white/10 py-0.5 pl-2 ml-[1.15rem]">
+                      <ul className="mt-0.5 space-y-0.5 border-l border-zinc-800 py-0.5 pl-2 ml-[1.15rem]">
                         {children.map((child) => {
                           const childActive = adminNavItemActive(
                             pathname,
@@ -333,8 +333,8 @@ function AdminSidebarInner({
                                 className={[
                                   "flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[12px] font-medium transition",
                                   childActive
-                                    ? "bg-white/[0.12] text-white"
-                                    : "text-slate-400 hover:bg-white/[0.06] hover:text-white",
+                                    ? "bg-[var(--admin-coral)] text-white shadow-sm"
+                                    : "text-zinc-400 hover:bg-white/[0.06] hover:text-white",
                                 ].join(" ")}
                               >
                                 {child.label}
@@ -380,10 +380,10 @@ function AdminSidebarFallback({
             Gestiona tu tienda de productos
           </p>
         </div>
-        <div className="mt-3.5 flex w-full items-center gap-2.5 rounded-lg bg-[var(--admin-coral)] px-2.5 py-2">
-          <span className="size-8 shrink-0 overflow-hidden rounded-md bg-white/25" />
+        <div className="mt-3.5 flex w-full items-center gap-2.5 rounded-lg border border-zinc-800 px-2.5 py-2">
+          <span className="size-8 shrink-0 overflow-hidden rounded-md bg-zinc-800" />
           <span className="min-w-0 flex-1">
-            <span className="block h-3 w-20 rounded bg-white/25" />
+            <span className="block h-3 w-20 rounded bg-zinc-800" />
           </span>
         </div>
       </div>

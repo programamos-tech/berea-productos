@@ -28,8 +28,11 @@ export const ADMIN_SIDEBAR_BG = "#FAFAFA" as const;
 /** Sidebar en modo oscuro: zinc-950, alineado al canvas Berea House. */
 export const ADMIN_SIDEBAR_BG_DARK = "#09090b" as const;
 
-/** Sidebar del panel de tienda: azul marino casi negro, igual en claro y oscuro. */
-export const ADMIN_TENANT_SIDEBAR_BG = "#0b1628" as const;
+/**
+ * Sidebar del panel de tienda: mismo negro que la barra superior en oscuro
+ * (zinc-900/90 sobre zinc-950), igual en claro y oscuro.
+ */
+export const ADMIN_TENANT_SIDEBAR_BG = "#161618" as const;
 
 /** Paneles suaves (cuenta, direcciones) — blanco, alineado al canvas. */
 export const STORE_CHROME_BG = "#ffffff" as const;
