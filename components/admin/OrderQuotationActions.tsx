@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 import { useState, useTransition } from "react";
+import { createPortal } from "react-dom";
 import { convertQuotationToSaleAction } from "@/app/actions/admin/quotation";
+import { AdminPortalRoot } from "@/components/admin/AdminPortalRoot";
 import { productInputClass as inputClass } from "@/components/admin/product-form-primitives";
 import { adminButtonCancelClass } from "@/lib/admin-ui";
 import { isDefaultPosCustomerName } from "@/lib/pos-default-customer";
@@ -102,13 +104,15 @@ export function OrderQuotationActions({
         <p className="text-xs text-red-700 dark:text-red-300">{downloadError}</p>
       ) : null}
 
-      {facturarOpen ? (
+      {facturarOpen
+        ? createPortal(
+        <AdminPortalRoot>
         <div
-          className="fixed inset-0 z-[90] flex items-center justify-center bg-zinc-950/50 p-4"
+          className="fixed inset-0 z-[90] flex items-end justify-center overflow-y-auto overscroll-contain bg-zinc-950/50 p-4 sm:items-center"
           role="dialog"
           aria-modal="true"
         >
-          <div className="w-full max-w-md rounded-2xl border border-zinc-200 bg-white p-5 shadow-xl dark:border-zinc-700 dark:bg-zinc-900">
+          <div className="my-auto max-h-[min(92dvh,40rem)] w-full max-w-md overflow-y-auto rounded-2xl border border-zinc-200 bg-white p-5 shadow-xl dark:border-zinc-700 dark:bg-zinc-900">
             <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
               Facturar cotización #{invoiceRef}
             </h3>
@@ -271,7 +275,10 @@ export function OrderQuotationActions({
             </form>
           </div>
         </div>
-      ) : null}
+        </AdminPortalRoot>,
+        document.body,
+      )
+        : null}
     </div>
   );
 }

@@ -383,17 +383,23 @@ function ConfirmInvoiceButton({
   disabled,
   documentKind,
   editingQuotation,
+  onConfirmIntent,
 }: {
   disabled: boolean;
   documentKind: "sale" | "quotation";
   editingQuotation?: boolean;
+  onConfirmIntent: () => void;
 }) {
   return (
     <AdminFormSubmitButton
       pendingLabel="Guardando…"
       disabled={disabled}
       data-invoice-confirm="true"
-      className="mt-4 w-full rounded-lg border border-[var(--admin-coral)] bg-[var(--admin-coral)] py-2.5 text-sm font-semibold text-white transition hover:border-[var(--admin-coral-hover)] hover:bg-[var(--admin-coral-hover)] disabled:cursor-not-allowed disabled:opacity-45"
+      onPointerDown={onConfirmIntent}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") onConfirmIntent();
+      }}
+      className="mt-4 w-full rounded-lg border border-[var(--admin-coral)] bg-[var(--admin-coral)] py-2.5 text-base font-semibold text-white transition hover:border-[var(--admin-coral-hover)] hover:bg-[var(--admin-coral-hover)] disabled:cursor-not-allowed disabled:opacity-45 sm:text-sm"
     >
       {editingQuotation
         ? "Guardar cambios"
@@ -407,12 +413,16 @@ function ConfirmInvoiceButton({
 function onInvoiceFormSubmit(
   e: React.FormEvent<HTMLFormElement>,
   payloadJson: string,
+  confirmTapAt: number,
 ) {
   const submitter = (e.nativeEvent as SubmitEvent).submitter;
-  if (
-    !(submitter instanceof HTMLButtonElement) ||
-    submitter.dataset.invoiceConfirm !== "true"
-  ) {
+  const fromConfirmButton =
+    submitter instanceof HTMLButtonElement &&
+    submitter.dataset.invoiceConfirm === "true";
+  // iPhone Safari a veces manda el submit con submitter null aunque el toque
+  // fue «Guardar cotización». El pointerdown del botón deja esta marca.
+  const fromRecentTap = Date.now() - confirmTapAt < 1500;
+  if (!fromConfirmButton && !fromRecentTap) {
     e.preventDefault();
     return;
   }
@@ -441,6 +451,7 @@ export function NewInvoiceForm({
   const editingQuotation = Boolean(editQuotation);
   const quickNameInputRef = useRef<HTMLInputElement>(null);
   const customerSearchInputRef = useRef<HTMLInputElement>(null);
+  const confirmTapAtRef = useRef(0);
   const [quickModalOpen, setQuickModalOpen] = useState(false);
   const [quickName, setQuickName] = useState("");
   const [quickDocument, setQuickDocument] = useState("");
@@ -1284,13 +1295,15 @@ export function NewInvoiceForm({
       <form
         action={createPosInvoiceAction}
         className="flex flex-col gap-0"
-        onSubmit={(e) => onInvoiceFormSubmit(e, payloadJson)}
+        onSubmit={(e) =>
+          onInvoiceFormSubmit(e, payloadJson, confirmTapAtRef.current)
+        }
       >
         <input type="hidden" name="payload" value={payloadJson} readOnly />
 
-        <div className="flex min-w-0 flex-col gap-6 xl:grid xl:grid-cols-[minmax(0,1fr)_minmax(28rem,32rem)] xl:items-start xl:gap-10">
+        <div className="grid min-w-0 grid-cols-1 items-start gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(28rem,32rem)] xl:items-start xl:gap-10">
           <section
-            className={`${sectionClass} order-2 xl:order-none xl:col-start-1 xl:row-start-1`}
+            className={`${sectionClass} order-2 min-w-0 xl:order-none xl:col-start-1 xl:row-start-1`}
           >
             <h2 className={sectionTitle}>
               {canUseKits ? "Productos y kits" : "Productos"}
@@ -1391,7 +1404,7 @@ export function NewInvoiceForm({
           </section>
 
           <section
-            className={`${sectionClass} order-3 xl:order-none xl:col-start-1 xl:row-start-2`}
+            className={`${sectionClass} order-3 min-w-0 xl:order-none xl:col-start-1 xl:row-start-2`}
           >
             <h2 className={sectionTitle}>Ítems seleccionados</h2>
             {lines.length === 0 && kitLines.length === 0 ? (
@@ -1478,7 +1491,7 @@ export function NewInvoiceForm({
                                   }
                                 }}
                                 className={[
-                                  "w-40 rounded-md border bg-white px-3 py-1.5 text-sm tabular-nums text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100",
+                                  "w-40 rounded-md border bg-white px-3 py-1.5 text-base tabular-nums text-zinc-900 sm:text-sm dark:bg-zinc-950 dark:text-zinc-100",
                                   lineBlocked
                                     ? "border-red-300 dark:border-red-800"
                                     : "border-zinc-200/90 dark:border-zinc-700",
@@ -1562,7 +1575,7 @@ export function NewInvoiceForm({
                                   Math.min(100, Math.max(0, Math.floor(Number(e.target.value) || 0))),
                                 )
                               }
-                              className="w-14 rounded-md border border-zinc-200/90 bg-white px-2 py-1 tabular-nums text-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
+                              className="w-16 rounded-md border border-zinc-200/90 bg-white px-2 py-1.5 text-base tabular-nums text-zinc-900 sm:w-14 sm:py-1 sm:text-xs dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
                             />
                           </label>
                         ) : null}
@@ -1577,7 +1590,7 @@ export function NewInvoiceForm({
                               onChange={(e) =>
                                 setLineDiscountAmountRaw(line.key, e.target.value.replace(/\D/g, ""))
                               }
-                              className="min-w-0 flex-1 rounded-md border border-zinc-200/90 bg-white px-2 py-1 tabular-nums text-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
+                              className="min-w-0 flex-1 rounded-md border border-zinc-200/90 bg-white px-2 py-1.5 text-base tabular-nums text-zinc-900 sm:py-1 sm:text-xs dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
                             />
                             <span className="shrink-0 text-[10px] text-zinc-400">
                               máx. {formatCop(maxDiscNet)}
@@ -1663,17 +1676,7 @@ export function NewInvoiceForm({
             )}
           </section>
 
-          <div
-            className="
-              contents
-              xl:col-start-2 xl:row-start-1 xl:row-span-4
-              xl:flex xl:flex-col xl:gap-0
-              xl:sticky xl:top-20 xl:z-10 xl:self-start
-              xl:border-l xl:border-zinc-200/70 xl:pl-8 dark:xl:border-zinc-800
-              2xl:pl-10
-            "
-          >
-            <section className={`${sectionClass} order-1 xl:order-none xl:border-t-0 xl:pt-0`}>
+            <section className={`${sectionClass} order-1 min-w-0 xl:order-none xl:col-start-2 xl:row-start-1 xl:border-l xl:border-t-0 xl:border-zinc-200/70 xl:pl-8 xl:pt-0 dark:xl:border-zinc-800 2xl:pl-10`}>
               <h2 className={sectionTitle}>
                 Cliente <span className="text-red-600 dark:text-red-400">*</span>
               </h2>
@@ -1788,7 +1791,16 @@ export function NewInvoiceForm({
               </div>
             </section>
 
-            <section className={`${sectionClass} order-4 xl:order-none`}>
+          <div
+            className="
+              order-4 flex min-w-0 flex-col
+              xl:order-none xl:col-start-2 xl:row-start-2 xl:self-start
+              xl:sticky xl:top-20 xl:z-10
+              xl:border-l xl:border-zinc-200/70 xl:pl-8 dark:xl:border-zinc-800
+              2xl:pl-10
+            "
+          >
+            <section className={`${sectionClass} xl:order-none`}>
               <h2 className={`${sectionTitle} flex items-center gap-2`}>
                 <IconHome />
                 Envío
@@ -1890,7 +1902,7 @@ export function NewInvoiceForm({
                         }
                       }}
                       className={[
-                        "flex flex-1 flex-col items-center justify-center gap-0.5 rounded-md px-2 py-2 text-center transition",
+                        "flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-md px-2 py-2.5 text-center transition",
                         active ? segmentBtnActive : segmentBtnIdle,
                       ].join(" ")}
                     >
@@ -1938,7 +1950,7 @@ export function NewInvoiceForm({
                       type="button"
                       onClick={() => setPayment(tab.id)}
                       className={[
-                        "flex flex-1 flex-col items-center justify-center gap-1 rounded-md px-2 py-2 text-center text-xs font-medium transition sm:flex-row sm:text-sm",
+                        "flex min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-md px-1.5 py-2.5 text-center text-xs font-medium transition sm:flex-row sm:px-2 sm:text-sm",
                         active ? segmentBtnActive : segmentBtnIdle,
                       ].join(" ")}
                     >
@@ -2127,10 +2139,30 @@ export function NewInvoiceForm({
                     ? "Se guarda como cotización (pre-factura) sin cobro ni descuento de stock."
                     : "Verificá cliente, productos y pago antes de confirmar."}
               </p>
+              {!canSubmit ? (
+                <p className="mt-3 text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
+                  {customer == null
+                    ? "Elegí un cliente para poder guardar."
+                    : lines.length === 0 && kitLines.length === 0
+                      ? "Agregá al menos un producto."
+                      : shipChoice == null || shipChoice === ""
+                        ? "Elegí cómo se entrega."
+                        : priceBlocked
+                          ? POS_PRICE_NOT_ALLOWED_MESSAGE
+                          : documentKind !== "quotation" && cartStockExceeded
+                            ? "Hay líneas sin stock. Ajustá cantidades o guardá como cotización."
+                            : !paymentOk
+                              ? "Revisá el pago antes de confirmar."
+                              : "Revisá los datos para poder guardar."}
+                </p>
+              ) : null}
               <ConfirmInvoiceButton
                 disabled={!canSubmit}
                 documentKind={documentKind}
                 editingQuotation={editingQuotation}
+                onConfirmIntent={() => {
+                  confirmTapAtRef.current = Date.now();
+                }}
               />
             </section>
           </div>
