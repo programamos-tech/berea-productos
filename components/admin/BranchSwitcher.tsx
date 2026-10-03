@@ -78,7 +78,7 @@ export function BranchSwitcher({
   active: BranchRef;
   branches: BranchRef[];
   className?: string;
-  appearance?: "default" | "bare";
+  appearance?: "default" | "bare" | "segments";
 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -119,6 +119,43 @@ export function BranchSwitcher({
       document.removeEventListener("keydown", closeOnEscape);
     };
   }, [open]);
+
+  if (appearance === "segments") {
+    if (branches.length <= 1) return null;
+    return (
+      <div className={`min-w-0 ${className}`}>
+        <div
+          className="flex gap-1 overflow-x-auto overscroll-x-contain [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+          role="group"
+          aria-label="Cambiar sucursal"
+        >
+          {branches.map((branch) => {
+            const selected = branch.id === active.id;
+            return (
+              <button
+                key={branch.id}
+                type="button"
+                aria-pressed={selected}
+                disabled={switching}
+                onClick={() => selectBranch(branch.id)}
+                className={[
+                  "min-h-11 min-w-[6.5rem] flex-1 truncate rounded-lg px-3 text-sm font-semibold transition",
+                  selected
+                    ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
+                    : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700",
+                ].join(" ")}
+              >
+                {branch.name}
+              </button>
+            );
+          })}
+        </div>
+        {switching && switchingBranch ? (
+          <BranchSwitchLoading branchName={switchingBranch.name} />
+        ) : null}
+      </div>
+    );
+  }
 
   if (branches.length <= 1) {
     return (
