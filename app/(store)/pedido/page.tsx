@@ -89,7 +89,7 @@ export default async function PedidoSeguimientoPage({ searchParams }: Props) {
         </nav>
 
         <h1 className="store-page-stagger-item text-sm font-semibold uppercase tracking-[0.22em] text-[var(--store-brand)] sm:text-[15px] sm:tracking-[0.26em]">
-          Detalle del pedido
+          {order.proofCount > 0 ? "Pedido realizado" : "Detalle del pedido"}
         </h1>
 
         <div className="store-page-stagger-item mt-8">

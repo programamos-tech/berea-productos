@@ -104,6 +104,7 @@ export function StoreOrderDetailPanel({
   const [paymentStatus, setPaymentStatus] = useState(status);
   const [fulfillmentStatus, setFulfillmentStatus] = useState(initialFulfillmentStatus);
   const [showScrollHint, setShowScrollHint] = useState(true);
+  const [idCopied, setIdCopied] = useState(false);
 
   useEffect(() => {
     setProofCount(initialProofCount);
@@ -169,18 +170,40 @@ export function StoreOrderDetailPanel({
     checkoutPaymentMethod,
     proofCount,
   });
-  const shortRef = orderId.slice(0, 8);
+  const proofReceived = proofCount > 0;
+
+  async function copyInvoiceId() {
+    try {
+      await navigator.clipboard.writeText(orderId);
+      setIdCopied(true);
+      window.setTimeout(() => setIdCopied(false), 2000);
+    } catch {
+      setIdCopied(false);
+    }
+  }
 
   return (
     <>
       <div className="space-y-8">
         <header className="space-y-3">
           <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-500">
-            Pedido {shortRef}…
+            ID de factura
           </p>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <p className="min-w-0 break-all font-mono text-sm font-medium text-stone-900">
+              {orderId}
+            </p>
+            <button
+              type="button"
+              onClick={() => void copyInvoiceId()}
+              className="inline-flex shrink-0 items-center justify-center border border-stone-300 bg-white px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-stone-700 transition hover:bg-stone-50"
+            >
+              {idCopied ? "Copiado" : "Copiar ID"}
+            </button>
+          </div>
           <div className="flex flex-wrap items-center gap-3">
             <h2 className="text-xl font-semibold text-[var(--store-brand)] sm:text-2xl">
-              Tu pedido está registrado
+              {proofReceived ? "Pedido realizado" : "Tu pedido está registrado"}
             </h2>
             <span
               className={`inline-flex rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-wide ${statusBadgeClass(paymentStatus, fulfillmentStatus, checkoutPaymentMethod)}`}
@@ -199,13 +222,13 @@ export function StoreOrderDetailPanel({
               . Baja y completa el paso de transferencia.
             </p>
           ) : null}
-          {proofCount > 0 && fulfillmentStatus === "preparing" ? (
+          {proofReceived ? (
             <p
               className="max-w-2xl rounded-lg border border-emerald-200/90 bg-emerald-50/90 px-3 py-2 text-sm font-medium text-emerald-900"
               role="status"
             >
-              Recibimos tu comprobante ({proofCount}{" "}
-              {proofCount === 1 ? "archivo" : "archivos"}). Te confirmaremos el pago pronto.
+              Recibimos tu comprobante. Abajo está lo que compraste. Guarda el ID
+              de factura para verificar este pedido.
             </p>
           ) : null}
         </header>
@@ -272,7 +295,7 @@ export function StoreOrderDetailPanel({
 
             <section className="rounded-xl border border-stone-200 bg-stone-50/60 p-4 sm:p-5">
               <h3 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--store-brand)]">
-                Detalle del pedido
+                {proofReceived ? "Esto es lo que compraste" : "Detalle del pedido"}
               </h3>
               <ul className="mt-3 divide-y divide-stone-100">
                 {orderLines.map((line) => (
@@ -358,7 +381,7 @@ export function StoreOrderDetailPanel({
           </div>
         </div>
 
-        {showTransferSection ? (
+        {showTransferSection && !proofReceived ? (
           <section
             id={TRANSFER_SECTION_ID}
             className="scroll-mt-28 border-t border-stone-200 pt-10"
