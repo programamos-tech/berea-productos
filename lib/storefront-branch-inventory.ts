@@ -1,5 +1,6 @@
 import { fetchBranchInventoryMap } from "@/lib/branch-inventory";
 import { getStorefrontScope } from "@/lib/storefront-scope";
+import { createSupabaseServiceClient } from "@/lib/supabase/service";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { ProductKitRow } from "@/lib/product-kits";
 
@@ -59,8 +60,10 @@ export async function withStorefrontBranchStock<
   const resolvedBranchId =
     branchId || (await getStorefrontBranchId(supabase, tenantId));
   if (!resolvedBranchId || rows.length === 0) return rows;
+  // El visitante anónimo solo veía el stock de Local. Leemos la sucursal de la tienda
+  // con el cliente de servicio para no depender de esa política.
   const inventory = await fetchBranchInventoryMap(
-    supabase,
+    createSupabaseServiceClient(),
     resolvedBranchId,
     rows.map((row) => row.id),
   );
