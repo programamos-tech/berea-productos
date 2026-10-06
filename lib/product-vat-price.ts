@@ -1,7 +1,8 @@
 /**
  * El precio guardado en `products.price_cents` es la base **sin IVA**.
  * El precio final al cliente (POS / etiqueta con IVA) =
- *   base × (1 + IVA/100) cuando `has_vat`, con IVA **fijo** al tipo general CO (19 %).
+ *   base × (1 + IVA/100) cuando `has_vat`, con IVA **fijo** al tipo general CO (19 %),
+ *   redondeado hacia abajo al peso.
  *
  * No se “ajusta” el porcentaje al bruto redondeado del catálogo: `vat_percent` en BD
  * queda en 19 para referencia; los cálculos usan siempre `SALE_VAT_PERCENT`.
@@ -21,7 +22,7 @@ export function unitPriceGrossCents(
 ): number {
   const base = unitPriceNetCents(price_cents);
   if (!has_vat) return base;
-  return Math.round(base * (1 + SALE_VAT_PERCENT / 100));
+  return Math.floor((base * (100 + SALE_VAT_PERCENT)) / 100);
 }
 
 export function unitVatAmountCents(

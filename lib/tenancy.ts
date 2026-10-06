@@ -1,5 +1,5 @@
 /**
- * Berea Productos — multi-tenant host convention.
+ * Berea Facturas — multi-tenant host convention.
  *
  * Platform (SaaS entry):  productos.bereahouse.com
  * Tenant storefront/admin: {slug}.productos.bereahouse.com

@@ -10,6 +10,7 @@ import {
   type Dispatch,
   type SetStateAction,
 } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { formatCop } from "@/lib/money";
 import type { SizeFacetOption } from "@/lib/product-listing-facets";
@@ -136,6 +137,7 @@ export function ProductsListingControls({
   const router = useRouter();
   const baseId = useId();
   const [filterOpen, setFilterOpen] = useState(false);
+  const [portalReady, setPortalReady] = useState(false);
   const [draftBrands, setDraftBrands] = useState<Set<string>>(
     () => new Set(selection.brands),
   );
@@ -158,6 +160,10 @@ export function ProductsListingControls({
   const sortLabel =
     SORT_OPTIONS.find((o) => o.value === sort)?.label ?? "Recientes";
   const quickPrices = priceQuickFilters(facets.priceMin, facets.priceMax);
+
+  useEffect(() => {
+    setPortalReady(true);
+  }, []);
 
   useEffect(() => {
     setDraftBrands(new Set(selection.brands));
@@ -320,28 +326,30 @@ export function ProductsListingControls({
         </button>
       </div>
 
-      <div
-        className={`fixed inset-0 z-[85] flex justify-end transition-[visibility] duration-300 ${
-          filterOpen ? "visible" : "invisible pointer-events-none"
-        }`}
-        aria-hidden={!filterOpen}
-      >
-        <button
-          type="button"
-          className={`absolute inset-0 bg-black/40 transition-opacity duration-300 ${
-            filterOpen ? "opacity-100" : "opacity-0"
-          }`}
-          aria-label="Cerrar filtros"
-          onClick={() => setFilterOpen(false)}
-        />
-        <aside
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby={`${baseId}-filter-title`}
-          className={`relative flex h-full w-full max-w-md flex-col bg-white shadow-xl transition-transform duration-300 ease-out ${
-            filterOpen ? "translate-x-0" : "translate-x-full"
-          }`}
-        >
+      {portalReady
+        ? createPortal(
+            <div
+              className={`fixed inset-0 z-[85] transition-[visibility] duration-300 ${
+                filterOpen ? "visible" : "invisible pointer-events-none"
+              }`}
+              aria-hidden={!filterOpen}
+            >
+              <button
+                type="button"
+                className={`absolute inset-0 bg-black/40 transition-opacity duration-300 ${
+                  filterOpen ? "opacity-100" : "opacity-0"
+                }`}
+                aria-label="Cerrar filtros"
+                onClick={() => setFilterOpen(false)}
+              />
+              <aside
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby={`${baseId}-filter-title`}
+                className={`fixed inset-y-0 right-0 flex h-full w-full max-w-md flex-col bg-white shadow-xl transition-transform duration-300 ease-out ${
+                  filterOpen ? "translate-x-0" : "translate-x-full"
+                }`}
+              >
           <div className="flex shrink-0 items-center justify-between border-b border-stone-200 px-4 py-4">
             <h2
               id={`${baseId}-filter-title`}
@@ -576,8 +584,11 @@ export function ProductsListingControls({
                 : "Ver todo el catálogo"}
             </Link>
           </div>
-        </aside>
-      </div>
+              </aside>
+            </div>,
+            document.body,
+          )
+        : null}
 
       <span className="sr-only">Orden actual: {sortLabel}</span>
     </>

@@ -3,13 +3,6 @@ import { join } from "path";
 import {
   PDFDocument,
   StandardFonts,
-  appendBezierCurve,
-  clip,
-  closePath,
-  endPath,
-  moveTo,
-  popGraphicsState,
-  pushGraphicsState,
   rgb,
   type PDFFont,
   type PDFImage,
@@ -61,9 +54,6 @@ const INK = hexToRgb("#18181b");
 const MUTED = hexToRgb("#52525b");
 const FAINT = hexToRgb("#71717a");
 const HAIR = hexToRgb("#e4e4e7");
-
-/** Bézier kappa to approximate a circle. */
-const KAPPA = 0.552284749831;
 
 function hexToRgb(hex: string) {
   const h = hex.replace("#", "");
@@ -160,41 +150,25 @@ async function embedLogoImage(pdf: PDFDocument, logoPath: string) {
   }
 }
 
-/** Recorta la imagen a un círculo lleno (avatar), sin borde ni recuadro. */
-function drawCircularAvatar(
+/** Encaja el logo completo (wordmark ancho o marca cuadrada) sin recortarlo. */
+function drawContainedLogo(
   page: PDFPage,
   image: PDFImage,
-  opts: { x: number; y: number; size: number },
-) {
-  const { x, y, size } = opts;
-  const r = size / 2;
-  const cx = x + r;
-  const cy = y + r;
-  const k = KAPPA * r;
-
-  page.pushOperators(
-    pushGraphicsState(),
-    moveTo(cx + r, cy),
-    appendBezierCurve(cx + r, cy + k, cx + k, cy + r, cx, cy + r),
-    appendBezierCurve(cx - k, cy + r, cx - r, cy + k, cx - r, cy),
-    appendBezierCurve(cx - r, cy - k, cx - k, cy - r, cx, cy - r),
-    appendBezierCurve(cx + k, cy - r, cx + r, cy - k, cx + r, cy),
-    closePath(),
-    clip(),
-    endPath(),
+  opts: { right: number; top: number; maxWidth: number; maxHeight: number },
+): { width: number; height: number } {
+  const scale = Math.min(
+    opts.maxWidth / image.width,
+    opts.maxHeight / image.height,
   );
-
-  const scale = Math.max(size / image.width, size / image.height);
-  const w = image.width * scale;
-  const h = image.height * scale;
+  const width = image.width * scale;
+  const height = image.height * scale;
   page.drawImage(image, {
-    x: x + (size - w) / 2,
-    y: y + (size - h) / 2,
-    width: w,
-    height: h,
+    x: opts.right - width,
+    y: opts.top - height,
+    width,
+    height,
   });
-
-  page.pushOperators(popGraphicsState());
+  return { width, height };
 }
 
 /**
@@ -238,9 +212,10 @@ export async function buildQuotationPdf(
   };
 
   const siteUrl = getPublicSiteUrl().replace(/^https?:\/\//, "");
-  const avatarSize = 52;
+  const logoMaxW = 148;
+  const logoMaxH = 40;
   const logo = await embedLogoImage(pdf, invoiceLogoPath);
-  const headerMaxW = contentWidth - (logo ? avatarSize + 20 : 0);
+  const headerMaxW = contentWidth - (logo ? logoMaxW + 16 : 0);
   const headerTop = y;
 
   y = drawText(page, invoiceLegalName, {
@@ -308,12 +283,13 @@ export async function buildQuotationPdf(
   }
 
   if (logo) {
-    drawCircularAvatar(page, logo, {
-      x: pageWidth - marginX - avatarSize,
-      y: headerTop - avatarSize + 14,
-      size: avatarSize,
+    const drawn = drawContainedLogo(page, logo, {
+      right: pageWidth - marginX,
+      top: headerTop + 4,
+      maxWidth: logoMaxW,
+      maxHeight: logoMaxH,
     });
-    y = Math.min(y, headerTop - avatarSize - 6);
+    y = Math.min(y, headerTop - drawn.height - 6);
   }
 
   y -= 22;

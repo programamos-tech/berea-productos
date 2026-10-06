@@ -10,12 +10,15 @@ export function StoreLogoLink({
   brand,
   logoPath,
   square = false,
+  white = false,
   className,
 }: {
   href?: string;
   brand: string;
   logoPath: string;
   square?: boolean;
+  /** Script de un solo color sobre la franja de marca (Aleya). */
+  white?: boolean;
   className?: string;
 }) {
   const pathname = usePathname() || "/";
@@ -39,9 +42,10 @@ export function StoreLogoLink({
         height={square ? 420 : 150}
         unoptimized
         className={
-          square
+          (square
             ? "mx-auto h-[4.75rem] w-auto max-w-full bg-transparent object-contain object-center sm:h-20 lg:h-[5.75rem] xl:h-24"
-            : "mx-auto h-11 w-auto max-w-full bg-transparent object-contain object-center sm:h-12 lg:h-[4.25rem]"
+            : "mx-auto h-11 w-auto max-w-full bg-transparent object-contain object-center sm:h-12 lg:h-[4.25rem]") +
+          (white ? " brightness-0 invert" : "")
         }
         style={{ backgroundColor: "transparent" }}
         priority

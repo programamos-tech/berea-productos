@@ -263,7 +263,7 @@ export default async function AdminProductDetailPage({ params }: Props) {
             </p>
             {raw.has_vat ? (
               <p className="mt-1 text-sm tabular-nums text-zinc-500">
-                {formatCop(priceNet)} sin IVA
+                IVA {vatLabel} incluido · {formatCop(priceNet)} sin IVA
               </p>
             ) : null}
           </div>
