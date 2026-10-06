@@ -1,14 +1,15 @@
 import { randomUUID } from "node:crypto";
 import type { TransferOrderLine } from "@/components/store/TransferenciaCheckoutPanel";
+import { storefrontBranchDisplayName } from "@/lib/storefront-order-branch";
 import { storagePublicObjectUrl } from "@/lib/storage-public-url";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
 
 const ORDER_SELECT_FULL =
-  "id, customer_id, customer_email, checkout_payment_method, transfer_session_token, status, fulfillment_status, total_cents, shipping_cents, customer_name, shipping_address, shipping_city, shipping_neighborhood, shipping_reference, shipping_postal_code, shipping_phone, created_at";
+  "id, customer_id, customer_email, checkout_payment_method, transfer_session_token, status, fulfillment_status, total_cents, shipping_cents, customer_name, shipping_address, shipping_city, shipping_neighborhood, shipping_reference, shipping_postal_code, shipping_phone, created_at, branch_id";
 
 const ORDER_SELECT_WITHOUT_NEIGHBORHOOD =
-  "id, customer_id, customer_email, checkout_payment_method, transfer_session_token, status, fulfillment_status, total_cents, shipping_cents, customer_name, shipping_address, shipping_city, shipping_postal_code, shipping_phone, created_at";
+  "id, customer_id, customer_email, checkout_payment_method, transfer_session_token, status, fulfillment_status, total_cents, shipping_cents, customer_name, shipping_address, shipping_city, shipping_postal_code, shipping_phone, created_at, branch_id";
 
 export type StoreOrderDetailRecord = {
   id: string;
@@ -29,12 +30,14 @@ export type StoreOrderDetailRecord = {
   createdAt: string;
   orderLines: TransferOrderLine[];
   proofCount: number;
+  branchName: string | null;
 };
 
 function mapOrderRow(
   order: Record<string, unknown>,
   orderLines: TransferOrderLine[],
   proofCount: number,
+  branchName: string | null,
 ): StoreOrderDetailRecord {
   return {
     id: String(order.id),
@@ -70,6 +73,7 @@ function mapOrderRow(
     createdAt: String(order.created_at ?? ""),
     orderLines,
     proofCount,
+    branchName,
   };
 }
 
@@ -163,7 +167,8 @@ async function loadOrderExtras(
   const orderId = String(order.id);
   const supabase = createSupabaseServiceClient();
 
-  const [{ data: itemRows }, { count: proofCount }] = await Promise.all([
+  const branchId = order.branch_id ? String(order.branch_id) : "";
+  const [{ data: itemRows }, { count: proofCount }, branchResult] = await Promise.all([
     supabase
       .from("order_items")
       .select("id, quantity, unit_price_cents, product_name_snapshot, product_id, kit_id")
@@ -172,7 +177,13 @@ async function loadOrderExtras(
       .from("order_transfer_proofs")
       .select("id", { count: "exact", head: true })
       .eq("order_id", orderId),
+    branchId
+      ? supabase.from("branches").select("code,name").eq("id", branchId).maybeSingle()
+      : Promise.resolve({ data: null }),
   ]);
+  const branchName = branchResult.data
+    ? storefrontBranchDisplayName(branchResult.data.code, branchResult.data.name)
+    : null;
 
   const productIds = [
     ...new Set(
@@ -221,5 +232,5 @@ async function loadOrderExtras(
     };
   });
 
-  return mapOrderRow(order, orderLines, proofCount ?? 0);
+  return mapOrderRow(order, orderLines, proofCount ?? 0, branchName);
 }

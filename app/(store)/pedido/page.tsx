@@ -126,6 +126,7 @@ export default async function PedidoSeguimientoPage({ searchParams }: Props) {
             isGuest={false}
             showAccountLinks={showAccountLinks}
             proofCount={order.proofCount}
+            branchName={order.branchName}
           />
         </div>
       </div>

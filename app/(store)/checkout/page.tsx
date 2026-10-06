@@ -34,6 +34,7 @@ import { getTransferBankInstructions } from "@/lib/transfer-bank-instructions";
 import { CheckoutProofField } from "@/components/store/CheckoutProofField";
 import { withRequestStorefrontBranchStock } from "@/lib/storefront-branch-inventory";
 import { getStorefrontScope } from "@/lib/storefront-scope";
+import { stampStorefrontBranch } from "@/lib/storefront-order-branch";
 import { imagePathForProductLine } from "@/lib/product-line-image";
 import {
   shouldUnoptimizeStorageImageUrl,
@@ -522,6 +523,7 @@ export default async function CheckoutPage({
 
   const supabase = createSupabaseServiceClient();
   const tenant = await getRequestTenant();
+  const branchStamp = stampStorefrontBranch(tenant.id, scope.branchCode);
   const productIds = [...new Set(productLines.map((l) => l.productId))];
   let products: {
     id: string;
@@ -678,6 +680,8 @@ export default async function CheckoutPage({
             initialStep={checkoutStepFromError(error)}
             primaryClassName={primaryBtnClass}
             secondaryClassName={secondaryBtnClass}
+            storefrontBranchCode={branchStamp.code}
+            storefrontBranchSig={branchStamp.sig}
             cart={
               <section>
                 <h2 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--store-brand)]">

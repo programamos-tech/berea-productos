@@ -11,11 +11,11 @@ export type VentaOrderRow = {
   wompi_reference: string | null;
   wompi_transaction_id: string | null;
   customer_email: string | null;
+  checkout_payment_method: string | null;
 };
 
-/** Columnas presentes en prod y local (sin checkout_payment_method). */
 const VENTAS_SELECT =
-  "id,status,customer_name,total_cents,created_at,wompi_reference,wompi_transaction_id,customer_email";
+  "id,status,customer_name,total_cents,created_at,wompi_reference,wompi_transaction_id,customer_email,checkout_payment_method";
 
 type VentasFilterOpts = {
   q?: string;
@@ -36,7 +36,9 @@ function applyVentaPagoFilter(query: any, payment: VentaPagoFilter) {
     return query.eq("wompi_reference", "POS:cash");
   }
   if (payment === "transfer") {
-    return query.eq("wompi_reference", "POS:transfer");
+    return query.or(
+      "wompi_reference.eq.POS:transfer,checkout_payment_method.eq.transfer",
+    );
   }
   if (payment === "mixed") {
     return query.eq("wompi_reference", "POS:mixed");

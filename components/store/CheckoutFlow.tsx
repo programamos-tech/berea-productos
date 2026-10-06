@@ -32,6 +32,8 @@ type Props = {
   payment: ReactNode;
   coupon: ReactNode;
   summary: ReactNode;
+  storefrontBranchCode: string;
+  storefrontBranchSig: string;
 };
 
 function readField(form: HTMLFormElement, name: string): string {
@@ -99,6 +101,8 @@ export function CheckoutFlow({
   payment,
   coupon,
   summary,
+  storefrontBranchCode,
+  storefrontBranchSig,
 }: Props) {
   const [step, setStep] = useState<CheckoutFlowStep>(initialStep);
   const [maxReached, setMaxReached] = useState<CheckoutFlowStep>(initialStep);
@@ -241,6 +245,8 @@ export function CheckoutFlow({
       className="scroll-mt-28"
       data-checkout-flow
     >
+      <input type="hidden" name="storefront_branch" value={storefrontBranchCode} />
+      <input type="hidden" name="storefront_branch_sig" value={storefrontBranchSig} />
       <CheckoutSubmittingOverlay active={isSubmitting} />
       <nav aria-label="Pasos del pedido">
         <ol className="grid grid-cols-3">

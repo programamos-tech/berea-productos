@@ -8,6 +8,11 @@ import { BranchSwitcher } from "@/components/admin/BranchSwitcher";
 import { LeaveAccountButton } from "@/components/admin/LeaveAccountButton";
 import { OperatorAccountLogo } from "@/components/admin/OperatorAccountLogo";
 import type { BranchContext } from "@/lib/branch-context";
+import {
+  storefrontPathForBranch,
+  storefrontUrlForBranch,
+  storefrontUrlLabel,
+} from "@/lib/storefront-branch-url";
 
 type AdminTopBarProps = {
   showOrderNotifications?: boolean;
@@ -25,6 +30,7 @@ type AdminTopBarProps = {
     logoFullColor?: boolean;
   };
   branchContext: BranchContext;
+  storefrontOrigin: string;
 };
 
 export function AdminTopBar({
@@ -35,7 +41,12 @@ export function AdminTopBar({
   actingAccount = null,
   accountBrand,
   branchContext,
+  storefrontOrigin,
 }: AdminTopBarProps) {
+  const storeHref = storefrontPathForBranch(branchContext.active);
+  const storeLabel = storefrontUrlLabel(
+    storefrontUrlForBranch(storefrontOrigin, branchContext.active),
+  );
   return (
     <header className="sticky top-0 z-50 w-full min-w-0 max-w-full overflow-visible border-b border-zinc-200 bg-white/90 backdrop-blur-md print:hidden dark:border-zinc-800 dark:bg-zinc-900/90">
       {actingAccount ? (
@@ -104,15 +115,27 @@ export function AdminTopBar({
           />
         </div>
       </div>
-      {branchContext.available.length > 1 ? (
-        <div className="border-t border-zinc-200 px-3 py-2 xl:hidden dark:border-zinc-800">
+      <div
+        className={`flex min-w-0 flex-col gap-1.5 border-t border-zinc-200 px-3 py-2 dark:border-zinc-800 ${
+          branchContext.available.length > 1 ? "xl:hidden" : "lg:hidden"
+        }`}
+      >
+        {branchContext.available.length > 1 ? (
           <BranchSwitcher
             active={branchContext.active}
             branches={branchContext.available}
             appearance="segments"
           />
-        </div>
-      ) : null}
+        ) : null}
+        <Link
+          href={storeHref}
+          prefetch
+          title={storeLabel}
+          className="min-w-0 truncate text-[11px] font-medium text-zinc-500 hover:text-zinc-900 lg:hidden dark:text-zinc-400 dark:hover:text-zinc-100"
+        >
+          {storeLabel}
+        </Link>
+      </div>
     </header>
   );
 }

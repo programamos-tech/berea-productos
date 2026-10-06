@@ -46,6 +46,7 @@ type Props = {
   isGuest: boolean;
   showAccountLinks: boolean;
   proofCount: number;
+  branchName?: string | null;
 };
 
 function paymentMethodLabel(method: string | null): string {
@@ -102,6 +103,7 @@ export function StoreOrderDetailPanel({
   isGuest,
   showAccountLinks,
   proofCount: initialProofCount,
+  branchName,
 }: Props) {
   const [proofCount, setProofCount] = useState(initialProofCount);
   const [paymentStatus, setPaymentStatus] = useState(status);
@@ -325,6 +327,14 @@ export function StoreOrderDetailPanel({
                 <p className="text-stone-600">Ref.: {shippingReference.trim()}</p>
               ) : null}
             </dd>
+          </div>
+        ) : null}
+        {branchName ? (
+          <div className={proofReceived ? "grid grid-cols-[5.5rem_minmax(0,1fr)] gap-x-2" : undefined}>
+            <dt className="text-[11px] font-semibold uppercase tracking-wide text-stone-500">
+              Tienda
+            </dt>
+            <dd className={proofReceived ? undefined : "mt-0.5"}>{branchName}</dd>
           </div>
         ) : null}
         <div className={proofReceived ? "grid grid-cols-[5.5rem_minmax(0,1fr)] gap-x-2" : undefined}>

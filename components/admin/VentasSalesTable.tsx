@@ -21,6 +21,7 @@ export type VentaOrderRow = {
   wompi_reference: string | null;
   wompi_transaction_id?: string | null;
   customer_email: string | null;
+  checkout_payment_method?: string | null;
 };
 
 const thClass =
@@ -62,8 +63,12 @@ export function VentasSalesTable({
             row.wompi_transaction_id ?? null,
           );
           const estado = ventaEstadoTone(row.status);
-          const pago = ventaFormaPagoTone(row.wompi_reference);
-          const pagoIcon = ventaPagoIcon(row.wompi_reference);
+          const pago = ventaFormaPagoTone(row.wompi_reference, {
+            checkoutPaymentMethod: row.checkout_payment_method,
+          });
+          const pagoIcon = ventaPagoIcon(row.wompi_reference, {
+            checkoutPaymentMethod: row.checkout_payment_method,
+          });
           const PagoIcon = pagoIcon.Icon;
           const href = orderDetailHref(row.id);
 
@@ -136,8 +141,12 @@ export function VentasSalesTable({
                 row.wompi_transaction_id ?? null,
               );
               const estado = ventaEstadoTone(row.status);
-              const pago = ventaFormaPagoTone(row.wompi_reference);
-              const pagoIcon = ventaPagoIcon(row.wompi_reference);
+              const pago = ventaFormaPagoTone(row.wompi_reference, {
+                checkoutPaymentMethod: row.checkout_payment_method,
+              });
+              const pagoIcon = ventaPagoIcon(row.wompi_reference, {
+                checkoutPaymentMethod: row.checkout_payment_method,
+              });
               const PagoIcon = pagoIcon.Icon;
               return (
                 <tr

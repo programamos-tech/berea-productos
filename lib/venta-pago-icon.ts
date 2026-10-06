@@ -11,6 +11,7 @@ import {
 
 export function ventaPagoIcon(
   wompiReference: string | null | undefined,
+  opts?: { checkoutPaymentMethod?: string | null },
 ): { Icon: LucideIcon; label: string } {
   const r = wompiReference?.trim() ?? "";
   if (r === "POS:cash") {
@@ -30,6 +31,9 @@ export function ventaPagoIcon(
   }
   if (r.startsWith("POS:")) {
     return { Icon: ClipboardList, label: "Mostrador" };
+  }
+  if (opts?.checkoutPaymentMethod === "transfer") {
+    return { Icon: ArrowLeftRight, label: "Transferencia" };
   }
   return { Icon: Globe, label: "En línea" };
 }

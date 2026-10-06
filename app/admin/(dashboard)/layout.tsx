@@ -14,6 +14,7 @@ import { jobRoleSkipsCashRegister } from "@/lib/admin-permissions";
 import { loadAdminPermissions } from "@/lib/load-admin-permissions";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { canOnboardTenants } from "@/lib/tenant-onboarding-auth";
+import { requestStorefrontOrigin } from "@/lib/request-storefront-origin";
 import { redirect } from "next/navigation";
 
 export default async function AdminDashboardLayout({
@@ -101,6 +102,7 @@ export default async function AdminDashboardLayout({
         logoFullColor: perm.tenantLogoFullColor,
       }}
       branchContext={perm.branchContext}
+      storefrontOrigin={await requestStorefrontOrigin()}
     >
       {children}
     </AdminDashboardShell>

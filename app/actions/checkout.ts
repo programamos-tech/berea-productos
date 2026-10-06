@@ -25,6 +25,7 @@ import {
 } from "@/lib/customer-wholesale-pricing";
 import { storefrontPayableUnitGrossCents } from "@/lib/storefront-gross-price";
 import { getStorefrontScope } from "@/lib/storefront-scope";
+import { resolveCheckoutBranch } from "@/lib/storefront-order-branch";
 import { findActiveStoreCouponForCheckout } from "@/lib/store-coupons";
 import { freeShippingProgress } from "@/lib/store-free-shipping";
 import {
@@ -86,20 +87,35 @@ export async function startCheckout(formData: FormData) {
   const shippingPhone = String(formData.get("mobile") ?? "").trim();
   const couponCode = String(formData.get("couponCode") ?? "").trim();
   const scope = await getStorefrontScope();
-  if (scope.requiresCode && !scope.customer) {
-    redirect(`/sucursal/${scope.branchCode}`);
-  }
+  const tenant = await getRequestTenant();
   const supabase = createSupabaseServiceClient();
+  const executingBranch = await resolveCheckoutBranch({
+    supabase,
+    tenantId: tenant.id,
+    scope,
+    formData,
+  });
+  if (!executingBranch.ok) {
+    redirect(executingBranch.redirectTo);
+  }
+  const storefrontBranchId = executingBranch.branchId;
+  const branchAligned = scope.branchId === storefrontBranchId;
+  const activeCustomer = branchAligned ? scope.customer : null;
   let wholesaleEmail = "";
   let wholesaleName = "";
-  if (scope.customer) {
+  if (activeCustomer) {
     const { data: who } = await supabase
       .from("customers")
-      .select("name,email")
-      .eq("id", scope.customer.id)
+      .select("name,email,branch_id")
+      .eq("id", activeCustomer.id)
+      .eq("tenant_id", tenant.id)
+      .eq("branch_id", storefrontBranchId)
       .maybeSingle();
-    wholesaleEmail = String(who?.email ?? "").trim();
-    wholesaleName = String(who?.name ?? "").trim() || scope.customer.name;
+    if (!who) {
+      redirect(`/sucursal/${executingBranch.branchCode}`);
+    }
+    wholesaleEmail = String(who.email ?? "").trim();
+    wholesaleName = String(who.name ?? "").trim() || activeCustomer.name;
   }
   if (!resolvedName) resolvedName = wholesaleName;
 
@@ -132,7 +148,7 @@ export async function startCheckout(formData: FormData) {
   let customerEmailForOrder =
     wholesaleEmail && isEmail(wholesaleEmail) ? wholesaleEmail : customerEmail;
 
-  if (!scope.customer && sessionUser?.email) {
+  if (!activeCustomer && sessionUser?.email) {
     const { data: adminProf } = await sessionSb
       .from("profiles")
       .select("id")
@@ -176,19 +192,6 @@ export async function startCheckout(formData: FormData) {
   const productLines = normalized.filter(isCartProductLine);
   const kitLines = normalized.filter(isCartKitLine);
 
-  const tenant = await getRequestTenant();
-  let storefrontBranchId = scope.branchId;
-  if (!storefrontBranchId) {
-    const { data: defaultBranch } = await supabase
-      .from("branches")
-      .select("id")
-      .eq("tenant_id", tenant.id)
-      .eq("is_default", true)
-      .eq("is_active", true)
-      .maybeSingle();
-    storefrontBranchId = defaultBranch?.id ? String(defaultBranch.id) : null;
-  }
-  if (!storefrontBranchId) redirect("/checkout?error=stock");
   const productIds = [...new Set(productLines.map((l) => l.productId))];
   let products: {
     id: string;
@@ -283,7 +286,7 @@ export async function startCheckout(formData: FormData) {
 
   const emailLc = customerEmailForOrder.toLowerCase();
 
-  const { data: emailCustomer } = scope.customer
+  const { data: emailCustomer } = activeCustomer
     ? { data: null }
     : await supabase
         .from("customers")
@@ -293,16 +296,16 @@ export async function startCheckout(formData: FormData) {
         .eq("branch_id", storefrontBranchId)
         .maybeSingle();
 
-  const existingCustomer = scope.customer
+  const existingCustomer = activeCustomer
     ? {
-        id: scope.customer.id,
+        id: activeCustomer.id,
         customer_kind: "wholesale",
-        wholesale_discount_percent: scope.customer.wholesalePct,
+        wholesale_discount_percent: activeCustomer.wholesalePct,
       }
     : emailCustomer;
 
-  const wholesalePct = scope.customer
-    ? scope.customer.wholesalePct
+  const wholesalePct = activeCustomer
+    ? activeCustomer.wholesalePct
     : existingCustomer
       ? wholesaleDiscountPercentFromRow(
           existingCustomer as {
@@ -312,13 +315,25 @@ export async function startCheckout(formData: FormData) {
         )
       : 0;
 
-  if (
-    scope.listedProductIds &&
-    normalizedProducts.some((line) => !scope.listedProductIds!.has(line.productId))
-  ) {
-    redirect("/checkout?error=removed");
+  let listedProductIds = branchAligned ? scope.listedProductIds : null;
+  if (!branchAligned) {
+    const { data: listings, error: listErr } = await supabase
+      .from("product_branch_listings")
+      .select("product_id")
+      .eq("branch_id", storefrontBranchId);
+    if (!listErr) {
+      listedProductIds = new Set(
+        (listings ?? []).map((row) => String(row.product_id)),
+      );
+    }
   }
-  if (scope.requiresCode && kitLines.length > 0) {
+  if (listedProductIds) {
+    const listed = listedProductIds;
+    if (normalizedProducts.some((line) => !listed.has(line.productId))) {
+      redirect("/checkout?error=removed");
+    }
+  }
+  if (!executingBranch.isDefault && kitLines.length > 0) {
     redirect("/checkout?error=removed");
   }
 
@@ -473,7 +488,7 @@ export async function startCheckout(formData: FormData) {
   if (existingCustomer?.id) {
     customerId = existingCustomer.id as string;
     const profileUpdate =
-      scope.customer && !isEmail(wholesaleEmail)
+      activeCustomer && !isEmail(wholesaleEmail)
         ? { ...customerShippingFull, email: emailLc }
         : customerShippingFull;
     const { error: uErr } = await supabase
@@ -550,6 +565,10 @@ export async function startCheckout(formData: FormData) {
     tenant_id: tenant.id,
     branch_id: storefrontBranchId,
   };
+  console.info("[checkout] order branch", {
+    branch: executingBranch.branchCode,
+    branchId: storefrontBranchId,
+  });
 
   let { data: orderRow, error: oErr } = await supabase
     .from("orders")

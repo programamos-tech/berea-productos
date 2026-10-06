@@ -7,6 +7,12 @@ import {
   shouldUnoptimizeStorageImageUrl,
   storagePublicObjectUrl,
 } from "@/lib/storage-public-url";
+import { requestStorefrontOrigin } from "@/lib/request-storefront-origin";
+import {
+  storefrontPathForBranch,
+  storefrontUrlForBranch,
+  storefrontUrlLabel,
+} from "@/lib/storefront-branch-url";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
   adminPageSubtitleClass,
@@ -47,6 +53,7 @@ export default async function BranchesPage() {
       },
     ]),
   );
+  const storefrontOrigin = await requestStorefrontOrigin();
 
   return (
     <div className="flex flex-col gap-5">
@@ -76,6 +83,15 @@ export default async function BranchesPage() {
               totalSales: 0,
             };
             const isCurrent = branch.id === perm?.branchContext?.active.id;
+            const storeUrl = storefrontUrlForBranch(storefrontOrigin, {
+              code: String(branch.code ?? ""),
+              isDefault: branch.is_default === true,
+            });
+            const storeLabel = storefrontUrlLabel(storeUrl);
+            const storeHref = storefrontPathForBranch({
+              code: String(branch.code ?? ""),
+              isDefault: branch.is_default === true,
+            });
             return (
               <article
                 key={branch.id}
@@ -140,6 +156,13 @@ export default async function BranchesPage() {
                     {branch.name}
                   </h2>
                   <p className="text-xs text-zinc-500">{branch.code}</p>
+                  <Link
+                    href={storeHref}
+                    title={storeUrl}
+                    className="relative z-20 mt-1 block truncate text-xs font-medium text-zinc-700 underline-offset-2 hover:underline dark:text-zinc-200"
+                  >
+                    {storeLabel}
+                  </Link>
                 </div>
 
                 <div className="mt-5">

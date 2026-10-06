@@ -20,6 +20,11 @@ import {
 import { ADMIN_TENANT_SIDEBAR_BG } from "@/lib/admin-theme";
 import type { BranchContext } from "@/lib/branch-context";
 import { storagePublicObjectUrl } from "@/lib/storage-public-url";
+import {
+  storefrontPathForBranch,
+  storefrontUrlForBranch,
+  storefrontUrlLabel,
+} from "@/lib/storefront-branch-url";
 
 function Icon(props: SVGProps<SVGSVGElement> & { children: React.ReactNode }) {
   const { children, className = "", ...rest } = props;
@@ -101,17 +106,23 @@ function SidebarTenantAccount({
   account,
   branchContext,
   showStorefront,
+  storefrontOrigin,
   onNavigate,
 }: {
   account: AccountBrand;
   branchContext: BranchContext;
   showStorefront: boolean;
+  storefrontOrigin: string;
   onNavigate: () => void;
 }) {
   const branchLogo = storagePublicObjectUrl(branchContext.active.logoPath);
   const markSrc = branchLogo ?? account.logoSrc;
   const cardClass =
     "mt-3.5 flex w-full items-center gap-2.5 rounded-lg border border-zinc-800 px-2.5 py-2 text-left";
+  const storeHref = storefrontPathForBranch(branchContext.active);
+  const storeLabel = storefrontUrlLabel(
+    storefrontUrlForBranch(storefrontOrigin, branchContext.active),
+  );
 
   return (
     <div className={cardClass}>
@@ -132,17 +143,28 @@ function SidebarTenantAccount({
           appearance="sidebar"
           className="mt-0.5 w-full"
         />
+        {showStorefront ? (
+          <Link
+            href={storeHref}
+            prefetch
+            onClick={() => onNavigate()}
+            title={storeLabel}
+            className="mt-1 block truncate text-[10px] font-medium text-zinc-400 transition hover:text-white"
+          >
+            {storeLabel}
+          </Link>
+        ) : null}
       </span>
       {showStorefront ? (
         <Link
-          href={STOREFRONT_HREF}
+          href={storeHref}
           prefetch
           onClick={() => onNavigate()}
-          title={`Ver tienda · ${account.name}`}
+          title={`Ver tienda · ${storeLabel}`}
           className="shrink-0 rounded-md p-1 text-zinc-400 transition hover:bg-white/[0.06] hover:text-white"
         >
           <IconExternalStore className="size-4" />
-          <span className="sr-only">Ver tienda</span>
+          <span className="sr-only">Ver tienda {storeLabel}</span>
         </Link>
       ) : null}
     </div>
@@ -153,11 +175,13 @@ function SidebarHeader({
   account,
   branchContext,
   showStorefront,
+  storefrontOrigin,
   onNavigate,
 }: {
   account: AccountBrand;
   branchContext: BranchContext;
   showStorefront: boolean;
+  storefrontOrigin: string;
   onNavigate: () => void;
 }) {
   return (
@@ -179,6 +203,7 @@ function SidebarHeader({
         account={account}
         branchContext={branchContext}
         showStorefront={showStorefront}
+        storefrontOrigin={storefrontOrigin}
         onNavigate={onNavigate}
       />
     </div>
@@ -253,10 +278,12 @@ function AdminSidebarInner({
   allowedNavHrefs,
   account,
   branchContext,
+  storefrontOrigin,
 }: {
   allowedNavHrefs: string[];
   account: AccountBrand;
   branchContext: BranchContext;
+  storefrontOrigin: string;
 }) {
   const pathname = usePathname();
   const allowed = new Set(allowedNavHrefs);
@@ -279,6 +306,7 @@ function AdminSidebarInner({
         account={account}
         branchContext={branchContext}
         showStorefront={allowed.has(STOREFRONT_HREF)}
+        storefrontOrigin={storefrontOrigin}
         onNavigate={() => {}}
       />
       <nav
@@ -396,10 +424,12 @@ export function AdminSidebar({
   allowedNavHrefs,
   account,
   branchContext,
+  storefrontOrigin,
 }: {
   allowedNavHrefs: string[];
   account: AccountBrand;
   branchContext: BranchContext;
+  storefrontOrigin: string;
 }) {
   return (
     <Suspense fallback={<AdminSidebarFallback account={account} />}>
@@ -407,6 +437,7 @@ export function AdminSidebar({
         allowedNavHrefs={allowedNavHrefs}
         account={account}
         branchContext={branchContext}
+        storefrontOrigin={storefrontOrigin}
       />
     </Suspense>
   );

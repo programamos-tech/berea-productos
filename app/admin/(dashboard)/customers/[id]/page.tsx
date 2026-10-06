@@ -22,6 +22,11 @@ import {
   ventaNumeroReferencia,
 } from "@/lib/ventas-sales";
 import { isDomicilioOrder } from "@/lib/customer-order-classification";
+import { requestStorefrontOrigin } from "@/lib/request-storefront-origin";
+import {
+  storefrontUrlForBranch,
+  storefrontUrlLabel,
+} from "@/lib/storefront-branch-url";
 
 export const dynamic = "force-dynamic";
 
@@ -109,8 +114,11 @@ export default async function AdminCustomerDetailPage({
       .select("code,is_default")
       .eq("id", customer.branch_id)
       .maybeSingle();
-    if (branch?.code && branch.is_default !== true) {
-      wholesaleStorePath = `/sucursal/${String(branch.code).toLowerCase()}`;
+    if (branch?.code) {
+      wholesaleStorePath = storefrontUrlForBranch(await requestStorefrontOrigin(), {
+        code: String(branch.code),
+        isDefault: branch.is_default === true,
+      });
     }
   }
   const ventas = ordersPaid.length;
@@ -323,7 +331,15 @@ export default async function AdminCustomerDetailPage({
           </p>
           {wholesaleStorePath ? (
             <p className="mt-1 text-xs text-zinc-500">
-              Enlace: {wholesaleStorePath}
+              Enlace:{" "}
+              <a
+                href={wholesaleStorePath}
+                target="_blank"
+                rel="noreferrer"
+                className="font-medium text-zinc-800 underline-offset-2 hover:underline dark:text-zinc-100"
+              >
+                {storefrontUrlLabel(wholesaleStorePath)}
+              </a>
             </p>
           ) : null}
         </section>
