@@ -438,17 +438,13 @@ export default async function ProductsPage({ searchParams }: Props) {
                   aria-labelledby="cat-all-products"
                   className="w-full min-w-0 max-w-full"
                 >
-                  <div className="mb-4 flex flex-wrap items-end justify-between gap-3 sm:mb-5">
+                  <div className="mb-4 sm:mb-5">
                     <h2
                       id="cat-all-products"
                       className="text-[13px] font-semibold uppercase tracking-[0.14em] text-[var(--store-brand)]"
                     >
                       Todos los productos
                     </h2>
-                    <p className="text-[11px] uppercase tracking-[0.12em] text-stone-400">
-                      {catalogProducts.length}{" "}
-                      {catalogProducts.length === 1 ? "producto" : "productos"}
-                    </p>
                   </div>
                   <ul className="grid grid-cols-2 gap-x-5 gap-y-12 sm:gap-x-8 lg:grid-cols-3 lg:gap-x-10 xl:grid-cols-4">
                     {catalogProducts.map((p, index) => (
