@@ -62,10 +62,18 @@ export default async function PedidoSeguimientoPage({ searchParams }: Props) {
   return (
     <div className="min-h-[calc(100vh-8rem)] bg-white">
       <ClearCheckoutFormDraft />
-      <div className="store-page-stagger mx-auto max-w-6xl px-4 pb-12 pt-8 sm:px-6 lg:pb-14 lg:pt-10">
+      <div
+        className={`store-page-stagger mx-auto max-w-6xl px-4 sm:px-6 ${
+          order.proofCount > 0
+            ? "pb-8 pt-4 lg:pb-10 lg:pt-5"
+            : "pb-12 pt-8 lg:pb-14 lg:pt-10"
+        }`}
+      >
         <nav
           aria-label="Migas de pan"
-          className="store-page-stagger-item mb-6 text-[11px] uppercase tracking-[0.12em] text-stone-400"
+          className={`store-page-stagger-item text-[11px] uppercase tracking-[0.12em] text-stone-400 ${
+            order.proofCount > 0 ? "mb-3" : "mb-6"
+          }`}
         >
           <ol className="flex flex-wrap items-center gap-x-2 gap-y-1">
             <li>
@@ -88,11 +96,13 @@ export default async function PedidoSeguimientoPage({ searchParams }: Props) {
           </ol>
         </nav>
 
-        <h1 className="store-page-stagger-item text-sm font-semibold uppercase tracking-[0.22em] text-[var(--store-brand)] sm:text-[15px] sm:tracking-[0.26em]">
-          {order.proofCount > 0 ? "Pedido realizado" : "Detalle del pedido"}
-        </h1>
+        {order.proofCount > 0 ? null : (
+          <h1 className="store-page-stagger-item text-sm font-semibold uppercase tracking-[0.22em] text-[var(--store-brand)] sm:text-[15px] sm:tracking-[0.26em]">
+            Detalle del pedido
+          </h1>
+        )}
 
-        <div className="store-page-stagger-item mt-8">
+        <div className={`store-page-stagger-item ${order.proofCount > 0 ? "mt-3" : "mt-8"}`}>
           <StoreOrderDetailPanel
             orderId={orderId}
             token={token}

@@ -182,39 +182,168 @@ export function StoreOrderDetailPanel({
     }
   }
 
+  const shippingLine = [
+    shippingAddress,
+    shippingNeighborhood ? `barrio ${shippingNeighborhood}` : "",
+    shippingCity,
+    shippingPostalCode,
+  ]
+    .filter(Boolean)
+    .join(", ");
+
+  const linesSection = (
+    <section
+      className={`rounded-xl border border-stone-200 bg-stone-50/60 ${
+        proofReceived ? "p-3" : "p-4 sm:p-5"
+      }`}
+    >
+      <h3 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--store-brand)]">
+        {proofReceived ? "Esto es lo que compraste" : "Detalle del pedido"}
+      </h3>
+      <ul className="mt-2 divide-y divide-stone-100">
+        {orderLines.map((line) => (
+          <li
+            key={line.id}
+            className="flex items-start justify-between gap-3 py-2 first:pt-0 last:pb-0"
+          >
+            <div className="min-w-0">
+              <p className="text-sm font-medium leading-snug text-stone-900">
+                {line.name}
+              </p>
+              <p className="mt-0.5 text-xs text-stone-500">
+                {line.quantity} × {formatCop(line.unitPriceCents)}
+              </p>
+            </div>
+            <p className="shrink-0 text-sm font-medium tabular-nums text-stone-900">
+              {formatCop(line.unitPriceCents * line.quantity)}
+            </p>
+          </li>
+        ))}
+      </ul>
+      <div className="mt-2 space-y-1.5 border-t border-stone-200 pt-2 text-sm text-stone-700">
+        {shippingCents > 0 ? (
+          <div className="flex items-center justify-between gap-3">
+            <span>Envío</span>
+            <span className="tabular-nums">{formatCop(shippingCents)}</span>
+          </div>
+        ) : shippingCity ? (
+          <div className="flex items-center justify-between gap-3">
+            <span>Envío</span>
+            <span className="text-xs font-semibold uppercase tracking-wide text-emerald-700">
+              Gratis
+            </span>
+          </div>
+        ) : null}
+        <div className="flex items-center justify-between font-semibold text-stone-900">
+          <span>Total</span>
+          <span className="tabular-nums">{formatCop(totalCents)}</span>
+        </div>
+      </div>
+    </section>
+  );
+
+  const infoSection = (
+    <section
+      className={`rounded-xl border border-stone-200 bg-white ${
+        proofReceived ? "p-3" : "p-4 sm:p-5"
+      }`}
+    >
+      <h3 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--store-brand)]">
+        Información de la compra
+      </h3>
+      <dl className={`text-sm text-stone-700 ${proofReceived ? "mt-2 space-y-1.5" : "mt-4 space-y-3"}`}>
+        <div className={proofReceived ? "grid grid-cols-[5.5rem_minmax(0,1fr)] gap-x-2" : undefined}>
+          <dt className="text-[11px] font-semibold uppercase tracking-wide text-stone-500">
+            Nombre
+          </dt>
+          <dd className={proofReceived ? undefined : "mt-0.5"}>{customerName}</dd>
+        </div>
+        <div className={proofReceived ? "grid grid-cols-[5.5rem_minmax(0,1fr)] gap-x-2" : undefined}>
+          <dt className="text-[11px] font-semibold uppercase tracking-wide text-stone-500">
+            Email
+          </dt>
+          <dd className={`break-all ${proofReceived ? "" : "mt-0.5"}`}>{customerEmail}</dd>
+        </div>
+        {shippingPhone ? (
+          <div className={proofReceived ? "grid grid-cols-[5.5rem_minmax(0,1fr)] gap-x-2" : undefined}>
+            <dt className="text-[11px] font-semibold uppercase tracking-wide text-stone-500">
+              Teléfono
+            </dt>
+            <dd className={proofReceived ? undefined : "mt-0.5"}>{shippingPhone}</dd>
+          </div>
+        ) : null}
+        {shippingAddress ? (
+          <div className={proofReceived ? "grid grid-cols-[5.5rem_minmax(0,1fr)] gap-x-2" : undefined}>
+            <dt className="text-[11px] font-semibold uppercase tracking-wide text-stone-500">
+              Envío
+            </dt>
+            <dd className={proofReceived ? undefined : "mt-0.5 space-y-0.5"}>
+              <p>{proofReceived ? shippingLine : (
+                <>
+                  {shippingAddress}
+                  {shippingNeighborhood ? `, barrio ${shippingNeighborhood}` : ""}
+                  {shippingCity ? `, ${shippingCity}` : ""}
+                  {shippingPostalCode ? ` · ${shippingPostalCode}` : ""}
+                </>
+              )}</p>
+              {shippingReference?.trim() ? (
+                <p className="text-stone-600">Ref.: {shippingReference.trim()}</p>
+              ) : null}
+            </dd>
+          </div>
+        ) : null}
+        <div className={proofReceived ? "grid grid-cols-[5.5rem_minmax(0,1fr)] gap-x-2" : undefined}>
+          <dt className="text-[11px] font-semibold uppercase tracking-wide text-stone-500">
+            Pago
+          </dt>
+          <dd className={proofReceived ? undefined : "mt-0.5"}>
+            {paymentMethodLabel(checkoutPaymentMethod)}
+          </dd>
+        </div>
+      </dl>
+    </section>
+  );
+
   return (
     <>
-      <div className="space-y-8">
-        <header className="space-y-3">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-500">
-            ID de factura
-          </p>
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+      <div className={proofReceived ? "space-y-3" : "space-y-8"}>
+        <header className={proofReceived ? "space-y-2" : "space-y-3"}>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            <h1 className="text-sm font-semibold uppercase tracking-[0.22em] text-[var(--store-brand)] sm:text-[15px]">
+              {proofReceived ? "Pedido realizado" : "Tu pedido está registrado"}
+            </h1>
+            <span
+              className={`inline-flex rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-wide ${statusBadgeClass(paymentStatus, fulfillmentStatus, checkoutPaymentMethod)}`}
+            >
+              {displayStatus}
+            </span>
+            {proofReceived ? (
+              <p className="text-sm text-stone-500">{createdAtLabel}</p>
+            ) : null}
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-500">
+              ID de factura
+            </p>
             <p className="min-w-0 break-all font-mono text-sm font-medium text-stone-900">
               {orderId}
             </p>
             <button
               type="button"
               onClick={() => void copyInvoiceId()}
-              className="inline-flex shrink-0 items-center justify-center border border-stone-300 bg-white px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-stone-700 transition hover:bg-stone-50"
+              className="inline-flex shrink-0 items-center justify-center border border-stone-300 bg-white px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-stone-700 transition hover:bg-stone-50"
             >
               {idCopied ? "Copiado" : "Copiar ID"}
             </button>
           </div>
-          <div className="flex flex-wrap items-center gap-3">
-            <h2 className="text-xl font-semibold text-[var(--store-brand)] sm:text-2xl">
-              {proofReceived ? "Pedido realizado" : "Tu pedido está registrado"}
-            </h2>
-            <span
-              className={`inline-flex rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-wide ${statusBadgeClass(paymentStatus, fulfillmentStatus, checkoutPaymentMethod)}`}
-            >
-              {displayStatus}
-            </span>
-          </div>
-          <p className="text-sm text-stone-600">{createdAtLabel}</p>
-          <p className="max-w-2xl text-sm leading-relaxed text-stone-600">
-            {displayHint}
-          </p>
+          {proofReceived ? null : (
+            <p className="text-sm text-stone-600">{createdAtLabel}</p>
+          )}
+          {proofReceived ? null : (
+            <p className="max-w-2xl text-sm leading-relaxed text-stone-600">
+              {displayHint}
+            </p>
+          )}
           {needsProofHint ? (
             <p className="max-w-2xl rounded-xl border border-[var(--store-accent)]/30 bg-[var(--store-wash)] px-3 py-2.5 text-sm font-medium text-stone-800">
               Para finalizar tu pedido debes transferir y{" "}
@@ -224,123 +353,34 @@ export function StoreOrderDetailPanel({
           ) : null}
           {proofReceived ? (
             <p
-              className="max-w-2xl rounded-lg border border-emerald-200/90 bg-emerald-50/90 px-3 py-2 text-sm font-medium text-emerald-900"
+              className="rounded-lg border border-emerald-200/90 bg-emerald-50/90 px-3 py-2 text-sm font-medium text-emerald-900"
               role="status"
             >
-              Recibimos tu comprobante. Abajo está lo que compraste. Guarda el ID
-              de factura para verificar este pedido.
+              Recibimos tu comprobante. Guarda el ID de factura para verificar este pedido.
             </p>
           ) : null}
         </header>
 
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-8 lg:items-start">
-          <div className="space-y-6">
-            <section className="rounded-xl border border-stone-200 bg-white p-4 sm:p-5">
-              <h3 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--store-brand)]">
-                Información de la compra
-              </h3>
-              <dl className="mt-4 space-y-3 text-sm text-stone-700">
-                <div>
-                  <dt className="text-[11px] font-semibold uppercase tracking-wide text-stone-500">
-                    Nombre
-                  </dt>
-                  <dd className="mt-0.5">{customerName}</dd>
-                </div>
-                <div>
-                  <dt className="text-[11px] font-semibold uppercase tracking-wide text-stone-500">
-                    Email
-                  </dt>
-                  <dd className="mt-0.5 break-all">{customerEmail}</dd>
-                </div>
-                {shippingPhone ? (
-                  <div>
-                    <dt className="text-[11px] font-semibold uppercase tracking-wide text-stone-500">
-                      Teléfono
-                    </dt>
-                    <dd className="mt-0.5">{shippingPhone}</dd>
-                  </div>
-                ) : null}
-                {shippingAddress ? (
-                  <div>
-                    <dt className="text-[11px] font-semibold uppercase tracking-wide text-stone-500">
-                      Envío
-                    </dt>
-                    <dd className="mt-0.5 space-y-0.5">
-                      <p>
-                        {shippingAddress}
-                        {shippingNeighborhood
-                          ? `, barrio ${shippingNeighborhood}`
-                          : ""}
-                        {shippingCity ? `, ${shippingCity}` : ""}
-                        {shippingPostalCode ? ` · ${shippingPostalCode}` : ""}
-                      </p>
-                      {shippingReference?.trim() ? (
-                        <p className="text-stone-600">
-                          Ref.: {shippingReference.trim()}
-                        </p>
-                      ) : null}
-                    </dd>
-                  </div>
-                ) : null}
-                <div>
-                  <dt className="text-[11px] font-semibold uppercase tracking-wide text-stone-500">
-                    Forma de pago
-                  </dt>
-                  <dd className="mt-0.5">
-                    {paymentMethodLabel(checkoutPaymentMethod)}
-                  </dd>
-                </div>
-              </dl>
-            </section>
-
-            <section className="rounded-xl border border-stone-200 bg-stone-50/60 p-4 sm:p-5">
-              <h3 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--store-brand)]">
-                {proofReceived ? "Esto es lo que compraste" : "Detalle del pedido"}
-              </h3>
-              <ul className="mt-3 divide-y divide-stone-100">
-                {orderLines.map((line) => (
-                  <li
-                    key={line.id}
-                    className="flex items-start justify-between gap-3 py-2.5 first:pt-0 last:pb-0"
-                  >
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium leading-snug text-stone-900">
-                        {line.name}
-                      </p>
-                      <p className="mt-0.5 text-xs text-stone-500">
-                        {line.quantity} × {formatCop(line.unitPriceCents)}
-                      </p>
-                    </div>
-                    <p className="shrink-0 text-sm font-medium tabular-nums text-stone-900">
-                      {formatCop(line.unitPriceCents * line.quantity)}
-                    </p>
-                  </li>
-                ))}
-              </ul>
-              <div className="mt-3 space-y-2 border-t border-stone-200 pt-3 text-sm text-stone-700">
-                {shippingCents > 0 ? (
-                  <div className="flex items-center justify-between gap-3">
-                    <span>Envío</span>
-                    <span className="tabular-nums">{formatCop(shippingCents)}</span>
-                  </div>
-                ) : shippingCity ? (
-                  <div className="flex items-center justify-between gap-3">
-                    <span>Envío</span>
-                    <span className="text-xs font-semibold uppercase tracking-wide text-emerald-700">
-                      Gratis
-                    </span>
-                  </div>
-                ) : null}
-                <div className="flex items-center justify-between text-base font-semibold text-stone-900">
-                  <span>Total</span>
-                  <span className="tabular-nums">{formatCop(totalCents)}</span>
-                </div>
-              </div>
-            </section>
+        <div
+          className={
+            proofReceived
+              ? "grid items-start gap-3 lg:grid-cols-3"
+              : "grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-start lg:gap-8"
+          }
+        >
+          <div className={proofReceived ? "contents lg:block" : "space-y-6"}>
+            {infoSection}
+            {proofReceived ? null : linesSection}
           </div>
 
-          <div className="space-y-6">
-            {trackingUrl ? <StoreOrderTrackingLink url={trackingUrl} /> : null}
+          {proofReceived ? (
+            <div className="lg:col-span-1">{linesSection}</div>
+          ) : null}
+
+          <div className={proofReceived ? "space-y-3" : "space-y-6"}>
+            {trackingUrl ? (
+              <StoreOrderTrackingLink url={trackingUrl} compact={proofReceived} />
+            ) : null}
 
             {!isGuest && showAccountLinks ? (
               <div className="rounded-xl border border-stone-200 bg-[#f4f4f3] p-4 text-sm text-stone-700">
@@ -412,7 +452,11 @@ export function StoreOrderDetailPanel({
           </section>
         ) : null}
 
-        <div className="flex flex-wrap gap-3 border-t border-stone-200 pt-8">
+        <div
+          className={`flex flex-wrap gap-3 border-t border-stone-200 ${
+            proofReceived ? "pt-3" : "pt-8"
+          }`}
+        >
           <Link
             href="/products"
             className="inline-flex items-center justify-center border border-[var(--store-accent)] bg-[var(--store-accent)] px-6 py-2.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-white transition hover:bg-[var(--store-accent-hover)]"

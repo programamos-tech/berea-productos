@@ -2,7 +2,13 @@
 
 import { useState } from "react";
 
-export function StoreOrderTrackingLink({ url }: { url: string }) {
+export function StoreOrderTrackingLink({
+  url,
+  compact = false,
+}: {
+  url: string;
+  compact?: boolean;
+}) {
   const [copied, setCopied] = useState(false);
 
   const copy = async () => {
@@ -16,15 +22,17 @@ export function StoreOrderTrackingLink({ url }: { url: string }) {
   };
 
   return (
-    <section className="rounded-xl border border-stone-200 bg-white p-4 sm:p-5">
+    <section className={`rounded-xl border border-stone-200 bg-white ${compact ? "p-3" : "p-4 sm:p-5"}`}>
       <h2 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--store-brand)]">
         Seguimiento de tu pedido
       </h2>
-      <p className="mt-2 text-sm leading-relaxed text-stone-600">
-        Guardá este enlace para consultar el estado cuando quieras. Podés pegarlo en el
-        navegador o enviártelo por WhatsApp.
-      </p>
-      <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-stretch">
+      {compact ? null : (
+        <p className="mt-2 text-sm leading-relaxed text-stone-600">
+          Guardá este enlace para consultar el estado cuando quieras. Podés pegarlo en el
+          navegador o enviártelo por WhatsApp.
+        </p>
+      )}
+      <div className={`${compact ? "mt-2" : "mt-4"} flex flex-col gap-2 sm:flex-row sm:items-stretch`}>
         <input
           type="text"
           readOnly
