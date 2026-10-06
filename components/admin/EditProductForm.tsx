@@ -19,7 +19,10 @@ import {
   blockSubmitIfImageTooLarge,
   MAX_PRODUCT_IMAGE_BYTES,
 } from "@/lib/product-image-upload";
-import { SALE_VAT_PERCENT } from "@/lib/product-vat-price";
+import {
+  SALE_VAT_PERCENT,
+  unitPriceGrossCents,
+} from "@/lib/product-vat-price";
 import { shouldUnoptimizeStorageImageUrl } from "@/lib/storage-public-url";
 import { ProductFragranceRows } from "@/components/admin/ProductFragranceRows";
 import {
@@ -193,6 +196,7 @@ export function EditProductForm({
 
   const categoryLabel =
     categories.find((c) => c.id === categoryId)?.name ?? "—";
+  const salePriceCents = unitPriceGrossCents(priceCents, hasVat, null);
 
   return (
     <form
@@ -467,7 +471,7 @@ export function EditProductForm({
             </div>
             <div>
               <label className={filterLabelClass}>
-                Precio de venta{" "}
+                Base sin IVA{" "}
                 <span className="text-red-600 dark:text-red-400">*</span>
               </label>
               <ProductMoneyInput
@@ -476,6 +480,10 @@ export function EditProductForm({
                 onChange={setPriceCents}
                 required
               />
+              <p className="mt-1.5 text-xs tabular-nums text-zinc-500">
+                Precio de venta {formatCop(salePriceCents)}
+                {hasVat ? ` · IVA ${SALE_VAT_PERCENT}% incluido` : ""}
+              </p>
             </div>
           </div>
         </section>
@@ -516,8 +524,13 @@ export function EditProductForm({
               Precio de venta
             </p>
             <p className="mt-1 text-2xl font-semibold tabular-nums tracking-tight text-zinc-900 dark:text-zinc-100">
-              {formatCop(priceCents)}
+              {formatCop(salePriceCents)}
             </p>
+            {hasVat ? (
+              <p className="mt-1 text-xs tabular-nums text-zinc-500">
+                IVA {SALE_VAT_PERCENT}% incluido · {formatCop(priceCents)} sin IVA
+              </p>
+            ) : null}
           </div>
 
           <ul className="mt-3 space-y-1.5 text-sm">

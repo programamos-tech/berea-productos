@@ -18,7 +18,10 @@ import {
   blockSubmitIfImageTooLarge,
   MAX_PRODUCT_IMAGE_BYTES,
 } from "@/lib/product-image-upload";
-import { SALE_VAT_PERCENT } from "@/lib/product-vat-price";
+import {
+  SALE_VAT_PERCENT,
+  unitPriceGrossCents,
+} from "@/lib/product-vat-price";
 import { PRODUCT_COLOR_OPTIONS, productColorSwatchClass } from "@/lib/product-colors";
 import type { FragranceRowInitial } from "@/components/admin/ProductFragranceRows";
 import { ProductFragranceRows } from "@/components/admin/ProductFragranceRows";
@@ -63,6 +66,7 @@ export function NewProductForm({
     n <= 0 ? "0" : formatQuantityInputGrouping(n);
   const categoryLabel =
     categories.find((c) => c.id === categoryId)?.name ?? "—";
+  const salePriceCents = unitPriceGrossCents(priceCents, hasVat, null);
 
   return (
     <form
@@ -304,8 +308,8 @@ export function NewProductForm({
                     <span className="font-semibold text-zinc-900 dark:text-zinc-100">
                       {SALE_VAT_PERCENT} %
                     </span>{" "}
-                    (tipo general Colombia). El precio de venta es la base{" "}
-                    <span className="font-medium">sin IVA</span>.
+                    (tipo general Colombia). La base se guarda sin IVA; el precio
+                    de venta le suma el {SALE_VAT_PERCENT} % y redondea hacia abajo.
                   </p>
                   {hasVat ? (
                     <input type="hidden" name="vat_percent" value={String(SALE_VAT_PERCENT)} />
@@ -381,7 +385,7 @@ export function NewProductForm({
               </div>
               <div>
                 <label className={labelClass}>
-                  Precio de venta <span className="text-red-600 dark:text-red-400">*</span>
+                  Base sin IVA <span className="text-red-600 dark:text-red-400">*</span>
                 </label>
                 <ProductMoneyInput
                   name="price_cents"
@@ -389,6 +393,10 @@ export function NewProductForm({
                   onChange={setPriceCents}
                   required
                 />
+                <p className="mt-1.5 text-xs tabular-nums text-zinc-500 dark:text-zinc-400">
+                  Precio de venta {formatCop(salePriceCents)}
+                  {hasVat ? ` · IVA ${SALE_VAT_PERCENT}% incluido` : ""}
+                </p>
               </div>
               <p className="text-xs text-zinc-500 dark:text-zinc-400">
                 Si se puede vender por encima o por debajo de este precio lo
@@ -442,8 +450,13 @@ export function NewProductForm({
             <div className="mt-5 border-t border-zinc-200/70 pt-5 dark:border-zinc-800">
               <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Precio de venta</p>
               <p className="mt-1 text-2xl font-medium tabular-nums text-zinc-900 dark:text-zinc-100">
-                {formatCop(priceCents)}
+                {formatCop(salePriceCents)}
               </p>
+              {hasVat ? (
+                <p className="mt-1 text-xs tabular-nums text-zinc-500 dark:text-zinc-400">
+                  IVA {SALE_VAT_PERCENT}% incluido · {formatCop(priceCents)} sin IVA
+                </p>
+              ) : null}
             </div>
 
             <ul className="mt-4 space-y-1.5 border-t border-zinc-200/70 pt-4 text-sm dark:border-zinc-800">
@@ -455,7 +468,7 @@ export function NewProductForm({
               </li>
               <li className="flex justify-between font-medium text-zinc-900 dark:text-zinc-100">
                 <span>Precio venta</span>
-                <span className="tabular-nums">{formatCop(priceCents)}</span>
+                <span className="tabular-nums">{formatCop(salePriceCents)}</span>
               </li>
             </ul>
 
