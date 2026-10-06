@@ -8,7 +8,6 @@ import { formatStoreDateTime } from "@/lib/store-datetime-format";
 import { loadStoreOrderDetailByTransferToken } from "@/lib/store-order-detail-data";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getStorefrontChromeForRequest } from "@/lib/tenant-context";
-import { getStorefrontScope } from "@/lib/storefront-scope";
 
 export const dynamic = "force-dynamic";
 
@@ -32,26 +31,21 @@ export default async function PedidoSeguimientoPage({ searchParams }: Props) {
   const checkoutPm = order.checkoutPaymentMethod ?? "";
   if (checkoutPm !== "transfer") notFound();
 
-  const [sessionSb, chrome, scope] = await Promise.all([
+  const [sessionSb, chrome] = await Promise.all([
     createSupabaseServerClient(),
     getStorefrontChromeForRequest(),
-    getStorefrontScope(),
   ]);
   const {
     data: { user },
   } = await sessionSb.auth.getUser();
 
   let showAccountLinks = false;
-  let showRegisterModal = !scope.customer;
-  if (scope.customer) {
-    showRegisterModal = false;
-  } else if (user?.email) {
+  if (user?.email) {
     const { data: adminProf } = await sessionSb
       .from("profiles")
       .select("id")
       .eq("id", user.id)
       .maybeSingle();
-    showRegisterModal = false;
     showAccountLinks = !adminProf;
   }
 
@@ -119,7 +113,7 @@ export default async function PedidoSeguimientoPage({ searchParams }: Props) {
             shippingCents={order.shippingCents}
             orderLines={order.orderLines}
             instructions={instructions}
-            isGuest={showRegisterModal}
+            isGuest={false}
             showAccountLinks={showAccountLinks}
             proofCount={order.proofCount}
           />

@@ -8,7 +8,6 @@ import {
   type TransferOrderLine,
 } from "@/components/store/TransferenciaCheckoutPanel";
 import { StoreOrderTrackingLink } from "@/components/store/StoreOrderTrackingLink";
-import { StorePostCheckoutRegisterModal } from "@/components/store/StorePostCheckoutRegisterModal";
 import type { TransferBankInstructions } from "@/lib/transfer-bank-instructions";
 import { formatCop } from "@/lib/money";
 import {
@@ -420,7 +419,6 @@ export function StoreOrderDetailPanel({
         </button>
       ) : null}
 
-      {isGuest ? <StorePostCheckoutRegisterModal orderId={orderId} open /> : null}
     </>
   );
 }
