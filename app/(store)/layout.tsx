@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { leaveStorefrontBranch } from "@/app/actions/storefront-access";
+import { WholesaleSessionBar } from "@/components/store/WholesaleSessionBar";
 import { StoreAuthModalProvider } from "@/components/store/StoreAuthModals";
 import { StoreCookiesBanner } from "@/components/store/StoreCookiesBanner";
 import { StoreFavoritesProvider } from "@/components/store/StoreFavoritesProvider";
@@ -21,6 +22,7 @@ import {
 } from "@/lib/store-public-cache";
 import { getStorefrontChromeForRequest } from "@/lib/tenant-context";
 import { getStorefrontScope } from "@/lib/storefront-scope";
+import { loadStorefrontWholesaleOrders } from "@/lib/storefront-wholesale-orders";
 import {
   storefrontClientChrome,
   storefrontCssVars,
@@ -77,23 +79,21 @@ export default async function StoreLayout({
     redirect(`/sucursal/${scope.branchCode}`);
   }
 
+  const wholesaleOrders =
+    scope.requiresCode && scope.customer
+      ? await loadStorefrontWholesaleOrders(scope.customer.id)
+      : null;
+
   const wholesaleBanner =
-    scope.requiresCode && scope.customer ? (
-      <div className="bg-stone-900 text-white">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-2 text-[11px] font-medium uppercase tracking-[0.12em] sm:px-6">
-          <p className="min-w-0 truncate">
-            Tienda {scope.branchName}
-            {scope.customer.wholesalePct > 0
-              ? ` · Mayorista ${scope.customer.wholesalePct}%`
-              : ""}
-          </p>
-          <form action={leaveStorefrontBranch}>
-            <button type="submit" className="shrink-0 underline underline-offset-2">
-              Salir
-            </button>
-          </form>
-        </div>
-      </div>
+    scope.requiresCode && scope.customer && wholesaleOrders ? (
+      <WholesaleSessionBar
+        customerName={scope.customer.name}
+        branchName={scope.branchName}
+        wholesalePct={scope.customer.wholesalePct}
+        orderCount={wholesaleOrders.count}
+        orders={wholesaleOrders.latest}
+        leaveAction={leaveStorefrontBranch}
+      />
     ) : null;
 
   const top = (
