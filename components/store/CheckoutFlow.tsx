@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useState, useTransition, type FormEvent, type ReactNode } from "react";
 import { CheckoutSubmitButton } from "@/components/store/CheckoutCitySelect";
 import { CheckoutSubmittingOverlay } from "@/components/store/CheckoutSubmittingOverlay";
 import { useCheckoutShipping } from "@/components/store/CheckoutShippingProvider";
 import { formatCop } from "@/lib/money";
 import { SHIPPING_CITY_OTHER } from "@/lib/store-shipping";
+import { transferProofRejection } from "@/lib/transfer-proof-file";
 
 export type CheckoutFlowStep = 1 | 2 | 3;
 
@@ -103,6 +104,7 @@ export function CheckoutFlow({
   const [maxReached, setMaxReached] = useState<CheckoutFlowStep>(initialStep);
   const [stepError, setStepError] = useState<string | null>(null);
   const [focusName, setFocusName] = useState<string | null>(null);
+  const [isSubmitting, startSubmit] = useTransition();
   const { totalWithShippingCents, isOtherCity } = useCheckoutShipping();
 
   useEffect(() => {
@@ -186,16 +188,28 @@ export function CheckoutFlow({
       if (!isOtherCity) advance(3);
       return;
     }
+    event.preventDefault();
+    if (isSubmitting) return;
     const proof = event.currentTarget.querySelector<HTMLInputElement>(
       'input[name="proof"]',
     );
-    if (!proof?.files?.[0]) {
-      event.preventDefault();
+    const file = proof?.files?.[0] ?? null;
+    const proofError = transferProofRejection(
+      file ? { size: file.size, type: file.type, name: file.name } : null,
+    );
+    if (proofError || !file) {
       setStep(3);
       setStepError(
-        "Sube el comprobante de la transferencia. Sin ese archivo no se crea el pedido.",
+        proofError ?? "Selecciona el comprobante de la transferencia.",
       );
+      return;
     }
+    const formData = new FormData(event.currentTarget);
+    formData.set("proof", file);
+    setStepError(null);
+    startSubmit(() => {
+      void action(formData);
+    });
   }
 
   const copy =
@@ -227,7 +241,7 @@ export function CheckoutFlow({
       className="scroll-mt-28"
       data-checkout-flow
     >
-      <CheckoutSubmittingOverlay />
+      <CheckoutSubmittingOverlay active={isSubmitting} />
       <nav aria-label="Pasos del pedido">
         <ol className="grid grid-cols-3">
           {STEPS.map((item) => {
@@ -346,6 +360,7 @@ export function CheckoutFlow({
               isOtherCity={isOtherCity}
               primaryClassName={primaryClassName}
               secondaryClassName={secondaryClassName}
+              busy={isSubmitting}
               onConfirm={() => advance(2)}
               onContinue={continueToPay}
               onBack={goBack}
@@ -371,6 +386,7 @@ export function CheckoutFlow({
               primaryClassName={primaryClassName}
               secondaryClassName={secondaryClassName}
               compact
+              busy={isSubmitting}
               onConfirm={() => advance(2)}
               onContinue={continueToPay}
               onBack={goBack}
@@ -388,6 +404,7 @@ function StepActions({
   primaryClassName,
   secondaryClassName,
   compact = false,
+  busy = false,
   onConfirm,
   onContinue,
   onBack,
@@ -397,6 +414,7 @@ function StepActions({
   primaryClassName: string;
   secondaryClassName: string;
   compact?: boolean;
+  busy?: boolean;
   onConfirm: () => void;
   onContinue: (form: HTMLFormElement | null) => void;
   onBack: () => void;
@@ -404,7 +422,7 @@ function StepActions({
   if (step === 3) {
     return (
       <>
-        <CheckoutSubmitButton className={primaryClassName} />
+        <CheckoutSubmitButton className={primaryClassName} busy={busy} />
         {compact ? null : (
           <button
             type="button"

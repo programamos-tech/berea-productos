@@ -10,11 +10,11 @@ import {
  * Overlay a pantalla completa mientras corre `startCheckout`.
  * Debe vivir dentro del `<form>` (usa `useFormStatus`).
  */
-export function CheckoutSubmittingOverlay() {
+export function CheckoutSubmittingOverlay({ active = false }: { active?: boolean }) {
   const { pending } = useFormStatus();
   return (
     <StoreMotivationalOverlay
-      active={pending}
+      active={pending || active}
       messages={STORE_CHECKOUT_SUBMIT_MESSAGES}
     />
   );

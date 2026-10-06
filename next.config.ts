@@ -4,8 +4,10 @@ const nextConfig: NextConfig = {
   experimental: {
     // Subida de imágenes vía Server Action: el default es 1 MB y rompe con fotos > ~1 MB.
     serverActions: {
-      bodySizeLimit: "6mb",
+      bodySizeLimit: "16mb",
     },
+    // El comprobante viaja en el mismo POST que pasa por el proxy.
+    proxyClientMaxBodySize: "16mb",
     // Transiciones suaves entre rutas (View Transitions API).
     viewTransition: true,
   },

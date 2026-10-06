@@ -297,7 +297,7 @@ export function TransferenciaCheckoutPanel({
           Comprobante de pago
         </h2>
         <p className="mt-1 text-sm text-stone-600">
-          JPG, PNG, WebP o PDF. Máximo 5 MB.
+          JPG, PNG, WebP, HEIC o PDF. Máximo 12 MB.
         </p>
 
         <div className="mt-5 grid gap-5 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] md:items-start">

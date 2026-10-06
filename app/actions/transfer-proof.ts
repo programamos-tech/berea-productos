@@ -2,40 +2,32 @@
 
 import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
+import {
+  transferProofExt,
+  transferProofMime,
+  transferProofRejection,
+} from "@/lib/transfer-proof-file";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
 
 const BUCKET = "order-payment-proofs";
-const MAX_BYTES = 5 * 1024 * 1024;
-
-const ALLOWED_TYPES = new Set([
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-  "application/pdf",
-]);
 
 /** Mientras el pedido no esté cancelado/fallido, se puede subir comprobante. */
 function transferProofUploadAllowed(status: string): boolean {
   return status !== "cancelled" && status !== "failed";
 }
 
-function inferMime(file: File): string {
-  const fromType = (file.type || "").toLowerCase();
-  if (fromType) return fromType;
-  const name = (file.name || "").toLowerCase();
-  if (name.endsWith(".jpg") || name.endsWith(".jpeg")) return "image/jpeg";
-  if (name.endsWith(".png")) return "image/png";
-  if (name.endsWith(".webp")) return "image/webp";
-  if (name.endsWith(".pdf")) return "application/pdf";
-  return "";
-}
-
-function extFromMime(mime: string): string | null {
-  if (mime === "image/jpeg") return "jpg";
-  if (mime === "image/png") return "png";
-  if (mime === "image/webp") return "webp";
-  if (mime === "application/pdf") return "pdf";
-  return null;
+function readProofBlob(
+  entry: FormDataEntryValue | null,
+): { blob: Blob; name: string; type: string } | null {
+  if (!entry || typeof entry === "string") return null;
+  const blob = entry as Blob & { name?: string };
+  if (typeof blob.arrayBuffer !== "function") return null;
+  if (typeof blob.size !== "number" || blob.size <= 0) return null;
+  return {
+    blob,
+    name: typeof blob.name === "string" && blob.name.trim() ? blob.name : "comprobante",
+    type: typeof blob.type === "string" ? blob.type : "",
+  };
 }
 
 export type TransferProofActionResult =
@@ -91,28 +83,33 @@ export type ParsedTransferProof =
 
 /** Lee y valida el archivo antes de crear el pedido. */
 export async function parseTransferProofFile(
-  file: FormDataEntryValue | null,
+  entry: FormDataEntryValue | null,
 ): Promise<ParsedTransferProof> {
-  if (!(file instanceof File) || file.size === 0) {
-    return { ok: false, error: "Selecciona el comprobante de la transferencia." };
+  const file = readProofBlob(entry);
+  const rejection = transferProofRejection(
+    file ? { size: file.blob.size, type: file.type, name: file.name } : null,
+  );
+  if (!file || rejection) {
+    return {
+      ok: false,
+      error: rejection ?? "Selecciona el comprobante de la transferencia.",
+    };
   }
-  if (file.size > MAX_BYTES) {
-    return { ok: false, error: "El archivo supera 5 MB." };
-  }
-  const mime = inferMime(file);
-  if (!ALLOWED_TYPES.has(mime)) {
-    return { ok: false, error: "Solo se permiten JPG, PNG, WebP o PDF." };
-  }
-  const ext = extFromMime(mime);
-  if (!ext) {
-    return { ok: false, error: "Tipo de archivo no admitido." };
+  const mime = transferProofMime({
+    size: file.blob.size,
+    type: file.type,
+    name: file.name,
+  });
+  const ext = mime ? transferProofExt(mime) : null;
+  if (!mime || !ext) {
+    return { ok: false, error: "Ese archivo no sirve. Sube JPG, PNG, WebP, HEIC o PDF." };
   }
   return {
     ok: true,
-    buf: Buffer.from(await file.arrayBuffer()),
+    buf: Buffer.from(await file.blob.arrayBuffer()),
     mime,
     ext,
-    filename: file.name?.slice(0, 240) || `comprobante.${ext}`,
+    filename: file.name.slice(0, 240) || `comprobante.${ext}`,
   };
 }
 
@@ -161,7 +158,7 @@ export async function uploadTransferProof(
   const { data: row, error } = await supabase
     .from("orders")
     .select(
-      "id, checkout_payment_method, transfer_session_token, status, fulfillment_status",
+      "id, checkout_payment_method, transfer_session_token, status, fulfillment_status, tenant_id, branch_id",
     )
     .eq("id", orderId)
     .maybeSingle();
@@ -199,9 +196,12 @@ export async function uploadTransferProof(
     order_id: orderId,
     storage_path: objectPath,
     original_filename: proofFile.filename,
+    tenant_id: row.tenant_id,
+    branch_id: row.branch_id,
   });
 
   if (insErr) {
+    console.error("[transfer-proof] insert:", insErr.message);
     await supabase.storage.from(BUCKET).remove([objectPath]);
     return { ok: false, error: "No se pudo registrar el comprobante." };
   }
@@ -247,6 +247,14 @@ export async function saveOrderTransferProof(
   proof: Extract<ParsedTransferProof, { ok: true }>,
 ): Promise<{ ok: true; objectPath: string } | { ok: false; error: string }> {
   const supabase = createSupabaseServiceClient();
+  const { data: order, error: orderErr } = await supabase
+    .from("orders")
+    .select("tenant_id, branch_id")
+    .eq("id", orderId)
+    .maybeSingle();
+  if (orderErr || !order?.tenant_id || !order.branch_id) {
+    return { ok: false, error: "No se pudo registrar el comprobante." };
+  }
   const objectPath = `${orderId}/${randomUUID()}.${proof.ext}`;
   const { error: upErr } = await supabase.storage.from(BUCKET).upload(objectPath, proof.buf, {
     contentType: proof.mime,
@@ -259,8 +267,11 @@ export async function saveOrderTransferProof(
     order_id: orderId,
     storage_path: objectPath,
     original_filename: proof.filename,
+    tenant_id: order.tenant_id,
+    branch_id: order.branch_id,
   });
   if (insErr) {
+    console.error("[transfer-proof] insert:", insErr.message);
     await supabase.storage.from(BUCKET).remove([objectPath]);
     return { ok: false, error: "No se pudo registrar el comprobante." };
   }

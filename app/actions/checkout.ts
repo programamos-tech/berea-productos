@@ -118,7 +118,10 @@ export async function startCheckout(formData: FormData) {
 
   const proofFile = await parseTransferProofFile(formData.get("proof"));
   if (!proofFile.ok) {
-    redirect("/checkout?error=missing_proof");
+    console.error("[checkout] proof rejected", proofFile.error);
+    redirect(
+      `/checkout?error=missing_proof&message=${encodeURIComponent(proofFile.error)}`,
+    );
   }
 
   const sessionSb = await createSupabaseServerClient();
@@ -612,8 +615,11 @@ export async function startCheckout(formData: FormData) {
 
   const savedProof = await saveOrderTransferProof(orderId, proofFile);
   if (!savedProof.ok) {
+    console.error("[checkout] proof save failed", savedProof.error);
     await supabase.from("orders").delete().eq("id", orderId);
-    redirect("/checkout?error=missing_proof");
+    redirect(
+      `/checkout?error=missing_proof&message=${encodeURIComponent(savedProof.error)}`,
+    );
   }
 
   const paid = await supabase

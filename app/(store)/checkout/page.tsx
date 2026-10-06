@@ -111,7 +111,8 @@ function CheckoutErrorBanner({
           ? `Wompi: ${decodeURIComponent(message)}`
           : "Error al crear el enlace de pago en Wompi.")}
       {error === "missing_proof" &&
-        "Sube el comprobante de la transferencia. Sin ese archivo no se crea el pedido."}
+        (message ||
+          "Sube el comprobante de la transferencia. Sin ese archivo no se crea el pedido.")}
       {error === "account_link" &&
         "No pudimos vincular tu cuenta con el cliente del pedido. Si el correo ya está en uso por otra cuenta, inicia sesión con ese correo o escríbenos."}
       {![

@@ -23,7 +23,7 @@ export function CheckoutProofField() {
       <p className="mt-2 text-xs leading-relaxed text-stone-500">
         {filename
           ? `Listo: ${filename}. El pedido se crea al enviarlo.`
-          : "JPG, PNG, WebP o PDF. Máximo 5 MB. Sin este archivo el pedido no entra al sistema."}
+          : "JPG, PNG, WebP, HEIC o PDF. Máximo 12 MB. Sin este archivo el pedido no entra al sistema."}
       </p>
     </label>
   );

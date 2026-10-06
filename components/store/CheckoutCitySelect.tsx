@@ -248,8 +248,15 @@ export function CheckoutShippingTotals() {
   );
 }
 
-export function CheckoutSubmitButton({ className }: { className: string }) {
+export function CheckoutSubmitButton({
+  className,
+  busy = false,
+}: {
+  className: string;
+  busy?: boolean;
+}) {
   const { pending } = useFormStatus();
+  const waiting = pending || busy;
   const { cityValue, isOtherCity, selectedMunicipality } = useCheckoutShipping();
   const canSubmit =
     Boolean(cityValue) && !isOtherCity && selectedMunicipality != null;
@@ -259,9 +266,9 @@ export function CheckoutSubmitButton({ className }: { className: string }) {
       <button
         type="submit"
         className={`${className} disabled:cursor-not-allowed disabled:opacity-50`}
-        disabled={!canSubmit || pending}
+        disabled={!canSubmit || waiting}
       >
-        {pending ? "Enviando comprobante…" : "Enviar comprobante"}
+        {waiting ? "Enviando comprobante…" : "Enviar comprobante"}
       </button>
       {!canSubmit && isOtherCity ? (
         <p className="text-center text-xs leading-relaxed text-stone-500">
