@@ -2,6 +2,7 @@ import {
   createBranchAction,
   updateBranchAction,
 } from "@/app/actions/admin/branches";
+import { StoreColorField } from "@/components/admin/StoreColorField";
 import { AdminFormSubmitButton } from "@/components/admin/AdminFormSubmitButton";
 import {
   productInputClass,
@@ -21,9 +22,16 @@ type InitialBranch = {
   logoPath: string | null;
   isActive: boolean;
   isDefault: boolean;
+  storefrontColor: string | null;
 };
 
-export function BranchForm({ initial }: { initial?: InitialBranch }) {
+export function BranchForm({
+  initial,
+  catalogColor = "#18181B",
+}: {
+  initial?: InitialBranch;
+  catalogColor?: string;
+}) {
   const editing = Boolean(initial);
   const logoUrl = storagePublicObjectUrl(initial?.logoPath);
   return (
@@ -105,6 +113,16 @@ export function BranchForm({ initial }: { initial?: InitialBranch }) {
             </div>
           </div>
         </div>
+        {initial && !initial.isDefault ? (
+          <div className="sm:col-span-2">
+            <StoreColorField
+              name="storefront_color"
+              label="Color de la tienda"
+              defaultColor={initial.storefrontColor || catalogColor}
+              hint="El encabezado y el pie de esta tienda. La tienda pública no cambia."
+            />
+          </div>
+        ) : null}
         {initial ? (
           <>
             <label className="flex items-center gap-2 text-sm text-zinc-700 dark:text-zinc-200">

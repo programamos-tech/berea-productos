@@ -24,6 +24,7 @@ import { getStorefrontChromeForRequest } from "@/lib/tenant-context";
 import { getStorefrontScope } from "@/lib/storefront-scope";
 import { loadStorefrontWholesaleOrders } from "@/lib/storefront-wholesale-orders";
 import {
+  buildStorefrontTheme,
   storefrontClientChrome,
   storefrontCssVars,
 } from "@/lib/storefront-brand";
@@ -96,10 +97,14 @@ export default async function StoreLayout({
       />
     ) : null;
 
+  const theme = scope.storefrontColor
+    ? buildStorefrontTheme(scope.storefrontColor)
+    : chrome.theme;
+
   const top = (
     <>
       <Suspense fallback={<StoreHeaderSkeleton />}>
-        <StoreHeader chrome={chrome} />
+        <StoreHeader chrome={chrome} onLight={theme.foreground !== "#FFFFFF"} />
       </Suspense>
       {wholesaleBanner}
       {promoBanner && scope.isDefault ? (
@@ -110,7 +115,7 @@ export default async function StoreLayout({
 
   const bottom = (
     <>
-      <StoreFooter chrome={chrome} />
+      <StoreFooter chrome={chrome} onLight={theme.foreground !== "#FFFFFF"} />
       <StoreWhatsAppFloatingButton
         phone={chrome.phone}
         whatsappUrl={chrome.whatsappUrl}
@@ -125,10 +130,10 @@ export default async function StoreLayout({
 
   return (
     <StorefrontBrandProvider chrome={storefrontClientChrome(chrome)}>
-      <StoreDocumentTheme theme={chrome.theme} name={chrome.name} />
+      <StoreDocumentTheme theme={theme} name={chrome.name} />
       <div
         className="flex min-h-full flex-col overflow-x-hidden bg-white text-stone-800"
-        style={storefrontCssVars(chrome.theme) as CSSProperties}
+        style={storefrontCssVars(theme) as CSSProperties}
       >
         <StoreFavoritesProvider>
           <StoreCartDrawerProvider>

@@ -1,5 +1,5 @@
 import { cache } from "react";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { wholesaleDiscountPercentFromRow } from "@/lib/customer-wholesale-pricing";
 import { getStorefrontTenant } from "@/lib/storefront-tenant";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
@@ -22,6 +22,8 @@ export type StorefrontScope = {
   isDefault: boolean;
   /** Sucursal distinta de Local: hace falta el código del mayorista. */
   requiresCode: boolean;
+  /** Color propio de la sucursal. Null usa el color de la tienda pública. */
+  storefrontColor: string | null;
   customer: StorefrontScopeCustomer | null;
   /**
    * Productos visibles en esta sucursal.
@@ -35,7 +37,23 @@ type BranchRow = {
   code: string;
   name: string;
   is_default: boolean;
+  storefront_color: string | null;
 };
+
+const ALEYA_BODEGA_COLOR = "#FFDAB8";
+
+function branchStorefrontColor(
+  branch: BranchRow,
+  tenantSlug: string,
+): string | null {
+  if (branch.is_default) return null;
+  const stored = String(branch.storefront_color ?? "").trim();
+  if (/^#[0-9a-f]{6}$/i.test(stored)) return stored.toUpperCase();
+  if (tenantSlug === "aleya" && branch.code.toLowerCase() === "bodega") {
+    return ALEYA_BODEGA_COLOR;
+  }
+  return null;
+}
 
 function cookieOptions() {
   return {
@@ -69,25 +87,34 @@ export const getStorefrontScope = cache(async (): Promise<StorefrontScope> => {
     branchName: "Local",
     isDefault: true,
     requiresCode: false,
+    storefrontColor: null,
     customer: null,
     listedProductIds: null,
   };
 
   let tenantId: string;
+  let tenantSlug: string;
   try {
-    tenantId = (await getStorefrontTenant()).id;
+    const tenant = await getStorefrontTenant();
+    tenantId = tenant.id;
+    tenantSlug = tenant.slug;
   } catch {
     return empty;
   }
 
   const jar = await cookies();
-  const requestedCode = jar.get(STOREFRONT_BRANCH_COOKIE)?.value?.trim().toLowerCase() ?? "";
+  const headerList = await headers();
+  const pathCode =
+    /^\/sucursal\/([a-z0-9-]+)/.exec(headerList.get("x-store-path") ?? "")?.[1] ??
+    "";
+  const requestedCode =
+    jar.get(STOREFRONT_BRANCH_COOKIE)?.value?.trim().toLowerCase() || pathCode;
   const customerId = jar.get(STOREFRONT_CUSTOMER_COOKIE)?.value?.trim() ?? "";
 
   const supabase = createSupabaseServiceClient();
   const { data: branchRows, error: branchErr } = await supabase
     .from("branches")
-    .select("id,code,name,is_default")
+    .select("id,code,name,is_default,storefront_color")
     .eq("tenant_id", tenantId)
     .eq("is_active", true);
 
@@ -145,6 +172,7 @@ export const getStorefrontScope = cache(async (): Promise<StorefrontScope> => {
     branchName: String(branch.name ?? branch.code),
     isDefault,
     requiresCode: !isDefault,
+    storefrontColor: branchStorefrontColor(branch, tenantSlug),
     customer,
     listedProductIds,
   };

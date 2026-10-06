@@ -697,3 +697,32 @@ html.store-checkout-nav-pending body {
     animation: none;
   }
 }
+
+/* Encabezado claro (Bodega #FFDAB8): el texto blanco del cromo pasa al color de contraste. */
+[data-header-tone="light"] {
+  border-color: color-mix(in srgb, var(--store-header-fg) 18%, transparent);
+}
+
+[data-header-tone="light"] :is(
+  .text-white,
+  .text-white\/90,
+  .text-white\/85,
+  .text-white\/80,
+  .text-white\/75,
+  .text-white\/70,
+  .text-white\/40
+) {
+  color: var(--store-header-fg);
+}
+
+[data-header-tone="light"] .placeholder\:text-white\/50::placeholder {
+  color: color-mix(in srgb, var(--store-header-fg) 55%, transparent);
+}
+
+[data-header-tone="light"] .border-white\/45 {
+  border-color: color-mix(in srgb, var(--store-header-fg) 35%, transparent);
+}
+
+[data-header-tone="light"] :is(.hover\:text-white):hover {
+  color: var(--store-header-fg);
+}

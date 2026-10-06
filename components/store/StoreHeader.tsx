@@ -10,8 +10,10 @@ import type { StorefrontChrome } from "@/lib/storefront-brand";
 
 export async function StoreHeader({
   chrome,
+  onLight = false,
 }: {
   chrome: StorefrontChrome;
+  onLight?: boolean;
 }) {
   const [menuCategories, cartItemCount] = await Promise.all([
     getCachedStoreCategoriesWithCounts(),
@@ -22,7 +24,10 @@ export async function StoreHeader({
     <header>
       <StoreAnnouncementBar chrome={chrome} />
 
-      <div className="border-b border-white/20 bg-[var(--store-header-bg)] text-[var(--store-header-fg)]">
+      <div
+        data-header-tone={onLight ? "light" : undefined}
+        className="border-b border-white/20 bg-[var(--store-header-bg)] text-[var(--store-header-fg)]"
+      >
         <div className={`${storeShellClass} grid grid-cols-[auto_1fr_auto] items-center gap-x-2 py-3 sm:gap-x-3 md:py-3.5 lg:grid-cols-[1fr_auto_1fr] lg:gap-x-6 lg:py-5`}>
           <div className="flex min-w-0 items-center justify-start lg:pr-4">
             <StoreNavDropdowns menuCategories={menuCategories} />
@@ -33,7 +38,8 @@ export async function StoreHeader({
               brand={chrome.name}
               logoPath={chrome.logoSrc}
               square={chrome.logoSquare}
-              white={chrome.tenantSlug === "aleya"}
+              white={!onLight && chrome.tenantSlug === "aleya"}
+              ink={onLight && chrome.tenantSlug === "aleya"}
               className="block max-w-[min(100%,18rem)] outline-none focus-visible:ring-2 focus-visible:ring-white/45 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--store-header-bg)] sm:max-w-[min(100%,20rem)] lg:max-w-[22rem] xl:max-w-[24rem]"
             />
             {chrome.tenantSlug === "aleya" ? (

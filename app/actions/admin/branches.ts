@@ -1,6 +1,7 @@
 "use server";
 
 import { branchSafeAdminPath, isBranchId } from "@/lib/branch-context";
+import { normalizeStorefrontColor } from "@/lib/storefront-brand";
 import {
   clearActiveBranchCookie,
   setActiveBranchCookie,
@@ -232,6 +233,25 @@ export async function updateBranchAction(formData: FormData) {
     );
   }
 
+  if (!existing.is_default) {
+    const color = normalizeStorefrontColor(
+      String(formData.get("storefront_color") ?? ""),
+      "",
+    );
+    if (!color) {
+      redirect(`/admin/sucursales/${id}/edit?error=color`);
+    }
+    const { error: colorError } = await supabase
+      .from("branches")
+      .update({ storefront_color: color })
+      .eq("id", id)
+      .eq("tenant_id", perm.tenantId);
+    if (colorError) {
+      redirect(`/admin/sucursales/${id}/edit?error=db`);
+    }
+  }
+
+  revalidatePath("/", "layout");
   revalidatePath("/admin", "layout");
   revalidatePath("/admin/sucursales");
   redirect("/admin/sucursales?updated=1");

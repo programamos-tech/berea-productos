@@ -62,7 +62,8 @@ export default async function AdminCuentaPage({
   const user = userData.user;
   if (!user) redirect("/admin/login");
 
-  const [{ data: profile }, { data: tenant }] = await Promise.all([
+  const [{ data: profile }, { data: tenant }, { data: wholesaleBranches }] =
+    await Promise.all([
     supabase
       .from("profiles")
       .select("login_username, public_email, branch_label")
@@ -73,6 +74,13 @@ export default async function AdminCuentaPage({
       .select("brand,storefront_config,custom_domains")
       .eq("id", perm.tenantId)
       .maybeSingle(),
+    supabase
+      .from("branches")
+      .select("id,name,storefront_color")
+      .eq("tenant_id", perm.tenantId)
+      .eq("is_default", false)
+      .eq("is_active", true)
+      .order("name"),
   ]);
   const storefrontChrome = buildStorefrontChrome({
     tenantId: perm.tenantId,
@@ -228,6 +236,14 @@ export default async function AdminCuentaPage({
               bankAccount: storefrontChrome.bank?.account ?? "",
               checkoutMode: storefrontChrome.checkoutMode,
               canUseWompi: perm.tenantSlug === "aleya",
+              wholesaleStores: (wholesaleBranches ?? []).map((branch) => ({
+                id: String(branch.id),
+                name: String(branch.name),
+                color:
+                  branch.storefront_color != null
+                    ? String(branch.storefront_color)
+                    : "",
+              })),
             }}
           />
         </section>

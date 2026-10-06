@@ -95,6 +95,21 @@ export async function updateStorefrontBrandAction(formData: FormData) {
     .eq("id", session.tenantId);
   if (error) redirect("/admin/cuenta?storefront=error");
 
+  for (const [key, raw] of formData.entries()) {
+    if (!key.startsWith("wholesale_color__")) continue;
+    const branchId = key.slice("wholesale_color__".length);
+    if (!/^[0-9a-f-]{36}$/i.test(branchId)) continue;
+    const color = normalizeStorefrontColor(String(raw), "");
+    if (!color) continue;
+    const { error: branchError } = await supabase
+      .from("branches")
+      .update({ storefront_color: color })
+      .eq("id", branchId)
+      .eq("tenant_id", session.tenantId)
+      .eq("is_default", false);
+    if (branchError) redirect("/admin/cuenta?storefront=error");
+  }
+
   revalidatePath("/", "layout");
   revalidatePath("/admin", "layout");
   revalidatePath("/admin/cuenta");

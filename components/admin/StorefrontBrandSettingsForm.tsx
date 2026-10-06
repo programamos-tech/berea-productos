@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useEffect, useState } from "react";
 import { updateStorefrontBrandAction } from "@/app/actions/admin/storefront-brand";
 import { AdminFormSubmitButton } from "@/components/admin/AdminFormSubmitButton";
+import { StoreColorField } from "@/components/admin/StoreColorField";
 import {
   productInputClass,
   productLabelClass,
@@ -26,6 +27,7 @@ type InitialStorefrontBrand = {
   bankAccount: string;
   checkoutMode: "wompi" | "transfer";
   canUseWompi: boolean;
+  wholesaleStores: { id: string; name: string; color: string }[];
 };
 
 function toHex(value: number): string {
@@ -72,8 +74,8 @@ export function StorefrontBrandSettingsForm({
 }: {
   initial: InitialStorefrontBrand;
 }) {
-  const [color, setColor] = useState(initial.primaryColor);
   const [preview, setPreview] = useState(initial.logoSrc);
+  const [swatch, setSwatch] = useState(initial.primaryColor);
 
   useEffect(
     () => () => {
@@ -101,27 +103,21 @@ export function StorefrontBrandSettingsForm({
             className={productInputClass}
           />
         </div>
-        <div>
-          <label htmlFor="storefront-color" className={productLabelClass}>
-            Color principal
-          </label>
-          <div className="flex items-center gap-2">
-            <input
-              id="storefront-color"
-              name="primary_color"
-              type="color"
-              value={color}
-              onChange={(event) => setColor(event.target.value.toUpperCase())}
-              className="h-11 w-14 cursor-pointer rounded-lg border border-zinc-200 bg-white p-1 dark:border-zinc-700 dark:bg-zinc-900"
-            />
-            <input
-              value={color}
-              onChange={(event) => setColor(event.target.value.toUpperCase())}
-              aria-label="Color hexadecimal"
-              className={productInputClass}
-            />
-          </div>
-        </div>
+        <StoreColorField
+          name="primary_color"
+          label="Color de la tienda pública"
+          defaultColor={initial.primaryColor}
+          hint="La tienda pública. No cambia la tienda mayorista."
+        />
+        {initial.wholesaleStores.map((store) => (
+          <StoreColorField
+            key={store.id}
+            name={`wholesale_color__${store.id}`}
+            label={`Color de ${store.name}`}
+            defaultColor={store.color || initial.primaryColor}
+            hint="Solo esta tienda. La tienda pública no cambia."
+          />
+        ))}
 
         <div className="sm:col-span-2">
           <label htmlFor="storefront-logo" className={productLabelClass}>
@@ -130,7 +126,7 @@ export function StorefrontBrandSettingsForm({
           <div className="mt-2 flex items-center gap-4">
             <div
               className="flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-xl p-2.5"
-              style={{ backgroundColor: color }}
+              style={{ backgroundColor: swatch }}
             >
               <Image
                 src={preview}
@@ -155,7 +151,7 @@ export function StorefrontBrandSettingsForm({
                     return URL.createObjectURL(file);
                   });
                   const extracted = await deriveLogoPrimaryColor(file);
-                  if (extracted) setColor(extracted);
+                  if (extracted) setSwatch(extracted);
                 }}
                 className="block w-full text-xs text-zinc-600 file:mr-3 file:rounded-lg file:border-0 file:bg-zinc-900 file:px-3 file:py-2 file:text-xs file:font-medium file:text-white dark:text-zinc-300 dark:file:bg-zinc-100 dark:file:text-zinc-900"
               />

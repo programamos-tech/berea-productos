@@ -1,5 +1,7 @@
 import { BranchForm } from "@/components/admin/BranchForm";
 import { requireAdminPermission } from "@/lib/require-admin-permission";
+import { normalizeStorefrontColor } from "@/lib/storefront-brand";
+import { parseTenantBrand } from "@/lib/tenant-brand";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 
@@ -14,15 +16,20 @@ export default async function EditBranchPage({
   const { id } = await params;
   const { error } = await searchParams;
   const supabase = await createSupabaseServerClient();
-  const { data } = await supabase
-    .from("branches")
-    .select("id,name,code,logo_path,is_active,is_default")
-    .eq("id", id)
-    .eq("tenant_id", perm.tenantId)
-    .maybeSingle();
+  const [{ data }, { data: tenant }] = await Promise.all([
+    supabase
+      .from("branches")
+      .select("id,name,code,logo_path,is_active,is_default,storefront_color")
+      .eq("id", id)
+      .eq("tenant_id", perm.tenantId)
+      .maybeSingle(),
+    supabase.from("tenants").select("brand").eq("id", perm.tenantId).maybeSingle(),
+  ]);
   if (!data) notFound();
   const errorMessage =
-    error === "logo"
+    error === "color"
+      ? "Elige un color hexadecimal, por ejemplo #1D4ED8."
+      : error === "logo"
       ? "El logo debe ser JPG, PNG, WebP o AVIF y pesar máximo 3 MB."
       : error === "logo_upload"
         ? "No fue posible guardar el logo. Intenta nuevamente."
@@ -43,6 +50,9 @@ export default async function EditBranchPage({
         </p>
       ) : null}
       <BranchForm
+        catalogColor={normalizeStorefrontColor(
+          parseTenantBrand(tenant?.brand).primary_color,
+        )}
         initial={{
           id: String(data.id),
           name: String(data.name),
@@ -50,6 +60,8 @@ export default async function EditBranchPage({
           logoPath: data.logo_path ? String(data.logo_path) : null,
           isActive: data.is_active === true,
           isDefault: data.is_default === true,
+          storefrontColor:
+            data.storefront_color != null ? String(data.storefront_color) : null,
         }}
       />
     </div>

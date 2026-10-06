@@ -21,6 +21,8 @@ export type StorefrontCheckoutMode = "wompi" | "transfer";
 export type StorefrontTheme = {
   primary: string;
   primaryHover: string;
+  /** Color exacto de la franja. En tonos claros, `primary` se oscurece para títulos y botones. */
+  header: string;
   foreground: string;
   announcement: string;
   imageTint: string;
@@ -69,7 +71,8 @@ export function normalizeStorefrontColor(
   fallback = "#18181B",
 ): string {
   const color = String(value ?? "").trim();
-  return HEX_COLOR.test(color) ? color.toUpperCase() : fallback;
+  if (!HEX_COLOR.test(color)) return fallback;
+  return color.toUpperCase();
 }
 
 function rgb(hex: string): [number, number, number] {
@@ -99,14 +102,17 @@ function readableForeground(hex: string): string {
 }
 
 export function buildStorefrontTheme(primaryRaw?: string): StorefrontTheme {
-  const primary = normalizeStorefrontColor(primaryRaw);
+  const chosen = normalizeStorefrontColor(primaryRaw);
+  const light = readableForeground(chosen) !== "#FFFFFF";
+  const primary = light ? mix(chosen, 0, 0.48) : chosen;
   return {
     primary,
     primaryHover: mix(primary, 0, 0.14),
-    foreground: readableForeground(primary),
-    announcement: mix(primary, 255, 0.9),
-    imageTint: mix(primary, 255, 0.82),
-    wash: mix(primary, 255, 0.92),
+    header: chosen,
+    foreground: readableForeground(chosen),
+    announcement: mix(chosen, 255, 0.9),
+    imageTint: mix(chosen, 255, 0.82),
+    wash: mix(chosen, 255, 0.92),
   };
 }
 
@@ -118,7 +124,7 @@ export function storefrontCssVars(
     "--store-accent-hover": theme.primaryHover,
     "--store-brand": theme.primary,
     "--store-brand-hover": theme.primaryHover,
-    "--store-header-bg": theme.primary,
+    "--store-header-bg": theme.header,
     "--store-header-fg": theme.foreground,
     "--store-announcement-bg": theme.announcement,
     "--store-image-well-tint": theme.imageTint,

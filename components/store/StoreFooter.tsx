@@ -13,14 +13,23 @@ const footerLink =
 const footerLinkMuted =
   "text-[11px] text-white/75 transition hover:text-white hover:underline underline-offset-4 sm:text-xs";
 
-export function StoreFooter({ chrome }: { chrome: StorefrontChrome }) {
+export function StoreFooter({
+  chrome,
+  onLight = false,
+}: {
+  chrome: StorefrontChrome;
+  onLight?: boolean;
+}) {
   const year = new Date().getFullYear();
   const telHref = chrome.phone
     ? `tel:${chrome.phone.replace(/[^\d+]/g, "")}`
     : null;
 
   return (
-    <footer className="border-t border-white/20 bg-[var(--store-header-bg)] text-[var(--store-header-fg)]">
+    <footer
+      data-header-tone={onLight ? "light" : undefined}
+      className="border-t border-white/20 bg-[var(--store-header-bg)] text-[var(--store-header-fg)]"
+    >
       {/* 1 · Columnas de navegación */}
       <div>
         <div className={`${storeShellClass} py-10 sm:py-12 lg:py-14`}>
@@ -36,7 +45,13 @@ export function StoreFooter({ chrome }: { chrome: StorefrontChrome }) {
                   width={560}
                   height={200}
                   unoptimized
-                  className={`h-14 w-auto max-w-[min(88vw,20rem)] bg-transparent object-contain object-center sm:h-16 sm:max-w-[min(85vw,24rem)] md:h-[4.5rem] lg:h-20 lg:max-w-[min(80vw,28rem)] xl:h-24 xl:max-w-[32rem]${chrome.tenantSlug === "aleya" ? " brightness-0 invert" : ""}`}
+                  className={`h-14 w-auto max-w-[min(88vw,20rem)] bg-transparent object-contain object-center sm:h-16 sm:max-w-[min(85vw,24rem)] md:h-[4.5rem] lg:h-20 lg:max-w-[min(80vw,28rem)] xl:h-24 xl:max-w-[32rem]${
+                    chrome.tenantSlug === "aleya"
+                      ? onLight
+                        ? " brightness-0"
+                        : " brightness-0 invert"
+                      : ""
+                  }`}
                   style={{ backgroundColor: "transparent" }}
                 />
               </Link>
@@ -163,7 +178,7 @@ export function StoreFooter({ chrome }: { chrome: StorefrontChrome }) {
                 width={280}
                 height={146}
                 unoptimized
-                className="h-7 w-auto max-w-[8.5rem] bg-transparent object-contain object-left brightness-0 invert sm:h-8"
+                className={`h-7 w-auto max-w-[8.5rem] bg-transparent object-contain object-left sm:h-8 ${onLight ? "brightness-0" : "brightness-0 invert"}`}
                 style={{ backgroundColor: "transparent" }}
               />
             </p>
