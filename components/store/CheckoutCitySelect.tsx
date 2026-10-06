@@ -97,6 +97,7 @@ export function CheckoutCitySelect({
 
         <button
           type="button"
+          id="checkout-municipality-trigger"
           className={`${triggerClass} mt-1.5`}
           aria-haspopup="listbox"
           aria-expanded={open}

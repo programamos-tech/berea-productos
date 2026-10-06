@@ -46,13 +46,10 @@ import {
   type CheckoutSavedAddress,
   type CheckoutShippingInitial,
 } from "@/components/store/CheckoutShippingFields";
-import {
-  CheckoutShippingTotals,
-  CheckoutSubmitButton,
-} from "@/components/store/CheckoutCitySelect";
+import { CheckoutShippingTotals } from "@/components/store/CheckoutCitySelect";
 import { CheckoutCouponField } from "@/components/store/CheckoutCouponField";
+import { CheckoutFlow } from "@/components/store/CheckoutFlow";
 import { CheckoutShippingProvider } from "@/components/store/CheckoutShippingProvider";
-import { CheckoutSubmittingOverlay } from "@/components/store/CheckoutSubmittingOverlay";
 import { CheckoutLineControls } from "@/components/store/CheckoutLineControls";
 import {
   CART_DRAWER_UPSELL_LIMIT,
@@ -260,6 +257,28 @@ function CheckoutBolsaVaciaView({
       </div>
     </div>
   );
+}
+
+function checkoutStepFromError(error?: string): 1 | 2 | 3 {
+  if (
+    error === "missing_name" ||
+    error === "invalid_email" ||
+    error === "missing_shipping" ||
+    error === "shipping_municipality"
+  ) {
+    return 2;
+  }
+  if (
+    error === "coupon_invalid" ||
+    error === "coupon_no_eligible_items" ||
+    error === "wompi" ||
+    error === "order" ||
+    error === "items" ||
+    error === "account_link"
+  ) {
+    return 3;
+  }
+  return 1;
 }
 
 export const dynamic = "force-dynamic";
@@ -630,10 +649,6 @@ export default async function CheckoutPage({
           </ol>
         </nav>
 
-        <h1 className="store-page-stagger-item text-center text-sm font-semibold uppercase tracking-[0.22em] text-[var(--store-brand)] sm:text-left sm:text-[15px] sm:tracking-[0.26em]">
-          Bolsa de compras
-        </h1>
-
         {cartAdjusted ? (
           <div
             className="mx-auto mb-8 max-w-3xl bg-stone-100 px-4 py-3 text-center text-[13px] text-stone-700 sm:text-left"
@@ -649,17 +664,20 @@ export default async function CheckoutPage({
           unpublishedProduct={unpublishedProduct}
         />
 
-        <form action={startCheckout}>
-          <CheckoutSubmittingOverlay />
           <CheckoutShippingProvider
             municipalities={municipalities}
             subtotalCents={totalGross}
             initialCity={shippingInitial.city}
             initialMunicipalityId={shippingInitial.municipalityId}
           >
-          <div className="store-page-stagger-item mt-10 grid gap-12 lg:grid-cols-[1fr_min(100%,340px)] lg:items-start xl:gap-16">
-            <div className="store-page-stagger min-w-0 space-y-14">
-              <section className="store-page-stagger-item">
+          <CheckoutFlow
+            action={startCheckout}
+            initialStep={checkoutStepFromError(error)}
+            payByTransfer={payByTransfer}
+            primaryClassName={primaryBtnClass}
+            secondaryClassName={secondaryBtnClass}
+            cart={
+              <section>
                 <h2 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--store-brand)]">
                   Carrito
                 </h2>
@@ -826,15 +844,9 @@ export default async function CheckoutPage({
                   className="border-t border-stone-200 pt-10"
                 />
               </section>
-
-              <section className="store-page-stagger-item border-t border-stone-200 pt-12">
-                <h2 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--store-brand)]">
-                  Datos de envío
-                </h2>
-                <p className="mt-2 text-sm leading-relaxed text-stone-500">
-                  Coordinamos la entrega en Colombia.
-                </p>
-
+            }
+            shipping={
+              <section>
                 <CheckoutShippingFields
                   initial={
                     accountEmail
@@ -859,22 +871,15 @@ export default async function CheckoutPage({
                   selectClass={selectClass}
                 />
               </section>
-
-              <section className="store-page-stagger-item border-t border-stone-200 pt-12">
-                <h2 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--store-brand)]">
-                  Forma de pago
-                </h2>
-                <p className="mt-2 text-sm leading-relaxed text-stone-500">
-                  {payByTransfer
-                    ? "El pago se realiza por transferencia bancaria. Al finalizar verás los datos disponibles y podrás adjuntar el comprobante."
-                    : "Paga en línea de forma segura con Wompi. Al confirmar te llevaremos a su pasarela."}
-                </p>
+            }
+            payment={
+              <section>
                 <input
                   type="hidden"
                   name="paymentMethod"
                   value={payByTransfer ? "transfer" : "wompi"}
                 />
-                <div className="mt-6 border border-[var(--store-accent)] bg-white p-4 ring-1 ring-[var(--store-accent)]">
+                <div className="border border-[var(--store-accent)] bg-white p-4 ring-1 ring-[var(--store-accent)]">
                   <p className="text-sm font-medium text-stone-900">
                     {payByTransfer
                       ? "Transferencia bancaria"
@@ -887,9 +892,8 @@ export default async function CheckoutPage({
                   </p>
                 </div>
               </section>
-            </div>
-
-            <aside className="store-page-stagger-item sticky top-28 space-y-6 bg-[#f4f4f3] p-6 lg:p-8">
+            }
+            coupon={
               <details className="group border-b border-stone-300/80 pb-5 open:pb-4">
                 <summary className="cursor-pointer list-none text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--store-brand)] marker:hidden [&::-webkit-details-marker]:hidden">
                   <span className="flex items-center justify-between gap-2">
@@ -904,7 +908,8 @@ export default async function CheckoutPage({
                   Si tienes un cupón activo para estos productos, ingrésalo aquí antes de pagar.
                 </p>
               </details>
-
+            }
+            summary={
               <dl className="space-y-3 text-[13px] text-stone-700">
                 {wholesaleSavingCents > 0 ? (
                   <>
@@ -946,15 +951,9 @@ export default async function CheckoutPage({
                 </div>
                 <CheckoutShippingTotals />
               </dl>
-
-              <CheckoutSubmitButton className={primaryBtnClass} />
-              <Link href="/products" className={secondaryBtnClass}>
-                Seguir comprando
-              </Link>
-            </aside>
-          </div>
+            }
+          />
           </CheckoutShippingProvider>
-        </form>
       </div>
     </div>
   );
