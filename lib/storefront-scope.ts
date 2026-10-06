@@ -40,7 +40,13 @@ type BranchRow = {
   storefront_color: string | null;
 };
 
-const ALEYA_BODEGA_COLOR = "#FFDAB8";
+/**
+ * Bodega sigue en el rosa de Milagros, pero no es la tienda pública.
+ * Encabezado polvo y logo negro; Local usa el rosa pleno #FF76A1 con logo blanco.
+ */
+const ALEYA_BODEGA_COLOR = "#F3C6D6";
+export const ALEYA_BODEGA_ACCENT = "#B12E58";
+const ALEYA_BODEGA_LEGACY_COLORS = new Set(["#FFDAB8", "#FFB4CB"]);
 
 function branchStorefrontColor(
   branch: BranchRow,
@@ -48,7 +54,17 @@ function branchStorefrontColor(
 ): string | null {
   if (branch.is_default) return null;
   const stored = String(branch.storefront_color ?? "").trim();
-  if (/^#[0-9a-f]{6}$/i.test(stored)) return stored.toUpperCase();
+  if (/^#[0-9a-f]{6}$/i.test(stored)) {
+    const color = stored.toUpperCase();
+    if (
+      tenantSlug === "aleya" &&
+      branch.code.toLowerCase() === "bodega" &&
+      ALEYA_BODEGA_LEGACY_COLORS.has(color)
+    ) {
+      return ALEYA_BODEGA_COLOR;
+    }
+    return color;
+  }
   if (tenantSlug === "aleya" && branch.code.toLowerCase() === "bodega") {
     return ALEYA_BODEGA_COLOR;
   }

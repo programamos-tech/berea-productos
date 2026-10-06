@@ -698,7 +698,7 @@ html.store-checkout-nav-pending body {
   }
 }
 
-/* Encabezado claro (Bodega #FFDAB8): el texto blanco del cromo pasa al color de contraste. */
+/* Encabezado claro (Bodega blush): el texto blanco del cromo pasa al color de contraste. */
 [data-header-tone="light"] {
   border-color: color-mix(in srgb, var(--store-header-fg) 18%, transparent);
 }

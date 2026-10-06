@@ -101,10 +101,16 @@ function readableForeground(hex: string): string {
   return luminance > 0.46 ? "#18181B" : "#FFFFFF";
 }
 
-export function buildStorefrontTheme(primaryRaw?: string): StorefrontTheme {
+export function buildStorefrontTheme(
+  primaryRaw?: string,
+  accentRaw?: string,
+): StorefrontTheme {
   const chosen = normalizeStorefrontColor(primaryRaw);
   const light = readableForeground(chosen) !== "#FFFFFF";
-  const primary = light ? mix(chosen, 0, 0.48) : chosen;
+  const accent = accentRaw ? normalizeStorefrontColor(accentRaw, chosen) : chosen;
+  const accentReadsOnWhite = readableForeground(accent) === "#FFFFFF";
+  // Un encabezado claro no se oscurece a café: los botones usan el acento de esa tienda.
+  const primary = light ? (accentReadsOnWhite ? accent : mix(chosen, 0, 0.48)) : chosen;
   return {
     primary,
     primaryHover: mix(primary, 0, 0.14),

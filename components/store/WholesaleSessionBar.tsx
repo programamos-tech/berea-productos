@@ -30,7 +30,7 @@ export function WholesaleSessionBar({
     .join(" · ");
 
   return (
-    <div className="bg-stone-900 text-white">
+    <div className="bg-[var(--store-accent)] text-white">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-2 sm:px-6">
         <div className="min-w-0">
           <p className="truncate text-[11px] font-semibold uppercase tracking-[0.14em]">

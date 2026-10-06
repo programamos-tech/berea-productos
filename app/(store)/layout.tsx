@@ -21,7 +21,10 @@ import {
   getCachedBannerStoreCoupon,
 } from "@/lib/store-public-cache";
 import { getStorefrontChromeForRequest } from "@/lib/tenant-context";
-import { getStorefrontScope } from "@/lib/storefront-scope";
+import {
+  ALEYA_BODEGA_ACCENT,
+  getStorefrontScope,
+} from "@/lib/storefront-scope";
 import { loadStorefrontWholesaleOrders } from "@/lib/storefront-wholesale-orders";
 import {
   buildStorefrontTheme,
@@ -97,8 +100,13 @@ export default async function StoreLayout({
       />
     ) : null;
 
+  const bodegaTheme =
+    chrome.tenantSlug === "aleya" && scope.branchCode === "bodega";
   const theme = scope.storefrontColor
-    ? buildStorefrontTheme(scope.storefrontColor)
+    ? buildStorefrontTheme(
+        scope.storefrontColor,
+        bodegaTheme ? ALEYA_BODEGA_ACCENT : chrome.primaryColor,
+      )
     : chrome.theme;
 
   const top = (
