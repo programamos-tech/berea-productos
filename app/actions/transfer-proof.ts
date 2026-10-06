@@ -79,6 +79,43 @@ export type UploadTransferProofResult =
   | { ok: true; proofCount: number }
   | { ok: false; error: string };
 
+export type ParsedTransferProof =
+  | {
+      ok: true;
+      buf: Buffer;
+      mime: string;
+      ext: string;
+      filename: string;
+    }
+  | { ok: false; error: string };
+
+/** Lee y valida el archivo antes de crear el pedido. */
+export async function parseTransferProofFile(
+  file: FormDataEntryValue | null,
+): Promise<ParsedTransferProof> {
+  if (!(file instanceof File) || file.size === 0) {
+    return { ok: false, error: "Selecciona el comprobante de la transferencia." };
+  }
+  if (file.size > MAX_BYTES) {
+    return { ok: false, error: "El archivo supera 5 MB." };
+  }
+  const mime = inferMime(file);
+  if (!ALLOWED_TYPES.has(mime)) {
+    return { ok: false, error: "Solo se permiten JPG, PNG, WebP o PDF." };
+  }
+  const ext = extFromMime(mime);
+  if (!ext) {
+    return { ok: false, error: "Tipo de archivo no admitido." };
+  }
+  return {
+    ok: true,
+    buf: Buffer.from(await file.arrayBuffer()),
+    mime,
+    ext,
+    filename: file.name?.slice(0, 240) || `comprobante.${ext}`,
+  };
+}
+
 export async function getTransferProofDeadline(
   orderId: string,
   token: string,
@@ -117,21 +154,8 @@ export async function uploadTransferProof(
     return { ok: false, error: "Datos incompletos." };
   }
 
-  const file = formData.get("file");
-  if (!(file instanceof File) || file.size === 0) {
-    return { ok: false, error: "Selecciona un archivo." };
-  }
-  if (file.size > MAX_BYTES) {
-    return { ok: false, error: "El archivo supera 5 MB." };
-  }
-  const mime = inferMime(file);
-  if (!ALLOWED_TYPES.has(mime)) {
-    return { ok: false, error: "Solo se permiten JPG, PNG, WebP o PDF." };
-  }
-  const ext = extFromMime(mime);
-  if (!ext) {
-    return { ok: false, error: "Tipo de archivo no admitido." };
-  }
+  const proofFile = await parseTransferProofFile(formData.get("file"));
+  if (!proofFile.ok) return proofFile;
 
   const supabase = createSupabaseServiceClient();
   const { data: row, error } = await supabase
@@ -155,13 +179,12 @@ export async function uploadTransferProof(
     return { ok: false, error: "Este pedido está cancelado y no admite comprobante." };
   }
 
-  const buf = Buffer.from(await file.arrayBuffer());
-  const objectPath = `${orderId}/${randomUUID()}.${ext}`;
+  const objectPath = `${orderId}/${randomUUID()}.${proofFile.ext}`;
 
   const { error: upErr } = await supabase.storage
     .from(BUCKET)
-    .upload(objectPath, buf, {
-      contentType: mime,
+    .upload(objectPath, proofFile.buf, {
+      contentType: proofFile.mime,
       upsert: false,
     });
 
@@ -175,7 +198,7 @@ export async function uploadTransferProof(
   const { error: insErr } = await supabase.from("order_transfer_proofs").insert({
     order_id: orderId,
     storage_path: objectPath,
-    original_filename: file.name?.slice(0, 240) || null,
+    original_filename: proofFile.filename,
   });
 
   if (insErr) {
@@ -216,4 +239,36 @@ export async function uploadTransferProof(
   revalidatePath(`/cuenta/pedidos/${orderId}`);
 
   return { ok: true, proofCount: proofCount ?? 1 };
+}
+
+/** Guarda el comprobante de un pedido recién creado. Si falla, no deja archivo suelto. */
+export async function saveOrderTransferProof(
+  orderId: string,
+  proof: Extract<ParsedTransferProof, { ok: true }>,
+): Promise<{ ok: true; objectPath: string } | { ok: false; error: string }> {
+  const supabase = createSupabaseServiceClient();
+  const objectPath = `${orderId}/${randomUUID()}.${proof.ext}`;
+  const { error: upErr } = await supabase.storage.from(BUCKET).upload(objectPath, proof.buf, {
+    contentType: proof.mime,
+    upsert: false,
+  });
+  if (upErr) {
+    return { ok: false, error: "No se pudo guardar el comprobante." };
+  }
+  const { error: insErr } = await supabase.from("order_transfer_proofs").insert({
+    order_id: orderId,
+    storage_path: objectPath,
+    original_filename: proof.filename,
+  });
+  if (insErr) {
+    await supabase.storage.from(BUCKET).remove([objectPath]);
+    return { ok: false, error: "No se pudo registrar el comprobante." };
+  }
+  return { ok: true, objectPath };
+}
+
+export async function removeOrderTransferProofObject(objectPath: string): Promise<void> {
+  if (!objectPath) return;
+  const supabase = createSupabaseServiceClient();
+  await supabase.storage.from(BUCKET).remove([objectPath]);
 }

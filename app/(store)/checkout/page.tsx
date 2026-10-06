@@ -29,7 +29,9 @@ import {
 } from "@/lib/storefront-gross-price";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
-import { getRequestTenant } from "@/lib/tenant-context";
+import { getRequestTenant, getStorefrontChromeForRequest } from "@/lib/tenant-context";
+import { getTransferBankInstructions } from "@/lib/transfer-bank-instructions";
+import { CheckoutProofField } from "@/components/store/CheckoutProofField";
 import { withRequestStorefrontBranchStock } from "@/lib/storefront-branch-inventory";
 import { getStorefrontScope } from "@/lib/storefront-scope";
 import { imagePathForProductLine } from "@/lib/product-line-image";
@@ -108,6 +110,8 @@ function CheckoutErrorBanner({
         (message
           ? `Wompi: ${decodeURIComponent(message)}`
           : "Error al crear el enlace de pago en Wompi.")}
+      {error === "missing_proof" &&
+        "Sube el comprobante de la transferencia. Sin ese archivo no se crea el pedido."}
       {error === "account_link" &&
         "No pudimos vincular tu cuenta con el cliente del pedido. Si el correo ya está en uso por otra cuenta, inicia sesión con ese correo o escríbenos."}
       {![
@@ -122,6 +126,7 @@ function CheckoutErrorBanner({
         "order",
         "items",
         "wompi",
+        "missing_proof",
         "account_link",
         "empty",
         "stock",
@@ -271,7 +276,8 @@ function checkoutStepFromError(error?: string): 1 | 2 | 3 {
     error === "wompi" ||
     error === "order" ||
     error === "items" ||
-    error === "account_link"
+    error === "account_link" ||
+    error === "missing_proof"
   ) {
     return 3;
   }
@@ -612,6 +618,11 @@ export default async function CheckoutPage({
     kitRows.reduce((acc, r) => acc + r.sub, 0);
   const totalVat = Math.max(0, totalGross - totalNet);
   const wholesaleSavingCents = Math.max(0, catalogListTotalGross - totalGross);
+  const storefrontChrome = await getStorefrontChromeForRequest();
+  const transferInstructions = getTransferBankInstructions(
+    storefrontChrome.bank,
+    storefrontChrome.tenantSlug === "aleya",
+  );
 
   const municipalityRows = municipalityRes.data;
   const municipalities: StoreShippingMunicipalityPublic[] = (
@@ -863,17 +874,49 @@ export default async function CheckoutPage({
               </section>
             }
             payment={
-              <section>
+              <section className="space-y-6">
                 <input type="hidden" name="paymentMethod" value="transfer" />
-                <div className="border border-[var(--store-accent)] bg-white p-4 ring-1 ring-[var(--store-accent)]">
-                  <p className="text-sm font-medium text-stone-900">
-                    Transferencia bancaria
-                  </p>
-                  <p className="mt-1 text-xs leading-relaxed text-stone-500">
-                    Al finalizar ves las cuentas y subes el comprobante de la
-                    transferencia.
-                  </p>
+                <div className="border border-stone-200 bg-stone-50/80 p-4 sm:p-5">
+                  <h2 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--store-brand)]">
+                    Datos para transferir
+                  </h2>
+                  <div className="mt-4 space-y-3 text-sm text-stone-700">
+                    {transferInstructions.accountHolder ? (
+                      <p>
+                        <span className="text-stone-500">Titular: </span>
+                        {transferInstructions.accountHolder}
+                      </p>
+                    ) : null}
+                    {transferInstructions.taxId ? (
+                      <p>
+                        <span className="text-stone-500">NIT: </span>
+                        {transferInstructions.taxId}
+                      </p>
+                    ) : null}
+                    <ul className="space-y-3">
+                      {transferInstructions.accounts.map((account) => (
+                        <li
+                          key={`${account.label}-${account.value}`}
+                          className="border border-stone-200 bg-white px-3 py-3"
+                        >
+                          <p className="text-[11px] font-semibold uppercase tracking-wide text-stone-500">
+                            {account.label}
+                            {account.detail ? ` · ${account.detail}` : ""}
+                          </p>
+                          <p className="mt-1 break-all font-mono text-base font-medium text-stone-900">
+                            {account.value}
+                          </p>
+                        </li>
+                      ))}
+                    </ul>
+                    {transferInstructions.extraNote ? (
+                      <p className="text-xs leading-relaxed text-stone-600">
+                        {transferInstructions.extraNote}
+                      </p>
+                    ) : null}
+                  </div>
                 </div>
+                <CheckoutProofField />
               </section>
             }
             coupon={

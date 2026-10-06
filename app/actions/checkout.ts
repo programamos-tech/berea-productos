@@ -32,6 +32,11 @@ import {
   SHIPPING_CITY_OTHER,
 } from "@/lib/store-shipping";
 import { deductTransferWebOrderStock } from "@/lib/storefront-order-stock";
+import {
+  parseTransferProofFile,
+  removeOrderTransferProofObject,
+  saveOrderTransferProof,
+} from "@/app/actions/transfer-proof";
 import { randomUUID } from "node:crypto";
 import { fetchBranchInventoryMap } from "@/lib/branch-inventory";
 import { revalidatePath } from "next/cache";
@@ -109,6 +114,11 @@ export async function startCheckout(formData: FormData) {
   }
   if (!shippingAddress || !shippingPhone || !shippingNeighborhood) {
     redirect("/checkout?error=missing_shipping");
+  }
+
+  const proofFile = await parseTransferProofFile(formData.get("proof"));
+  if (!proofFile.ok) {
+    redirect("/checkout?error=missing_proof");
   }
 
   const sessionSb = await createSupabaseServerClient();
@@ -600,8 +610,29 @@ export async function startCheckout(formData: FormData) {
     redirect("/checkout?error=items");
   }
 
+  const savedProof = await saveOrderTransferProof(orderId, proofFile);
+  if (!savedProof.ok) {
+    await supabase.from("orders").delete().eq("id", orderId);
+    redirect("/checkout?error=missing_proof");
+  }
+
+  const paid = await supabase
+    .from("orders")
+    .update({
+      status: "paid",
+      fulfillment_status: "preparing",
+      transfer_upload_deadline_at: null,
+    })
+    .eq("id", orderId);
+  if (paid.error) {
+    await removeOrderTransferProofObject(savedProof.objectPath);
+    await supabase.from("orders").delete().eq("id", orderId);
+    redirect("/checkout?error=order");
+  }
+
   const stockResult = await deductTransferWebOrderStock(supabase, orderId);
   if (!stockResult.ok) {
+    await removeOrderTransferProofObject(savedProof.objectPath);
     redirect("/checkout?error=stock");
   }
   revalidatePath("/admin/products");

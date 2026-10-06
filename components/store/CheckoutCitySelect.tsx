@@ -261,7 +261,7 @@ export function CheckoutSubmitButton({ className }: { className: string }) {
         className={`${className} disabled:cursor-not-allowed disabled:opacity-50`}
         disabled={!canSubmit || pending}
       >
-        {pending ? "Procesando…" : "Finalizar compra"}
+        {pending ? "Enviando comprobante…" : "Enviar comprobante"}
       </button>
       {!canSubmit && isOtherCity ? (
         <p className="text-center text-xs leading-relaxed text-stone-500">

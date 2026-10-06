@@ -184,6 +184,17 @@ export function CheckoutFlow({
     if (step === 2 || isOtherCity) {
       event.preventDefault();
       if (!isOtherCity) advance(3);
+      return;
+    }
+    const proof = event.currentTarget.querySelector<HTMLInputElement>(
+      'input[name="proof"]',
+    );
+    if (!proof?.files?.[0]) {
+      event.preventDefault();
+      setStep(3);
+      setStepError(
+        "Sube el comprobante de la transferencia. Sin ese archivo no se crea el pedido.",
+      );
     }
   }
 
@@ -202,8 +213,8 @@ export function CheckoutFlow({
           }
         : {
             kicker: "Paso 3 de 3",
-            title: "Forma de pago",
-            lead: "Último paso. Al finalizar ves las cuentas y subes el comprobante de la transferencia.",
+            title: "Comprobante de pago",
+            lead: "Transfiere el total y sube el comprobante. El pedido entra al sistema cuando el archivo queda cargado.",
           };
 
   return (
@@ -211,6 +222,7 @@ export function CheckoutFlow({
       action={action}
       noValidate
       data-checkout-form
+      encType="multipart/form-data"
       onSubmit={onSubmit}
       className="scroll-mt-28"
       data-checkout-flow
