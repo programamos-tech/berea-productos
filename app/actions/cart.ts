@@ -12,7 +12,8 @@ import {
   type CartLine,
 } from "@/lib/cart";
 import { getStorefrontTenant } from "@/lib/storefront-tenant";
-import { withStorefrontBranchStock } from "@/lib/storefront-branch-inventory";
+import { getStorefrontScope } from "@/lib/storefront-scope";
+import { withRequestStorefrontBranchStock } from "@/lib/storefront-branch-inventory";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { expandFragranceLabels } from "@/lib/fragrance-options";
 import { productColorLabels } from "@/lib/product-colors";
@@ -65,7 +66,9 @@ export async function addToCart(
     .maybeSingle();
 
   if (!row) return;
-  const [scopedRow] = await withStorefrontBranchStock(
+  const scope = await getStorefrontScope();
+  if (scope.listedProductIds && !scope.listedProductIds.has(productId)) return;
+  const [scopedRow] = await withRequestStorefrontBranchStock(
     supabase,
     tenant.id,
     [{ id: productId, ...row }],
@@ -143,7 +146,7 @@ export async function setLineQuantity(
     .eq("tenant_id", tenant.id)
     .maybeSingle();
   const [scopedRow] = row
-    ? await withStorefrontBranchStock(supabase, tenant.id, [
+    ? await withRequestStorefrontBranchStock(supabase, tenant.id, [
         { id: productId, ...row },
       ])
     : [];
@@ -226,7 +229,7 @@ export async function buyNowFromDetail(formData: FormData) {
 
   if (!row) redirect("/products");
 
-  const [scopedRow] = await withStorefrontBranchStock(
+  const [scopedRow] = await withRequestStorefrontBranchStock(
     supabase,
     tenant.id,
     [{ id: productId, ...row }],
@@ -281,6 +284,8 @@ export async function updateLineFromForm(formData: FormData) {
 
 export async function addKitToCart(kitId: string, quantity: number) {
   await syncCartCookieIfStale();
+  const scope = await getStorefrontScope();
+  if (scope.requiresCode) return;
   const id = kitId.trim();
   if (!id) return;
   const q = Math.max(1, Math.floor(quantity || 1));

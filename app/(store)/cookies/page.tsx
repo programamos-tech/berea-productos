@@ -8,7 +8,7 @@ import {
 export async function generateMetadata() {
   const chrome = await getStorefrontChromeForRequest();
   return {
-    title: `Política de cookies | ${chrome.name}`,
+    title: "Política de cookies",
     description: `Uso de cookies y tecnologías similares en ${chrome.name}.`,
   };
 }

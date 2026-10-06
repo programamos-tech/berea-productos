@@ -102,6 +102,17 @@ export default async function AdminCustomerDetailPage({
   };
 
   const isWholesale = customer.customer_kind === "wholesale";
+  let wholesaleStorePath: string | null = null;
+  if (isWholesale && customer.branch_id) {
+    const { data: branch } = await supabase
+      .from("branches")
+      .select("code,is_default")
+      .eq("id", customer.branch_id)
+      .maybeSingle();
+    if (branch?.code && branch.is_default !== true) {
+      wholesaleStorePath = `/sucursal/${String(branch.code).toLowerCase()}`;
+    }
+  }
   const ventas = ordersPaid.length;
   const totalCents = ordersPaid.reduce(
     (s, o) => s + Number(o.total_cents ?? 0),
@@ -303,6 +314,20 @@ export default async function AdminCustomerDetailPage({
           customerName={customer.name}
         />
       </header>
+
+      {isWholesale && customer.storefront_access_code ? (
+        <section className="rounded-xl border border-zinc-200 bg-white px-4 py-3 dark:border-zinc-800 dark:bg-zinc-950">
+          <p className={labelClass}>Código de la tienda</p>
+          <p className="mt-1 font-mono text-lg tracking-[0.18em] text-zinc-900 dark:text-zinc-100">
+            {customer.storefront_access_code}
+          </p>
+          {wholesaleStorePath ? (
+            <p className="mt-1 text-xs text-zinc-500">
+              Enlace: {wholesaleStorePath}
+            </p>
+          ) : null}
+        </section>
+      ) : null}
 
       <div className="flex shrink-0 flex-wrap items-baseline gap-x-3 gap-y-1 border-b border-zinc-200/70 pb-2.5 text-xs text-zinc-600 dark:border-zinc-800 dark:text-zinc-300">
         <span className="inline-flex min-w-0 items-baseline gap-1.5">

@@ -8,7 +8,7 @@ import {
 export async function generateMetadata() {
   const chrome = await getStorefrontChromeForRequest();
   return {
-    title: `Política de privacidad | ${chrome.name}`,
+    title: "Política de privacidad",
     description: `Cómo tratamos tus datos personales en ${chrome.name}.`,
   };
 }

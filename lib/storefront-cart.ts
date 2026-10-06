@@ -13,7 +13,7 @@ import {
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getStorefrontTenant } from "@/lib/storefront-tenant";
 import {
-  withStorefrontBranchStock,
+  withRequestStorefrontBranchStock,
   withStorefrontKitStock,
 } from "@/lib/storefront-branch-inventory";
 
@@ -38,7 +38,7 @@ export async function normalizeStorefrontCartLines(
       .in("id", ids)
       .eq("tenant_id", tenant.id);
 
-    const scopedProducts = await withStorefrontBranchStock(
+    const scopedProducts = await withRequestStorefrontBranchStock(
       supabase,
       tenant.id,
       products ?? [],

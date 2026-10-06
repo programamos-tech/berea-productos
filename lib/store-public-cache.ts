@@ -16,7 +16,10 @@ import {
   createStorefrontAnonClient,
   getStorefrontTenant,
 } from "@/lib/storefront-tenant";
-import { withStorefrontImage } from "@/lib/storefront-product-image";
+import {
+  productHasStorefrontImage,
+  withStorefrontImage,
+} from "@/lib/storefront-product-image";
 import type { TenantRef } from "@/lib/tenant-context";
 import { withStorefrontKitStock } from "@/lib/storefront-branch-inventory";
 
@@ -233,7 +236,11 @@ async function loadAvailableStorefrontKits(
     rawKits,
   );
   return kits
-    .filter((k) => kitIsAvailable(k, "storefront"))
+    .filter(
+      (k) =>
+        kitIsAvailable(k, "storefront") &&
+        productHasStorefrontImage(k.image_path),
+    )
     .map((k) => {
       const items = k.items ?? [];
       return {
@@ -296,18 +303,20 @@ export async function getCachedAllCatalogProducts() {
   const tenant = await getStorefrontTenant();
   return unstable_cache(
     async (): Promise<CatalogGridProduct[]> => {
-      const { data } = await publicSupabase(tenant.slug)
+      const { data } = await withStorefrontImage(
+        publicSupabase(tenant.slug)
           .from("products")
           .select(
             "id,name,brand,price_cents,has_vat,image_path,stock_quantity,size_options,size_value,size_unit,fragrance_options,colors",
           )
           .eq("is_published", true)
-          .eq("tenant_id", tenant.id)
+          .eq("tenant_id", tenant.id),
+      )
         .order("created_at", { ascending: false })
         .limit(1000);
       return (data ?? []) as CatalogGridProduct[];
     },
-    ["store-all-catalog-products", tenant.id],
+    ["store-all-catalog-products-with-image", tenant.id],
     {
       revalidate: STORE_CACHE_REVALIDATE_SEC,
       tags: storeCacheTags("store-products", tenant.slug),

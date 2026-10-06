@@ -10,10 +10,7 @@ import { addToCartFromForm, buyNowFromDetail } from "@/app/actions/cart";
 import { useStoreCartDrawer } from "@/components/store/StoreCartDrawerProvider";
 import { useStoreFavorites } from "@/components/store/StoreFavoritesProvider";
 import { formatCop } from "@/lib/money";
-import {
-  storefrontListGrossUnitCents,
-  storefrontUnitGrossAfterCouponCents,
-} from "@/lib/storefront-gross-price";
+import { storefrontDisplayGrossUnitCents } from "@/lib/storefront-gross-price";
 import { pseudoReviewCount } from "@/lib/pseudo-review";
 import {
   STORE_PRODUCT_DETAIL_IMAGE_QUALITY,
@@ -40,6 +37,7 @@ type Props = {
   hasVat: boolean | null;
   vatPercent: number | null;
   couponDiscountPercent?: number;
+  wholesaleDiscountPercent?: number;
 };
 
 function AccordionSection({
@@ -109,6 +107,7 @@ export function ProductDetailView({
   hasVat,
   vatPercent: _legacyVatPercent,
   couponDiscountPercent = 0,
+  wholesaleDiscountPercent = 0,
 }: Props) {
   const router = useRouter();
   const { openCart } = useStoreCartDrawer();
@@ -137,11 +136,16 @@ export function ProductDetailView({
     0,
     Math.min(100, Math.floor(Number(couponDiscountPercent) || 0)),
   );
-  const hasCouponPrice = pct > 0;
-  const listGross = storefrontListGrossUnitCents(priceCents, hasVat);
-  const displayPriceCents = hasCouponPrice
-    ? storefrontUnitGrossAfterCouponCents(priceCents, hasVat, pct)
-    : listGross;
+  const wholesalePct = Math.max(
+    0,
+    Math.min(100, Math.floor(Number(wholesaleDiscountPercent) || 0)),
+  );
+  const { listGross, displayGross: displayPriceCents } =
+    storefrontDisplayGrossUnitCents(priceCents, hasVat, {
+      couponPercent: pct,
+      wholesalePercent: wholesalePct,
+    });
+  const hasCouponPrice = displayPriceCents < listGross;
 
   const sizeLabel =
     sizeLabels.length > 0 ? sizeLabels.join(" · ") : null;
@@ -294,9 +298,13 @@ export function ProductDetailView({
         </h1>
 
         <div className="mt-4">
-          {hasCouponPrice ? (
+          {pct > 0 ? (
             <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-stone-500">
               −{pct}% con cupón al pagar
+            </p>
+          ) : wholesalePct > 0 && hasCouponPrice ? (
+            <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-stone-500">
+              Precio mayorista · {wholesalePct}%
             </p>
           ) : null}
           <p className="text-lg font-normal tabular-nums text-stone-900 sm:text-xl">

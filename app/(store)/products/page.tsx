@@ -36,8 +36,10 @@ import {
 } from "@/lib/store-public-cache";
 import { STORE_CARD_PRIORITY_COUNT } from "@/lib/store-image";
 import { storeShellClass } from "@/lib/store-theme";
-import { withStorefrontBranchStock } from "@/lib/storefront-branch-inventory";
+import { withRequestStorefrontBranchStock } from "@/lib/storefront-branch-inventory";
+import { getStorefrontScope } from "@/lib/storefront-scope";
 import { storefrontListGrossUnitCents } from "@/lib/storefront-gross-price";
+import { withStorefrontImage } from "@/lib/storefront-product-image";
 import {
   storefrontProductsSearchOrIlikeFilter,
 } from "@/lib/admin-product-search-filter";
@@ -145,6 +147,9 @@ export default async function ProductsPage({ searchParams }: Props) {
 
   const supabase = await createSupabaseServerClient();
   const tenant = await getStorefrontTenant();
+  const scope = await getStorefrontScope();
+  const listedIds = scope.listedProductIds;
+  const wholesalePct = scope.customer?.wholesalePct ?? 0;
   const filterCategoryIds = categoryId
     ? []
     : parseProductsCategoriesFilterParam(firstSearchParam(sp.categories));
@@ -229,7 +234,8 @@ export default async function ProductsPage({ searchParams }: Props) {
   }> {
     if (catalogBrowseMode) return { products: [], total: 0 };
 
-    let query = supabase
+    let query = withStorefrontImage(
+      supabase
         .from("products")
         .select(
           // Sin `description`: no se muestra en cards y ahorra HTML/RSC.
@@ -237,7 +243,13 @@ export default async function ProductsPage({ searchParams }: Props) {
           { count: "exact" },
         )
         .eq("is_published", true)
-        .eq("tenant_id", tenant.id);
+        .eq("tenant_id", tenant.id),
+    );
+
+    if (listedIds) {
+      if (listedIds.size === 0) return { products: [], total: 0 };
+      query = query.in("id", [...listedIds]);
+    }
 
     if (categoryFilterId && expandedCategoryIds?.length) {
       query = query.in("category_id", expandedCategoryIds);
@@ -342,10 +354,16 @@ export default async function ProductsPage({ searchParams }: Props) {
     listResult = await fetchFilteredList(currentPage);
   }
   const [list, catalogProductsRawStock] = await Promise.all([
-    withStorefrontBranchStock(supabase, tenant.id, listResult.products),
-    withStorefrontBranchStock(supabase, tenant.id, catalogProductsRaw),
+    withRequestStorefrontBranchStock(supabase, tenant.id, listResult.products),
+    withRequestStorefrontBranchStock(supabase, tenant.id, catalogProductsRaw),
   ]);
-  const catalogProducts = sortCatalogRows(catalogProductsRawStock, sort);
+  const catalogProducts = sortCatalogRows(
+    listedIds
+      ? catalogProductsRawStock.filter((p) => listedIds.has(p.id))
+      : catalogProductsRawStock,
+    sort,
+  );
+  const visibleKits = scope.requiresCode ? [] : catalogKits;
 
   const invalidCategory = Boolean(categoryId && !categoryName);
 
@@ -431,7 +449,7 @@ export default async function ProductsPage({ searchParams }: Props) {
         className={`${storeShellClass} space-y-10 pb-10 pt-2 sm:space-y-12 sm:pb-12 sm:pt-3 lg:pb-14`}
       >
         {catalogBrowseMode ? (
-          catalogKits.length > 0 || catalogProducts.length > 0 ? (
+          visibleKits.length > 0 || catalogProducts.length > 0 ? (
             <div className="space-y-12 sm:space-y-14">
               {catalogProducts.length > 0 ? (
                 <section
@@ -460,6 +478,7 @@ export default async function ProductsPage({ searchParams }: Props) {
                             couponDiscountPercent={
                               couponPctByProductId[p.id] ?? 0
                             }
+                            wholesaleDiscountPercent={wholesalePct}
                             product={{
                               id: p.id,
                               name: p.name,
@@ -482,9 +501,9 @@ export default async function ProductsPage({ searchParams }: Props) {
                 </section>
               ) : null}
 
-              {catalogKits.length > 0 ? (
+              {visibleKits.length > 0 ? (
                 <CatalogKitsSection
-                  kits={catalogKits}
+                  kits={visibleKits}
                   cartQtyByKitId={cartQtyByKitId}
                 />
               ) : null}
@@ -518,6 +537,7 @@ export default async function ProductsPage({ searchParams }: Props) {
                       priority={index < STORE_CARD_PRIORITY_COUNT}
                       cartQuantity={cartQtyByProductId[p.id] ?? 0}
                       couponDiscountPercent={couponPctByProductId[p.id] ?? 0}
+                      wholesaleDiscountPercent={wholesalePct}
                       product={{
                         id: p.id,
                         name: p.name,

@@ -12,6 +12,7 @@ import {
 } from "@/lib/admin-insert-verify";
 import { assertActionPermission } from "@/lib/require-admin-permission";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { generateStorefrontAccessCode } from "@/lib/storefront-access-code";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -262,6 +263,8 @@ export async function createStoreCustomer(formData: FormData) {
       source: "manual",
       customer_kind,
       wholesale_discount_percent,
+      storefront_access_code:
+        customer_kind === "wholesale" ? generateStorefrontAccessCode() : null,
     })
     .select("id")
     .single();
@@ -403,6 +406,18 @@ export async function updateStoreCustomer(formData: FormData) {
     ? [primary.address_line, primary.reference].filter(Boolean).join("\n\n") || null
     : null;
 
+  let storefrontAccessCode: string | undefined;
+  if (customer_kind === "wholesale") {
+    const { data: currentCode } = await supabase
+      .from("customers")
+      .select("storefront_access_code")
+      .eq("id", customerId)
+      .maybeSingle();
+    if (!currentCode?.storefront_access_code) {
+      storefrontAccessCode = generateStorefrontAccessCode();
+    }
+  }
+
   const { data: updatedRows, error: upErr } = await supabase
     .from("customers")
     .update({
@@ -415,6 +430,9 @@ export async function updateStoreCustomer(formData: FormData) {
       shipping_address: shippingAddress,
       customer_kind,
       wholesale_discount_percent,
+      ...(storefrontAccessCode
+        ? { storefront_access_code: storefrontAccessCode }
+        : {}),
     })
     .eq("id", customerId)
     .select("id");

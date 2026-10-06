@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { getCachedStorefrontCouponDiscounts } from "@/lib/store-public-cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getStorefrontTenant } from "@/lib/storefront-tenant";
-import { withStorefrontBranchStock } from "@/lib/storefront-branch-inventory";
+import { withRequestStorefrontBranchStock } from "@/lib/storefront-branch-inventory";
+import { withStorefrontImage } from "@/lib/storefront-product-image";
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -31,20 +32,22 @@ export async function GET(request: Request) {
   const supabase = await createSupabaseServerClient();
   const tenant = await getStorefrontTenant();
 
-  const { data, error } = await supabase
-    .from("products")
-    .select(
-      "id,name,brand,description,price_cents,has_vat,image_path,stock_quantity,size_options,size_value,size_unit,fragrance_options,colors",
-    )
-    .eq("is_published", true)
-    .eq("tenant_id", tenant.id)
-    .in("id", ids);
+  const { data, error } = await withStorefrontImage(
+    supabase
+      .from("products")
+      .select(
+        "id,name,brand,description,price_cents,has_vat,image_path,stock_quantity,size_options,size_value,size_unit,fragrance_options,colors",
+      )
+      .eq("is_published", true)
+      .eq("tenant_id", tenant.id)
+      .in("id", ids),
+  );
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  const scopedData = await withStorefrontBranchStock(
+  const scopedData = await withRequestStorefrontBranchStock(
     supabase,
     tenant.id,
     data ?? [],

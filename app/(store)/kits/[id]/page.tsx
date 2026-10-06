@@ -19,8 +19,6 @@ import { storagePublicObjectUrl } from "@/lib/storage-public-url";
 import { getStorefrontTenant } from "@/lib/storefront-tenant";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { withStorefrontKitStock } from "@/lib/storefront-branch-inventory";
-import { getStorefrontChromeForRequest } from "@/lib/tenant-context";
-
 export const dynamic = "force-dynamic";
 
 type Props = { params: Promise<{ id: string }> };
@@ -42,16 +40,13 @@ const loadPublishedKit = cache(async (id: string) => {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
-  const [kit, chrome] = await Promise.all([
-    loadPublishedKit(id),
-    getStorefrontChromeForRequest(),
-  ]);
+  const kit = await loadPublishedKit(id);
   if (!kit) {
-    return { title: `Kits y combos | ${chrome.name}` };
+    return { title: "Kits y combos" };
   }
   const desc = kit.description.trim();
   return {
-    title: `${kit.name} | ${chrome.name}`,
+    title: kit.name,
     ...(desc ? { description: desc.slice(0, 160) } : {}),
   };
 }

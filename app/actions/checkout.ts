@@ -32,6 +32,7 @@ import {
   wholesaleDiscountPercentFromRow,
 } from "@/lib/customer-wholesale-pricing";
 import { storefrontPayableUnitGrossCents } from "@/lib/storefront-gross-price";
+import { getStorefrontScope } from "@/lib/storefront-scope";
 import { findActiveStoreCouponForCheckout } from "@/lib/store-coupons";
 import { freeShippingProgress } from "@/lib/store-free-shipping";
 import {
@@ -157,15 +158,22 @@ export async function startCheckout(formData: FormData) {
 
   const supabase = createSupabaseServiceClient();
   const tenant = await getRequestTenant();
-  const { data: defaultBranch } = await supabase
-    .from("branches")
-    .select("id")
-    .eq("tenant_id", tenant.id)
-    .eq("is_default", true)
-    .eq("is_active", true)
-    .maybeSingle();
-  if (!defaultBranch?.id) redirect("/checkout?error=stock");
-  const storefrontBranchId = String(defaultBranch.id);
+  const scope = await getStorefrontScope();
+  if (scope.requiresCode && !scope.customer) {
+    redirect(`/sucursal/${scope.branchCode}`);
+  }
+  let storefrontBranchId = scope.branchId;
+  if (!storefrontBranchId) {
+    const { data: defaultBranch } = await supabase
+      .from("branches")
+      .select("id")
+      .eq("tenant_id", tenant.id)
+      .eq("is_default", true)
+      .eq("is_active", true)
+      .maybeSingle();
+    storefrontBranchId = defaultBranch?.id ? String(defaultBranch.id) : null;
+  }
+  if (!storefrontBranchId) redirect("/checkout?error=stock");
   const productIds = [...new Set(productLines.map((l) => l.productId))];
   let products: {
     id: string;
@@ -260,22 +268,44 @@ export async function startCheckout(formData: FormData) {
 
   const emailLc = customerEmailForOrder.toLowerCase();
 
-  const { data: existingCustomer } = await supabase
-    .from("customers")
-    .select("id,customer_kind,wholesale_discount_percent")
-    .eq("email", emailLc)
-    .eq("tenant_id", tenant.id)
-    .eq("branch_id", storefrontBranchId)
-    .maybeSingle();
+  const { data: emailCustomer } = scope.customer
+    ? { data: null }
+    : await supabase
+        .from("customers")
+        .select("id,customer_kind,wholesale_discount_percent")
+        .eq("email", emailLc)
+        .eq("tenant_id", tenant.id)
+        .eq("branch_id", storefrontBranchId)
+        .maybeSingle();
 
-  const wholesalePct = existingCustomer
-    ? wholesaleDiscountPercentFromRow(
-        existingCustomer as {
-          customer_kind?: string | null;
-          wholesale_discount_percent?: number | null;
-        },
-      )
-    : 0;
+  const existingCustomer = scope.customer
+    ? {
+        id: scope.customer.id,
+        customer_kind: "wholesale",
+        wholesale_discount_percent: scope.customer.wholesalePct,
+      }
+    : emailCustomer;
+
+  const wholesalePct = scope.customer
+    ? scope.customer.wholesalePct
+    : existingCustomer
+      ? wholesaleDiscountPercentFromRow(
+          existingCustomer as {
+            customer_kind?: string | null;
+            wholesale_discount_percent?: number | null;
+          },
+        )
+      : 0;
+
+  if (
+    scope.listedProductIds &&
+    normalizedProducts.some((line) => !scope.listedProductIds!.has(line.productId))
+  ) {
+    redirect("/checkout?error=removed");
+  }
+  if (scope.requiresCode && kitLines.length > 0) {
+    redirect("/checkout?error=removed");
+  }
 
   let total = 0;
   const lines: {

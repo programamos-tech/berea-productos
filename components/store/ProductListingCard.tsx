@@ -15,10 +15,7 @@ import { useStoreCartDrawer } from "@/components/store/StoreCartDrawerProvider";
 import { useStoreFavorites } from "@/components/store/StoreFavoritesProvider";
 import { storeBrand } from "@/lib/brand";
 import { formatCop } from "@/lib/money";
-import {
-  storefrontListGrossUnitCents,
-  storefrontUnitGrossAfterCouponCents,
-} from "@/lib/storefront-gross-price";
+import { storefrontDisplayGrossUnitCents } from "@/lib/storefront-gross-price";
 import { expandFragranceLabels } from "@/lib/fragrance-options";
 import { catalogSizeSummaryLine } from "@/lib/product-size-options";
 import { productColorLabels } from "@/lib/product-colors";
@@ -75,11 +72,13 @@ function showcaseBrandLabel(product: Product): string {
 function ShowcaseProductCard({
   product,
   couponDiscountPercent = 0,
+  wholesaleDiscountPercent = 0,
   accentImageBg = false,
   priority = false,
 }: {
   product: Product;
   couponDiscountPercent?: number;
+  wholesaleDiscountPercent?: number;
   /** Fondo suave tipo bloque de color en algunas columnas (look editorial). */
   accentImageBg?: boolean;
   priority?: boolean;
@@ -90,18 +89,15 @@ function ShowcaseProductCard({
     0,
     Math.min(100, Math.floor(Number(couponDiscountPercent) || 0)),
   );
-  const hasCouponPrice = pct > 0;
-  const listGross = storefrontListGrossUnitCents(
+  const { listGross, displayGross } = storefrontDisplayGrossUnitCents(
     product.price_cents,
     product.has_vat,
+    {
+      couponPercent: pct,
+      wholesalePercent: wholesaleDiscountPercent,
+    },
   );
-  const displayGross = hasCouponPrice
-    ? storefrontUnitGrossAfterCouponCents(
-        product.price_cents,
-        product.has_vat,
-        pct,
-      )
-    : listGross;
+  const hasCouponPrice = displayGross < listGross;
 
   const imageBgClass = accentImageBg
     ? "bg-[var(--store-image-well-tint)]"
@@ -161,6 +157,7 @@ function CatalogProductCard({
   cartQuantity = 0,
   onCartChange,
   couponDiscountPercent = 0,
+  wholesaleDiscountPercent = 0,
   accentImageBg = false,
   priority = false,
 }: {
@@ -168,6 +165,7 @@ function CatalogProductCard({
   cartQuantity?: number;
   onCartChange?: () => void;
   couponDiscountPercent?: number;
+  wholesaleDiscountPercent?: number;
   accentImageBg?: boolean;
   priority?: boolean;
 }) {
@@ -191,18 +189,18 @@ function CatalogProductCard({
     0,
     Math.min(100, Math.floor(Number(couponDiscountPercent) || 0)),
   );
-  const hasCouponPrice = pct > 0;
-  const listGross = storefrontListGrossUnitCents(
+  const wholesalePct = Math.max(
+    0,
+    Math.min(100, Math.floor(Number(wholesaleDiscountPercent) || 0)),
+  );
+  const { listGross, displayGross } = storefrontDisplayGrossUnitCents(
     product.price_cents,
     product.has_vat,
+    { couponPercent: pct, wholesalePercent: wholesalePct },
   );
-  const displayGross = hasCouponPrice
-    ? storefrontUnitGrossAfterCouponCents(
-        product.price_cents,
-        product.has_vat,
-        pct,
-      )
-    : listGross;
+  const hasCouponPrice = displayGross < listGross;
+  const priceCaption =
+    pct > 0 ? "Con cupón en el pago" : wholesalePct > 0 ? "Precio mayorista" : null;
 
   const titleWithSize = sizeLine ? `${product.name} · ${sizeLine}` : product.name;
   const needsFragranceOnPdp = productRequiresFragranceChoice(product);
@@ -251,7 +249,7 @@ function CatalogProductCard({
             fill={favorite ? "currentColor" : "none"}
           />
         </button>
-        {hasCouponPrice ? (
+        {pct > 0 ? (
           <span className="pointer-events-none absolute left-3 top-3 z-10 border border-[var(--store-accent)] bg-white px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--store-accent)]">
             −{pct}%
           </span>
@@ -277,9 +275,11 @@ function CatalogProductCard({
               <p className="text-[13px] font-medium tabular-nums text-stone-900">
                 {formatCop(displayGross)}
               </p>
-              <p className="text-[9px] font-medium uppercase leading-tight tracking-[0.08em] text-stone-500">
-                Con cupón en el pago
-              </p>
+              {priceCaption ? (
+                <p className="text-[9px] font-medium uppercase leading-tight tracking-[0.08em] text-stone-500">
+                  {priceCaption}
+                </p>
+              ) : null}
             </>
           ) : (
             <p className="text-[13px] font-medium tabular-nums text-stone-900">
@@ -377,6 +377,7 @@ export function ProductListingCard({
   cartQuantity = 0,
   onCartChange,
   couponDiscountPercent = 0,
+  wholesaleDiscountPercent = 0,
   presentation = "default",
   accentImageBg = false,
   priority = false,
@@ -385,6 +386,7 @@ export function ProductListingCard({
   cartQuantity?: number;
   onCartChange?: () => void;
   couponDiscountPercent?: number;
+  wholesaleDiscountPercent?: number;
   presentation?: "default" | "editorial";
   accentImageBg?: boolean;
   priority?: boolean;
@@ -394,6 +396,7 @@ export function ProductListingCard({
       <ShowcaseProductCard
         product={product}
         couponDiscountPercent={couponDiscountPercent}
+        wholesaleDiscountPercent={wholesaleDiscountPercent}
         accentImageBg={accentImageBg}
         priority={priority}
       />
@@ -406,6 +409,7 @@ export function ProductListingCard({
       cartQuantity={cartQuantity}
       onCartChange={onCartChange}
       couponDiscountPercent={couponDiscountPercent}
+      wholesaleDiscountPercent={wholesaleDiscountPercent}
       accentImageBg={accentImageBg}
       priority={priority}
     />

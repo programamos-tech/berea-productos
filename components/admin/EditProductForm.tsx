@@ -70,6 +70,11 @@ type Initial = {
   fragranceRows: FragranceRowInitial[];
 };
 
+type StoreBranchOption = {
+  id: string;
+  name: string;
+};
+
 type Props = {
   productId: string;
   formAction: (formData: FormData) => void;
@@ -77,6 +82,8 @@ type Props = {
   initial: Initial;
   currentImageUrl: string | null;
   catalogFields?: ProductCatalogFields;
+  storeBranches?: StoreBranchOption[];
+  listedBranchIds?: string[];
 };
 
 export function EditProductHeader({
@@ -179,6 +186,8 @@ export function EditProductForm({
   initial,
   currentImageUrl,
   catalogFields = defaultProductCatalogFields(),
+  storeBranches = [],
+  listedBranchIds = [],
 }: Props) {
   const [name, setName] = useState(initial.name);
   const [reference, setReference] = useState(initial.reference);
@@ -189,6 +198,7 @@ export function EditProductForm({
   const [costGrossCents, setCostGrossCents] = useState(initial.costGrossCents);
   const [priceCents, setPriceCents] = useState(initial.priceCents);
   const [isPublished, setIsPublished] = useState(initial.isPublished);
+  const [listedBranches, setListedBranches] = useState<string[]>(listedBranchIds);
   const [hasExpiration, setHasExpiration] = useState(initial.hasExpiration);
   const [expirationDate, setExpirationDate] = useState(initial.expirationDate);
   const [hasVat, setHasVat] = useState(initial.hasVat);
@@ -427,17 +437,48 @@ export function EditProductForm({
                 value={String(SALE_VAT_PERCENT)}
               />
             ) : null}
-            <label className="flex items-center gap-2 text-sm text-zinc-800 dark:text-zinc-200 sm:col-span-2">
-              <input
-                type="checkbox"
-                name="is_published"
-                value="on"
-                checked={isPublished}
-                onChange={(e) => setIsPublished(e.target.checked)}
-                className="rounded border-zinc-300 accent-zinc-900 focus:ring-zinc-200/80 dark:border-zinc-600 dark:accent-zinc-100"
-              />
-              Publicado en la tienda
-            </label>
+            {storeBranches.length > 0 ? (
+              <div className="space-y-2 sm:col-span-2">
+                <input type="hidden" name="branch_listings_present" value="1" />
+                <p className="text-sm text-zinc-800 dark:text-zinc-200">
+                  Visible en la tienda
+                </p>
+                {storeBranches.map((branch) => (
+                  <label
+                    key={branch.id}
+                    className="flex items-center gap-2 text-sm text-zinc-800 dark:text-zinc-200"
+                  >
+                    <input
+                      type="checkbox"
+                      name="branch_listing"
+                      value={branch.id}
+                      checked={listedBranches.includes(branch.id)}
+                      onChange={(e) => {
+                        setListedBranches((current) =>
+                          e.target.checked
+                            ? [...current, branch.id]
+                            : current.filter((id) => id !== branch.id),
+                        );
+                      }}
+                      className="rounded border-zinc-300 accent-zinc-900 focus:ring-zinc-200/80 dark:border-zinc-600 dark:accent-zinc-100"
+                    />
+                    {branch.name}
+                  </label>
+                ))}
+              </div>
+            ) : (
+              <label className="flex items-center gap-2 text-sm text-zinc-800 dark:text-zinc-200 sm:col-span-2">
+                <input
+                  type="checkbox"
+                  name="is_published"
+                  value="on"
+                  checked={isPublished}
+                  onChange={(e) => setIsPublished(e.target.checked)}
+                  className="rounded border-zinc-300 accent-zinc-900 focus:ring-zinc-200/80 dark:border-zinc-600 dark:accent-zinc-100"
+                />
+                Publicado en la tienda
+              </label>
+            )}
           </div>
         </section>
       </div>

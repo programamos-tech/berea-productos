@@ -8,7 +8,7 @@ import {
 export async function generateMetadata() {
   const chrome = await getStorefrontChromeForRequest();
   return {
-    title: `Términos de uso | ${chrome.name}`,
+    title: "Términos de uso",
     description: `Condiciones generales de uso de ${chrome.name}.`,
   };
 }

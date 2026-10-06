@@ -2,6 +2,10 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { mergeCategoryRowsForFilterMenu } from "@/lib/product-listing-facets";
 import { expandCategoryIdsFromRows } from "@/lib/store-category-group";
 import { withStorefrontBranchStock } from "@/lib/storefront-branch-inventory";
+import {
+  filterRowsWithStorefrontImage,
+  withStorefrontImage,
+} from "@/lib/storefront-product-image";
 
 const PRODUCT_SELECT =
   "id,name,brand,price_cents,has_vat,image_path,stock_quantity,size_options,size_value,size_unit,fragrance_options,colors,created_at";
@@ -67,7 +71,7 @@ async function fetchCatalogBrowsePreviewRows(
   });
 
   if (!error && data?.length) {
-    return data as BrowsePreviewRow[];
+    return filterRowsWithStorefrontImage(data as BrowsePreviewRow[]);
   }
 
   if (error) {
@@ -94,11 +98,13 @@ async function fetchCatalogBrowsePreviewRowsFallback(
 
   const rows: BrowsePreviewRow[] = [];
   for (const cat of categories) {
-    const productQuery = supabase
-      .from("products")
-      .select(`${PRODUCT_SELECT},category_id,created_at`)
-      .eq("is_published", true)
-      .eq("category_id", cat.id);
+    const productQuery = withStorefrontImage(
+      supabase
+        .from("products")
+        .select(`${PRODUCT_SELECT},category_id,created_at`)
+        .eq("is_published", true)
+        .eq("category_id", cat.id),
+    );
     const { data } = await (tenantId
       ? productQuery.eq("tenant_id", tenantId)
       : productQuery)
@@ -107,11 +113,13 @@ async function fetchCatalogBrowsePreviewRowsFallback(
     if (data?.length) rows.push(...(data as BrowsePreviewRow[]));
   }
 
-  let uncatQuery = supabase
-    .from("products")
-    .select(`${PRODUCT_SELECT},category_id,created_at`)
-    .eq("is_published", true)
-    .is("category_id", null);
+  let uncatQuery = withStorefrontImage(
+    supabase
+      .from("products")
+      .select(`${PRODUCT_SELECT},category_id,created_at`)
+      .eq("is_published", true)
+      .is("category_id", null),
+  );
   if (tenantId) uncatQuery = uncatQuery.eq("tenant_id", tenantId);
   const { data: uncategorized } = await uncatQuery
     .order("created_at", { ascending: false })

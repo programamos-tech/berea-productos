@@ -5,6 +5,7 @@ import {
 } from "@/lib/admin-product-search-filter";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getStorefrontTenant } from "@/lib/storefront-tenant";
+import { withStorefrontImage } from "@/lib/storefront-product-image";
 
 const SEARCH_CACHE_CONTROL = "public, s-maxage=60, stale-while-revalidate=30";
 
@@ -29,11 +30,13 @@ export async function GET(request: Request) {
   const tenant = await getStorefrontTenant();
 
   const base = () =>
-    supabase
-      .from("products")
-      .select("id,name,price_cents,has_vat,image_path")
-      .eq("is_published", true)
-      .eq("tenant_id", tenant.id);
+    withStorefrontImage(
+      supabase
+        .from("products")
+        .select("id,name,price_cents,has_vat,image_path")
+        .eq("is_published", true)
+        .eq("tenant_id", tenant.id),
+    );
 
   let { data, error } = await base()
     .or(storefrontProductsSearchOrIlikeFilter(q))

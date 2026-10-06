@@ -23,6 +23,38 @@ export function storefrontPayableUnitGrossCents(
   return unitPriceGrossCents(netUnit, hasVat, null);
 }
 
+/**
+ * Precio de vitrina: lista, o el menor entre mayorista y cupón.
+ * El tachado se muestra cuando `displayGross` es menor que `listGross`.
+ */
+export function storefrontDisplayGrossUnitCents(
+  catalogNetCents: number,
+  hasVat: boolean | null | undefined,
+  options?: { wholesalePercent?: number; couponPercent?: number },
+): { listGross: number; displayGross: number } {
+  const listGross = storefrontListGrossUnitCents(catalogNetCents, hasVat);
+  const wholesale = Math.max(
+    0,
+    Math.min(100, Math.floor(Number(options?.wholesalePercent) || 0)),
+  );
+  const coupon = Math.max(
+    0,
+    Math.min(100, Math.floor(Number(options?.couponPercent) || 0)),
+  );
+  const candidates = [listGross];
+  if (wholesale > 0) {
+    candidates.push(
+      storefrontPayableUnitGrossCents(catalogNetCents, hasVat, wholesale),
+    );
+  }
+  if (coupon > 0) {
+    candidates.push(
+      storefrontUnitGrossAfterCouponCents(catalogNetCents, hasVat, coupon),
+    );
+  }
+  return { listGross, displayGross: Math.min(...candidates) };
+}
+
 /** Unitario con IVA tras cupón % sobre el catálogo neto. */
 export function storefrontUnitGrossAfterCouponCents(
   catalogNetCents: number,

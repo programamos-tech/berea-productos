@@ -45,6 +45,8 @@ export type AdminCustomerDetail = {
     birth_date: string | null;
     customer_kind: string;
     wholesale_discount_percent: number;
+    storefront_access_code: string | null;
+    branch_id: string | null;
   };
   addresses: CustomerAddressRow[];
   ordersPaid: AdminCustomerOrderRow[];
@@ -149,7 +151,7 @@ export async function fetchAdminCustomerDetail(
   const { data: raw, error: cErr } = await supabase
     .from("customers")
     .select(
-      "id,name,email,phone,document_id,document_type,requires_electronic_invoice,shipping_address,shipping_city,shipping_postal_code,notes,source,created_at,birth_date,customer_kind,wholesale_discount_percent",
+      "id,name,email,phone,document_id,document_type,requires_electronic_invoice,shipping_address,shipping_city,shipping_postal_code,notes,source,created_at,birth_date,customer_kind,wholesale_discount_percent,storefront_access_code,branch_id",
     )
     .eq("id", customerId)
     .maybeSingle();
@@ -170,6 +172,8 @@ export async function fetchAdminCustomerDetail(
       | "requires_electronic_invoice"
       | "customer_kind"
       | "wholesale_discount_percent"
+      | "storefront_access_code"
+      | "branch_id"
     >),
     birth_date:
       (raw as { birth_date?: string | null }).birth_date != null
@@ -195,6 +199,13 @@ export async function fetchAdminCustomerDetail(
         ),
       ),
     ),
+    storefront_access_code:
+      (raw as { storefront_access_code?: string | null }).storefront_access_code?.trim() ||
+      null,
+    branch_id:
+      (raw as { branch_id?: string | null }).branch_id != null
+        ? String((raw as { branch_id?: string | null }).branch_id)
+        : null,
   };
   const emailNormalized = customer.email?.trim().toLowerCase() ?? null;
 

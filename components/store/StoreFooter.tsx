@@ -163,7 +163,7 @@ export function StoreFooter({ chrome }: { chrome: StorefrontChrome }) {
                 width={280}
                 height={146}
                 unoptimized
-                className="h-7 w-auto max-w-[8.5rem] bg-transparent object-contain object-left opacity-75 sm:h-8"
+                className="h-7 w-auto max-w-[8.5rem] bg-transparent object-contain object-left brightness-0 invert sm:h-8"
                 style={{ backgroundColor: "transparent" }}
               />
             </p>

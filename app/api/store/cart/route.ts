@@ -23,8 +23,9 @@ import {
 } from "@/lib/store-cart-upsells";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getStorefrontTenant } from "@/lib/storefront-tenant";
+import { getStorefrontScope } from "@/lib/storefront-scope";
 import {
-  withStorefrontBranchStock,
+  withRequestStorefrontBranchStock,
   withStorefrontKitStock,
 } from "@/lib/storefront-branch-inventory";
 
@@ -116,8 +117,9 @@ export async function GET(request: Request) {
     stock_quantity: number | null;
     is_published: boolean | null;
   }[];
+  const scope = await getStorefrontScope();
   const [productRows, kits] = await Promise.all([
-    withStorefrontBranchStock(supabase, tenant.id, productRowsRaw),
+    withRequestStorefrontBranchStock(supabase, tenant.id, productRowsRaw),
     withStorefrontKitStock(supabase, tenant.id, rawKits),
   ]);
 
@@ -139,12 +141,14 @@ export async function GET(request: Request) {
   let subtotalNetCents = 0;
   let subtotalVatCents = 0;
 
-  // Precio de lista en drawer (mayorista se aplica en checkout).
-  const wholesalePct = 0;
+  const wholesalePct = scope.customer?.wholesalePct ?? 0;
 
   for (const line of productLines) {
     const p = byId.get(line.productId);
     if (!p) continue;
+    if (scope.listedProductIds && !scope.listedProductIds.has(line.productId)) {
+      continue;
+    }
     const listUnitNet = p.price_cents;
     const payableGrossUnit = storefrontPayableUnitGrossCents(
       listUnitNet,
@@ -166,7 +170,7 @@ export async function GET(request: Request) {
       color,
       name: p.name,
       priceCents: payableGrossUnit,
-      listPriceCents: null,
+      listPriceCents: wholesalePct > 0 ? listGrossUnit : null,
       imagePath: imagePathForProductLine(
         p.image_path,
         p.fragrance_option_images,
@@ -174,7 +178,8 @@ export async function GET(request: Request) {
       ),
       firstColor: color,
       lineTotalCents,
-      listLineTotalCents: null,
+      listLineTotalCents:
+        wholesalePct > 0 ? listGrossUnit * line.quantity : null,
       maxStock: Math.max(0, Math.floor(Number(p.stock_quantity ?? 0))),
     });
   }

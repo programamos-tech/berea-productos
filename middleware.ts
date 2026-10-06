@@ -44,6 +44,7 @@ function isPublicStorePath(path: string): boolean {
   if (path === "/favoritos" || path === "/cart") return true;
   if (path === "/checkout" || path.startsWith("/checkout/")) return true;
   if (path === "/pedido") return true;
+  if (path === "/sucursal" || path.startsWith("/sucursal/")) return true;
   if (PUBLIC_STORE_STATIC.has(path)) return true;
   if (path.startsWith("/api/store/")) return true;
   return false;
@@ -109,6 +110,7 @@ function withTenantHeaders(
 }
 
 function nextWithTenant(request: NextRequest): NextResponse {
+  request.headers.set("x-store-path", request.nextUrl.pathname);
   return withTenantHeaders(request, NextResponse.next({ request }));
 }
 

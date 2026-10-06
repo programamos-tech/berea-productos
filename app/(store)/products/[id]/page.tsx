@@ -11,11 +11,31 @@ import {
 } from "@/lib/product-size-options";
 import { fetchStorefrontCouponDiscountPercentForProduct } from "@/lib/store-coupons";
 import { storeShellClass } from "@/lib/store-theme";
-import { withStorefrontBranchStock } from "@/lib/storefront-branch-inventory";
+import { withRequestStorefrontBranchStock } from "@/lib/storefront-branch-inventory";
+import { productHasStorefrontImage } from "@/lib/storefront-product-image";
+import { getStorefrontScope } from "@/lib/storefront-scope";
 
 export const dynamic = "force-dynamic";
 
 type Props = { params: Promise<{ id: string }> };
+
+export async function generateMetadata({ params }: Props) {
+  const { id } = await params;
+  const supabase = await createSupabaseServerClient();
+  const tenant = await getStorefrontTenant();
+  const { data } = await supabase
+    .from("products")
+    .select("name,image_path")
+    .eq("id", id)
+    .eq("is_published", true)
+    .eq("tenant_id", tenant.id)
+    .maybeSingle();
+  const name =
+    data && productHasStorefrontImage(data.image_path) && typeof data.name === "string"
+      ? data.name.trim()
+      : "";
+  return { title: name || "Producto" };
+}
 
 function catalogHref(categoryId: string | null, brand: string | null): string {
   const params = new URLSearchParams();
@@ -39,8 +59,12 @@ export default async function ProductDetailPage({ params }: Props) {
     .eq("tenant_id", tenant.id)
     .maybeSingle();
 
-  if (!product) notFound();
-  const [productWithStock] = await withStorefrontBranchStock(
+  if (!product || !productHasStorefrontImage(product.image_path)) notFound();
+  const scope = await getStorefrontScope();
+  if (scope.listedProductIds && !scope.listedProductIds.has(String(product.id))) {
+    notFound();
+  }
+  const [productWithStock] = await withRequestStorefrontBranchStock(
     supabase,
     tenant.id,
     [product],
@@ -167,6 +191,7 @@ export default async function ProductDetailPage({ params }: Props) {
         hasVat={product.has_vat}
         vatPercent={product.vat_percent}
         couponDiscountPercent={couponDiscountPercent}
+        wholesaleDiscountPercent={scope.customer?.wholesalePct ?? 0}
       />
     </div>
   );

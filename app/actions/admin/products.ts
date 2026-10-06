@@ -449,6 +449,7 @@ export async function createProduct(formData: FormData) {
     console.error("createProduct branch inventory", initialStockError);
     redirect("/admin/products/new?error=db");
   }
+  await listPublishedProductOnDefaultBranch(supabase, id);
   void logAdminActivity(supabase, {
     actorId: user.id,
     actionType: "product_created",
@@ -484,6 +485,81 @@ export async function createProduct(formData: FormData) {
   redirect("/admin/products?saved=1");
 }
 
+function branchListingIdsFromForm(formData: FormData): string[] | null {
+  if (formData.get("branch_listings_present") !== "1") return null;
+  return [
+    ...new Set(
+      formData
+        .getAll("branch_listing")
+        .map((value) => String(value).trim())
+        .filter(Boolean),
+    ),
+  ];
+}
+
+async function syncProductBranchListings(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  productId: string,
+  branchIds: string[],
+) {
+  const { data: product, error: productErr } = await supabase
+    .from("products")
+    .select("tenant_id")
+    .eq("id", productId)
+    .maybeSingle();
+  const tenantId = (product as { tenant_id?: string } | null)?.tenant_id;
+  if (productErr || !tenantId) return;
+
+  const { error: delErr } = await supabase
+    .from("product_branch_listings")
+    .delete()
+    .eq("product_id", productId);
+  if (delErr) {
+    console.error("syncProductBranchListings delete", delErr.message);
+    return;
+  }
+  if (!branchIds.length) return;
+
+  const { error } = await supabase.from("product_branch_listings").insert(
+    branchIds.map((branchId) => ({
+      tenant_id: tenantId,
+      branch_id: branchId,
+      product_id: productId,
+    })),
+  );
+  if (error) console.error("syncProductBranchListings insert", error.message);
+}
+
+async function listPublishedProductOnDefaultBranch(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  productId: string,
+) {
+  const { data: product } = await supabase
+    .from("products")
+    .select("tenant_id,is_published")
+    .eq("id", productId)
+    .maybeSingle();
+  const row = product as { tenant_id?: string; is_published?: boolean } | null;
+  if (!row?.tenant_id || row.is_published !== true) return;
+  const { data: branch } = await supabase
+    .from("branches")
+    .select("id")
+    .eq("tenant_id", row.tenant_id)
+    .eq("is_default", true)
+    .eq("is_active", true)
+    .maybeSingle();
+  if (!branch?.id) return;
+  const { error } = await supabase.from("product_branch_listings").upsert(
+    {
+      tenant_id: row.tenant_id,
+      branch_id: branch.id,
+      product_id: productId,
+    },
+    { onConflict: "branch_id,product_id" },
+  );
+  if (error) console.error("listPublishedProductOnDefaultBranch", error.message);
+}
+
 export async function updateProduct(productId: string, formData: FormData) {
   const supabase = await createSupabaseServerClient();
   const {
@@ -501,7 +577,10 @@ export async function updateProduct(productId: string, formData: FormData) {
   const cost_gross_cents = parseMoneyCents(formData.get("cost_gross_cents"));
   const stockWarehouse = parseNonNegInt(formData.get("stock_warehouse"));
   const stockLocal = parseNonNegInt(formData.get("stock_local"));
-  const isPublished = formData.get("is_published") === "on";
+  const listingIds = branchListingIdsFromForm(formData);
+  const isPublished = listingIds
+    ? listingIds.length > 0
+    : formData.get("is_published") === "on";
   const categoryRaw = String(formData.get("category_id") ?? "").trim();
   const category_id = categoryRaw ? categoryRaw : null;
   const size_options = parseSizeOptionsFromFormData(formData);
@@ -611,6 +690,9 @@ export async function updateProduct(productId: string, formData: FormData) {
   if (branchStockError) {
     console.error("updateProduct branch inventory", branchStockError);
     redirect(`/admin/products/${productId}/edit?error=db`);
+  }
+  if (listingIds) {
+    await syncProductBranchListings(supabase, productId, listingIds);
   }
 
   await logAdminActivity(supabase, {

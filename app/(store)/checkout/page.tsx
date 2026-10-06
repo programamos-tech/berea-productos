@@ -33,7 +33,8 @@ import {
   getRequestTenant,
   getStorefrontChromeForRequest,
 } from "@/lib/tenant-context";
-import { withStorefrontBranchStock } from "@/lib/storefront-branch-inventory";
+import { withRequestStorefrontBranchStock } from "@/lib/storefront-branch-inventory";
+import { getStorefrontScope } from "@/lib/storefront-scope";
 import { imagePathForProductLine } from "@/lib/product-line-image";
 import {
   shouldUnoptimizeStorageImageUrl,
@@ -308,7 +309,8 @@ export default async function CheckoutPage({
     municipalityId: "",
   };
   let savedAddresses: CheckoutSavedAddress[] = [];
-  let wholesaleDisplayPct = 0;
+  const scope = await getStorefrontScope();
+  let wholesaleDisplayPct = scope.customer?.wholesalePct ?? 0;
 
   if (checkoutUser?.email) {
     accountEmail = checkoutUser.email;
@@ -345,7 +347,7 @@ export default async function CheckoutPage({
       .eq("auth_user_id", checkoutUser.id)
       .maybeSingle();
 
-    if (!adminProf && cust) {
+    if (!scope.customer && !adminProf && cust) {
       wholesaleDisplayPct = wholesaleDiscountPercentFromRow(
         cust as {
           customer_kind?: string | null;
@@ -456,7 +458,7 @@ export default async function CheckoutPage({
       )
       .in("id", productIds)
       .eq("tenant_id", tenant.id);
-    products = await withStorefrontBranchStock(
+    products = await withRequestStorefrontBranchStock(
       supabase,
       tenant.id,
       data ?? [],

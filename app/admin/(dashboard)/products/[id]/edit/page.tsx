@@ -100,7 +100,8 @@ export default async function EditProductPage({ params, searchParams }: Props) {
   const error = typeof sp.error === "string" ? sp.error : undefined;
 
   const supabase = await createSupabaseServerClient();
-  const [{ data: product }, { data: categories }, { data: tenant }] = await Promise.all([
+  const [{ data: product }, { data: categories }, { data: tenant }, { data: branchRows }, listingsRes] =
+    await Promise.all([
     supabase.from("products").select("*").eq("id", id).maybeSingle(),
     supabase
       .from("categories")
@@ -112,6 +113,16 @@ export default async function EditProductPage({ params, searchParams }: Props) {
       .select("storefront_config")
       .eq("id", perm.tenantId)
       .maybeSingle(),
+    supabase
+      .from("branches")
+      .select("id,name,is_default")
+      .eq("tenant_id", perm.tenantId)
+      .eq("is_active", true)
+      .order("is_default", { ascending: false }),
+    supabase
+      .from("product_branch_listings")
+      .select("branch_id")
+      .eq("product_id", id),
   ]);
 
   if (!product) notFound();
@@ -126,6 +137,20 @@ export default async function EditProductPage({ params, searchParams }: Props) {
 
   const img = storagePublicObjectUrl(p.image_path);
   const boundUpdate = updateProduct.bind(null, id);
+  const listingsReady = !listingsRes.error;
+  const storeBranches = listingsReady
+    ? (branchRows ?? []).map((branch) => ({
+        id: String(branch.id),
+        name: String(branch.name),
+      }))
+    : [];
+  let listedBranchIds = listingsReady
+    ? (listingsRes.data ?? []).map((row) => String(row.branch_id))
+    : [];
+  if (listingsReady && listedBranchIds.length === 0 && p.is_published) {
+    const fallback = (branchRows ?? []).find((branch) => branch.is_default);
+    if (fallback?.id) listedBranchIds = [String(fallback.id)];
+  }
 
   return (
     <div className="flex w-full min-w-0 max-w-none flex-col gap-4">
@@ -154,6 +179,8 @@ export default async function EditProductPage({ params, searchParams }: Props) {
         categories={cats}
         currentImageUrl={img}
         catalogFields={parseProductCatalogFields(tenant?.storefront_config)}
+        storeBranches={storeBranches}
+        listedBranchIds={listedBranchIds}
         initial={{
           name: p.name,
           reference: p.reference ?? "",

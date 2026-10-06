@@ -1,10 +1,7 @@
 import Link from "next/link";
 import { getStorefrontChromeForRequest } from "@/lib/tenant-context";
 
-export async function generateMetadata() {
-  const chrome = await getStorefrontChromeForRequest();
-  return { title: `Quiénes somos | ${chrome.name}` };
-}
+export const metadata = { title: "Quiénes somos" };
 
 export default async function QuienSoyPage() {
   const chrome = await getStorefrontChromeForRequest();

@@ -1,4 +1,5 @@
 import { fetchBranchInventoryMap } from "@/lib/branch-inventory";
+import { getStorefrontScope } from "@/lib/storefront-scope";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { ProductKitRow } from "@/lib/product-kits";
 
@@ -53,16 +54,30 @@ export async function withStorefrontBranchStock<
   supabase: SupabaseClient,
   tenantId: string,
   rows: T[],
+  branchId?: string | null,
 ): Promise<T[]> {
-  const branchId = await getStorefrontBranchId(supabase, tenantId);
-  if (!branchId || rows.length === 0) return rows;
+  const resolvedBranchId =
+    branchId || (await getStorefrontBranchId(supabase, tenantId));
+  if (!resolvedBranchId || rows.length === 0) return rows;
   const inventory = await fetchBranchInventoryMap(
     supabase,
-    branchId,
+    resolvedBranchId,
     rows.map((row) => row.id),
   );
   return rows.map((row) => ({
     ...row,
     stock_quantity: inventory.get(row.id) ?? 0,
   }));
+}
+
+/** Stock de la sucursal de la sesión (Local por defecto, Bodega si hay código). */
+export async function withRequestStorefrontBranchStock<
+  T extends { id: string; stock_quantity?: number | null },
+>(
+  supabase: SupabaseClient,
+  tenantId: string,
+  rows: T[],
+): Promise<T[]> {
+  const scope = await getStorefrontScope();
+  return withStorefrontBranchStock(supabase, tenantId, rows, scope.branchId);
 }

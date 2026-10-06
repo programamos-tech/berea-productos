@@ -3,7 +3,7 @@ import { storefrontListGrossUnitCents } from "@/lib/storefront-gross-price";
 import { withStorefrontImage } from "@/lib/storefront-product-image";
 import { getStorefrontTenant } from "@/lib/storefront-tenant";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { withStorefrontBranchStock } from "@/lib/storefront-branch-inventory";
+import { withRequestStorefrontBranchStock } from "@/lib/storefront-branch-inventory";
 
 export type StoreCartUpsellProduct = {
   id: string;
@@ -62,7 +62,7 @@ export async function loadStoreCartUpsells(
     .order("created_at", { ascending: false })
     .limit(fetchLimit);
 
-  const scopedRows = await withStorefrontBranchStock(
+  const scopedRows = await withRequestStorefrontBranchStock(
     supabase,
     tenant.id,
     (data ?? []) as UpsellProductRow[],
