@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { ChevronDown } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
@@ -10,6 +11,8 @@ import {
 import { StoreOrderTrackingLink } from "@/components/store/StoreOrderTrackingLink";
 import type { TransferBankInstructions } from "@/lib/transfer-bank-instructions";
 import { formatCop } from "@/lib/money";
+import { STORE_IMAGE_QUALITY } from "@/lib/store-image";
+import { shouldUnoptimizeStorageImageUrl } from "@/lib/storage-public-url";
 import {
   isOrderFulfillmentStatus,
   orderFulfillmentBadgeClass,
@@ -192,35 +195,67 @@ export function StoreOrderDetailPanel({
     .join(", ");
 
   const linesSection = (
-    <section
-      className={`rounded-xl border border-stone-200 bg-stone-50/60 ${
-        proofReceived ? "p-3" : "p-4 sm:p-5"
-      }`}
-    >
+    <section className="rounded-xl border border-stone-200 bg-white p-4 sm:p-5">
       <h3 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--store-brand)]">
         {proofReceived ? "Esto es lo que compraste" : "Detalle del pedido"}
       </h3>
-      <ul className="mt-2 divide-y divide-stone-100">
-        {orderLines.map((line) => (
-          <li
-            key={line.id}
-            className="flex items-start justify-between gap-3 py-2 first:pt-0 last:pb-0"
-          >
-            <div className="min-w-0">
-              <p className="text-sm font-medium leading-snug text-stone-900">
-                {line.name}
-              </p>
-              <p className="mt-0.5 text-xs text-stone-500">
-                {line.quantity} × {formatCop(line.unitPriceCents)}
-              </p>
-            </div>
-            <p className="shrink-0 text-sm font-medium tabular-nums text-stone-900">
-              {formatCop(line.unitPriceCents * line.quantity)}
-            </p>
-          </li>
-        ))}
+      <ul className="mt-4 divide-y divide-stone-200">
+        {orderLines.map((line) => {
+          const photo = (
+            <span className="relative block aspect-[3/4] w-[6.75rem] shrink-0 overflow-hidden bg-[var(--store-image-well)] sm:w-28">
+              {line.imageUrl ? (
+                <Image
+                  src={line.imageUrl}
+                  alt=""
+                  fill
+                  className="object-cover object-center"
+                  sizes="112px"
+                  quality={STORE_IMAGE_QUALITY}
+                  unoptimized={shouldUnoptimizeStorageImageUrl(line.imageUrl)}
+                />
+              ) : (
+                <span className="flex size-full items-center justify-center text-2xl text-stone-200">
+                  ◆
+                </span>
+              )}
+            </span>
+          );
+          return (
+            <li key={line.id} className="flex gap-4 py-4 first:pt-0 last:pb-0">
+              {line.href ? (
+                <Link href={line.href} className="shrink-0">
+                  {photo}
+                </Link>
+              ) : (
+                photo
+              )}
+              <div className="flex min-w-0 flex-1 items-start justify-between gap-3">
+                <div className="min-w-0">
+                  {line.href ? (
+                    <Link
+                      href={line.href}
+                      className="text-[15px] font-semibold leading-snug text-[var(--store-brand)] transition hover:text-[var(--store-brand-hover)]"
+                    >
+                      {line.name}
+                    </Link>
+                  ) : (
+                    <p className="text-[15px] font-semibold leading-snug text-[var(--store-brand)]">
+                      {line.name}
+                    </p>
+                  )}
+                  <p className="mt-1 text-[13px] tabular-nums text-stone-500">
+                    {line.quantity} × {formatCop(line.unitPriceCents)}
+                  </p>
+                </div>
+                <p className="shrink-0 text-sm font-medium tabular-nums text-stone-900">
+                  {formatCop(line.unitPriceCents * line.quantity)}
+                </p>
+              </div>
+            </li>
+          );
+        })}
       </ul>
-      <div className="mt-2 space-y-1.5 border-t border-stone-200 pt-2 text-sm text-stone-700">
+      <div className="mt-3 space-y-1.5 border-t border-stone-200 pt-3 text-sm text-stone-700">
         {shippingCents > 0 ? (
           <div className="flex items-center justify-between gap-3">
             <span>Envío</span>
@@ -364,20 +399,21 @@ export function StoreOrderDetailPanel({
         <div
           className={
             proofReceived
-              ? "grid items-start gap-3 lg:grid-cols-3"
+              ? "grid items-start gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(16rem,0.85fr)]"
               : "grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-start lg:gap-8"
           }
         >
-          <div className={proofReceived ? "contents lg:block" : "space-y-6"}>
-            {infoSection}
-            {proofReceived ? null : linesSection}
-          </div>
-
           {proofReceived ? (
-            <div className="lg:col-span-1">{linesSection}</div>
-          ) : null}
+            linesSection
+          ) : (
+            <div className="space-y-6">
+              {infoSection}
+              {linesSection}
+            </div>
+          )}
 
-          <div className={proofReceived ? "space-y-3" : "space-y-6"}>
+          <div className={proofReceived ? "space-y-4" : "space-y-6"}>
+            {proofReceived ? infoSection : null}
             {trackingUrl ? (
               <StoreOrderTrackingLink url={trackingUrl} compact={proofReceived} />
             ) : null}

@@ -18,6 +18,8 @@ export type TransferOrderLine = {
   name: string;
   quantity: number;
   unitPriceCents: number;
+  imageUrl?: string | null;
+  href?: string | null;
 };
 
 type Props = {

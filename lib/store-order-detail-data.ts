@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { TransferOrderLine } from "@/components/store/TransferenciaCheckoutPanel";
+import { storagePublicObjectUrl } from "@/lib/storage-public-url";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
 
@@ -165,7 +166,7 @@ async function loadOrderExtras(
   const [{ data: itemRows }, { count: proofCount }] = await Promise.all([
     supabase
       .from("order_items")
-      .select("id, quantity, unit_price_cents, product_name_snapshot")
+      .select("id, quantity, unit_price_cents, product_name_snapshot, product_id, kit_id")
       .eq("order_id", orderId),
     supabase
       .from("order_transfer_proofs")
@@ -173,12 +174,52 @@ async function loadOrderExtras(
       .eq("order_id", orderId),
   ]);
 
-  const orderLines: TransferOrderLine[] = (itemRows ?? []).map((line) => ({
-    id: String(line.id),
-    name: String(line.product_name_snapshot ?? "Producto"),
-    quantity: Math.max(1, Number(line.quantity ?? 1)),
-    unitPriceCents: Math.max(0, Number(line.unit_price_cents ?? 0)),
-  }));
+  const productIds = [
+    ...new Set(
+      (itemRows ?? [])
+        .map((line) => (line.product_id ? String(line.product_id) : ""))
+        .filter(Boolean),
+    ),
+  ];
+  const kitIds = [
+    ...new Set(
+      (itemRows ?? [])
+        .map((line) => (line.kit_id ? String(line.kit_id) : ""))
+        .filter(Boolean),
+    ),
+  ];
+  const [{ data: productRows }, { data: kitRows }] = await Promise.all([
+    productIds.length
+      ? supabase.from("products").select("id, image_path").in("id", productIds)
+      : Promise.resolve({ data: [] as { id: string; image_path: string | null }[] }),
+    kitIds.length
+      ? supabase.from("product_kits").select("id, image_path").in("id", kitIds)
+      : Promise.resolve({ data: [] as { id: string; image_path: string | null }[] }),
+  ]);
+  const imageByProduct = new Map(
+    (productRows ?? []).map((row) => [String(row.id), row.image_path]),
+  );
+  const imageByKit = new Map(
+    (kitRows ?? []).map((row) => [String(row.id), row.image_path]),
+  );
+
+  const orderLines: TransferOrderLine[] = (itemRows ?? []).map((line) => {
+    const productId = line.product_id ? String(line.product_id) : "";
+    const kitId = line.kit_id ? String(line.kit_id) : "";
+    const imagePath = kitId
+      ? imageByKit.get(kitId)
+      : productId
+        ? imageByProduct.get(productId)
+        : null;
+    return {
+      id: String(line.id),
+      name: String(line.product_name_snapshot ?? "Producto"),
+      quantity: Math.max(1, Number(line.quantity ?? 1)),
+      unitPriceCents: Math.max(0, Number(line.unit_price_cents ?? 0)),
+      imageUrl: storagePublicObjectUrl(imagePath),
+      href: kitId ? `/kits/${kitId}` : productId ? `/products/${productId}` : null,
+    };
+  });
 
   return mapOrderRow(order, orderLines, proofCount ?? 0);
 }
