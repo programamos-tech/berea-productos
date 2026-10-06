@@ -432,6 +432,74 @@ export default async function CheckoutPage({
     }
   }
 
+  let wholesaleBuyerName: string | null = null;
+  if (scope.customer) {
+    wholesaleBuyerName = scope.customer.name;
+    const whoSb = createSupabaseServiceClient();
+    const { data: who } = await whoSb
+      .from("customers")
+      .select(
+        "name,email,phone,shipping_address,shipping_city,shipping_neighborhood,shipping_reference,shipping_postal_code",
+      )
+      .eq("id", scope.customer.id)
+      .maybeSingle();
+    if (who) {
+      const fullName = String(who.name ?? "").trim() || scope.customer.name;
+      wholesaleBuyerName = fullName;
+      const parts = fullName.split(/\s+/).filter(Boolean);
+      shippingInitial.firstName = parts[0] ?? "";
+      shippingInitial.lastName =
+        parts.length > 1 ? parts.slice(1).join(" ") : "";
+      shippingInitial.profileAddressLine = String(who.shipping_address ?? "").trim();
+      shippingInitial.city = String(who.shipping_city ?? "").trim();
+      shippingInitial.neighborhood = String(who.shipping_neighborhood ?? "").trim();
+      shippingInitial.reference = String(who.shipping_reference ?? "").trim();
+      shippingInitial.mobile = String(who.phone ?? "").trim();
+      const whoEmail = String(who.email ?? "").trim();
+      if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(whoEmail)) {
+        accountEmail = whoEmail;
+      }
+      const [{ data: lastOrder }, { data: addrs }] = await Promise.all([
+        whoSb
+          .from("orders")
+          .select(
+            "shipping_address,shipping_city,shipping_neighborhood,shipping_reference,shipping_phone,shipping_municipality_id",
+          )
+          .eq("customer_id", scope.customer.id)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+        whoSb
+          .from("customer_addresses")
+          .select("id,label,address_line,reference,sort_order")
+          .eq("customer_id", scope.customer.id)
+          .order("sort_order", { ascending: true }),
+      ]);
+      if (lastOrder?.shipping_address?.trim()) {
+        shippingInitial.profileAddressLine = lastOrder.shipping_address.trim();
+      }
+      if (lastOrder?.shipping_city?.trim()) {
+        shippingInitial.city = lastOrder.shipping_city.trim();
+      }
+      if (lastOrder?.shipping_neighborhood?.trim()) {
+        shippingInitial.neighborhood = lastOrder.shipping_neighborhood.trim();
+      }
+      if (lastOrder?.shipping_reference?.trim()) {
+        shippingInitial.reference = lastOrder.shipping_reference.trim();
+      }
+      if (lastOrder?.shipping_phone?.trim()) {
+        shippingInitial.mobile = lastOrder.shipping_phone.trim();
+      }
+      if (lastOrder?.shipping_municipality_id != null) {
+        shippingInitial.municipalityId = String(lastOrder.shipping_municipality_id);
+      }
+      savedAddresses = (addrs ?? []) as CheckoutSavedAddress[];
+    }
+  }
+
+  const payByTransfer =
+    Boolean(scope.customer) || storefrontChrome.checkoutMode !== "wompi";
+
   const productLines = displayCart.filter(isCartProductLine);
   const kitLines = displayCart.filter(isCartKitLine);
 
@@ -779,6 +847,13 @@ export default async function CheckoutPage({
                   }
                   savedAddresses={accountEmail ? savedAddresses : []}
                   accountEmail={accountEmail}
+                  emailNote={
+                    wholesaleBuyerName
+                      ? accountEmail
+                        ? `Comprando como ${wholesaleBuyerName}. El pedido y el comprobante quedan a ese cliente mayorista.`
+                        : `El pedido queda a nombre de ${wholesaleBuyerName}. Escribe un correo para el comprobante.`
+                      : null
+                  }
                   labelClass={labelClass}
                   inputClass={inputClass}
                   selectClass={selectClass}
@@ -790,25 +865,25 @@ export default async function CheckoutPage({
                   Forma de pago
                 </h2>
                 <p className="mt-2 text-sm leading-relaxed text-stone-500">
-                  {storefrontChrome.checkoutMode === "wompi"
-                    ? "Paga en línea de forma segura con Wompi. Al confirmar te llevaremos a su pasarela."
-                    : "El pago se realiza por transferencia bancaria. Al finalizar verás los datos disponibles y podrás adjuntar el comprobante."}
+                  {payByTransfer
+                    ? "El pago se realiza por transferencia bancaria. Al finalizar verás los datos disponibles y podrás adjuntar el comprobante."
+                    : "Paga en línea de forma segura con Wompi. Al confirmar te llevaremos a su pasarela."}
                 </p>
                 <input
                   type="hidden"
                   name="paymentMethod"
-                  value={storefrontChrome.checkoutMode}
+                  value={payByTransfer ? "transfer" : "wompi"}
                 />
                 <div className="mt-6 border border-[var(--store-accent)] bg-white p-4 ring-1 ring-[var(--store-accent)]">
                   <p className="text-sm font-medium text-stone-900">
-                    {storefrontChrome.checkoutMode === "wompi"
-                      ? "Pago en línea con Wompi"
-                      : "Transferencia bancaria"}
+                    {payByTransfer
+                      ? "Transferencia bancaria"
+                      : "Pago en línea con Wompi"}
                   </p>
                   <p className="mt-1 text-xs leading-relaxed text-stone-500">
-                    {storefrontChrome.checkoutMode === "wompi"
-                      ? "Wompi procesará el pago y te devolverá a la confirmación de tu pedido."
-                      : "Recibirás los datos para transferir y un formulario para subir el comprobante de pago."}
+                    {payByTransfer
+                      ? "Recibirás los datos para transferir y un formulario para subir el comprobante de pago."
+                      : "Wompi procesará el pago y te devolverá a la confirmación de tu pedido."}
                   </p>
                 </div>
               </section>

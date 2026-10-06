@@ -77,7 +77,7 @@ export async function startCheckout(formData: FormData) {
   const lastName = String(formData.get("lastName") ?? "").trim();
   const customerName = `${firstName} ${lastName}`.trim();
   const legacyName = String(formData.get("name") ?? "").trim();
-  const resolvedName = customerName || legacyName;
+  let resolvedName = customerName || legacyName;
 
   const shippingAddress = String(formData.get("address") ?? "").trim();
   const shippingNeighborhood = String(formData.get("neighborhood") ?? "").trim();
@@ -90,7 +90,25 @@ export async function startCheckout(formData: FormData) {
   const shippingPhone = String(formData.get("mobile") ?? "").trim();
   const couponCode = String(formData.get("couponCode") ?? "").trim();
   const storefrontChrome = await getStorefrontChromeForRequest();
-  const useTransfer = storefrontChrome.checkoutMode !== "wompi";
+  const scope = await getStorefrontScope();
+  if (scope.requiresCode && !scope.customer) {
+    redirect(`/sucursal/${scope.branchCode}`);
+  }
+  const supabase = createSupabaseServiceClient();
+  let wholesaleEmail = "";
+  let wholesaleName = "";
+  if (scope.customer) {
+    const { data: who } = await supabase
+      .from("customers")
+      .select("name,email")
+      .eq("id", scope.customer.id)
+      .maybeSingle();
+    wholesaleEmail = String(who?.email ?? "").trim();
+    wholesaleName = String(who?.name ?? "").trim() || scope.customer.name;
+  }
+  const useTransfer =
+    Boolean(scope.customer) || storefrontChrome.checkoutMode !== "wompi";
+  if (!resolvedName) resolvedName = wholesaleName;
 
   if (!resolvedName) {
     redirect("/checkout?error=missing_name");
@@ -110,9 +128,10 @@ export async function startCheckout(formData: FormData) {
     data: { user: sessionUser },
   } = await sessionSb.auth.getUser();
 
-  let customerEmailForOrder = customerEmail;
+  let customerEmailForOrder =
+    wholesaleEmail && isEmail(wholesaleEmail) ? wholesaleEmail : customerEmail;
 
-  if (sessionUser?.email) {
+  if (!scope.customer && sessionUser?.email) {
     const { data: adminProf } = await sessionSb
       .from("profiles")
       .select("id")
@@ -156,12 +175,7 @@ export async function startCheckout(formData: FormData) {
   const productLines = normalized.filter(isCartProductLine);
   const kitLines = normalized.filter(isCartKitLine);
 
-  const supabase = createSupabaseServiceClient();
   const tenant = await getRequestTenant();
-  const scope = await getStorefrontScope();
-  if (scope.requiresCode && !scope.customer) {
-    redirect(`/sucursal/${scope.branchCode}`);
-  }
   let storefrontBranchId = scope.branchId;
   if (!storefrontBranchId) {
     const { data: defaultBranch } = await supabase
@@ -457,9 +471,13 @@ export async function startCheckout(formData: FormData) {
 
   if (existingCustomer?.id) {
     customerId = existingCustomer.id as string;
+    const profileUpdate =
+      scope.customer && !isEmail(wholesaleEmail)
+        ? { ...customerShippingFull, email: emailLc }
+        : customerShippingFull;
     const { error: uErr } = await supabase
       .from("customers")
-      .update(customerShippingFull)
+      .update(profileUpdate)
       .eq("id", customerId)
       .eq("branch_id", storefrontBranchId);
     if (uErr && isMissingDbColumnError(uErr)) {

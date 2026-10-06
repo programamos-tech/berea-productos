@@ -31,6 +31,7 @@ type Props = {
   initial: CheckoutShippingInitial;
   savedAddresses: CheckoutSavedAddress[];
   accountEmail: string | null;
+  emailNote?: string | null;
   labelClass: string;
   inputClass: string;
   /** Si no se pasa, el select usa `inputClass`. */
@@ -45,6 +46,7 @@ export function CheckoutShippingFields({
   initial,
   savedAddresses,
   accountEmail,
+  emailNote = null,
   labelClass,
   inputClass,
   selectClass,
@@ -290,10 +292,10 @@ export function CheckoutShippingFields({
             }
           />
         </label>
-        {accountEmail ? (
+        {emailNote || accountEmail ? (
           <p className="sm:col-span-2 text-xs text-stone-500">
-            Estás comprando con tu cuenta: el email no se puede cambiar en este
-            paso.
+            {emailNote ??
+              "Estás comprando con tu cuenta: el email no se puede cambiar en este paso."}
           </p>
         ) : null}
       </div>
