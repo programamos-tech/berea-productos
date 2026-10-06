@@ -559,12 +559,12 @@ export function OrderInvoiceDetailView(props: OrderInvoiceDetailViewProps) {
                 </p>
               )}
             </div>
-            <div className="print:size-[16mm] print:shrink-0 print:overflow-hidden print:rounded-full">
+            <div className="print:flex print:h-[16mm] print:w-[42mm] print:shrink-0 print:items-start print:justify-end">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={invoiceLogoPath}
                 alt={invoiceTradeName}
-                className="print:size-full print:object-cover"
+                className="print:max-h-[16mm] print:w-auto print:max-w-[42mm] print:object-contain"
               />
             </div>
           </div>
