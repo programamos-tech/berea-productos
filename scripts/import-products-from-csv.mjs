@@ -118,7 +118,8 @@ const STANDARD_SALE_VAT = 19;
 function unitPriceGrossCents(price_cents, has_vat) {
   const base = Math.max(0, Math.round(Number(price_cents ?? 0)));
   if (!has_vat) return base;
-  return Math.floor((base * (100 + STANDARD_SALE_VAT)) / 100);
+  const gross = Math.floor((base * (100 + STANDARD_SALE_VAT)) / 100);
+  return Math.round(gross / 100) * 100;
 }
 
 /**

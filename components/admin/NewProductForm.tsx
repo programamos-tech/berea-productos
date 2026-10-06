@@ -309,7 +309,8 @@ export function NewProductForm({
                       {SALE_VAT_PERCENT} %
                     </span>{" "}
                     (tipo general Colombia). La base se guarda sin IVA; el precio
-                    de venta le suma el {SALE_VAT_PERCENT} % y redondea hacia abajo.
+                    de venta le suma el {SALE_VAT_PERCENT} % y lo deja en la centena
+                    más cercana.
                   </p>
                   {hasVat ? (
                     <input type="hidden" name="vat_percent" value={String(SALE_VAT_PERCENT)} />
