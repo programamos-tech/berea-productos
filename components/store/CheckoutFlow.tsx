@@ -24,7 +24,6 @@ type FieldProblem = {
 type Props = {
   action: (formData: FormData) => void | Promise<void>;
   initialStep: CheckoutFlowStep;
-  payByTransfer: boolean;
   primaryClassName: string;
   secondaryClassName: string;
   cart: ReactNode;
@@ -92,7 +91,6 @@ function shippingProblem(form: HTMLFormElement): FieldProblem | null {
 export function CheckoutFlow({
   action,
   initialStep,
-  payByTransfer,
   primaryClassName,
   secondaryClassName,
   cart,
@@ -205,9 +203,7 @@ export function CheckoutFlow({
         : {
             kicker: "Paso 3 de 3",
             title: "Forma de pago",
-            lead: payByTransfer
-              ? "Último paso. Al finalizar ves los datos para transferir y subes el comprobante."
-              : "Último paso. Al confirmar te llevamos a pagar en línea.",
+            lead: "Último paso. Al finalizar ves las cuentas y subes el comprobante de la transferencia.",
           };
 
   return (

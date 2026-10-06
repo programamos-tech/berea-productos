@@ -17,17 +17,9 @@ import {
 } from "@/lib/product-kits";
 import { normalizeStorefrontCartLines } from "@/lib/storefront-cart";
 import { ensureStoreCustomerLinked } from "@/lib/store-customer-service";
-import {
-  getRequestTenant,
-  getStorefrontChromeForRequest,
-} from "@/lib/tenant-context";
+import { getRequestTenant } from "@/lib/tenant-context";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
-import {
-  createPaymentLink,
-  getWompiEnv,
-  shouldSkipWompiPayment,
-} from "@/lib/wompi";
 import {
   wholesaleDiscountPercentFromRow,
 } from "@/lib/customer-wholesale-pricing";
@@ -39,7 +31,6 @@ import {
   resolveCheckoutShippingCents,
   SHIPPING_CITY_OTHER,
 } from "@/lib/store-shipping";
-import { getPublicSiteUrl } from "@/lib/public-site-url";
 import { deductTransferWebOrderStock } from "@/lib/storefront-order-stock";
 import { randomUUID } from "node:crypto";
 import { fetchBranchInventoryMap } from "@/lib/branch-inventory";
@@ -89,7 +80,6 @@ export async function startCheckout(formData: FormData) {
   const shippingPostalCode = String(formData.get("zipCode") ?? "").trim();
   const shippingPhone = String(formData.get("mobile") ?? "").trim();
   const couponCode = String(formData.get("couponCode") ?? "").trim();
-  const storefrontChrome = await getStorefrontChromeForRequest();
   const scope = await getStorefrontScope();
   if (scope.requiresCode && !scope.customer) {
     redirect(`/sucursal/${scope.branchCode}`);
@@ -106,8 +96,6 @@ export async function startCheckout(formData: FormData) {
     wholesaleEmail = String(who?.email ?? "").trim();
     wholesaleName = String(who?.name ?? "").trim() || scope.customer.name;
   }
-  const useTransfer =
-    Boolean(scope.customer) || storefrontChrome.checkoutMode !== "wompi";
   if (!resolvedName) resolvedName = wholesaleName;
 
   if (!resolvedName) {
@@ -529,7 +517,7 @@ export async function startCheckout(formData: FormData) {
     customerId = insertedCustomer.id as string;
   }
 
-  const transferSessionToken = useTransfer ? randomUUID() : null;
+  const transferSessionToken = randomUUID();
 
   const orderBase = {
     customer_id: customerId,
@@ -543,9 +531,9 @@ export async function startCheckout(formData: FormData) {
     shipping_phone: shippingPhone,
     shipping_cents: shippingCents,
     shipping_municipality_id: municipalityRow.id,
-    checkout_payment_method: useTransfer ? "transfer" : "wompi",
+    checkout_payment_method: "transfer",
     transfer_session_token: transferSessionToken,
-    fulfillment_status: useTransfer ? "awaiting_payment" : null,
+    fulfillment_status: "awaiting_payment",
     tenant_id: tenant.id,
     branch_id: storefrontBranchId,
   };
@@ -586,7 +574,6 @@ export async function startCheckout(formData: FormData) {
       details: oErr?.details,
       hint: oErr?.hint,
       customerId,
-      useTransfer,
       shippingMunicipalityId: municipalityRow.id,
     });
     redirect("/checkout?error=order");
@@ -613,79 +600,19 @@ export async function startCheckout(formData: FormData) {
     redirect("/checkout?error=items");
   }
 
-  if (useTransfer) {
-    const stockResult = await deductTransferWebOrderStock(supabase, orderId);
-    if (!stockResult.ok) {
-      redirect("/checkout?error=stock");
-    }
-    revalidatePath("/admin/products");
-    revalidatePath("/products");
+  const stockResult = await deductTransferWebOrderStock(supabase, orderId);
+  if (!stockResult.ok) {
+    redirect("/checkout?error=stock");
   }
+  revalidatePath("/admin/products");
+  revalidatePath("/products");
 
   revalidatePath("/admin/ventas");
   revalidatePath("/admin/orders");
   revalidatePath("/cuenta/pedidos");
 
-  if (useTransfer && transferSessionToken) {
-    await setCart([]);
-    redirect(
-      `/pedido?order_id=${encodeURIComponent(orderId)}&t=${encodeURIComponent(transferSessionToken)}`,
-    );
-  }
-
-  const returnUrl = `${getPublicSiteUrl()}/checkout/return?order_id=${orderId}`;
-
-  if (shouldSkipWompiPayment()) {
-    await supabase
-      .from("orders")
-      .update({
-        wompi_reference: orderId,
-      })
-      .eq("id", orderId);
-
-    await setCart([]);
-
-    if (process.env.NODE_ENV === "development") {
-      console.info(
-        "[checkout] Wompi omitido (sin clave en dev o CHECKOUT_SKIP_WOMPI). Pedido:",
-        orderId,
-      );
-    }
-
-    redirect(`${returnUrl}&test_checkout=1`);
-  }
-
-  const link = await createPaymentLink({
-    name: `${storefrontChrome.name} · Pedido`,
-    description: `Pedido ${orderId}`,
-    amountInCents: orderTotalCents,
-    currency,
-    redirectUrl: returnUrl,
-    sku: orderId,
-    singleUse: true,
-  });
-
-  if (!link.ok) {
-    await supabase.from("orders").delete().eq("id", orderId);
-    redirect(
-      `/checkout?error=wompi&message=${encodeURIComponent(link.error)}`,
-    );
-  }
-
-  await supabase
-    .from("orders")
-    .update({
-      wompi_payment_link_id: link.id,
-      wompi_reference: orderId,
-    })
-    .eq("id", orderId);
-
   await setCart([]);
-
-  const env = getWompiEnv();
-  if (process.env.NODE_ENV === "development") {
-    console.info("[checkout] Wompi env:", env, "order:", orderId);
-  }
-
-  redirect(link.url);
+  redirect(
+    `/pedido?order_id=${encodeURIComponent(orderId)}&t=${encodeURIComponent(transferSessionToken)}`,
+  );
 }

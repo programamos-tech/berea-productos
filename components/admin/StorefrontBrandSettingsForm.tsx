@@ -231,20 +231,11 @@ export function StorefrontBrandSettingsForm({
           />
         </div>
         <div>
-          <label htmlFor="storefront-checkout" className={productLabelClass}>
-            Forma de pago del catálogo
-          </label>
-          <select
-            id="storefront-checkout"
-            name="checkout_mode"
-            defaultValue={initial.checkoutMode}
-            className={productInputClass}
-          >
-            <option value="transfer">Transferencia/manual</option>
-            {initial.canUseWompi ? (
-              <option value="wompi">Wompi</option>
-            ) : null}
-          </select>
+          <p className={productLabelClass}>Forma de pago del catálogo</p>
+          <input type="hidden" name="checkout_mode" value="transfer" />
+          <p className="mt-2 text-sm text-stone-600">
+            Transferencia bancaria. El cliente sube el comprobante al finalizar.
+          </p>
         </div>
       </div>
 

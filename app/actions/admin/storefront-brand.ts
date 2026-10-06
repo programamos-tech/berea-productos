@@ -53,11 +53,7 @@ export async function updateStorefrontBrandAction(formData: FormData) {
     logoPath = `product-images/${objectPath}`;
   }
 
-  const requestedCheckout = value(formData, "checkout_mode");
-  const checkoutMode =
-    session.tenantSlug === "aleya" && requestedCheckout === "wompi"
-      ? "wompi"
-      : "transfer";
+  const checkoutMode = "transfer";
   const brand = {
     ...current,
     trade_name: value(formData, "trade_name") || session.tenantName,

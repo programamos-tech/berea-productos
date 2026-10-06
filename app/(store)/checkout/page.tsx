@@ -29,10 +29,7 @@ import {
 } from "@/lib/storefront-gross-price";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
-import {
-  getRequestTenant,
-  getStorefrontChromeForRequest,
-} from "@/lib/tenant-context";
+import { getRequestTenant } from "@/lib/tenant-context";
 import { withRequestStorefrontBranchStock } from "@/lib/storefront-branch-inventory";
 import { getStorefrontScope } from "@/lib/storefront-scope";
 import { imagePathForProductLine } from "@/lib/product-line-image";
@@ -294,10 +291,7 @@ export default async function CheckoutPage({
   const unpublishedProduct =
     typeof sp.product === "string" ? sp.product : undefined;
 
-  const [displayCart, storefrontChrome] = await Promise.all([
-    getStorefrontCartLines(),
-    getStorefrontChromeForRequest(),
-  ]);
+  const displayCart = await getStorefrontCartLines();
   if (!displayCart.length) {
     return (
       <CheckoutBolsaVaciaView
@@ -516,9 +510,6 @@ export default async function CheckoutPage({
     }
   }
 
-  const payByTransfer =
-    Boolean(scope.customer) || storefrontChrome.checkoutMode !== "wompi";
-
   const productLines = displayCart.filter(isCartProductLine);
   const kitLines = displayCart.filter(isCartKitLine);
 
@@ -673,7 +664,6 @@ export default async function CheckoutPage({
           <CheckoutFlow
             action={startCheckout}
             initialStep={checkoutStepFromError(error)}
-            payByTransfer={payByTransfer}
             primaryClassName={primaryBtnClass}
             secondaryClassName={secondaryBtnClass}
             cart={
@@ -874,21 +864,14 @@ export default async function CheckoutPage({
             }
             payment={
               <section>
-                <input
-                  type="hidden"
-                  name="paymentMethod"
-                  value={payByTransfer ? "transfer" : "wompi"}
-                />
+                <input type="hidden" name="paymentMethod" value="transfer" />
                 <div className="border border-[var(--store-accent)] bg-white p-4 ring-1 ring-[var(--store-accent)]">
                   <p className="text-sm font-medium text-stone-900">
-                    {payByTransfer
-                      ? "Transferencia bancaria"
-                      : "Pago en línea con Wompi"}
+                    Transferencia bancaria
                   </p>
                   <p className="mt-1 text-xs leading-relaxed text-stone-500">
-                    {payByTransfer
-                      ? "Recibirás los datos para transferir y un formulario para subir el comprobante de pago."
-                      : "Wompi procesará el pago y te devolverá a la confirmación de tu pedido."}
+                    Al finalizar ves las cuentas y subes el comprobante de la
+                    transferencia.
                   </p>
                 </div>
               </section>
