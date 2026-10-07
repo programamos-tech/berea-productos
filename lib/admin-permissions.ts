@@ -158,7 +158,7 @@ export const PERMISSION_MODULES: PermissionModule[] = [
       { key: "productos_editar", label: "Editar productos" },
       { key: "categorias_gestionar", label: "Gestionar categorías" },
       { key: "stock_actualizar", label: "Actualizar stock" },
-      // Traslados ocultos del panel (permiso se conserva en DB).
+      { key: "stock_transferir", label: "Trasladar entre sucursales" },
     ],
   },
   {

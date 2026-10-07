@@ -114,6 +114,11 @@ export function getActivityDetailRows(
   }
 
   if (action === "stock_transferred") {
+    const fromName = str(m.from_branch_name);
+    const toName = str(m.to_branch_name);
+    if (fromName && toName) {
+      rows.push({ label: "Ruta", value: `${fromName} → ${toName}` });
+    }
     const dir = str(m.direction);
     if (dir === "local_to_warehouse") {
       rows.push({ label: "Sentido", value: "Tienda → depósito" });

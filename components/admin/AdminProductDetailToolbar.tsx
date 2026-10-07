@@ -48,7 +48,7 @@ export function AdminProductDetailToolbar({
         Stock
       </button>
       <Link
-        href={`/admin/products/${productId}/transfer`}
+        href={`/admin/traslados/nuevo?product=${productId}`}
         className={btnIdle}
         title="Trasladar entre sucursales"
       >

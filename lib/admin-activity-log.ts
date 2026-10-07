@@ -21,7 +21,8 @@ export type AdminActivityEntityType =
   | "customer"
   | "product"
   | "order"
-  | "cash_session";
+  | "cash_session"
+  | "stock_transfer";
 
 /** Fila listada en el panel de actividades. */
 export type AdminActivityLogRow = {

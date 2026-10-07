@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 import { adminProductsNameReferenceOrIlikeFilter } from "@/lib/admin-product-search-filter";
 import { requireAdminApiSession } from "@/lib/admin-api";
-import { fetchCurrentBranchInventoryMap } from "@/lib/branch-inventory";
+import {
+  fetchBranchInventoryMap,
+  fetchCurrentBranchInventoryMap,
+} from "@/lib/branch-inventory";
+import { isBranchId } from "@/lib/branch-context";
 
 function sanitizeIlikeQuery(q: string) {
   return q.replace(/[%_\\,]/g, "").slice(0, 80);
@@ -39,10 +43,11 @@ export async function GET(request: Request) {
   }
 
   const rows = data ?? [];
-  const inventory = await fetchCurrentBranchInventoryMap(
-    supabase,
-    rows.map((row) => String(row.id)),
-  );
+  const ids = rows.map((row) => String(row.id));
+  const branchId = searchParams.get("branch")?.trim() ?? "";
+  const inventory = isBranchId(branchId)
+    ? await fetchBranchInventoryMap(supabase, branchId, ids)
+    : await fetchCurrentBranchInventoryMap(supabase, ids);
   return NextResponse.json({
     products: rows.map((row) => ({
       id: row.id,

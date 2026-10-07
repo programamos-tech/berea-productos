@@ -14,6 +14,8 @@ function entityLink(row: AdminActivityLogRow): { href: string; label: string } |
       return { href: `/admin/customers/${id}`, label: "Cliente" };
     case "product":
       return { href: `/admin/products/${id}/edit`, label: "Producto" };
+    case "stock_transfer":
+      return { href: `/admin/traslados/${id}`, label: "Traslado" };
     case "order":
       return { href: `/admin/orders/${id}`, label: "Factura" };
     case "cash_session":

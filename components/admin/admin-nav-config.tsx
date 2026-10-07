@@ -113,6 +113,18 @@ export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
             ),
           },
           {
+            href: "/admin/traslados",
+            label: "Traslados",
+            icon: (
+              <Icon>
+                <path d="M7 7h11" />
+                <path d="m15 4 3 3-3 3" />
+                <path d="M17 17H6" />
+                <path d="m9 14-3 3 3 3" />
+              </Icon>
+            ),
+          },
+          {
             href: "/admin/kits",
             label: "Kits",
             icon: (
@@ -203,6 +215,7 @@ export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
 
 const PRODUCTS_HREF = "/admin/products";
 const KITS_HREF = "/admin/kits";
+const TRANSFERS_HREF = "/admin/traslados";
 const VENTAS_HREF = "/admin/ventas";
 const CREDITOS_HREF = "/admin/creditos";
 const ORDERS_HREF = "/admin/orders";
@@ -258,6 +271,11 @@ export function adminNavItemActive(
   if (href === KITS_HREF) {
     return pathname === KITS_HREF || pathname.startsWith(`${KITS_HREF}/`);
   }
+  if (href === TRANSFERS_HREF) {
+    return (
+      pathname === TRANSFERS_HREF || pathname.startsWith(`${TRANSFERS_HREF}/`)
+    );
+  }
   if (href === CUSTOMERS_HREF) {
     return (
       pathname === CUSTOMERS_HREF || pathname.startsWith(`${CUSTOMERS_HREF}/`)
@@ -307,6 +325,8 @@ export function isInventorySectionPath(pathname: string): boolean {
     pathname === PRODUCTS_HREF ||
     pathname.startsWith(`${PRODUCTS_HREF}/`) ||
     pathname === KITS_HREF ||
-    pathname.startsWith(`${KITS_HREF}/`)
+    pathname.startsWith(`${KITS_HREF}/`) ||
+    pathname === TRANSFERS_HREF ||
+    pathname.startsWith(`${TRANSFERS_HREF}/`)
   );
 }

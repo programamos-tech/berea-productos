@@ -325,6 +325,7 @@ export default async function AdminProductsPage({
           active="products"
           showProducts
           showKits={canSeeKits}
+          showTransfers
         />
 
         <div className="flex min-h-0 flex-col gap-4">

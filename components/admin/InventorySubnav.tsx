@@ -5,20 +5,33 @@ import {
   adminToolbarBtnIdleClass,
 } from "@/lib/admin-ui";
 
+type InventoryTab = "products" | "kits" | "transfers";
+
 type InventorySubnavProps = {
-  active: "products" | "kits";
+  active: InventoryTab;
   showProducts?: boolean;
   showKits?: boolean;
+  showTransfers?: boolean;
 };
+
+const TABS: { id: InventoryTab; href: string; label: string }[] = [
+  { id: "products", href: "/admin/products", label: "Productos" },
+  { id: "transfers", href: "/admin/traslados", label: "Traslados" },
+  { id: "kits", href: "/admin/kits", label: "Kits" },
+];
 
 export function InventorySubnav({
   active,
   showProducts = true,
   showKits = true,
+  showTransfers = false,
 }: InventorySubnavProps) {
-  if (!showProducts && !showKits) return null;
-  if (showProducts && !showKits && active === "products") return null;
-  if (!showProducts && showKits && active === "kits") return null;
+  const visible = TABS.filter((tab) => {
+    if (tab.id === "products") return showProducts;
+    if (tab.id === "kits") return showKits;
+    return showTransfers;
+  });
+  if (visible.length < 2) return null;
 
   return (
     <div
@@ -26,34 +39,21 @@ export function InventorySubnav({
       role="tablist"
       aria-label="Sección de inventario"
     >
-      {showProducts ? (
+      {visible.map((tab) => (
         <Link
-          href="/admin/products"
+          key={tab.id}
+          href={tab.href}
           role="tab"
-          aria-selected={active === "products"}
+          aria-selected={active === tab.id}
           className={`${adminToolbarBtnBaseClass} ${
-            active === "products"
+            active === tab.id
               ? adminToolbarBtnActiveClass
               : adminToolbarBtnIdleClass
           }`}
         >
-          Productos
+          {tab.label}
         </Link>
-      ) : null}
-      {showKits ? (
-        <Link
-          href="/admin/kits"
-          role="tab"
-          aria-selected={active === "kits"}
-          className={`${adminToolbarBtnBaseClass} ${
-            active === "kits"
-              ? adminToolbarBtnActiveClass
-              : adminToolbarBtnIdleClass
-          }`}
-        >
-          Kits
-        </Link>
-      ) : null}
+      ))}
     </div>
   );
 }

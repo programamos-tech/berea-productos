@@ -98,6 +98,7 @@ export default async function AdminKitsPage({
         active="kits"
         showProducts={canSeeProducts}
         showKits
+        showTransfers={canSeeProducts || Boolean(perm?.permissions.stock_transferir)}
       />
 
       <section className="min-h-0 border-t border-zinc-200/70 pt-4 dark:border-zinc-800">
