@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Building2, Clock, UserRound } from "lucide-react";
 import { notFound } from "next/navigation";
 import {
   cancelStockTransfer,
@@ -10,7 +11,6 @@ import {
 } from "@/components/admin/AdminFormSubmitButton";
 import { requireAdminAnyPermission } from "@/lib/require-admin-permission";
 import {
-  formatTransferWhen,
   isStockTransferStatus,
   stockTransferCode,
   stockTransferErrorMessage,
@@ -18,7 +18,16 @@ import {
   type StockTransferStatus,
 } from "@/lib/stock-transfers";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { formatStoreInvoiceDateTime } from "@/lib/store-datetime-format";
 import { adminButtonCancelClass } from "@/lib/admin-ui";
+
+const labelClass =
+  "text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500";
+const metaIconClass = "size-4 shrink-0 text-zinc-400 dark:text-zinc-500";
+const metaSepClass = "text-zinc-300 dark:text-zinc-600";
+const metaTextClass = "text-zinc-700 dark:text-zinc-300";
+const th =
+  "pb-2 pr-4 text-left text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500";
 
 export const dynamic = "force-dynamic";
 
@@ -102,127 +111,248 @@ export default async function AdminTrasladoDetailPage({
     ? personName(names, String(transfer.cancelled_by))
     : null;
   const code = stockTransferCode(String(transfer.id), String(transfer.sent_at));
-  const meta = [
-    stockTransferStatusLabel(transfer.status),
-    sender !== "Sin registro" ? `envió ${sender}` : null,
-    `enviado ${formatTransferWhen(String(transfer.sent_at))}`,
-    receiver && transfer.received_at
-      ? `recibió ${receiver}`
-      : null,
-    transfer.received_at ? `cerrado ${formatTransferWhen(String(transfer.received_at))}` : null,
-    canceller && transfer.cancelled_at ? `anuló ${canceller}` : null,
-    transfer.cancelled_at && !transfer.received_at
-      ? `anulado ${formatTransferWhen(String(transfer.cancelled_at))}`
-      : null,
-    `${units} u.`,
-  ].filter(Boolean);
+  const sentLabel = formatStoreInvoiceDateTime(String(transfer.sent_at));
+  const closedLabel = transfer.received_at
+    ? formatStoreInvoiceDateTime(String(transfer.received_at))
+    : transfer.cancelled_at
+      ? formatStoreInvoiceDateTime(String(transfer.cancelled_at))
+      : null;
 
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-col gap-4">
-      <header className="min-w-0">
-        <p className="text-[11px] text-zinc-500">
-          <Link
-            href="/admin/traslados"
-            className="hover:text-zinc-800 dark:hover:text-zinc-200"
-          >
-            Traslados
-          </Link>
-        </p>
-        <h1 className="mt-0.5 text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 sm:text-2xl">
-          {code}
-        </h1>
-        <p className="mt-1 text-sm font-medium text-zinc-800 dark:text-zinc-100">
-          {transfer.from_branch_name} → {transfer.to_branch_name}
-        </p>
-        <p className="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1.5 text-sm text-zinc-500">
-          {meta.map((part, index) => (
-            <span key={`${part}-${index}`} className="inline-flex items-center gap-x-2.5">
-              {index > 0 ? (
-                <span className="text-zinc-300 dark:text-zinc-600" aria-hidden>
-                  ·
-                </span>
-              ) : (
-                <span className={statusClass(transfer.status)}>{part}</span>
-              )}
-              {index > 0 ? <span>{part}</span> : null}
-            </span>
-          ))}
-        </p>
-      </header>
-
+    <div className="flex w-full min-w-0 max-w-none flex-col gap-4">
       {errorMessage ? (
-        <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+        <div
+          className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-100"
+          role="alert"
+        >
           {errorMessage}
-        </p>
-      ) : null}
-
-      {transfer.notes ? (
-        <p className="rounded-xl border border-zinc-200 bg-white px-4 py-3 text-center text-sm text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200">
-          {transfer.notes}
-        </p>
-      ) : null}
-
-      <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
-        {items.map((item) => {
-          const product = Array.isArray(item.products) ? item.products[0] : item.products;
-          const name = product?.name ? String(product.name) : "Producto";
-          const reference = product?.reference ? String(product.reference) : "";
-          return (
-            <div
-              key={String(item.product_id)}
-              className="flex items-center justify-between gap-4 border-b border-zinc-100 px-4 py-3.5 last:border-b-0 dark:border-zinc-800"
-            >
-              <div className="min-w-0">
-                <Link
-                  href={`/admin/products/${item.product_id}`}
-                  className="block truncate text-sm font-semibold text-zinc-900 hover:underline dark:text-zinc-100"
-                >
-                  {name}
-                </Link>
-                {reference ? (
-                  <p className="mt-0.5 font-mono text-xs text-zinc-500">{reference}</p>
-                ) : null}
-              </div>
-              <p className="shrink-0 text-sm tabular-nums text-zinc-900 dark:text-zinc-100">
-                {item.quantity} u.
-              </p>
-            </div>
-          );
-        })}
-      </div>
-
-      {transfer.status === "in_transit" ? (
-        <div className="flex flex-wrap gap-2">
-          {canReceive ? (
-            <form action={receiveStockTransfer}>
-              <input type="hidden" name="transfer_id" value={transfer.id} />
-              <input type="hidden" name="submission_id" value={`${submissionId}-receive`} />
-              <AdminFormSubmitButton
-                pendingLabel="Recibiendo…"
-                className={adminPrimarySubmitButtonClass}
-              >
-                Confirmar llegada
-              </AdminFormSubmitButton>
-            </form>
-          ) : (
-            <p className="text-sm text-zinc-500">
-              La sucursal de destino confirma la llegada para sumar el stock.
-            </p>
-          )}
-          {canCancel ? (
-            <form action={cancelStockTransfer}>
-              <input type="hidden" name="transfer_id" value={transfer.id} />
-              <input type="hidden" name="submission_id" value={`${submissionId}-cancel`} />
-              <AdminFormSubmitButton
-                pendingLabel="Anulando…"
-                className={adminButtonCancelClass}
-              >
-                Anular y devolver
-              </AdminFormSubmitButton>
-            </form>
-          ) : null}
         </div>
       ) : null}
+
+      <header className="flex flex-wrap items-center justify-between gap-2 gap-y-2">
+        <div className="min-w-0">
+          <p className="text-[11px] text-zinc-500">
+            <Link
+              href="/admin/traslados"
+              className="hover:text-zinc-800 dark:hover:text-zinc-200"
+            >
+              Traslados
+            </Link>
+            <span className="mx-1.5 text-zinc-400">/</span>
+            {code}
+          </p>
+          <h1 className="mt-0.5 text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 sm:text-2xl">
+            Traslado {code}
+          </h1>
+          <p className="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1.5 text-sm text-zinc-500">
+            <span className="inline-flex items-center gap-1.5">
+              <Clock className={metaIconClass} aria-hidden />
+              <span className={`tabular-nums ${metaTextClass}`}>{sentLabel}</span>
+            </span>
+            <span className={metaSepClass} aria-hidden>
+              ·
+            </span>
+            <span className="inline-flex min-w-0 items-center gap-1.5">
+              <Building2 className={metaIconClass} aria-hidden />
+              <span className={`min-w-0 truncate ${metaTextClass}`}>
+                {transfer.from_branch_name} → {transfer.to_branch_name}
+              </span>
+            </span>
+            {sender !== "Sin registro" ? (
+              <>
+                <span className={metaSepClass} aria-hidden>
+                  ·
+                </span>
+                <span className="inline-flex min-w-0 items-center gap-1.5">
+                  <UserRound className={metaIconClass} aria-hidden />
+                  <span className={`min-w-0 truncate ${metaTextClass}`}>
+                    <span className="text-zinc-500">Envió </span>
+                    <span className="font-medium text-zinc-800 dark:text-zinc-200">
+                      {sender}
+                    </span>
+                  </span>
+                </span>
+              </>
+            ) : null}
+            {receiver ? (
+              <>
+                <span className={metaSepClass} aria-hidden>
+                  ·
+                </span>
+                <span className="inline-flex min-w-0 items-center gap-1.5">
+                  <UserRound className={metaIconClass} aria-hidden />
+                  <span className={`min-w-0 truncate ${metaTextClass}`}>
+                    <span className="text-zinc-500">Recibió </span>
+                    <span className="font-medium text-zinc-800 dark:text-zinc-200">
+                      {receiver}
+                    </span>
+                  </span>
+                </span>
+              </>
+            ) : null}
+          </p>
+          {transfer.status === "cancelled" && canceller ? (
+            <p className="mt-1.5 text-sm text-red-600 dark:text-red-400">
+              <span className="font-medium">Anulación: </span>
+              {canceller}
+              {closedLabel ? ` · ${closedLabel}` : ""}
+            </p>
+          ) : null}
+        </div>
+        <Link
+          href="/admin/traslados"
+          className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-zinc-300 bg-white text-zinc-700 transition hover:border-zinc-400 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200 dark:hover:border-zinc-600 dark:hover:bg-zinc-800"
+          title="Volver"
+          aria-label="Volver a traslados"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+            className="size-4"
+            aria-hidden
+          >
+            <path d="m15 18-6-6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </Link>
+      </header>
+
+      <div className="flex flex-col gap-6 border-t border-zinc-200/70 pt-4 dark:border-zinc-800 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(18rem,20rem)] lg:items-start lg:gap-10 xl:gap-12">
+        <section className="min-w-0">
+          {items.length === 0 ? (
+            <p className="text-sm text-zinc-500">No hay productos en este traslado.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[32rem] table-fixed text-left text-sm leading-relaxed sm:text-[15px]">
+                <colgroup>
+                  <col />
+                  <col className="w-24" />
+                </colgroup>
+                <thead>
+                  <tr className="border-b border-zinc-200/70 dark:border-zinc-800">
+                    <th className={th}>Producto</th>
+                    <th className={`${th} text-right`}>Ud</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {items.map((item) => {
+                    const product = Array.isArray(item.products) ? item.products[0] : item.products;
+                    const name = product?.name ? String(product.name) : "Producto";
+                    const reference = product?.reference ? String(product.reference).trim() : "";
+                    return (
+                      <tr
+                        key={String(item.product_id)}
+                        className="border-b border-zinc-100/80 last:border-0 dark:border-zinc-800/80"
+                      >
+                        <td className="py-3 pr-5 align-middle text-zinc-800 dark:text-zinc-200">
+                          <Link
+                            href={`/admin/products/${item.product_id}`}
+                            className="block font-medium leading-snug hover:underline"
+                          >
+                            {name}
+                          </Link>
+                          {reference ? (
+                            <span className="mt-1 block font-mono text-xs text-zinc-500">
+                              Ref. {reference}
+                            </span>
+                          ) : null}
+                        </td>
+                        <td className="py-3 text-right tabular-nums text-zinc-700 dark:text-zinc-300">
+                          {item.quantity}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+
+        <aside className="shrink-0 space-y-5 border-t border-zinc-200/70 pt-4 dark:border-zinc-800 lg:sticky lg:top-3 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0 xl:pl-10 dark:lg:border-zinc-800">
+          <div>
+            <p className={labelClass}>Unidades</p>
+            <p className="mt-2 text-3xl font-semibold tabular-nums tracking-tight text-zinc-900 dark:text-zinc-50">
+              {units}
+            </p>
+          </div>
+          <div>
+            <p className={labelClass}>Estado</p>
+            <p className={`mt-1.5 text-sm font-medium ${statusClass(transfer.status)}`}>
+              {stockTransferStatusLabel(transfer.status)}
+            </p>
+          </div>
+          <div>
+            <p className={labelClass}>Envió</p>
+            <p className="mt-1.5 text-sm font-medium text-zinc-900 dark:text-zinc-100">
+              {sender}
+            </p>
+            <p className="text-sm text-zinc-500">
+              {transfer.from_branch_name} · {sentLabel}
+            </p>
+          </div>
+          <div>
+            <p className={labelClass}>Recibió</p>
+            {receiver && closedLabel && transfer.received_at ? (
+              <>
+                <p className="mt-1.5 text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                  {receiver}
+                </p>
+                <p className="text-sm text-zinc-500">
+                  {transfer.to_branch_name} · {closedLabel}
+                </p>
+              </>
+            ) : (
+              <p className="mt-1.5 text-sm text-zinc-500">
+                {transfer.status === "cancelled"
+                  ? "No se recibió"
+                  : `Pendiente en ${transfer.to_branch_name}`}
+              </p>
+            )}
+          </div>
+          {transfer.notes ? (
+            <div>
+              <p className={labelClass}>Nota</p>
+              <p className="mt-1.5 text-sm text-zinc-700 dark:text-zinc-200">
+                {transfer.notes}
+              </p>
+            </div>
+          ) : null}
+          {transfer.status === "in_transit" ? (
+            <div className="flex flex-wrap gap-2">
+              {canReceive ? (
+                <form action={receiveStockTransfer}>
+                  <input type="hidden" name="transfer_id" value={transfer.id} />
+                  <input type="hidden" name="submission_id" value={`${submissionId}-receive`} />
+                  <AdminFormSubmitButton
+                    pendingLabel="Recibiendo…"
+                    className={adminPrimarySubmitButtonClass}
+                  >
+                    Confirmar llegada
+                  </AdminFormSubmitButton>
+                </form>
+              ) : (
+                <p className="text-sm text-zinc-500">
+                  La sucursal de destino confirma la llegada para sumar el stock.
+                </p>
+              )}
+              {canCancel ? (
+                <form action={cancelStockTransfer}>
+                  <input type="hidden" name="transfer_id" value={transfer.id} />
+                  <input type="hidden" name="submission_id" value={`${submissionId}-cancel`} />
+                  <AdminFormSubmitButton
+                    pendingLabel="Anulando…"
+                    className={adminButtonCancelClass}
+                  >
+                    Anular y devolver
+                  </AdminFormSubmitButton>
+                </form>
+              ) : null}
+            </div>
+          ) : null}
+        </aside>
+      </div>
     </div>
   );
 }

@@ -7,7 +7,6 @@ import {
   formatTransferWhen,
   isStockTransferStatus,
   stockTransferCode,
-  stockTransferStatusLabel,
   type StockTransferStatus,
 } from "@/lib/stock-transfers";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -21,14 +20,35 @@ import {
 
 const thClass =
   "pb-3 pr-5 text-left text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500";
-const tdClass = "py-3.5 pr-5 align-middle";
+const tdClass = "py-2.5 pr-4 align-middle";
 
 export const dynamic = "force-dynamic";
 
-function statusClass(status: StockTransferStatus) {
-  if (status === "in_transit") return "font-medium text-amber-700 dark:text-amber-300";
-  if (status === "received") return "font-medium text-emerald-700 dark:text-emerald-300";
-  return "text-zinc-500";
+function StatusPill({ status }: { status: StockTransferStatus }) {
+  const base =
+    "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide";
+  if (status === "in_transit") {
+    return (
+      <span className={`${base} bg-amber-50 text-amber-900 ring-1 ring-amber-200/90 dark:bg-amber-950/40 dark:text-amber-200 dark:ring-amber-800/55`}>
+        <span className="size-1.5 rounded-full bg-current opacity-75" aria-hidden />
+        En camino
+      </span>
+    );
+  }
+  if (status === "received") {
+    return (
+      <span className={`${base} bg-emerald-50 text-emerald-900 ring-1 ring-emerald-200/90 dark:bg-emerald-950/50 dark:text-emerald-200 dark:ring-emerald-800/60`}>
+        <span className="size-1.5 rounded-full bg-current opacity-75" aria-hidden />
+        Recibido
+      </span>
+    );
+  }
+  return (
+    <span className={`${base} bg-zinc-100 text-zinc-600 ring-1 ring-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:ring-zinc-700`}>
+      <span className="size-1.5 rounded-full bg-current opacity-75" aria-hidden />
+      Anulado
+    </span>
+  );
 }
 
 export default async function AdminTrasladosPage({
@@ -127,7 +147,7 @@ export default async function AdminTrasladosPage({
           </p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[760px] text-left text-sm">
+            <table className="w-full min-w-[760px] text-left text-xs">
               <thead>
                 <tr className="border-b border-zinc-200/70 dark:border-zinc-800">
                   <th className={thClass}>Traslado</th>
@@ -146,19 +166,19 @@ export default async function AdminTrasladosPage({
                       key={row.id}
                       className="border-b border-zinc-100/80 last:border-0 dark:border-zinc-800/80"
                     >
-                      <td className={`${tdClass} font-medium text-zinc-900 dark:text-zinc-100`}>
+                      <td className={`${tdClass} whitespace-nowrap font-mono tabular-nums text-zinc-600 dark:text-zinc-400`}>
                         {row.code}
                       </td>
-                      <td className={`${tdClass} text-zinc-800 dark:text-zinc-100`}>
+                      <td className={`${tdClass} font-medium text-zinc-900 dark:text-zinc-100`}>
                         {row.from} → {row.to}
                       </td>
-                      <td className={`${tdClass} text-right tabular-nums text-zinc-900 dark:text-zinc-50`}>
+                      <td className={`${tdClass} text-right tabular-nums text-zinc-700 dark:text-zinc-300`}>
                         {row.units}
                       </td>
-                      <td className={`${tdClass} ${statusClass(row.status)}`}>
-                        {stockTransferStatusLabel(row.status)}
+                      <td className={tdClass}>
+                        <StatusPill status={row.status} />
                       </td>
-                      <td className={`${tdClass} text-xs text-zinc-500`}>
+                      <td className={`${tdClass} whitespace-nowrap text-zinc-500`}>
                         {formatTransferWhen(row.sentAt)}
                       </td>
                       <td className={`${tdClass} text-right`}>
