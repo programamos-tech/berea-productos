@@ -22,24 +22,32 @@ function revalidateTransfer(id?: string) {
   if (id) revalidatePath(`${LIST_PATH}/${id}`);
 }
 
-function parseItems(raw: string): { product_id: string; quantity: number }[] {
+function parseItems(
+  raw: string,
+  minQuantity: number,
+): { product_id: string; quantity: number }[] | null {
   let parsed: unknown;
   try {
     parsed = JSON.parse(raw);
   } catch {
-    return [];
+    return null;
   }
-  if (!Array.isArray(parsed)) return [];
+  if (!Array.isArray(parsed) || parsed.length < 1) return null;
   const seen = new Set<string>();
   const items: { product_id: string; quantity: number }[] = [];
   for (const row of parsed) {
-    if (!row || typeof row !== "object") continue;
+    if (!row || typeof row !== "object") return null;
     const productId = String((row as { product_id?: unknown }).product_id ?? "").trim();
     const quantity = Math.floor(Number((row as { quantity?: unknown }).quantity));
-    if (!/^[0-9a-f-]{36}$/i.test(productId) || quantity < 1 || quantity > 100000) {
-      continue;
+    if (
+      !/^[0-9a-f-]{36}$/i.test(productId) ||
+      !Number.isFinite(quantity) ||
+      quantity < minQuantity ||
+      quantity > 100000 ||
+      seen.has(productId)
+    ) {
+      return null;
     }
-    if (seen.has(productId)) continue;
     seen.add(productId);
     items.push({ product_id: productId, quantity });
   }
@@ -52,7 +60,7 @@ export async function sendStockTransfer(formData: FormData) {
   const fromId = String(formData.get("from_branch_id") ?? "").trim();
   const toId = String(formData.get("to_branch_id") ?? "").trim();
   const notes = String(formData.get("notes") ?? "").trim().slice(0, 500);
-  const items = parseItems(String(formData.get("items_json") ?? ""));
+  const items = parseItems(String(formData.get("items_json") ?? ""), 1);
   const back = `${LIST_PATH}/nuevo`;
 
   const claim = await claimAdminFormToken(
@@ -61,7 +69,7 @@ export async function sendStockTransfer(formData: FormData) {
     "stock_transfer_send",
   );
   if (claim === "duplicate") redirect(LIST_PATH);
-  if (claim === "error" || items.length < 1 || fromId === toId) {
+  if (claim === "error" || !items || fromId === toId) {
     redirect(`${back}?error=invalid`);
   }
 
@@ -133,8 +141,22 @@ async function closeTransfer(
   if (claim === "duplicate") redirect(page);
   if (claim === "error") redirect(`${page}?error=invalid`);
 
+  const receivedItems =
+    kind === "receive" ? parseItems(String(formData.get("items_json") ?? ""), 0) : null;
+  const cancelNote =
+    kind === "cancel" ? String(formData.get("notes") ?? "").trim().slice(0, 500) : "";
+  if (kind === "receive" && !receivedItems) redirect(`${page}?error=invalid`);
+  if (kind === "cancel" && cancelNote.length < 1) {
+    redirect(`${page}?error=cancel&message=${encodeURIComponent("Escribe la nota para anular el traslado.")}`);
+  }
+
   const rpc = kind === "receive" ? "receive_stock_transfer" : "cancel_stock_transfer";
-  const { error } = await supabase.rpc(rpc, { p_transfer_id: id });
+  const { error } = await supabase.rpc(
+    rpc,
+    kind === "receive"
+      ? { p_transfer_id: id, p_items: receivedItems }
+      : { p_transfer_id: id, p_notes: cancelNote },
+  );
   if (error) {
     console.error(rpc, error);
     const message = stockTransferErrorMessage(error.message);
@@ -143,17 +165,24 @@ async function closeTransfer(
 
   const { data: row } = await supabase
     .from("stock_transfers")
-    .select("from_branch_name,to_branch_name,stock_transfer_items(quantity)")
+    .select("from_branch_name,to_branch_name,stock_transfer_items(quantity,received_quantity)")
     .eq("id", id)
     .maybeSingle();
-  const units = Array.isArray(row?.stock_transfer_items)
+  const sent = Array.isArray(row?.stock_transfer_items)
     ? row.stock_transfer_items.reduce(
         (sum, item) => sum + Math.max(0, Number(item.quantity) || 0),
         0,
       )
     : 0;
+  const received = Array.isArray(row?.stock_transfer_items)
+    ? row.stock_transfer_items.reduce(
+        (sum, item) => sum + Math.max(0, Number(item.received_quantity) || 0),
+        0,
+      )
+    : 0;
   const fromName = String(row?.from_branch_name ?? "Origen");
   const toName = String(row?.to_branch_name ?? "Destino");
+  const receivedLabel = received === sent ? `${received} u.` : `${received} de ${sent} u.`;
   await logAdminActivity(supabase, {
     actorId: perm.userId,
     actionType: "stock_transferred",
@@ -161,13 +190,14 @@ async function closeTransfer(
     entityId: id,
     summary:
       kind === "receive"
-        ? `Traslado recibido · ${fromName} → ${toName} · ${units} u.`
-        : `Traslado anulado · ${fromName} → ${toName} · ${units} u. devueltas`,
+        ? `Traslado recibido · ${fromName} → ${toName} · ${receivedLabel}`
+        : `Traslado anulado · ${fromName} → ${toName} · ${sent} u. devueltas`,
     metadata: {
       from_branch_name: fromName,
       to_branch_name: toName,
-      quantity: units,
+      quantity: kind === "receive" ? received : sent,
       status: kind === "receive" ? "received" : "cancelled",
+      ...(kind === "cancel" ? { cancel_notes: cancelNote } : {}),
     },
   });
 

@@ -74,11 +74,17 @@ export function stockTransferErrorMessage(raw: string | null | undefined): strin
   if (msg.includes("already_closed")) {
     return "Ese traslado ya se recibió o se anuló.";
   }
+  if (msg.includes("note_required")) {
+    return "Escribe la nota para anular el traslado.";
+  }
+  if (msg.includes("nothing_received")) {
+    return "Si no llegó ninguna unidad, anula el traslado.";
+  }
   if (msg.includes("not_allowed")) {
     return "No puedes confirmar este traslado.";
   }
   if (msg.includes("invalid_transfer") || msg.includes("product_not_found")) {
-    return "Revisa las sucursales y las cantidades.";
+    return "Revisa las sucursales y las unidades recibidas.";
   }
   return "No se pudo guardar el traslado.";
 }
