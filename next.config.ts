@@ -15,6 +15,8 @@ const nextConfig: NextConfig = {
     // Incluye 1920 para retina en PDP; evita 4K innecesario.
     deviceSizes: [640, 750, 828, 1080, 1200, 1400, 1600, 1920],
     imageSizes: [64, 96, 128, 256, 384, 480],
+    // Sin esta lista, Next 16 ignora `quality` y sirve todo a 75.
+    qualities: [75, 90, 95],
     remotePatterns: [
       {
         protocol: "https",
