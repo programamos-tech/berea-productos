@@ -12,10 +12,16 @@ import {
 } from "@/lib/stock-transfers";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
+  adminPageSubtitleClass,
+  adminPageTitleClass,
   adminTableWrapClass,
   adminToolbarBtnBaseClass,
   adminToolbarBtnIdleClass,
 } from "@/lib/admin-ui";
+
+const thClass =
+  "pb-3 pr-5 text-left text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500";
+const tdClass = "py-3.5 pr-5 align-middle";
 
 export const dynamic = "force-dynamic";
 
@@ -85,50 +91,38 @@ export default async function AdminTrasladosPage({
     : "/admin/traslados";
 
   return (
-    <div className="space-y-4">
-      <section className="rounded-xl border border-zinc-200 bg-white px-4 py-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 sm:px-5">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="flex min-w-0 items-start gap-3">
-            <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-orange-50 text-orange-600 dark:bg-orange-950/40 dark:text-orange-300">
-              <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden>
-                <path d="M4 8h11M12 5l3 3-3 3" />
-                <path d="M20 16H9M12 13l-3 3 3 3" />
-              </svg>
+    <div className="flex w-full min-w-0 max-w-none flex-col gap-4">
+      <header className="flex shrink-0 flex-wrap items-center justify-between gap-2 gap-y-2">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className={adminPageTitleClass}>Traslados de inventario</h1>
+            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:ring-emerald-900">
+              <span className="size-1.5 rounded-full bg-emerald-500" aria-hidden />
+              {perm.branchContext.active.name}
             </span>
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-lg font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
-                  Traslados de inventario
-                </h1>
-                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:ring-emerald-900">
-                  <span className="size-1.5 rounded-full bg-emerald-500" aria-hidden />
-                  {perm.branchContext.active.name}
-                </span>
-              </div>
-              <p className="mt-0.5 text-sm text-zinc-500">
-                Gestiona los traslados de productos entre sucursales
-              </p>
-            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Link
-              href={refreshHref}
-              className={`${adminToolbarBtnBaseClass} ${adminToolbarBtnIdleClass}`}
-            >
-              <RefreshCw className="size-3.5" strokeWidth={2.25} aria-hidden />
-              Actualizar
-            </Link>
-            {canCreate ? (
-              <Link
-                href="/admin/traslados/nuevo"
-                className={`${adminToolbarBtnBaseClass} border-emerald-600 bg-emerald-600 text-white hover:border-emerald-700 hover:bg-emerald-700`}
-              >
-                + Nuevo traslado
-              </Link>
-            ) : null}
-          </div>
+          <p className={adminPageSubtitleClass}>
+            Productos entre sucursales · stock de {perm.branchContext.active.name}
+          </p>
         </div>
-      </section>
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <Link
+            href={refreshHref}
+            className={`${adminToolbarBtnBaseClass} ${adminToolbarBtnIdleClass}`}
+          >
+            <RefreshCw className="size-3.5" strokeWidth={2.25} aria-hidden />
+            Actualizar
+          </Link>
+          {canCreate ? (
+            <Link
+              href="/admin/traslados/nuevo"
+              className={`${adminToolbarBtnBaseClass} border-emerald-600 bg-emerald-600 text-white hover:border-emerald-700 hover:bg-emerald-700`}
+            >
+              + Nuevo traslado
+            </Link>
+          ) : null}
+        </div>
+      </header>
 
       <StockTransfersFilters q={q} status={status ?? "all"} />
 
@@ -140,42 +134,47 @@ export default async function AdminTrasladosPage({
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[760px] text-left text-sm">
-              <thead className="border-b border-zinc-200 text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-400 dark:border-zinc-800">
-                <tr>
-                  <th className="px-4 py-3">Traslado</th>
-                  <th className="px-4 py-3">Ruta</th>
-                  <th className="px-4 py-3 text-right">Cantidad</th>
-                  <th className="px-4 py-3">Estado</th>
-                  <th className="px-4 py-3">Fecha</th>
-                  <th className="px-4 py-3 text-right">Acciones</th>
+              <thead>
+                <tr className="border-b border-zinc-200/70 dark:border-zinc-800">
+                  <th className={thClass}>Traslado</th>
+                  <th className={thClass}>Ruta</th>
+                  <th className={`${thClass} text-right`}>Cantidad</th>
+                  <th className={thClass}>Estado</th>
+                  <th className={thClass}>Fecha</th>
+                  <th className={`${thClass} text-right`}>Acciones</th>
                 </tr>
               </thead>
               <tbody>
                 {rows.map((row) => {
                   const open = row.status === "in_transit";
                   return (
-                    <tr key={row.id} className="border-t border-zinc-100 dark:border-zinc-800">
-                      <td className="px-4 py-3 font-medium text-zinc-900 dark:text-zinc-100">
+                    <tr
+                      key={row.id}
+                      className="border-b border-zinc-100/80 last:border-0 dark:border-zinc-800/80"
+                    >
+                      <td className={`${tdClass} font-medium text-zinc-900 dark:text-zinc-100`}>
                         {row.code}
                       </td>
-                      <td className="px-4 py-3 text-zinc-800 dark:text-zinc-100">
+                      <td className={`${tdClass} text-zinc-800 dark:text-zinc-100`}>
                         {row.from} → {row.to}
                       </td>
-                      <td className="px-4 py-3 text-right tabular-nums text-zinc-800 dark:text-zinc-100">
+                      <td className={`${tdClass} text-right tabular-nums text-zinc-900 dark:text-zinc-50`}>
                         {row.units}
                       </td>
-                      <td className={`px-4 py-3 ${statusClass(row.status)}`}>
+                      <td className={`${tdClass} ${statusClass(row.status)}`}>
                         {stockTransferStatusLabel(row.status)}
                       </td>
-                      <td className="px-4 py-3 text-zinc-500">
+                      <td className={`${tdClass} text-xs text-zinc-500`}>
                         {formatTransferWhen(row.sentAt)}
                       </td>
-                      <td className="px-4 py-3">
-                        <StockTransferRowActions
-                          transferId={row.id}
-                          canReceive={open && accessible.has(row.toId)}
-                          canCancel={open && (accessible.has(row.fromId) || accessible.has(row.toId))}
-                        />
+                      <td className={`${tdClass} text-right`}>
+                        <div className="flex justify-end">
+                          <StockTransferRowActions
+                            transferId={row.id}
+                            canReceive={open && accessible.has(row.toId)}
+                            canCancel={open && (accessible.has(row.fromId) || accessible.has(row.toId))}
+                          />
+                        </div>
                       </td>
                     </tr>
                   );
