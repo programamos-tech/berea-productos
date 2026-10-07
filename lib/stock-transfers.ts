@@ -20,6 +20,41 @@ export function stockTransferStatusLabel(status: StockTransferStatus): string {
   return "Anulado";
 }
 
+/** Código visible, estable: TRF-20261006-0841. */
+export function stockTransferCode(id: string, sentAt: string): string {
+  const date = new Date(sentAt);
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Bogota",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+  const year = parts.find((part) => part.type === "year")?.value ?? "0000";
+  const month = parts.find((part) => part.type === "month")?.value ?? "00";
+  const day = parts.find((part) => part.type === "day")?.value ?? "00";
+  const serial = String(parseInt(id.replace(/-/g, "").slice(0, 4), 16) % 10000).padStart(4, "0");
+  return `TRF-${year}${month}${day}-${serial}`;
+}
+
+export function transferDateParts(iso: string): { date: string; time: string } {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return { date: "", time: "" };
+  return {
+    date: new Intl.DateTimeFormat("es-CO", {
+      timeZone: "America/Bogota",
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    }).format(date),
+    time: new Intl.DateTimeFormat("es-CO", {
+      timeZone: "America/Bogota",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    }).format(date),
+  };
+}
+
 export function formatTransferWhen(iso: string): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return "";

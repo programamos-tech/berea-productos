@@ -12,6 +12,7 @@ import { requireAdminAnyPermission } from "@/lib/require-admin-permission";
 import {
   formatTransferWhen,
   isStockTransferStatus,
+  stockTransferCode,
   stockTransferErrorMessage,
   stockTransferStatusLabel,
 } from "@/lib/stock-transfers";
@@ -82,8 +83,11 @@ export default async function AdminTrasladoDetailPage({
           Traslados
         </Link>
         <h1 className={`${adminPageTitleClass} mt-2`}>
-          {transfer.from_branch_name} → {transfer.to_branch_name}
+          {stockTransferCode(String(transfer.id), String(transfer.sent_at))}
         </h1>
+        <p className="mt-1 text-sm font-medium text-zinc-800 dark:text-zinc-100">
+          {transfer.from_branch_name} → {transfer.to_branch_name}
+        </p>
         <p className={adminPageSubtitleClass}>
           {stockTransferStatusLabel(transfer.status)} · enviado{" "}
           {formatTransferWhen(String(transfer.sent_at))}

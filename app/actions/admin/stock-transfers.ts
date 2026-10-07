@@ -119,7 +119,12 @@ async function closeTransfer(
   ]);
   const supabase = await createSupabaseServerClient();
   const id = String(formData.get("transfer_id") ?? "").trim();
-  const page = /^[0-9a-f-]{36}$/i.test(id) ? `${LIST_PATH}/${id}` : LIST_PATH;
+  const requested = String(formData.get("return_to") ?? "");
+  const detail = /^[0-9a-f-]{36}$/i.test(id) ? `${LIST_PATH}/${id}` : LIST_PATH;
+  const page =
+    requested === LIST_PATH || requested.startsWith(`${LIST_PATH}?`) || requested === detail
+      ? requested
+      : detail;
   const claim = await claimAdminFormToken(
     supabase,
     readSubmissionToken(formData),
