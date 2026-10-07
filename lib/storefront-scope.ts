@@ -41,12 +41,15 @@ type BranchRow = {
 };
 
 /**
- * Bodega sigue en el rosa de Milagros, pero no es la tienda pública.
- * Encabezado polvo y logo negro; Local usa el rosa pleno #FF76A1 con logo blanco.
+ * Encabezado rosa bebé. El vino #B12E58 y el durazno no combinan con Milagros.
+ * Local sigue en el rosa pleno #FF76A1.
  */
-const ALEYA_BODEGA_COLOR = "#F3C6D6";
-export const ALEYA_BODEGA_ACCENT = "#B12E58";
-const ALEYA_BODEGA_LEGACY_COLORS = new Set(["#FFDAB8", "#FFB4CB"]);
+const ALEYA_BODEGA_COLOR = "#FDE8F2";
+const ALEYA_BODEGA_LEGACY_COLORS = new Set([
+  "#FFDAB8",
+  "#FFB4CB",
+  "#F3C6D6",
+]);
 
 function branchStorefrontColor(
   branch: BranchRow,

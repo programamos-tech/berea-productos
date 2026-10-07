@@ -698,6 +698,19 @@ html.store-checkout-nav-pending body {
   }
 }
 
+/* Bodega pastel v2: relleno claro con texto rosa, y el texto suelto sigue legible. */
+[data-store-pastel] [class*="bg-[var(--store-accent)"] {
+  color: var(--store-on-accent);
+}
+
+[data-store-pastel] [class*="text-[var(--store-accent)"] {
+  color: var(--store-brand);
+}
+
+[data-store-pastel] [class*="hover:bg-[var(--store-accent)"]:hover {
+  color: var(--store-on-accent);
+}
+
 /* Encabezado claro (Bodega blush): el texto blanco del cromo pasa al color de contraste. */
 [data-header-tone="light"] {
   border-color: color-mix(in srgb, var(--store-header-fg) 18%, transparent);

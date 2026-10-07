@@ -21,6 +21,11 @@ export type StorefrontCheckoutMode = "wompi" | "transfer";
 export type StorefrontTheme = {
   primary: string;
   primaryHover: string;
+  /** Relleno de botones y barras. Si falta, usa `primary`. */
+  accent?: string;
+  accentHover?: string;
+  /** Texto sobre el relleno. Blanco en Local; rosa en el pastel de Bodega. */
+  onAccent?: string;
   /** Color exacto de la franja. En tonos claros, `primary` se oscurece para títulos y botones. */
   header: string;
   foreground: string;
@@ -122,12 +127,32 @@ export function buildStorefrontTheme(
   };
 }
 
+/** Bodega: rosa polvo y botones pastel. Local conserva el rosa pleno. */
+export function buildAleyaBodegaTheme(headerRaw?: string): StorefrontTheme {
+  const header = normalizeStorefrontColor(headerRaw, "#FDE8F2");
+  const brand = "#D478A4";
+  const fill = "#F8C9DE";
+  return {
+    primary: brand,
+    primaryHover: "#C56A96",
+    accent: fill,
+    accentHover: "#F3B8D4",
+    onAccent: "#9A4A6A",
+    header,
+    foreground: "#18181B",
+    announcement: mix(header, 255, 0.9),
+    imageTint: mix(header, 255, 0.82),
+    wash: mix(header, 255, 0.92),
+  };
+}
+
 export function storefrontCssVars(
   theme: StorefrontTheme,
 ): Record<`--${string}`, string> {
   return {
-    "--store-accent": theme.primary,
-    "--store-accent-hover": theme.primaryHover,
+    "--store-accent": theme.accent ?? theme.primary,
+    "--store-accent-hover": theme.accentHover ?? theme.primaryHover,
+    "--store-on-accent": theme.onAccent ?? "#FFFFFF",
     "--store-brand": theme.primary,
     "--store-brand-hover": theme.primaryHover,
     "--store-header-bg": theme.header,

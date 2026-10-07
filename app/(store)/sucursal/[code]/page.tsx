@@ -90,7 +90,7 @@ export default async function StorefrontBranchGatePage({
           ) : null}
           <button
             type="submit"
-            className="inline-flex w-full items-center justify-center rounded-full bg-[var(--store-brand)] px-5 py-3 text-[12px] font-semibold uppercase tracking-[0.14em] text-white"
+            className="inline-flex w-full items-center justify-center rounded-full bg-[var(--store-accent)] px-5 py-3 text-[12px] font-semibold uppercase tracking-[0.14em] text-white"
           >
             Entrar
           </button>

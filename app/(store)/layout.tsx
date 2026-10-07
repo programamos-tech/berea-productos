@@ -21,12 +21,10 @@ import {
   getCachedBannerStoreCoupon,
 } from "@/lib/store-public-cache";
 import { getStorefrontChromeForRequest } from "@/lib/tenant-context";
-import {
-  ALEYA_BODEGA_ACCENT,
-  getStorefrontScope,
-} from "@/lib/storefront-scope";
+import { getStorefrontScope } from "@/lib/storefront-scope";
 import { loadStorefrontWholesaleOrders } from "@/lib/storefront-wholesale-orders";
 import {
+  buildAleyaBodegaTheme,
   buildStorefrontTheme,
   storefrontClientChrome,
   storefrontCssVars,
@@ -102,12 +100,12 @@ export default async function StoreLayout({
 
   const bodegaTheme =
     chrome.tenantSlug === "aleya" && scope.branchCode === "bodega";
-  const theme = scope.storefrontColor
-    ? buildStorefrontTheme(
-        scope.storefrontColor,
-        bodegaTheme ? ALEYA_BODEGA_ACCENT : chrome.primaryColor,
-      )
-    : chrome.theme;
+  const theme =
+    bodegaTheme && scope.storefrontColor
+      ? buildAleyaBodegaTheme(scope.storefrontColor)
+      : scope.storefrontColor
+        ? buildStorefrontTheme(scope.storefrontColor)
+        : chrome.theme;
 
   const top = (
     <>
@@ -141,6 +139,7 @@ export default async function StoreLayout({
       <StoreDocumentTheme theme={theme} name={chrome.name} />
       <div
         className="flex min-h-full flex-col overflow-x-hidden bg-white text-stone-800"
+        data-store-pastel={theme.onAccent ? "" : undefined}
         style={storefrontCssVars(theme) as CSSProperties}
       >
         <StoreFavoritesProvider>
