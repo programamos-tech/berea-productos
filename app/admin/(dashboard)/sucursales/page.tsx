@@ -17,7 +17,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { AdminModuleHeader } from "@/components/admin/AdminModuleHeader";
 import {
   adminToolbarBtnBaseClass,
-  adminToolbarBtnEmeraldClass,
+  adminToolbarBtnActiveClass,
 } from "@/lib/admin-ui";
 
 export const dynamic = "force-dynamic";
@@ -65,7 +65,7 @@ export default async function BranchesPage() {
           perm?.permissions.sucursales_gestionar ? (
             <Link
               href="/admin/sucursales/nuevo"
-              className={`${adminToolbarBtnBaseClass} ${adminToolbarBtnEmeraldClass}`}
+              className={`${adminToolbarBtnBaseClass} ${adminToolbarBtnActiveClass}`}
             >
               + Nueva sucursal
             </Link>

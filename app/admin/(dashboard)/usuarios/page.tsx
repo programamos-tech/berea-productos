@@ -6,7 +6,7 @@ import {
 } from "@/components/admin/UsuariosTeamTable";
 import {
   adminToolbarBtnBaseClass,
-  adminToolbarBtnEmeraldClass,
+  adminToolbarBtnActiveClass,
 } from "@/lib/admin-ui";
 import {
   collaboratorJobRoleLabel,
@@ -142,7 +142,7 @@ export default async function AdminUsuariosRolesPage() {
           canManageCollaborators ? (
             <Link
               href="/admin/usuarios/nuevo"
-              className={`${adminToolbarBtnBaseClass} ${adminToolbarBtnEmeraldClass}`}
+              className={`${adminToolbarBtnBaseClass} ${adminToolbarBtnActiveClass}`}
             >
               + Nuevo colaborador
             </Link>

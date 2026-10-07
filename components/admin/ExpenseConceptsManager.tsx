@@ -19,7 +19,7 @@ import {
   adminFilterInputClass,
   adminFilterLabelClass,
   adminToolbarBtnBaseClass,
-  adminToolbarBtnEmeraldClass,
+  adminToolbarBtnActiveClass,
   adminToolbarIconBtnClass,
 } from "@/lib/admin-ui";
 import type { ExpensePaymentMethod } from "@/lib/expense-concepts";
@@ -266,7 +266,7 @@ export function ExpenseConceptsManager({
           <button
             type="button"
             onClick={() => setModal({ mode: "create" })}
-            className={`${adminToolbarBtnBaseClass} ${adminToolbarBtnEmeraldClass}`}
+            className={`${adminToolbarBtnBaseClass} ${adminToolbarBtnActiveClass}`}
           >
             + Nuevo concepto
           </button>

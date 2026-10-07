@@ -17,7 +17,7 @@ import { loadAdminPermissions } from "@/lib/load-admin-permissions";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
   adminToolbarBtnBaseClass,
-  adminToolbarBtnEmeraldClass,
+  adminToolbarBtnActiveClass,
   adminToolbarIconBtnClass,
 } from "@/lib/admin-ui";
 
@@ -84,7 +84,7 @@ export default async function AdminKitsPage({
             {canEdit ? (
               <Link
                 href="/admin/kits/nuevo"
-                className={`${adminToolbarBtnBaseClass} ${adminToolbarBtnEmeraldClass}`}
+                className={`${adminToolbarBtnBaseClass} ${adminToolbarBtnActiveClass}`}
               >
                 + Nuevo kit
               </Link>

@@ -7,13 +7,13 @@ import { CashRegisterSessionModal } from "@/components/admin/CashRegisterSession
 import type { CashDayBlindSummary } from "@/lib/cash-register";
 import {
   adminToolbarBtnBaseClass,
-  adminToolbarBtnEmeraldClass,
+  adminToolbarBtnActiveClass,
   adminToolbarBtnIdleClass,
 } from "@/lib/admin-ui";
 
 const btnBase = `${adminToolbarBtnBaseClass} disabled:cursor-not-allowed disabled:opacity-45`;
 const btnIdle = adminToolbarBtnIdleClass;
-const btnPrimary = adminToolbarBtnEmeraldClass;
+const btnPrimary = adminToolbarBtnActiveClass;
 
 type Props = {
   canManage: boolean;

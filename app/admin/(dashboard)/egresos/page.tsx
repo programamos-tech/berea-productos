@@ -21,7 +21,7 @@ import { fetchAdminExpensesPage } from "@/lib/supabase/admin-expenses-list";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
   adminToolbarBtnBaseClass,
-  adminToolbarBtnEmeraldClass,
+  adminToolbarBtnActiveClass,
   adminToolbarBtnIdleClass,
   adminToolbarIconBtnClass,
 } from "@/lib/admin-ui";
@@ -233,7 +233,7 @@ export default async function AdminEgresosPage({
           {canCreate ? (
             <Link
               href={nuevoHref}
-              className={`${adminToolbarBtnBaseClass} ${adminToolbarBtnEmeraldClass}`}
+              className={`${adminToolbarBtnBaseClass} ${adminToolbarBtnActiveClass}`}
             >
               + Nuevo
             </Link>

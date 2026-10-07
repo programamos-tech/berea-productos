@@ -14,13 +14,13 @@ import { AdminModuleHeader } from "@/components/admin/AdminModuleHeader";
 import {
   adminTableWrapClass,
   adminToolbarBtnBaseClass,
-  adminToolbarBtnEmeraldClass,
+  adminToolbarBtnActiveClass,
   adminToolbarBtnIdleClass,
 } from "@/lib/admin-ui";
 
 const thClass =
-  "pb-3 pr-5 text-left text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500";
-const tdClass = "py-2.5 pr-4 align-middle";
+  "px-4 pb-3 pt-4 text-left text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500";
+const tdClass = "px-4 py-2.5 align-middle";
 
 export const dynamic = "force-dynamic";
 
@@ -129,7 +129,7 @@ export default async function AdminTrasladosPage({
             {canCreate ? (
               <Link
                 href="/admin/traslados/nuevo"
-                className={`${adminToolbarBtnBaseClass} ${adminToolbarBtnEmeraldClass}`}
+                className={`${adminToolbarBtnBaseClass} ${adminToolbarBtnActiveClass}`}
               >
                 + Nuevo traslado
               </Link>

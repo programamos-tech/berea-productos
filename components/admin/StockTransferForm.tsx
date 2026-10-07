@@ -1,9 +1,19 @@
 "use client";
 
+import { Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { AdminFormSubmitButton } from "@/components/admin/AdminFormSubmitButton";
-import { productInputClass } from "@/components/admin/product-form-primitives";
-import { adminPageSubtitleClass } from "@/lib/admin-ui";
+import {
+  productInputClass,
+  productLabelClass,
+  productSectionTitle,
+} from "@/components/admin/product-form-primitives";
+
+const sectionClass = "border-t border-zinc-200/70 pt-4 dark:border-zinc-800";
+const qtyBtnClass =
+  "inline-flex items-center justify-center rounded-lg border border-zinc-300 bg-white px-2.5 py-1.5 text-xs font-medium text-zinc-800 transition hover:border-zinc-400 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200 dark:hover:border-zinc-600 dark:hover:bg-zinc-800";
+const removeBtnClass =
+  "inline-flex size-8 shrink-0 items-center justify-center rounded-lg text-red-600 transition hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/40";
 
 type BranchOption = { id: string; name: string };
 
@@ -117,169 +127,192 @@ export function StockTransferForm({
     setHits([]);
   }
 
+  function setQty(id: string, next: number, available: number) {
+    const quantity = Math.min(available, Math.max(1, Math.floor(next)));
+    setLines((current) =>
+      current.map((item) => (item.id === id ? { ...item, quantity } : item)),
+    );
+  }
+
   return (
-    <form action={formAction} className="space-y-6">
+    <form
+      action={formAction}
+      className="grid min-w-0 grid-cols-1 items-start gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(28rem,32rem)] xl:gap-10"
+    >
       <input type="hidden" name="submission_id" value={submissionId} />
       <input type="hidden" name="items_json" value={itemsJson} />
-      {errorMessage ? (
-        <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-          {errorMessage}
-        </p>
-      ) : null}
-      <p className={adminPageSubtitleClass}>
-        Al enviar, las unidades salen de la sucursal de origen. Entran en la de
-        destino cuando confirmen que llegaron.
-      </p>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <label className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
-          Desde
-          <select
-            name="from_branch_id"
-            value={fromId}
-            onChange={(event) => changeFrom(event.target.value)}
-            className={`${productInputClass} mt-1.5`}
-          >
-            {branches.map((branch) => (
-              <option key={branch.id} value={branch.id}>
-                {branch.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
-          Hacia
-          <select
-            name="to_branch_id"
-            value={toId}
-            onChange={(event) => setToId(event.target.value)}
-            className={`${productInputClass} mt-1.5`}
-          >
-            {destinations.map((branch) => (
-              <option key={branch.id} value={branch.id}>
-                {branch.name}
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
-
-      <div>
-        <label className="text-sm font-medium text-zinc-900 dark:text-zinc-100" htmlFor="transfer-search">
-          Agregar producto
-        </label>
-        <input
-          id="transfer-search"
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder="Nombre o referencia"
-          className={`${productInputClass} mt-1.5`}
-          autoComplete="off"
-        />
-        {searching ? (
-          <p className="mt-2 text-xs text-zinc-500">Buscando…</p>
+      <div className="min-w-0 space-y-6">
+        {errorMessage ? (
+          <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+            {errorMessage}
+          </p>
         ) : null}
-        {hits.length > 0 ? (
-          <ul className="mt-2 overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-700">
-            {hits.map((hit) => {
-              const added = lines.some((line) => line.id === hit.id);
-              const empty = hit.stock_local < 1;
-              return (
-                <li key={hit.id} className="border-t border-zinc-100 first:border-t-0 dark:border-zinc-800">
-                  <button
-                    type="button"
-                    disabled={added || empty}
-                    onClick={() => addHit(hit)}
-                    className="flex w-full items-center justify-between gap-3 px-3 py-2.5 text-left text-sm hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-zinc-900"
-                  >
-                    <span className="min-w-0">
-                      <span className="block truncate font-medium text-zinc-900 dark:text-zinc-100">
-                        {hit.name}
-                      </span>
-                      {hit.reference ? (
-                        <span className="block truncate text-xs text-zinc-500">{hit.reference}</span>
-                      ) : null}
-                    </span>
-                    <span className="shrink-0 text-xs text-zinc-500">
-                      {empty ? "Sin stock" : added ? "Agregado" : `${hit.stock_local} u.`}
-                    </span>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        ) : null}
-      </div>
 
-      {lines.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-zinc-300 px-4 py-6 text-sm text-zinc-500 dark:border-zinc-700">
-          Todavía no hay productos en este traslado.
-        </p>
-      ) : (
-        <ul className="divide-y divide-zinc-100 rounded-xl border border-zinc-200 dark:divide-zinc-800 dark:border-zinc-700">
-          {lines.map((line) => (
-            <li key={line.id} className="flex flex-wrap items-center gap-3 px-3 py-3">
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium text-zinc-900 dark:text-zinc-100">
-                  {line.name}
-                </p>
-                <p className="text-xs text-zinc-500">
-                  {line.reference ? `${line.reference} · ` : ""}
-                  Disponible {line.available}
-                </p>
-              </div>
-              <input
-                type="number"
-                min={1}
-                max={line.available}
-                value={line.quantity}
-                onChange={(event) => {
-                  const next = Math.floor(Number(event.target.value));
-                  setLines((current) =>
-                    current.map((item) =>
-                      item.id === line.id
-                        ? {
-                            ...item,
-                            quantity: Number.isFinite(next)
-                              ? Math.min(line.available, Math.max(1, next))
-                              : 1,
-                          }
-                        : item,
-                    ),
-                  );
-                }}
-                className="h-10 w-24 rounded-lg border border-zinc-200 bg-white px-3 text-sm dark:border-zinc-700 dark:bg-zinc-950"
-              />
-              <button
-                type="button"
-                onClick={() =>
-                  setLines((current) => current.filter((item) => item.id !== line.id))
-                }
-                className="text-xs font-medium text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
+        <section className={sectionClass}>
+          <h2 className={productSectionTitle}>Ruta</h2>
+          <div className="mt-3 grid gap-4 sm:grid-cols-2">
+            <div>
+              <label className={productLabelClass} htmlFor="transfer-from">
+                Desde
+              </label>
+              <select
+                id="transfer-from"
+                name="from_branch_id"
+                value={fromId}
+                onChange={(event) => changeFrom(event.target.value)}
+                className={productInputClass}
               >
-                Quitar
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
+                {branches.map((branch) => (
+                  <option key={branch.id} value={branch.id}>
+                    {branch.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className={productLabelClass} htmlFor="transfer-to">
+                Hacia
+              </label>
+              <select
+                id="transfer-to"
+                name="to_branch_id"
+                value={toId}
+                onChange={(event) => setToId(event.target.value)}
+                className={productInputClass}
+              >
+                {destinations.map((branch) => (
+                  <option key={branch.id} value={branch.id}>
+                    {branch.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </section>
 
-      <label className="block text-sm font-medium text-zinc-900 dark:text-zinc-100">
-        Nota
+        <section className={sectionClass}>
+          <h2 className={productSectionTitle}>Productos</h2>
+          <div className="relative mt-3">
+            <input
+              id="transfer-search"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Buscar producto por nombre o código"
+              className={productInputClass}
+              autoComplete="off"
+            />
+            {query.trim().length > 0 ? (
+              <div className="absolute z-20 mt-1 max-h-64 w-full overflow-auto rounded-lg border border-zinc-200 bg-white py-1 shadow-md shadow-zinc-900/10 dark:border-zinc-700 dark:bg-zinc-900">
+                {searching ? (
+                  <p className="px-3 py-2 text-sm text-zinc-500">Buscando…</p>
+                ) : hits.length === 0 ? (
+                  <p className="px-3 py-2 text-sm text-zinc-500">Sin resultados.</p>
+                ) : (
+                  hits.map((hit) => {
+                    const added = lines.some((line) => line.id === hit.id);
+                    const empty = hit.stock_local < 1;
+                    return (
+                      <button
+                        key={hit.id}
+                        type="button"
+                        disabled={added || empty}
+                        onClick={() => addHit(hit)}
+                        className="flex w-full flex-col items-start gap-0.5 px-3 py-2.5 text-left text-sm transition hover:bg-zinc-50/80 disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-zinc-800/90"
+                      >
+                        <span className="font-medium text-zinc-900 dark:text-zinc-100">
+                          {hit.name}
+                        </span>
+                        <span className="text-xs text-zinc-500">
+                          {hit.reference ? `${hit.reference} · ` : ""}
+                          {empty ? "Sin stock" : added ? "Agregado" : `${hit.stock_local} u.`}
+                        </span>
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+            ) : null}
+          </div>
+        </section>
+
+        <section className={sectionClass}>
+          <h2 className={productSectionTitle}>Ítems seleccionados</h2>
+          {lines.length === 0 ? (
+            <p className="mt-3 text-sm text-zinc-500">
+              Todavía no hay productos en este traslado.
+            </p>
+          ) : (
+            <ul className="mt-1 divide-y divide-zinc-100 dark:divide-zinc-800">
+              {lines.map((line) => (
+                <li key={line.id} className="py-4">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm text-zinc-800 dark:text-zinc-200">{line.name}</p>
+                      <p className="text-xs text-zinc-500">
+                        {line.reference ? `${line.reference} · ` : ""}
+                        Disponible {line.available}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        className={qtyBtnClass}
+                        onClick={() => setQty(line.id, line.quantity - 1, line.available)}
+                        disabled={line.quantity <= 1}
+                      >
+                        −
+                      </button>
+                      <span className="w-8 text-center text-sm tabular-nums text-zinc-900 dark:text-zinc-100">
+                        {line.quantity}
+                      </span>
+                      <button
+                        type="button"
+                        className={qtyBtnClass}
+                        onClick={() => setQty(line.id, line.quantity + 1, line.available)}
+                        disabled={line.quantity >= line.available}
+                      >
+                        +
+                      </button>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setLines((current) => current.filter((item) => item.id !== line.id))
+                      }
+                      className={removeBtnClass}
+                      title="Quitar"
+                      aria-label={`Quitar ${line.name}`}
+                    >
+                      <Trash2 className="size-4" aria-hidden />
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      </div>
+
+      <section className={`${sectionClass} min-w-0 xl:border-l xl:border-t-0 xl:border-zinc-200/70 xl:pl-8 xl:pt-0 dark:xl:border-zinc-800 2xl:pl-10`}>
+        <h2 className={productSectionTitle}>Nota</h2>
         <textarea
           name="notes"
           value={notes}
           onChange={(event) => setNotes(event.target.value)}
           maxLength={500}
-          rows={2}
+          rows={3}
           placeholder="Opcional"
-          className={`${productInputClass} mt-1.5`}
+          className={`${productInputClass} mt-3`}
         />
-      </label>
-
-      <AdminFormSubmitButton disabled={!canSubmit} pendingLabel="Enviando…">
-        Enviar traslado{units > 0 ? ` · ${units} u.` : ""}
-      </AdminFormSubmitButton>
+        <p className={`${productSectionTitle} mt-6`}>Unidades</p>
+        <p className="mt-2 text-3xl font-semibold tabular-nums tracking-tight text-zinc-900 dark:text-zinc-50">
+          {units}
+        </p>
+        <AdminFormSubmitButton disabled={!canSubmit} pendingLabel="Enviando…">
+          Enviar traslado
+        </AdminFormSubmitButton>
+      </section>
     </form>
   );
 }

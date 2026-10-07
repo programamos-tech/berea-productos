@@ -18,7 +18,7 @@ import type { VentaEstadoFilter, VentaPagoFilter } from "@/lib/ventas-sales";
 import { loadAdminPermissions } from "@/lib/load-admin-permissions";
 import {
   adminToolbarBtnBaseClass,
-  adminToolbarBtnEmeraldClass,
+  adminToolbarBtnActiveClass,
 } from "@/lib/admin-ui";
 
 const VENTAS_PAGE_SIZE = 20;
@@ -213,7 +213,7 @@ export async function VentasPageShell({
             <VentasRefreshButton />
             <Link
               href="/admin/ventas/nueva"
-              className={`${adminToolbarBtnBaseClass} ${adminToolbarBtnEmeraldClass}`}
+              className={`${adminToolbarBtnBaseClass} ${adminToolbarBtnActiveClass}`}
             >
               + Nueva factura
             </Link>

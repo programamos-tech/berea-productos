@@ -31,7 +31,7 @@ import {
 } from "@/components/admin/ReportsAnimatedFigures";
 import {
   adminToolbarBtnBaseClass,
-  adminToolbarBtnEmeraldClass,
+  adminToolbarBtnActiveClass,
   adminToolbarBtnIdleClass,
   adminToolbarIconBtnClass,
 } from "@/lib/admin-ui";
@@ -308,7 +308,7 @@ export default async function AdminProductsPage({
               {canCreateProduct ? (
                 <Link
                   href="/admin/products/new"
-                  className={`${adminToolbarBtnBaseClass} ${adminToolbarBtnEmeraldClass}`}
+                  className={`${adminToolbarBtnBaseClass} ${adminToolbarBtnActiveClass}`}
                 >
                   + Nuevo producto
                 </Link>

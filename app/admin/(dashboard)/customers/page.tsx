@@ -20,7 +20,7 @@ import { formatStoreDateTime } from "@/lib/store-datetime-format";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
   adminToolbarBtnBaseClass,
-  adminToolbarBtnEmeraldClass,
+  adminToolbarBtnActiveClass,
   adminToolbarIconBtnClass,
 } from "@/lib/admin-ui";
 
@@ -179,7 +179,7 @@ export default async function AdminCustomersPage({
             {canCreateCustomer ? (
               <Link
                 href="/admin/customers/new"
-                className={`${adminToolbarBtnBaseClass} ${adminToolbarBtnEmeraldClass}`}
+                className={`${adminToolbarBtnBaseClass} ${adminToolbarBtnActiveClass}`}
               >
                 + Nuevo cliente
               </Link>
