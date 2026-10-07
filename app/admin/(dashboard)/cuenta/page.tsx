@@ -1,4 +1,4 @@
-import { AdminUserAvatar } from "@/components/admin/AdminUserAvatar";
+import { AdminModuleHeader } from "@/components/admin/AdminModuleHeader";
 import { CatalogPublicLink } from "@/components/admin/CatalogPublicLink";
 import { StorefrontBrandSettingsForm } from "@/components/admin/StorefrontBrandSettingsForm";
 import {
@@ -6,12 +6,7 @@ import {
   type PermissionMap,
 } from "@/lib/admin-permissions";
 import { permissionModulesForAccount } from "@/lib/admin-account-modules";
-import {
-  adminFilterLabelClass,
-  adminPageSubtitleClass,
-  adminPageTitleClass,
-  adminPanelClass,
-} from "@/lib/admin-ui";
+import { adminFilterLabelClass, adminPanelClass } from "@/lib/admin-ui";
 import { loadAdminPermissions } from "@/lib/load-admin-permissions";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { buildStorefrontChrome } from "@/lib/storefront-brand";
@@ -113,23 +108,12 @@ export default async function AdminCuentaPage({
 
   return (
     <div className="flex flex-col gap-4 lg:gap-5">
-      <header className="flex items-start gap-4 sm:items-center">
-        <AdminUserAvatar
-          displayName={displayName}
-          seed={email || displayName}
-          size={64}
-          className="mt-0.5 sm:mt-0"
-        />
-        <div className="min-w-0 flex-1">
-          <h1 className={adminPageTitleClass}>Mi cuenta</h1>
-          <p className="mt-1 truncate text-base font-medium text-zinc-900 dark:text-zinc-100">
-            {displayName}
-          </p>
-          <p className={`${adminPageSubtitleClass} mt-0.5 truncate`}>
-            {metaBits.join(" · ")}
-          </p>
-        </div>
-      </header>
+      <AdminModuleHeader
+        icon="cuenta"
+        title="Mi cuenta"
+        branchName={perm.branchContext?.active.name}
+        subtitle={`${displayName}${metaBits.length ? ` · ${metaBits.join(" · ")}` : ""}`}
+      />
 
       {forbiddenNotice ? (
         <div

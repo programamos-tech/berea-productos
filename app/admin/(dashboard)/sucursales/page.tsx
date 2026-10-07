@@ -14,11 +14,10 @@ import {
   storefrontUrlLabel,
 } from "@/lib/storefront-branch-url";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { AdminModuleHeader } from "@/components/admin/AdminModuleHeader";
 import {
-  adminPageSubtitleClass,
-  adminPageTitleClass,
-  adminToolbarBtnActiveClass,
   adminToolbarBtnBaseClass,
+  adminToolbarBtnEmeraldClass,
 } from "@/lib/admin-ui";
 
 export const dynamic = "force-dynamic";
@@ -57,22 +56,22 @@ export default async function BranchesPage() {
 
   return (
     <div className="flex flex-col gap-5">
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className={adminPageTitleClass}>Sucursales</h1>
-          <p className={adminPageSubtitleClass}>
-            Puntos de operación, inventario y caja
-          </p>
-        </div>
-        {perm?.permissions.sucursales_gestionar ? (
-          <Link
-            href="/admin/sucursales/nuevo"
-            className={`${adminToolbarBtnBaseClass} ${adminToolbarBtnActiveClass}`}
-          >
-            + Nueva sucursal
-          </Link>
-        ) : null}
-      </header>
+      <AdminModuleHeader
+        icon="sucursales"
+        title="Sucursales"
+        branchName={perm?.branchContext?.active.name}
+        subtitle="Puntos de operación, inventario y caja"
+        actions={
+          perm?.permissions.sucursales_gestionar ? (
+            <Link
+              href="/admin/sucursales/nuevo"
+              className={`${adminToolbarBtnBaseClass} ${adminToolbarBtnEmeraldClass}`}
+            >
+              + Nueva sucursal
+            </Link>
+          ) : null
+        }
+      />
 
       {(branches ?? []).length > 0 ? (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Suspense } from "react";
+import { AdminModuleHeader } from "@/components/admin/AdminModuleHeader";
 import { ExpensesExportButton } from "@/components/admin/ExpensesExportButton";
 import { ExpensesFiltersBar } from "@/components/admin/ExpensesFiltersBar";
 import {
@@ -20,11 +21,9 @@ import { fetchAdminExpensesPage } from "@/lib/supabase/admin-expenses-list";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
   adminToolbarBtnBaseClass,
-  adminToolbarBtnActiveClass,
+  adminToolbarBtnEmeraldClass,
   adminToolbarBtnIdleClass,
   adminToolbarIconBtnClass,
-  adminPageTitleClass,
-  adminPageSubtitleClass,
 } from "@/lib/admin-ui";
 
 export const dynamic = "force-dynamic";
@@ -213,16 +212,13 @@ export default async function AdminEgresosPage({
         />
       ) : null}
 
-      <header className="flex shrink-0 flex-wrap items-center justify-between gap-2 gap-y-2">
-        <div className="min-w-0">
-          <h1 className={adminPageTitleClass}>
-            Gastos
-          </h1>
-          <p className={adminPageSubtitleClass}>
-            Caja del turno, cuentas e impuestos del negocio
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center justify-end gap-2">
+      <AdminModuleHeader
+        icon="gastos"
+        title="Gastos"
+        branchName={perm?.branchContext?.active.name}
+        subtitle="Caja del turno, cuentas e impuestos del negocio"
+        actions={
+          <>
           {canCreate ? (
             <Link
               href="/admin/egresos/conceptos"
@@ -237,7 +233,7 @@ export default async function AdminEgresosPage({
           {canCreate ? (
             <Link
               href={nuevoHref}
-              className={`${adminToolbarBtnBaseClass} ${adminToolbarBtnActiveClass}`}
+              className={`${adminToolbarBtnBaseClass} ${adminToolbarBtnEmeraldClass}`}
             >
               + Nuevo
             </Link>
@@ -263,8 +259,9 @@ export default async function AdminEgresosPage({
               />
             </svg>
           </Link>
-        </div>
-      </header>
+          </>
+        }
+      />
 
       <div className="flex min-h-0 flex-col gap-4">
         <Suspense

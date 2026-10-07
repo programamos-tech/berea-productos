@@ -4,6 +4,7 @@ import {
   KitsAdminTable,
   type KitsAdminTableRow,
 } from "@/components/admin/KitsAdminTable";
+import { AdminModuleHeader } from "@/components/admin/AdminModuleHeader";
 import { InventorySubnav } from "@/components/admin/InventorySubnav";
 import { storagePublicObjectUrl } from "@/lib/storage-public-url";
 import { fetchKitsForAdminList } from "@/lib/load-product-kits";
@@ -15,10 +16,8 @@ import {
 import { loadAdminPermissions } from "@/lib/load-admin-permissions";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
-  adminPageSubtitleClass,
-  adminPageTitleClass,
-  adminToolbarBtnActiveClass,
   adminToolbarBtnBaseClass,
+  adminToolbarBtnEmeraldClass,
   adminToolbarIconBtnClass,
 } from "@/lib/admin-ui";
 
@@ -63,36 +62,36 @@ export default async function AdminKitsPage({
         </p>
       ) : null}
 
-      <header className="flex shrink-0 flex-wrap items-center justify-between gap-2 gap-y-2">
-        <div className="min-w-0">
-          <h1 className={adminPageTitleClass}>Inventario</h1>
-          <p className={adminPageSubtitleClass}>
-            Combos de productos para tienda y mostrador
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center justify-end gap-2">
-          <Link
-            href="/admin/kits"
-            className={adminToolbarIconBtnClass}
-            title="Recargar listado"
-            aria-label="Actualizar"
-          >
-            <RefreshCw
-              className="size-4 shrink-0"
-              strokeWidth={2.25}
-              aria-hidden
-            />
-          </Link>
-          {canEdit ? (
+      <AdminModuleHeader
+        icon="kits"
+        title="Inventario"
+        branchName={perm?.branchContext?.active.name}
+        subtitle="Combos de productos para tienda y mostrador"
+        actions={
+          <>
             <Link
-              href="/admin/kits/nuevo"
-              className={`${adminToolbarBtnBaseClass} ${adminToolbarBtnActiveClass}`}
+              href="/admin/kits"
+              className={adminToolbarIconBtnClass}
+              title="Recargar listado"
+              aria-label="Actualizar"
             >
-              + Nuevo kit
+              <RefreshCw
+                className="size-4 shrink-0"
+                strokeWidth={2.25}
+                aria-hidden
+              />
             </Link>
-          ) : null}
-        </div>
-      </header>
+            {canEdit ? (
+              <Link
+                href="/admin/kits/nuevo"
+                className={`${adminToolbarBtnBaseClass} ${adminToolbarBtnEmeraldClass}`}
+              >
+                + Nuevo kit
+              </Link>
+            ) : null}
+          </>
+        }
+      />
 
       <InventorySubnav
         active="kits"

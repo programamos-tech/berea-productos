@@ -2,19 +2,18 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { AdminModuleHeader } from "@/components/admin/AdminModuleHeader";
 import { CashRegisterSessionModal } from "@/components/admin/CashRegisterSessionModal";
 import type { CashDayBlindSummary } from "@/lib/cash-register";
 import {
-  adminToolbarBtnActiveClass,
   adminToolbarBtnBaseClass,
+  adminToolbarBtnEmeraldClass,
   adminToolbarBtnIdleClass,
-  adminPageTitleClass,
-  adminPageSubtitleClass,
 } from "@/lib/admin-ui";
 
 const btnBase = `${adminToolbarBtnBaseClass} disabled:cursor-not-allowed disabled:opacity-45`;
 const btnIdle = adminToolbarBtnIdleClass;
-const btnPrimary = adminToolbarBtnActiveClass;
+const btnPrimary = adminToolbarBtnEmeraldClass;
 
 type Props = {
   canManage: boolean;
@@ -22,6 +21,7 @@ type Props = {
   hasOpenSession: boolean;
   todaySessionId: string | null;
   todayLabel: string;
+  branchName: string;
   /** Modal activo: abrir o cerrar. */
   modalMode: "open" | "close" | null;
   businessDayLabel: string;
@@ -42,6 +42,7 @@ export function CashRegisterPageChrome({
   todayAlreadyClosed,
   hasOpenSession,
   todaySessionId,
+  branchName,
   modalMode,
   businessDayLabel,
   sessionId,
@@ -80,61 +81,58 @@ export function CashRegisterPageChrome({
 
   return (
     <>
-      <header className="flex shrink-0 flex-wrap items-center justify-between gap-2 gap-y-2">
-        <div className="min-w-0">
-          <h1 className={adminPageTitleClass}>
-            Caja
-          </h1>
-          <p className={adminPageSubtitleClass}>
-            Apertura, cierre y arqueo del efectivo del día
-          </p>
-        </div>
+      <AdminModuleHeader
+        icon="caja"
+        title="Caja"
+        branchName={branchName}
+        subtitle="Apertura, cierre y arqueo del efectivo del día"
+        actions={
+          <>
+            {todayAlreadyClosed && todaySessionId ? (
+              <>
+                <Link
+                  href={`/admin/caja/${todaySessionId}`}
+                  className={`${btnBase} ${btnIdle}`}
+                >
+                  Ver cierre de hoy
+                </Link>
+                <Link
+                  href="/admin/caja?preview=cierre"
+                  className={`${btnBase} ${btnIdle}`}
+                >
+                  Vista modal
+                </Link>
+              </>
+            ) : null}
 
-        <div className="flex flex-wrap items-center justify-end gap-2">
-          {todayAlreadyClosed && todaySessionId ? (
-            <>
-              <Link
-                href={`/admin/caja/${todaySessionId}`}
-                className={`${btnBase} ${btnIdle}`}
-              >
-                Ver cierre de hoy
-              </Link>
-              <Link
-                href="/admin/caja?preview=cierre"
-                className={`${btnBase} ${btnIdle}`}
-              >
-                Vista modal
-              </Link>
-            </>
-          ) : null}
+            <button
+              type="button"
+              disabled={!canOpen}
+              title={openDisabledReason ?? "Abrir caja del día"}
+              onClick={() => {
+                if (!canOpen) return;
+                setPanelOpen(true);
+              }}
+              className={`${btnBase} ${canOpen ? btnPrimary : btnIdle}`}
+            >
+              Abrir caja
+            </button>
 
-          <button
-            type="button"
-            disabled={!canOpen}
-            title={openDisabledReason ?? "Abrir caja del día"}
-            onClick={() => {
-              if (!canOpen) return;
-              setPanelOpen(true);
-            }}
-            className={`${btnBase} ${canOpen ? btnPrimary : btnIdle}`}
-          >
-            Abrir caja
-          </button>
-
-          <button
-            type="button"
-            disabled={!canClose}
-            title={closeDisabledReason ?? "Cerrar caja del día"}
-            onClick={() => {
-              if (!canClose) return;
-              setPanelOpen(true);
-            }}
-            className={`${btnBase} ${canClose ? btnPrimary : btnIdle}`}
-          >
-            Cerrar caja
-          </button>
-        </div>
-      </header>
+            <button
+              type="button"
+              disabled={!canClose}
+              title={closeDisabledReason ?? "Cerrar caja del día"}
+              onClick={() => {
+                if (!canClose) return;
+                setPanelOpen(true);
+              }}
+              className={`${btnBase} ${canClose ? btnPrimary : btnIdle}`}
+            >
+              Cerrar caja
+            </button>
+          </>
+        }
+      />
 
       {errorBanner && !panelOpen ? (
         <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/35 dark:text-red-100">

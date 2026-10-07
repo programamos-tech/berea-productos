@@ -1,13 +1,12 @@
 import Link from "next/link";
+import { AdminModuleHeader } from "@/components/admin/AdminModuleHeader";
 import {
   UsuariosTeamTable,
   type TeamMemberRow,
 } from "@/components/admin/UsuariosTeamTable";
 import {
-  adminPageSubtitleClass,
-  adminPageTitleClass,
-  adminToolbarBtnActiveClass,
   adminToolbarBtnBaseClass,
+  adminToolbarBtnEmeraldClass,
 } from "@/lib/admin-ui";
 import {
   collaboratorJobRoleLabel,
@@ -134,22 +133,22 @@ export default async function AdminUsuariosRolesPage() {
 
   return (
     <div className="flex w-full min-w-0 max-w-none flex-col gap-4">
-      <header className="flex shrink-0 flex-wrap items-center justify-between gap-2 gap-y-2">
-        <div className="min-w-0">
-          <h1 className={adminPageTitleClass}>Equipo</h1>
-          <p className={adminPageSubtitleClass}>
-            Colaboradores, roles y permisos
-          </p>
-        </div>
-        {canManageCollaborators ? (
-          <Link
-            href="/admin/usuarios/nuevo"
-            className={`${adminToolbarBtnBaseClass} ${adminToolbarBtnActiveClass}`}
-          >
-            + Nuevo colaborador
-          </Link>
-        ) : null}
-      </header>
+      <AdminModuleHeader
+        icon="equipo"
+        title="Equipo"
+        branchName={authPerm?.branchContext?.active.name}
+        subtitle="Colaboradores, roles y permisos"
+        actions={
+          canManageCollaborators ? (
+            <Link
+              href="/admin/usuarios/nuevo"
+              className={`${adminToolbarBtnBaseClass} ${adminToolbarBtnEmeraldClass}`}
+            >
+              + Nuevo colaborador
+            </Link>
+          ) : null
+        }
+      />
 
       <section className="border-t border-zinc-200/70 pt-4 dark:border-zinc-800">
         <UsuariosTeamTable

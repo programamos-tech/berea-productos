@@ -1,8 +1,8 @@
+import { AdminModuleHeader } from "@/components/admin/AdminModuleHeader";
 import { OperatorAccountsTable } from "@/components/admin/OperatorAccountsTable";
 import { loadAdminPermissions } from "@/lib/load-admin-permissions";
 import { toOperatorAccountRow } from "@/lib/operator-accounts";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
-import { adminPageSubtitleClass, adminPageTitleClass } from "@/lib/admin-ui";
 import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
@@ -81,14 +81,12 @@ export default async function AdminCuentasPage() {
 
   return (
     <div className="flex w-full min-w-0 flex-col gap-4">
-      <header className="flex shrink-0 flex-wrap items-center justify-between gap-2 gap-y-2">
-        <div className="min-w-0">
-          <h1 className={adminPageTitleClass}>Cuentas</h1>
-          <p className={adminPageSubtitleClass}>
-            Contacto del cliente, estado operativo y acceso a su negocio
-          </p>
-        </div>
-      </header>
+      <AdminModuleHeader
+        icon="cuentas"
+        title="Cuentas"
+        branchName={perm.branchContext?.active.name}
+        subtitle="Contacto del cliente, estado operativo y acceso a su negocio"
+      />
 
       <section className="min-h-0 border-t border-zinc-200/70 pt-4 dark:border-zinc-800">
         <OperatorAccountsTable rows={accounts} />

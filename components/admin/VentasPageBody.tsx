@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import Link from "next/link";
+import { AdminModuleHeader } from "@/components/admin/AdminModuleHeader";
 import {
   VentasFiltersBar,
   VentasRefreshButton,
@@ -14,11 +15,10 @@ import {
 } from "@/lib/supabase/admin-ventas-list";
 import { buildAdminVentasListHref } from "@/lib/admin-ventas-list-url";
 import type { VentaEstadoFilter, VentaPagoFilter } from "@/lib/ventas-sales";
+import { loadAdminPermissions } from "@/lib/load-admin-permissions";
 import {
-  adminToolbarBtnActiveClass,
   adminToolbarBtnBaseClass,
-  adminPageTitleClass,
-  adminPageSubtitleClass,
+  adminToolbarBtnEmeraldClass,
 } from "@/lib/admin-ui";
 
 const VENTAS_PAGE_SIZE = 20;
@@ -179,7 +179,7 @@ export async function VentasPageBody({
   );
 }
 
-export function VentasPageShell({
+export async function VentasPageShell({
   qRaw,
   status,
   payment,
@@ -199,28 +199,27 @@ export function VentasPageShell({
   pageRequested: number;
 }) {
   const suspenseKey = `${qRaw}|${status}|${payment}|${dateFrom ?? ""}|${dateTo ?? ""}|${pageRequested}`;
+  const perm = await loadAdminPermissions();
 
   return (
     <div className="flex w-full min-w-0 max-w-none flex-col gap-4">
-      <header className="flex shrink-0 flex-wrap items-center justify-between gap-2 gap-y-2">
-        <div className="min-w-0">
-          <h1 className={adminPageTitleClass}>
-            Ventas
-          </h1>
-          <p className={adminPageSubtitleClass}>
-            Facturas de mostrador y pedidos en línea
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center justify-end gap-2">
-          <VentasRefreshButton />
-          <Link
-            href="/admin/ventas/nueva"
-            className={`${adminToolbarBtnBaseClass} ${adminToolbarBtnActiveClass}`}
-          >
-            + Nueva factura
-          </Link>
-        </div>
-      </header>
+      <AdminModuleHeader
+        icon="ventas"
+        title="Ventas"
+        branchName={perm?.branchContext?.active.name}
+        subtitle="Facturas de mostrador y pedidos en línea"
+        actions={
+          <>
+            <VentasRefreshButton />
+            <Link
+              href="/admin/ventas/nueva"
+              className={`${adminToolbarBtnBaseClass} ${adminToolbarBtnEmeraldClass}`}
+            >
+              + Nueva factura
+            </Link>
+          </>
+        }
+      />
 
       <Suspense key={suspenseKey} fallback={<VentasTableSkeleton />}>
         <VentasPageBody

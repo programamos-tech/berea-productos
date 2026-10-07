@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { AdminModuleHeader } from "@/components/admin/AdminModuleHeader";
 import {
   CreditosFiltersBar,
   CreditosRefreshButton,
@@ -8,10 +9,7 @@ import {
   fetchAdminCreditsList,
   parseCreditListFilter,
 } from "@/lib/admin-order-credits";
-import {
-  adminPageSubtitleClass,
-  adminPageTitleClass,
-} from "@/lib/admin-ui";
+import { loadAdminPermissions } from "@/lib/load-admin-permissions";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -31,7 +29,10 @@ export default async function AdminCreditosPage({ searchParams }: Props) {
   const filter = parseCreditListFilter(first(sp.estado));
   const qRaw = first(sp.q).trim();
   const customerId = first(sp.cliente).trim();
-  const supabase = await createSupabaseServerClient();
+  const [perm, supabase] = await Promise.all([
+    loadAdminPermissions(),
+    createSupabaseServerClient(),
+  ]);
   const { rows, error } = await fetchAdminCreditsList(supabase, {
     filter,
     q: qRaw,
@@ -40,17 +41,13 @@ export default async function AdminCreditosPage({ searchParams }: Props) {
 
   return (
     <div className="flex w-full min-w-0 max-w-none flex-col gap-4">
-      <header className="flex shrink-0 flex-wrap items-center justify-between gap-2 gap-y-2">
-        <div className="min-w-0">
-          <h1 className={adminPageTitleClass}>Créditos</h1>
-          <p className={adminPageSubtitleClass}>
-            Facturas a crédito y abonos. El saldo baja con cada cobro.
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center justify-end gap-2">
-          <CreditosRefreshButton />
-        </div>
-      </header>
+      <AdminModuleHeader
+        icon="creditos"
+        title="Créditos"
+        branchName={perm?.branchContext?.active.name}
+        subtitle="Facturas a crédito y abonos. El saldo baja con cada cobro."
+        actions={<CreditosRefreshButton />}
+      />
 
       <Suspense
         fallback={

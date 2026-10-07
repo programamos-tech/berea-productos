@@ -225,6 +225,7 @@ export default async function AdminCajaPage({
         hasOpenSession={Boolean(open)}
         todaySessionId={todaySession?.id ?? null}
         todayLabel={todayLabel}
+        branchName={perm.branchContext.active.name}
         modalMode={modalMode}
         businessDayLabel={dayLabel}
         sessionId={previewClose ? todaySession?.id : open?.id}

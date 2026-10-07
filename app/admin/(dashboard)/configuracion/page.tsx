@@ -1,11 +1,11 @@
 import { Blocks, Package, Printer, Tag, type LucideIcon } from "lucide-react";
+import { AdminModuleHeader } from "@/components/admin/AdminModuleHeader";
 import { PosPriceSettings } from "@/components/admin/HigherSalePriceSettings";
 import { InvoiceLayoutSettings } from "@/components/admin/InvoiceLayoutSettings";
 import { KitsModuleSettings } from "@/components/admin/KitsModuleSettings";
 import { ProductCatalogFieldSettings } from "@/components/admin/ProductCatalogFieldSettings";
 import { SettingsSection } from "@/components/admin/SettingsSection";
 import { parseProductCatalogFields } from "@/lib/product-catalog-fields";
-import { adminPageSubtitleClass, adminPageTitleClass } from "@/lib/admin-ui";
 import { parseInvoiceLayout } from "@/lib/invoice-layout";
 import { posPricePolicyFromConfig } from "@/lib/product-vat-price";
 import { loadAdminPermissions } from "@/lib/load-admin-permissions";
@@ -55,13 +55,12 @@ export default async function AdminConfiguracionPage({
 
   return (
     <div className="flex flex-col gap-5 lg:gap-6">
-      <header>
-        <h1 className={adminPageTitleClass}>Configuración</h1>
-        <p className={adminPageSubtitleClass}>
-          Ajustes de {perm.tenantName}. Los cambios se guardan solos y aplican a
-          todo el equipo.
-        </p>
-      </header>
+      <AdminModuleHeader
+        icon="configuracion"
+        title="Configuración"
+        branchName={perm.branchContext?.active.name}
+        subtitle={`Ajustes de ${perm.tenantName}. Los cambios se guardan solos y aplican a todo el equipo.`}
+      />
 
       {notice ? (
         <div

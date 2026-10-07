@@ -7,6 +7,7 @@ import {
   type CustomerActivityFilter,
   type CustomerKindFilter,
 } from "@/components/admin/CustomersSearchBar";
+import { AdminModuleHeader } from "@/components/admin/AdminModuleHeader";
 import { CustomerRowActions } from "@/components/admin/CustomerRowActions";
 import { VentasPagination } from "@/components/admin/VentasPagination";
 import {
@@ -18,11 +19,9 @@ import { loadAdminPermissions } from "@/lib/load-admin-permissions";
 import { formatStoreDateTime } from "@/lib/store-datetime-format";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
-  adminToolbarBtnActiveClass,
   adminToolbarBtnBaseClass,
+  adminToolbarBtnEmeraldClass,
   adminToolbarIconBtnClass,
-  adminPageSubtitleClass,
-  adminPageTitleClass,
 } from "@/lib/admin-ui";
 
 export const dynamic = "force-dynamic";
@@ -158,38 +157,36 @@ export default async function AdminCustomersPage({
 
   return (
     <div className="flex w-full min-w-0 max-w-none flex-col gap-4">
-      <header className="flex shrink-0 flex-wrap items-center justify-between gap-2 gap-y-2">
-        <div className="min-w-0">
-          <h1 className={adminPageTitleClass}>
-            Clientes
-          </h1>
-          <p className={adminPageSubtitleClass}>
-            Contactos, tipo de cliente y actividad de compra
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center justify-end gap-2">
-          <Link
-            href="/admin/customers"
-            className={adminToolbarIconBtnClass}
-            title="Recargar listado"
-            aria-label="Actualizar"
-          >
-            <RefreshCw
-              className="size-4 shrink-0"
-              strokeWidth={2.25}
-              aria-hidden
-            />
-          </Link>
-          {canCreateCustomer ? (
+      <AdminModuleHeader
+        icon="clientes"
+        title="Clientes"
+        branchName={authPerm?.branchContext?.active.name}
+        subtitle="Contactos, tipo de cliente y actividad de compra"
+        actions={
+          <>
             <Link
-              href="/admin/customers/new"
-              className={`${adminToolbarBtnBaseClass} ${adminToolbarBtnActiveClass}`}
+              href="/admin/customers"
+              className={adminToolbarIconBtnClass}
+              title="Recargar listado"
+              aria-label="Actualizar"
             >
-              + Nuevo cliente
+              <RefreshCw
+                className="size-4 shrink-0"
+                strokeWidth={2.25}
+                aria-hidden
+              />
             </Link>
-          ) : null}
-        </div>
-      </header>
+            {canCreateCustomer ? (
+              <Link
+                href="/admin/customers/new"
+                className={`${adminToolbarBtnBaseClass} ${adminToolbarBtnEmeraldClass}`}
+              >
+                + Nuevo cliente
+              </Link>
+            ) : null}
+          </>
+        }
+      />
 
       {error ? (
         <p className="text-sm text-amber-700 dark:text-amber-300">

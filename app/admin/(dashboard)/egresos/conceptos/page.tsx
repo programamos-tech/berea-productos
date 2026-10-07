@@ -63,7 +63,10 @@ export default async function AdminExpenseConceptsPage({
 
   return (
     <div className="flex w-full min-w-0 flex-col gap-4">
-      <ExpenseConceptsManager rows={rows}>
+      <ExpenseConceptsManager
+        rows={rows}
+        branchName={perm.branchContext?.active.name}
+      >
         <Suspense fallback={null}>
           {okText ? (
             <ExpenseConceptsFlash

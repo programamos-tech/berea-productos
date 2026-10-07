@@ -11,11 +11,11 @@ import {
   type StockTransferStatus,
 } from "@/lib/stock-transfers";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { AdminModuleHeader } from "@/components/admin/AdminModuleHeader";
 import {
-  adminPageSubtitleClass,
-  adminPageTitleClass,
   adminTableWrapClass,
   adminToolbarBtnBaseClass,
+  adminToolbarBtnEmeraldClass,
   adminToolbarBtnIdleClass,
 } from "@/lib/admin-ui";
 
@@ -92,37 +92,31 @@ export default async function AdminTrasladosPage({
 
   return (
     <div className="flex w-full min-w-0 max-w-none flex-col gap-4">
-      <header className="flex shrink-0 flex-wrap items-center justify-between gap-2 gap-y-2">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <h1 className={adminPageTitleClass}>Traslados de inventario</h1>
-            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:ring-emerald-900">
-              <span className="size-1.5 rounded-full bg-emerald-500" aria-hidden />
-              {perm.branchContext.active.name}
-            </span>
-          </div>
-          <p className={adminPageSubtitleClass}>
-            Productos entre sucursales · stock de {perm.branchContext.active.name}
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center justify-end gap-2">
-          <Link
-            href={refreshHref}
-            className={`${adminToolbarBtnBaseClass} ${adminToolbarBtnIdleClass}`}
-          >
-            <RefreshCw className="size-3.5" strokeWidth={2.25} aria-hidden />
-            Actualizar
-          </Link>
-          {canCreate ? (
+      <AdminModuleHeader
+        icon="traslados"
+        title="Traslados de inventario"
+        branchName={perm.branchContext.active.name}
+        subtitle="Gestiona los traslados de productos entre sucursales"
+        actions={
+          <>
             <Link
-              href="/admin/traslados/nuevo"
-              className={`${adminToolbarBtnBaseClass} border-emerald-600 bg-emerald-600 text-white hover:border-emerald-700 hover:bg-emerald-700`}
+              href={refreshHref}
+              className={`${adminToolbarBtnBaseClass} ${adminToolbarBtnIdleClass}`}
             >
-              + Nuevo traslado
+              <RefreshCw className="size-3.5" strokeWidth={2.25} aria-hidden />
+              Actualizar
             </Link>
-          ) : null}
-        </div>
-      </header>
+            {canCreate ? (
+              <Link
+                href="/admin/traslados/nuevo"
+                className={`${adminToolbarBtnBaseClass} ${adminToolbarBtnEmeraldClass}`}
+              >
+                + Nuevo traslado
+              </Link>
+            ) : null}
+          </>
+        }
+      />
 
       <StockTransfersFilters q={q} status={status ?? "all"} />
 

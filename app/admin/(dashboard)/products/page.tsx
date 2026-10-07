@@ -23,18 +23,17 @@ import { fetchCurrentBranchInventoryMap } from "@/lib/branch-inventory";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { unitPriceGrossCents } from "@/lib/product-vat-price";
 import { AdminProductsFlashToast } from "@/components/admin/AdminProductsFlashToast";
+import { AdminModuleHeader } from "@/components/admin/AdminModuleHeader";
 import { InventorySubnav } from "@/components/admin/InventorySubnav";
 import {
   StaticCopCents,
   StaticInteger,
 } from "@/components/admin/ReportsAnimatedFigures";
 import {
-  adminToolbarBtnActiveClass,
   adminToolbarBtnBaseClass,
+  adminToolbarBtnEmeraldClass,
   adminToolbarBtnIdleClass,
   adminToolbarIconBtnClass,
-  adminPageSubtitleClass,
-  adminPageTitleClass,
 } from "@/lib/admin-ui";
 
 export const dynamic = "force-dynamic";
@@ -278,48 +277,45 @@ export default async function AdminProductsPage({
   return (
     <>
       <div className="flex w-full min-w-0 max-w-none flex-col gap-4">
-        <header className="flex shrink-0 flex-wrap items-center justify-between gap-2 gap-y-2">
-          <div className="min-w-0">
-            <h1 className={adminPageTitleClass}>
-              Inventario
-            </h1>
-            <p className={adminPageSubtitleClass}>
-              Catálogo compartido · stock de{" "}
-              {authPerm?.branchContext?.active.name ?? "la sucursal"}
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center justify-end gap-2">
-            {canManageCategories ? (
+        <AdminModuleHeader
+          icon="inventario"
+          title="Inventario"
+          branchName={authPerm?.branchContext?.active.name}
+          subtitle="Catálogo compartido"
+          actions={
+            <>
+              {canManageCategories ? (
+                <Link
+                  href={categoriesOpenHref}
+                  scroll={false}
+                  className={`${adminToolbarBtnBaseClass} ${adminToolbarBtnIdleClass}`}
+                >
+                  Categorías
+                </Link>
+              ) : null}
               <Link
-                href={categoriesOpenHref}
-                scroll={false}
-                className={`${adminToolbarBtnBaseClass} ${adminToolbarBtnIdleClass}`}
+                href="/admin/products"
+                className={adminToolbarIconBtnClass}
+                title="Quitar filtros y recargar"
+                aria-label="Actualizar"
               >
-                Categorías
+                <RefreshCw
+                  className="size-4 shrink-0"
+                  strokeWidth={2.25}
+                  aria-hidden
+                />
               </Link>
-            ) : null}
-            <Link
-              href="/admin/products"
-              className={adminToolbarIconBtnClass}
-              title="Quitar filtros y recargar"
-              aria-label="Actualizar"
-            >
-              <RefreshCw
-                className="size-4 shrink-0"
-                strokeWidth={2.25}
-                aria-hidden
-              />
-            </Link>
-            {canCreateProduct ? (
-              <Link
-                href="/admin/products/new"
-                className={`${adminToolbarBtnBaseClass} ${adminToolbarBtnActiveClass}`}
-              >
-                + Nuevo producto
-              </Link>
-            ) : null}
-          </div>
-        </header>
+              {canCreateProduct ? (
+                <Link
+                  href="/admin/products/new"
+                  className={`${adminToolbarBtnBaseClass} ${adminToolbarBtnEmeraldClass}`}
+                >
+                  + Nuevo producto
+                </Link>
+              ) : null}
+            </>
+          }
+        />
 
         <InventorySubnav
           active="products"

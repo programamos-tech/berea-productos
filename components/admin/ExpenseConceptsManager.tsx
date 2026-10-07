@@ -11,16 +11,15 @@ import {
   updateExpenseConcept,
 } from "@/app/actions/admin/expense-concepts";
 import { AdminFormSubmitButton } from "@/components/admin/AdminFormSubmitButton";
+import { AdminModuleHeader } from "@/components/admin/AdminModuleHeader";
 import { AdminPortalRoot } from "@/components/admin/AdminPortalRoot";
 import type { StoreExpenseConceptRow } from "@/lib/store-expense-concepts";
 import {
   adminButtonCancelClass,
   adminFilterInputClass,
   adminFilterLabelClass,
-  adminPageSubtitleClass,
-  adminPageTitleClass,
-  adminToolbarBtnActiveClass,
   adminToolbarBtnBaseClass,
+  adminToolbarBtnEmeraldClass,
   adminToolbarIconBtnClass,
 } from "@/lib/admin-ui";
 import type { ExpensePaymentMethod } from "@/lib/expense-concepts";
@@ -225,9 +224,11 @@ function ConceptModal({
 
 export function ExpenseConceptsManager({
   rows,
+  branchName,
   children,
 }: {
   rows: StoreExpenseConceptRow[];
+  branchName?: string | null;
   children?: ReactNode;
 }) {
   const [modal, setModal] = useState<
@@ -255,18 +256,17 @@ export function ExpenseConceptsManager({
 
   return (
     <div className="flex flex-col gap-4">
-      <header className="flex shrink-0 flex-wrap items-center justify-between gap-2 gap-y-2">
-        <div className="min-w-0">
-          <h1 className={adminPageTitleClass}>Conceptos</h1>
-          <p className={adminPageSubtitleClass}>
-            Catálogo de gastos y egresos
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center justify-end gap-2">
+      <AdminModuleHeader
+        icon="conceptos"
+        title="Conceptos"
+        branchName={branchName}
+        subtitle="Catálogo de gastos y egresos"
+        actions={
+          <>
           <button
             type="button"
             onClick={() => setModal({ mode: "create" })}
-            className={`${adminToolbarBtnBaseClass} ${adminToolbarBtnActiveClass}`}
+            className={`${adminToolbarBtnBaseClass} ${adminToolbarBtnEmeraldClass}`}
           >
             + Nuevo concepto
           </button>
@@ -278,8 +278,9 @@ export function ExpenseConceptsManager({
           >
             ←
           </Link>
-        </div>
-      </header>
+          </>
+        }
+      />
 
       {children}
 

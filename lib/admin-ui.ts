@@ -55,6 +55,10 @@ export const adminToolbarBtnBaseClass =
 export const adminToolbarBtnPrimaryClass =
   "border-[var(--admin-coral)] bg-[var(--admin-coral)] text-white hover:border-[var(--admin-coral-hover)] hover:bg-[var(--admin-coral-hover)]";
 
+/** Acción principal de la cabecera de módulo (nuevo, abrir, cerrar). */
+export const adminToolbarBtnEmeraldClass =
+  "border-emerald-600 bg-emerald-600 text-white hover:border-emerald-700 hover:bg-emerald-700";
+
 /** Segmented / vista activa — zinc, no pastilla coral. */
 export const adminToolbarBtnActiveClass =
   "border-zinc-900 bg-zinc-900 text-white hover:border-zinc-800 hover:bg-zinc-800 dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:border-white dark:hover:bg-white";

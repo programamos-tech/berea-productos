@@ -1,11 +1,9 @@
+import { AdminModuleHeader } from "@/components/admin/AdminModuleHeader";
 import { RegistrosActivityTable } from "@/components/admin/RegistrosActivityTable";
 import { VentasPagination } from "@/components/admin/VentasPagination";
 import { fetchAdminActivityLogPage } from "@/lib/admin-activity-log";
 import { REPORT_STORE_TIME_ZONE } from "@/lib/admin-report-range";
-import {
-  adminPageSubtitleClass,
-  adminPageTitleClass,
-} from "@/lib/admin-ui";
+import { loadAdminPermissions } from "@/lib/load-admin-permissions";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -48,7 +46,10 @@ export default async function AdminActividadesPage({ searchParams }: Props) {
   const pageRequested =
     Number.isFinite(pageRaw) && pageRaw > 0 ? Math.floor(pageRaw) : 1;
 
-  const supabase = await createSupabaseServerClient();
+  const [perm, supabase] = await Promise.all([
+    loadAdminPermissions(),
+    createSupabaseServerClient(),
+  ]);
   let page = pageRequested;
   let { rows: list, total, error } = await fetchAdminActivityLogPage(supabase, {
     page,
@@ -109,14 +110,12 @@ export default async function AdminActividadesPage({ searchParams }: Props) {
 
   return (
     <div className="flex w-full min-w-0 max-w-none flex-col gap-4">
-      <header className="flex shrink-0 flex-wrap items-center justify-between gap-2 gap-y-2">
-        <div className="min-w-0">
-          <h1 className={adminPageTitleClass}>Registros</h1>
-          <p className={adminPageSubtitleClass}>
-            Altas, cambios y movimientos del equipo
-          </p>
-        </div>
-      </header>
+      <AdminModuleHeader
+        icon="registros"
+        title="Registros"
+        branchName={perm?.branchContext?.active.name}
+        subtitle="Altas, cambios y movimientos del equipo"
+      />
 
       <section className="border-t border-zinc-200/70 pt-4 dark:border-zinc-800">
         <RegistrosActivityTable rows={tableRows} />

@@ -10,6 +10,7 @@ import {
   ReportsNavPendingProvider,
   ReportsPendingSwap,
 } from "@/components/admin/ReportsNavPending";
+import { AdminModuleHeader } from "@/components/admin/AdminModuleHeader";
 import { ReportsNavPendingBadge } from "@/components/admin/ReportsNavPendingBadge";
 import {
   ReportActivityFeed,
@@ -28,7 +29,6 @@ import {
 } from "@/lib/admin-report-range";
 import { adminLandingPath } from "@/lib/admin-landing";
 import { loadAdminPermissions } from "@/lib/load-admin-permissions";
-import { adminPageTitleClass } from "@/lib/admin-ui";
 import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
@@ -104,16 +104,20 @@ export default async function AdminHomePage({ searchParams }: PageProps) {
     <Suspense fallback={<div className={reportsViewportClass} />}>
       <ReportsNavPendingProvider>
         <div className={reportsViewportClass}>
-          <header className="flex w-full shrink-0 flex-col gap-3 xl:flex-row xl:items-start xl:justify-between xl:gap-6">
-            <div className="min-w-0 xl:max-w-md 2xl:max-w-lg">
-              <h1 className={`leading-none ${adminPageTitleClass}`}>Reportes</h1>
+          <AdminModuleHeader
+            icon="reportes"
+            title="Reportes"
+            branchName={perm.branchContext?.active.name}
+            subtitle={
               <ReportsHeaderMeta
                 vista={vista}
                 periodLabel={periodLabel}
                 isCurrentTiendaMonth={isCurrentTiendaMonth}
               />
-            </div>
-            <div className="flex w-full min-w-0 max-w-full flex-wrap items-center gap-2 xl:w-auto xl:flex-1 xl:flex-nowrap xl:justify-end">
+            }
+            actionsClassName="flex w-full min-w-0 max-w-full flex-wrap items-center gap-2 xl:w-auto xl:flex-1 xl:flex-nowrap xl:justify-end"
+            actions={
+              <>
               <ReportsVistaFilter
                 vista={vista}
                 todayKey={todayKey}
@@ -140,8 +144,9 @@ export default async function AdminHomePage({ searchParams }: PageProps) {
               />
               <ReportsRefreshButton />
               <ReportsNavPendingBadge />
-            </div>
-          </header>
+              </>
+            }
+          />
 
           <div className="flex min-h-0 flex-1 flex-col gap-4 max-xl:flex-none">
             {/* Solo KPIs esperan el cambio de vista/rango; gráfica y actividad siguen visibles. */}
