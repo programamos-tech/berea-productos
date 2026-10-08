@@ -6,7 +6,10 @@ import {
   receiveStockTransfer,
 } from "@/app/actions/admin/stock-transfers";
 import { StockTransferOpenDetail } from "@/components/admin/StockTransferOpenDetail";
-import { requireAdminAnyPermission } from "@/lib/require-admin-permission";
+import {
+  requireAccountModule,
+  requireAdminAnyPermission,
+} from "@/lib/require-admin-permission";
 import {
   isStockTransferStatus,
   stockTransferCode,
@@ -48,6 +51,7 @@ export default async function AdminTrasladoDetailPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ error?: string; message?: string }>;
 }) {
+  await requireAccountModule("traslados");
   const perm = await requireAdminAnyPermission([
     "stock_transferir",
     "inventario_ver",

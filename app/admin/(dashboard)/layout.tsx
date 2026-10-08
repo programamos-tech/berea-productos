@@ -47,6 +47,7 @@ export default async function AdminDashboardLayout({
   let allowedNavHrefs = adminNavAllowedHrefList(perm.permissions, {
     jobRole: perm.jobRole,
     canOnboard: showOnboarding,
+    disabledModules: perm.disabledModules,
   });
   let cashGate: {
     mustOpen: boolean;

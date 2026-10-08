@@ -8,6 +8,7 @@ import {
   readSubmissionToken,
 } from "@/lib/admin-form-token";
 import {
+  requireAccountModule,
   requireAdminAnyPermission,
   requireAdminPermission,
 } from "@/lib/require-admin-permission";
@@ -55,6 +56,7 @@ function parseItems(
 }
 
 export async function sendStockTransfer(formData: FormData) {
+  await requireAccountModule("traslados");
   const perm = await requireAdminPermission("stock_transferir");
   const supabase = await createSupabaseServerClient();
   const fromId = String(formData.get("from_branch_id") ?? "").trim();
@@ -121,6 +123,7 @@ async function closeTransfer(
   formData: FormData,
   kind: "receive" | "cancel",
 ) {
+  await requireAccountModule("traslados");
   const perm = await requireAdminAnyPermission([
     "stock_transferir",
     "inventario_ver",

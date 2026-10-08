@@ -170,6 +170,7 @@ export async function createTenantOnboarding(
       custom_domains: customDomains,
       brand,
       storefront_config: { checkout_mode: "transfer" },
+      disabled_modules: ["traslados"],
     })
     .select("id, slug")
     .single();

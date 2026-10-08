@@ -1,3 +1,4 @@
+import { isAccountModuleEnabled, type AccountModuleId } from "@/lib/admin-account-modules";
 import {
   jobRoleSkipsCashRegister,
   type PermissionKey,
@@ -23,6 +24,15 @@ export async function requireAdminSession(): Promise<AdminActingSession> {
     redirect(perm.isPlatformOperator ? "/admin/cuentas" : "/admin/login");
   }
   return { ...perm, branchContext: perm.branchContext };
+}
+
+/** El módulo tiene que estar encendido en la cuenta. Si no, no existe para ese cliente. */
+export async function requireAccountModule(moduleId: AccountModuleId) {
+  const perm = await requireAdminSession();
+  if (!isAccountModuleEnabled(perm.disabledModules, moduleId)) {
+    redirect("/admin/products");
+  }
+  return perm;
 }
 
 /** Exige un permiso concreto (AND implícito de un solo elemento). */

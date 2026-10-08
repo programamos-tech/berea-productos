@@ -18,6 +18,7 @@ import {
   storagePublicObjectUrl,
 } from "@/lib/storage-public-url";
 import { fetchCurrentBranchInventoryMap } from "@/lib/branch-inventory";
+import { isAccountModuleEnabled } from "@/lib/admin-account-modules";
 import { loadAdminPermissions } from "@/lib/load-admin-permissions";
 
 export const dynamic = "force-dynamic";
@@ -183,6 +184,10 @@ export default async function AdminProductDetailPage({ params }: Props) {
           productName={raw.name}
           referenceLabel={reference}
           stockLocal={Math.max(0, Math.floor(stockL))}
+          canTransfer={
+            isAccountModuleEnabled(perm?.disabledModules ?? [], "traslados") &&
+            Boolean(perm?.permissions.stock_transferir)
+          }
         />
       </header>
 

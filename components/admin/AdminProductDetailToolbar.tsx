@@ -19,6 +19,7 @@ type Props = {
   productName: string;
   referenceLabel: string;
   stockLocal: number;
+  canTransfer?: boolean;
 };
 
 export function AdminProductDetailToolbar({
@@ -26,6 +27,7 @@ export function AdminProductDetailToolbar({
   productName,
   referenceLabel,
   stockLocal,
+  canTransfer = false,
 }: Props) {
   const [stockOpen, setStockOpen] = useState(false);
 
@@ -47,13 +49,15 @@ export function AdminProductDetailToolbar({
       >
         Stock
       </button>
-      <Link
-        href={`/admin/traslados/nuevo?product=${productId}`}
-        className={btnIdle}
-        title="Trasladar entre sucursales"
-      >
-        Trasladar
-      </Link>
+      {canTransfer ? (
+        <Link
+          href={`/admin/traslados/nuevo?product=${productId}`}
+          className={btnIdle}
+          title="Trasladar entre sucursales"
+        >
+          Trasladar
+        </Link>
+      ) : null}
       <ProductDeleteConfirmForm
         productId={productId}
         productName={productName}

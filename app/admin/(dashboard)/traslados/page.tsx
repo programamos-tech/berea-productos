@@ -2,7 +2,10 @@ import Link from "next/link";
 import { RefreshCw } from "lucide-react";
 import { StockTransferRowActions } from "@/components/admin/StockTransferRowActions";
 import { StockTransfersFilters } from "@/components/admin/StockTransfersFilters";
-import { requireAdminAnyPermission } from "@/lib/require-admin-permission";
+import {
+  requireAccountModule,
+  requireAdminAnyPermission,
+} from "@/lib/require-admin-permission";
 import {
   formatTransferWhen,
   isStockTransferStatus,
@@ -56,6 +59,7 @@ export default async function AdminTrasladosPage({
 }: {
   searchParams: Promise<{ status?: string; q?: string }>;
 }) {
+  await requireAccountModule("traslados");
   const perm = await requireAdminAnyPermission([
     "stock_transferir",
     "inventario_ver",

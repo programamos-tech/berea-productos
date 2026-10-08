@@ -3,7 +3,10 @@ import { sendStockTransfer } from "@/app/actions/admin/stock-transfers";
 import { AdminNewPageShell } from "@/components/admin/AdminNewPageShell";
 import { StockTransferForm } from "@/components/admin/StockTransferForm";
 import { fetchBranchInventoryMap } from "@/lib/branch-inventory";
-import { requireAdminPermission } from "@/lib/require-admin-permission";
+import {
+  requireAccountModule,
+  requireAdminPermission,
+} from "@/lib/require-admin-permission";
 import { stockTransferErrorMessage } from "@/lib/stock-transfers";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -14,6 +17,7 @@ export default async function AdminNuevoTrasladoPage({
 }: {
   searchParams: Promise<{ product?: string; error?: string; message?: string }>;
 }) {
+  await requireAccountModule("traslados");
   const perm = await requireAdminPermission("stock_transferir");
   const sp = await searchParams;
   const branches = perm.branchContext.available.map((branch) => ({

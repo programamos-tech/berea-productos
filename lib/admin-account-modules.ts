@@ -17,6 +17,7 @@ export const ACCOUNT_MODULE_IDS = [
   "creditos",
   "egresos",
   "inventario",
+  "traslados",
   "kits",
   "clientes",
   "equipo",
@@ -73,8 +74,13 @@ export const ACCOUNT_MODULES: AccountModuleDef[] = [
       "productos_editar",
       "categorias_gestionar",
       "stock_actualizar",
-      "stock_transferir",
     ],
+  },
+  {
+    id: "traslados",
+    label: "Traslados",
+    hint: "Movimientos de inventario entre sucursales",
+    permissionKeys: ["stock_transferir"],
   },
   {
     id: "kits",
@@ -123,6 +129,13 @@ const MODULE_BY_ID = new Map(
 
 export function isAccountModuleId(raw: string): raw is AccountModuleId {
   return MODULE_BY_ID.has(raw as AccountModuleId);
+}
+
+export function isAccountModuleEnabled(
+  disabled: readonly AccountModuleId[],
+  moduleId: AccountModuleId,
+): boolean {
+  return !disabled.includes(moduleId);
 }
 
 export function listedAccountModules(): AccountModuleDef[] {

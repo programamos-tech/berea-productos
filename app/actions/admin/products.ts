@@ -16,7 +16,10 @@ import {
   parseProductCatalogFields,
 } from "@/lib/product-catalog-fields";
 import { loadAdminPermissions } from "@/lib/load-admin-permissions";
-import { assertActionPermission } from "@/lib/require-admin-permission";
+import {
+  assertActionPermission,
+  requireAccountModule,
+} from "@/lib/require-admin-permission";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { revalidateStoreCatalogTags } from "@/lib/revalidate-store-cache";
 import { revalidatePath } from "next/cache";
@@ -861,6 +864,7 @@ export async function transferProductStock(productId: string, formData: FormData
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect("/admin/login");
+  await requireAccountModule("traslados");
   await assertActionPermission("stock_transferir");
 
   const fromBranchId = String(formData.get("from_branch_id") ?? "").trim();

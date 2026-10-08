@@ -18,6 +18,7 @@ import {
   fetchAdminCategoriesManageList,
   fetchAdminProductsList,
 } from "@/lib/supabase/admin-products-list";
+import { isAccountModuleEnabled } from "@/lib/admin-account-modules";
 import { loadAdminPermissions } from "@/lib/load-admin-permissions";
 import { fetchCurrentBranchInventoryMap } from "@/lib/branch-inventory";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -149,6 +150,11 @@ export default async function AdminProductsPage({
     authPerm?.permissions.categorias_gestionar,
   );
   const canSeeKits = Boolean(authPerm?.permissions.kits_ver);
+  const canSeeTransfers =
+    isAccountModuleEnabled(authPerm?.disabledModules ?? [], "traslados") &&
+    Boolean(
+      authPerm?.permissions.inventario_ver || authPerm?.permissions.stock_transferir,
+    );
 
   const spRecord = sp as Record<string, string | string[] | undefined>;
   const qParam = spRecord.q;
@@ -321,7 +327,7 @@ export default async function AdminProductsPage({
           active="products"
           showProducts
           showKits={canSeeKits}
-          showTransfers
+          showTransfers={canSeeTransfers}
         />
 
         <div className="flex min-h-0 flex-col gap-4">
