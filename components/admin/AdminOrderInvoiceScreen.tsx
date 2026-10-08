@@ -277,6 +277,16 @@ export async function AdminOrderInvoiceScreen({
       lines={lines}
       transferProofAttachments={transferProofAttachments}
       checkoutPaymentMethod={checkoutPm}
+      mixedCashCents={
+        "pos_mixed_cash_cents" in order && order.pos_mixed_cash_cents != null
+          ? Math.floor(Number(order.pos_mixed_cash_cents))
+          : null
+      }
+      mixedTransferCents={
+        "pos_mixed_transfer_cents" in order && order.pos_mixed_transfer_cents != null
+          ? Math.floor(Number(order.pos_mixed_transfer_cents))
+          : null
+      }
       fulfillmentStatus={
         "fulfillment_status" in order && order.fulfillment_status != null
           ? String(order.fulfillment_status)

@@ -117,6 +117,10 @@ export type OrderInvoiceDetailViewProps = {
     filename: string | null;
   }[];
   checkoutPaymentMethod?: string | null;
+  /** Parte en efectivo de un pago mixto de mostrador. */
+  mixedCashCents?: number | null;
+  /** Parte en transferencia de un pago mixto de mostrador. */
+  mixedTransferCents?: number | null;
   fulfillmentStatus?: string | null;
   /** Enlace al listado Ventas (p. ej. misma página y filtros). */
   ventasListHref?: string;
@@ -244,6 +248,8 @@ export function OrderInvoiceDetailView(props: OrderInvoiceDetailViewProps) {
     lines,
     transferProofAttachments = [],
     checkoutPaymentMethod = null,
+    mixedCashCents = null,
+    mixedTransferCents = null,
     fulfillmentStatus = null,
     ventasListHref = "/admin/ventas",
     listLabel = "Ventas",
@@ -286,6 +292,20 @@ export function OrderInvoiceDetailView(props: OrderInvoiceDetailViewProps) {
   const pagoTone = ventaFormaPagoTone(wompiReference, {
     checkoutPaymentMethod: checkoutPaymentMethod ?? undefined,
   });
+  const mixedCash = Math.floor(Number(mixedCashCents ?? NaN));
+  const mixedTransfer = Math.floor(Number(mixedTransferCents ?? NaN));
+  const mixedSplit =
+    (wompiReference?.trim() ?? "") === "POS:mixed" &&
+    Number.isFinite(mixedCash) &&
+    Number.isFinite(mixedTransfer) &&
+    mixedCash >= 0 &&
+    mixedTransfer >= 0 &&
+    mixedCash + mixedTransfer > 0
+      ? [
+          { label: "Efectivo", cents: mixedCash },
+          { label: "Transferencia", cents: mixedTransfer },
+        ]
+      : null;
   const pagoRecibido = ventaPagoRecibidoTone(
     status,
     wompiReference,
@@ -780,6 +800,21 @@ export function OrderInvoiceDetailView(props: OrderInvoiceDetailViewProps) {
             <div>
               <p className={labelClass}>Método de pago</p>
               <p className={`mt-1.5 text-sm ${pagoTone.className}`}>{pagoTone.label}</p>
+              {mixedSplit ? (
+                <ul className="mt-2 space-y-1.5">
+                  {mixedSplit.map((part) => (
+                    <li
+                      key={part.label}
+                      className="flex items-baseline justify-between gap-4 text-sm text-zinc-700 dark:text-zinc-200"
+                    >
+                      <span>{part.label}</span>
+                      <span className="tabular-nums font-medium text-zinc-900 dark:text-zinc-100">
+                        <StaticCopCents cents={part.cents} />
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
             </div>
             {creditExtras ? null : (
             <div>
@@ -1024,6 +1059,24 @@ export function OrderInvoiceDetailView(props: OrderInvoiceDetailViewProps) {
                     </div>
                   </>
                 )}
+                {mixedSplit ? (
+                  <div
+                    className={
+                      isLetterLayout
+                        ? "mt-3 space-y-1 border-t border-zinc-200 pt-3 text-[10pt] text-zinc-700"
+                        : "mt-2 space-y-0.5 border-t border-dashed border-black pt-2 text-[10px] text-black"
+                    }
+                  >
+                    {mixedSplit.map((part) => (
+                      <div key={part.label} className="flex justify-between gap-4">
+                        <span>{part.label}</span>
+                        <span className="tabular-nums font-semibold">
+                          {formatCop(part.cents)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
               </div>
             </div>
           </>
