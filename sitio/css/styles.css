@@ -197,7 +197,7 @@ html.topbar-off .nav-wrap { margin-top: 0; padding-top: 14px; }
   display: flex;
   align-items: center;
   gap: 8px;
-  min-height: 72px;
+  min-height: 64px;
   padding: 8px 8px 8px 18px;
   background: white;
   border: 1px solid rgba(20, 20, 22, 0.06);
@@ -206,7 +206,7 @@ html.topbar-off .nav-wrap { margin-top: 0; padding-top: 14px; }
 }
 
 .brand { display: flex; align-items: center; margin-right: auto; }
-.brand img { height: 44px; width: auto; }
+.brand img { height: 30px; width: auto; }
 
 .links {
   display: flex;
@@ -928,7 +928,7 @@ dialog::backdrop { background: rgba(16, 16, 18, 0.52); }
   .cookie-actions { justify-content: flex-end; }
   .cta-box { padding: 32px 22px; }
   .nav { border-radius: 22px; padding-left: 12px; }
-  .brand img { height: 36px; }
+  .brand img { height: 26px; }
   .topbar p { font-size: 13px; }
   .hero { padding-top: 18px; }
 }
