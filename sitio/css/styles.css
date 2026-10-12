@@ -12,7 +12,7 @@
   --good: #157a56;
   --shadow: 0 18px 50px rgba(20, 20, 22, 0.1);
   --font: "Manrope", "Avenir Next", "Segoe UI", sans-serif;
-  --max: 100%;
+  --max: 1280px;
 }
 
 *,
