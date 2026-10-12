@@ -381,8 +381,12 @@ html.topbar-off .nav-wrap { margin-top: 0; padding-top: 0; }
   gap: 8px;
   padding: 4px 6px 12px;
 }
-.side-brand img,
-.who img { width: 22px; height: auto; filter: grayscale(1) brightness(2.4); }
+.side-brand img {
+  width: 22px;
+  height: auto;
+  filter: brightness(0) invert(1);
+}
+.who img { width: 16px; height: auto; }
 .side-brand strong,
 .who span { display: block; font-size: 13px; color: white; }
 .side-brand small { color: #9a9eaa; font-size: 11px; }
