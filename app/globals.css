@@ -20,20 +20,19 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-roboto);
-  --font-weight-semibold: 500;
+  --font-sans: var(--font-jakarta);
   --font-mono: var(--font-geist-mono);
 }
 
 body {
   background: #ffffff;
   color: var(--foreground);
-  font-family: var(--font-roboto), ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
   font-synthesis: none;
 }
 
 .font-berea-nova {
-  font-family: "Stack Sans Notch", var(--font-roboto), ui-sans-serif, system-ui, sans-serif;
+  font-family: "Stack Sans Notch", var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
   font-weight: 500;
 }
 
@@ -427,15 +426,7 @@ html:has([data-admin-theme])::-webkit-scrollbar {
     page: ticket;
     max-width: 72mm !important;
     margin-inline: auto !important;
-    font-family:
-      system-ui,
-      -apple-system,
-      "Segoe UI",
-      Roboto,
-      "Helvetica Neue",
-      Arial,
-      "Noto Sans",
-      sans-serif !important;
+    font-family: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif !important;
     font-size: 11px !important;
     line-height: 1.35 !important;
     color: #0a0a0a !important;
@@ -463,14 +454,7 @@ html:has([data-admin-theme])::-webkit-scrollbar {
     max-width: none !important;
     margin: 0 !important;
     padding: 0 !important;
-    font-family:
-      "Segoe UI",
-      system-ui,
-      -apple-system,
-      Roboto,
-      "Helvetica Neue",
-      Arial,
-      sans-serif !important;
+    font-family: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif !important;
     font-size: 11pt !important;
     line-height: 1.45 !important;
     color: #18181b !important;
