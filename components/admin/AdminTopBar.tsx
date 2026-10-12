@@ -1,8 +1,6 @@
 import Link from "next/link";
 import { AdminGlobalSearch } from "@/components/admin/AdminGlobalSearch";
-import { AdminNotificationBell } from "@/components/admin/AdminNotificationBell";
-import { AdminThemeToggle } from "@/components/admin/AdminThemeToggle";
-import { AdminUserAvatar } from "@/components/admin/AdminUserAvatar";
+import { AdminWolfAvatar } from "@/components/admin/AdminUserAvatar";
 import { AdminUserMenu } from "@/components/admin/AdminUserMenu";
 import { BranchSwitcher } from "@/components/admin/BranchSwitcher";
 import { LeaveAccountButton } from "@/components/admin/LeaveAccountButton";
@@ -15,7 +13,6 @@ import {
 } from "@/lib/storefront-branch-url";
 
 type AdminTopBarProps = {
-  showOrderNotifications?: boolean;
   displayName: string;
   email: string;
   isPlatformOperator?: boolean;
@@ -34,7 +31,6 @@ type AdminTopBarProps = {
 };
 
 export function AdminTopBar({
-  showOrderNotifications = false,
   displayName,
   email,
   isPlatformOperator = false,
@@ -83,9 +79,6 @@ export function AdminTopBar({
         </div>
 
         <div className="flex shrink-0 items-center gap-1 sm:gap-2">
-          <div className="lg:hidden">
-            <AdminThemeToggle />
-          </div>
           <Link
             href="/admin/ventas/nueva"
             className="flex size-9 items-center justify-center rounded-full border border-[var(--admin-coral)] bg-[var(--admin-coral)] text-lg font-light leading-none text-white shadow-[0_8px_24px_-12px_color-mix(in_srgb,var(--admin-coral-deep)_40%,transparent)] transition hover:border-[var(--admin-coral-hover)] hover:bg-[var(--admin-coral-hover)] sm:size-10"
@@ -93,25 +86,12 @@ export function AdminTopBar({
           >
             +
           </Link>
-          {showOrderNotifications ? (
-            <AdminNotificationBell className="lg:hidden" />
-          ) : null}
-          <div className="ml-0.5 hidden items-center gap-1 border-l border-zinc-200 pl-2 dark:border-zinc-700 lg:flex">
-            <AdminThemeToggle />
-            {showOrderNotifications ? <AdminNotificationBell /> : null}
-          </div>
 
           <AdminUserMenu
             displayName={displayName}
             email={email}
             isPlatformOperator={isPlatformOperator}
-            avatar={
-              <AdminUserAvatar
-                displayName={displayName}
-                seed={email || displayName}
-                size={40}
-              />
-            }
+            avatar={<AdminWolfAvatar size={40} />}
           />
         </div>
       </div>

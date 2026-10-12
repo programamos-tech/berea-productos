@@ -94,7 +94,6 @@ export function AdminDashboardShell({
 
         <div className="relative z-10 flex min-h-dvh min-w-0 max-w-full flex-1 flex-col overflow-x-clip overflow-y-visible bg-white dark:bg-zinc-950 lg:ml-64 print:ml-0 print:bg-white">
           <AdminTopBar
-            showOrderNotifications={notifyNewWebOrders && !mustOpen}
             displayName={sessionUser.displayName}
             email={sessionUser.email}
             isPlatformOperator={sessionUser.isPlatformOperator}
