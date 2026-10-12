@@ -98,8 +98,7 @@ h1, h2, h3, h4, p { margin: 0; }
 }
 .section-head h2,
 .cloud h2,
-.faq h2,
-.privacy h2 {
+.faq h2 {
   font-size: clamp(2rem, 4vw, 3rem);
   line-height: 1.08;
   letter-spacing: -0.035em;
@@ -182,11 +181,58 @@ h1, h2, h3, h4, p { margin: 0; }
 .topbar-close:hover { background: rgba(255, 255, 255, 0.12); }
 html.topbar-off .topbar { display: none; }
 
-.site-head {
+.scroll-line {
   position: sticky;
   top: 0;
+  z-index: 60;
+  height: 3px;
+  background: #e6eef0;
+}
+.scroll-line span {
+  display: block;
+  height: 100%;
+  background: #0197b2;
+  transform: scaleX(0);
+  transform-origin: left center;
+}
+.scroll-line.is-done span {
+  box-shadow: 0 0 10px rgba(1, 151, 178, 0.9);
+}
+
+.site-head {
+  position: sticky;
+  top: 3px;
   z-index: 50;
 }
+
+.to-top {
+  position: fixed;
+  z-index: 46;
+  right: 18px;
+  bottom: 18px;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 999px;
+  background: #0197b2;
+  color: white;
+  text-decoration: none;
+  box-shadow: 0 10px 24px rgba(1, 151, 178, 0.32);
+  opacity: 0;
+  transform: translateY(14px);
+  pointer-events: none;
+  transition: opacity 0.3s ease, transform 0.3s ease, background 0.2s ease;
+}
+.to-top .icon { width: 22px; height: 22px; }
+.to-top.is-on {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+.to-top:hover { background: #01829a; }
+.to-top.is-done { animation: hop 0.55s ease; }
+body.has-cookie .to-top { bottom: 112px; }
 
 .nav-wrap {
   position: relative;
@@ -777,17 +823,6 @@ td { font-weight: 700; }
 details[open] .plus::after { opacity: 0; }
 .faq-list details p { margin: 0 0 16px; color: var(--muted); max-width: 62ch; }
 
-.privacy { padding: 0 0 72px; }
-.privacy-box {
-  display: grid;
-  grid-template-columns: 0.8fr 1.2fr;
-  gap: 24px;
-  padding: 28px;
-  border-radius: 22px;
-  background: var(--mist);
-}
-.privacy-box p + p { margin-top: 10px; color: var(--muted); }
-
 .cta { padding: 0 0 72px; }
 .cta-box {
   padding: 56px 40px;
@@ -1073,23 +1108,59 @@ html.js .phone-copy,
 html.js .phone,
 html.js .faq-grid > :first-child,
 html.js .faq-list details,
-html.js .cta-box {
+html.js .cta-box,
+html.js .tour-nav,
+html.js .tour-stage {
   opacity: 0;
-  transform: translateY(22px);
-  transition: opacity 0.65s ease, transform 0.65s ease;
+  transform: translateY(28px);
+  transition: opacity 0.7s cubic-bezier(0.2, 0.7, 0.2, 1), transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1);
 }
-html.js .is-in {
+html.js .card { transform: translateY(36px) scale(0.94); }
+html.js .cloud-grid > :first-child,
+html.js .phone-copy,
+html.js .faq-grid > :first-child,
+html.js .tour-nav { transform: translateX(-40px); }
+html.js .cloud-card,
+html.js .tour-stage { transform: translateX(40px); }
+html.js .phone { transform: translateX(48px) rotate(3deg); }
+html.js .case-grid .case:nth-child(1) { transform: translateX(-42px); }
+html.js .case-grid .case:nth-child(2) { transform: translateY(42px) scale(0.92); }
+html.js .case-grid .case:nth-child(3) { transform: translateX(42px); }
+html.js .faq-list details { transform: translateX(28px); }
+html.js .cta-box { transform: translateY(24px) scale(0.96); }
+html.js .is-in,
+html.js .case-grid .case.is-in,
+html.js .faq-list details.is-in,
+html.js .card.is-in,
+html.js .phone.is-in {
   opacity: 1;
   transform: none;
 }
-html.js .card-grid .card:nth-child(2),
-html.js .case-grid .case:nth-child(2) { transition-delay: 0.08s; }
-html.js .card-grid .card:nth-child(3),
-html.js .case-grid .case:nth-child(3) { transition-delay: 0.16s; }
+html.js .section-head h2,
+html.js .cloud h2,
+html.js .faq h2 {
+  padding-bottom: 10px;
+  background-image: linear-gradient(#0197b2, #0197b2);
+  background-repeat: no-repeat;
+  background-position: left bottom;
+  background-size: 0 3px;
+  transition: background-size 0.7s ease 0.2s;
+}
+html.js .section-head.is-in h2,
+html.js .cloud-grid > .is-in h2,
+html.js .faq-grid > .is-in h2 { background-size: 4.2rem 3px; }
+html.js .card-grid .card:nth-child(2) { transition-delay: 0.08s; }
+html.js .card-grid .card:nth-child(3) { transition-delay: 0.16s; }
 html.js .card-grid .card:nth-child(4) { transition-delay: 0.24s; }
+html.js .card-grid .card:nth-child(5) { transition-delay: 0.32s; }
+html.js .card-grid .card:nth-child(6) { transition-delay: 0.4s; }
+html.js .case-grid .case:nth-child(2) { transition-delay: 0.1s; }
+html.js .case-grid .case:nth-child(3) { transition-delay: 0.2s; }
 html.js .faq-list details:nth-child(2) { transition-delay: 0.06s; }
 html.js .faq-list details:nth-child(3) { transition-delay: 0.12s; }
 html.js .faq-list details:nth-child(4) { transition-delay: 0.18s; }
+html.js .faq-list details:nth-child(5) { transition-delay: 0.24s; }
+html.js .faq-list details:nth-child(6) { transition-delay: 0.3s; }
 html.js .phone.is-in .phone-frame { animation: floaty 5.5s ease-in-out 0.45s infinite; }
 html.js .phone-app article { opacity: 0; transform: translateY(8px); }
 html.js .phone.is-in .phone-app article { animation: rise 0.55s ease forwards; }
@@ -1106,9 +1177,13 @@ html.js .phone.is-in .phone-app article:nth-child(5) { animation-delay: 0.36s; }
   0%, 100% { opacity: 1; transform: scale(1); }
   50% { opacity: 0.4; transform: scale(0.75); }
 }
+@keyframes hop {
+  0%, 100% { transform: none; }
+  45% { transform: translateY(-8px); }
+}
 
 @media (max-width: 1080px) {
-  .hero-grid, .cloud-grid, .phone-grid, .faq-grid, .privacy-box { grid-template-columns: 1fr; }
+  .hero-grid, .cloud-grid, .phone-grid, .faq-grid { grid-template-columns: 1fr; }
   .stage-kpis { grid-template-columns: repeat(3, 1fr); }
   .device-side { width: 156px; }
   .phone-sec { padding-top: 8px; }
@@ -1154,11 +1229,12 @@ html.js .phone.is-in .phone-app article:nth-child(5) { animation-delay: 0.36s; }
   .brand img { height: 26px; }
   .topbar p { font-size: 13px; }
   .hero { padding-top: 18px; }
+  body.has-cookie .to-top { bottom: 176px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
-  .chart-line, .hero-copy, .device, .live i, .phone-frame { animation: none; }
+  .chart-line, .hero-copy, .device, .live i, .phone-frame, .to-top, .to-top.is-done { animation: none; }
   .chart-line { stroke-dashoffset: 0; }
   html.js .card,
   html.js .case,
@@ -1169,10 +1245,15 @@ html.js .phone.is-in .phone-app article:nth-child(5) { animation-delay: 0.36s; }
   html.js .faq-grid > :first-child,
   html.js .faq-list details,
   html.js .cta-box,
+  html.js .tour-nav,
+  html.js .tour-stage,
   html.js .phone-app article {
     opacity: 1;
     transform: none;
     transition: none;
     animation: none;
   }
+  html.js .section-head h2,
+  html.js .cloud h2,
+  html.js .faq h2 { background-size: 4.2rem 3px; transition: none; }
 }

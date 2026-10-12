@@ -21,6 +21,7 @@
 </head>
 <body>
   <a class="skip" href="#contenido">Saltar al contenido</a>
+  <div class="scroll-line" aria-hidden="true"><span id="scroll-line"></span></div>
 
   <div class="site-head">
   <div class="topbar">
@@ -551,20 +552,6 @@
       </div>
     </section>
 
-    <section class="privacy" id="privacidad">
-      <div class="wrap privacy-box">
-        <div>
-          <p class="eyebrow">Privacidad</p>
-          <h2>Qué guarda esta página</h2>
-        </div>
-        <div>
-          <p>Esta presentación no usa rastreadores de terceros. En este navegador solo recordamos si cerraste el aviso de cookies y, si envías el formulario, los datos que escribes.</p>
-          <p>El botón de WhatsApp abre un chat con el soporte de Berea para que envíes la solicitud tú mismo. No publicamos esa conversación aquí.</p>
-          <p id="cookie-state" class="fine"></p>
-        </div>
-      </div>
-    </section>
-
     <section class="cta">
       <div class="wrap cta-box">
         <p class="eyebrow eyebrow-light">Empieza ya</p>
@@ -593,7 +580,6 @@
         <a href="#soluciones">Soluciones</a>
         <a href="#nube">Nube</a>
         <a href="#preguntas">Preguntas</a>
-        <a href="#privacidad">Privacidad</a>
       </div>
       <div>
         <h3>Contacto</h3>
@@ -607,8 +593,12 @@
     </div>
   </footer>
 
+  <a class="to-top" id="to-top" href="#inicio" aria-label="Volver arriba">
+    <svg class="icon" aria-hidden="true"><use href="#i-up"></use></svg>
+  </a>
+
   <div class="cookie" id="cookie" role="region" aria-label="Aviso de cookies">
-    <p>Guardamos tu elección en este navegador. No usamos rastreadores de terceros. Lee la <a href="#privacidad">privacidad</a>.</p>
+    <p>Guardamos tu elección en este navegador. No usamos rastreadores de terceros.</p>
     <div class="cookie-actions">
       <button class="btn btn-ghost" type="button" data-cookie="rejected">Rechazar</button>
       <button class="btn btn-dark" type="button" data-cookie="accepted">Aceptar</button>
@@ -693,6 +683,7 @@
   <svg class="sprite" aria-hidden="true">
     <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
     <symbol id="i-chevron" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-up" viewBox="0 0 24 24"><path d="M6 14l6-6 6 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
     <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.2 4.2L19 7.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
     <symbol id="i-cloud" viewBox="0 0 24 24"><path d="M7.2 17.5h9.6a3.4 3.4 0 0 0 .4-6.8 5 5 0 0 0-9.6-1.1 3.4 3.4 0 0 0-.4 7.9z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></symbol>
     <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M16 16l4 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>

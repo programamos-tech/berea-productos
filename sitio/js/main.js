@@ -74,23 +74,11 @@
     document.documentElement.classList.add("cookie-ok");
     document.body.classList.remove("has-cookie");
     if (cookie) cookie.hidden = true;
-    writeCookieState();
-  }
-
-  function writeCookieState() {
-    var node = document.getElementById("cookie-state");
-    if (!node) return;
-    var choice = "";
-    try { choice = localStorage.getItem("berea-cookie") || ""; } catch (err) { choice = ""; }
-    if (choice === "accepted") node.textContent = "Tu elección en este navegador: aceptada.";
-    else if (choice === "rejected") node.textContent = "Tu elección en este navegador: rechazada. La página sigue usable.";
-    else node.textContent = "Todavía no elegiste en el aviso de cookies.";
   }
 
   if (cookie && !document.documentElement.classList.contains("cookie-ok")) {
     document.body.classList.add("has-cookie");
   }
-  writeCookieState();
 
   document.querySelectorAll("[data-cookie]").forEach(function (button) {
     button.addEventListener("click", function () {
@@ -264,7 +252,7 @@
   }
 
   var reveal = document.querySelectorAll(
-    ".card, .case, .section-head, .cloud-grid > *, .phone-copy, .phone, .faq-grid > :first-child, .faq-list details, .cta-box"
+    ".card, .case, .section-head, .cloud-grid > *, .phone-copy, .phone, .faq-grid > :first-child, .faq-list details, .cta-box, .tour-nav, .tour-stage"
   );
   if (!("IntersectionObserver" in window)) {
     reveal.forEach(function (el) { el.classList.add("is-in"); });
@@ -278,4 +266,33 @@
     }, { rootMargin: "0px 0px -8% 0px", threshold: 0.15 });
     reveal.forEach(function (el) { seen.observe(el); });
   }
+
+  var scrollLine = document.querySelector(".scroll-line");
+  var scrollBar = document.getElementById("scroll-line");
+  var toTop = document.getElementById("to-top");
+  var scrollQueued = false;
+
+  function paintScroll() {
+    scrollQueued = false;
+    var root = document.documentElement;
+    var max = root.scrollHeight - window.innerHeight;
+    var progress = max <= 0 ? 1 : Math.min(1, window.scrollY / max);
+    var done = progress >= 0.985;
+    if (scrollBar) scrollBar.style.transform = "scaleX(" + progress.toFixed(4) + ")";
+    if (scrollLine) scrollLine.classList.toggle("is-done", done);
+    if (toTop) {
+      toTop.classList.toggle("is-on", window.scrollY > 420);
+      if (done) toTop.classList.add("is-done");
+    }
+  }
+
+  function queueScroll() {
+    if (scrollQueued) return;
+    scrollQueued = true;
+    window.requestAnimationFrame(paintScroll);
+  }
+
+  window.addEventListener("scroll", queueScroll, { passive: true });
+  window.addEventListener("resize", queueScroll);
+  paintScroll();
 })();
