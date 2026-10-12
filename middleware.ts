@@ -135,6 +135,11 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(canonicalPlatformUrl(destPath, search), 307);
   }
 
+  // Presentación de Berea en productos.bereahouse.com/about.
+  if (path === "/about" || path.startsWith("/about/")) {
+    return NextResponse.next();
+  }
+
   if (hostKind === "unknown" && isPublicStorePath(path)) {
     return NextResponse.redirect(canonicalPlatformUrl("/empezar", search), 307);
   }
