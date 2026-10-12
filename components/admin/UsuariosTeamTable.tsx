@@ -1,6 +1,6 @@
 "use client";
 
-import { AdminUserAvatar } from "@/components/admin/AdminUserAvatar";
+import { AdminWolfAvatar, wolfPackFlip } from "@/components/admin/AdminUserAvatar";
 import { Eye } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -52,11 +52,7 @@ export function UsuariosTeamTable({
           const inner = (
             <>
               <div className="flex min-w-0 flex-1 items-start gap-2.5">
-                <AdminUserAvatar
-                  displayName={row.title}
-                  seed={row.avatarSeed}
-                  size={36}
-                />
+                <AdminWolfAvatar size={36} flip={wolfPackFlip(row.avatarSeed)} />
                 <div className="min-w-0">
                   <p className="truncate text-sm font-semibold text-zinc-900 dark:text-zinc-100">
                     {row.title}
@@ -162,11 +158,7 @@ export function UsuariosTeamTable({
                 >
                   <td className="py-2.5 pr-4">
                     <div className="flex min-w-0 items-center gap-2.5">
-                      <AdminUserAvatar
-                        displayName={row.title}
-                        seed={row.avatarSeed}
-                        size={32}
-                      />
+                      <AdminWolfAvatar size={32} flip={wolfPackFlip(row.avatarSeed)} />
                       <span className="truncate font-medium text-zinc-900 dark:text-zinc-100">
                         {row.title}
                       </span>

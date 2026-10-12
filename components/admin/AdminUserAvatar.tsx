@@ -54,8 +54,20 @@ export function AdminUserAvatar({
   );
 }
 
-/** Lobo de Berea, en negro, para la ficha del usuario en la barra. */
-export function AdminWolfAvatar({ size = 40 }: { size?: number }) {
+/** Lobo de Berea, en negro. `flip` voltea algunos para que el equipo no sea un sello repetido. */
+export function wolfPackFlip(seed: string) {
+  let n = 0;
+  for (const ch of seed) n += ch.charCodeAt(0);
+  return n % 2 === 1;
+}
+
+export function AdminWolfAvatar({
+  size = 40,
+  flip = false,
+}: {
+  size?: number;
+  flip?: boolean;
+}) {
   return (
     <span
       className="inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800"
@@ -69,7 +81,7 @@ export function AdminWolfAvatar({ size = 40 }: { size?: number }) {
         width={68}
         height={68}
         unoptimized
-        className="h-[78%] w-auto object-contain brightness-0 dark:invert"
+        className={`h-[78%] w-auto object-contain brightness-0 dark:invert ${flip ? "-scale-x-100" : ""}`}
       />
     </span>
   );

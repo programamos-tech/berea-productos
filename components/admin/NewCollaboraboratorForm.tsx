@@ -7,7 +7,7 @@ import {
   updateCollaboratorAction,
 } from "@/app/actions/admin/collaborators";
 import { AdminFormSubmitButton } from "@/components/admin/AdminFormSubmitButton";
-import { AdminUserAvatar } from "@/components/admin/AdminUserAvatar";
+import { AdminWolfAvatar, wolfPackFlip } from "@/components/admin/AdminUserAvatar";
 import {
   productInputClass as inputClass,
   productLabelClass as labelClass,
@@ -200,10 +200,9 @@ export function NewCollaboraboratorForm({
             <h2 className={sectionTitle}>Datos del colaborador</h2>
 
             <div className="mt-5 flex items-center gap-4">
-              <AdminUserAvatar
-                displayName={displayName.trim() || "Colaborador"}
-                seed={avatarSeed}
+              <AdminWolfAvatar
                 size={64}
+                flip={wolfPackFlip(avatarSeed)}
               />
               <div className="min-w-0">
                 <p className="truncate text-sm font-medium text-zinc-900 dark:text-zinc-100">
