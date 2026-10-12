@@ -22,6 +22,7 @@
 [hidden] { display: none !important; }
 
 html { scroll-behavior: smooth; }
+section[id] { scroll-margin-top: 168px; }
 
 body {
   margin: 0;
@@ -917,10 +918,200 @@ dialog::backdrop { background: rgba(16, 16, 18, 0.52); }
   to { opacity: 1; transform: none; }
 }
 
+.phone-sec { padding: 12px 0 96px; }
+.phone-grid {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: 48px;
+  align-items: center;
+}
+.phone {
+  display: grid;
+  justify-items: center;
+}
+.phone-frame {
+  position: relative;
+  width: 280px;
+  height: 580px;
+  padding: 11px;
+  border-radius: 46px;
+  background: #1c1c1f;
+  box-shadow:
+    inset 0 0 0 1px #3c3c40,
+    0 22px 48px rgba(20, 20, 22, 0.14);
+}
+.phone-frame::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(125deg, rgba(255, 255, 255, 0.16), transparent 34%);
+}
+.phone-btn {
+  position: absolute;
+  width: 3px;
+  background: #2c2c30;
+  border-radius: 2px;
+}
+.phone-btn-silent { left: -3px; top: 112px; height: 22px; }
+.phone-btn-vol { left: -3px; top: 150px; height: 52px; }
+.phone-btn-power { right: -3px; top: 168px; height: 74px; }
+.phone-screen {
+  position: relative;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 36px;
+  background: #f4f6f8;
+}
+.phone-island {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  z-index: 2;
+  width: 96px;
+  height: 28px;
+  margin-left: -48px;
+  border-radius: 20px;
+  background: #111;
+}
+.phone-status {
+  display: flex;
+  justify-content: space-between;
+  padding: 16px 22px 0;
+  font-size: 12px;
+  font-weight: 800;
+}
+.phone-app {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  flex: 1;
+  padding: 22px 14px 0;
+}
+.phone-app header { display: flex; align-items: center; gap: 8px; }
+.phone-app header img { width: 26px; height: auto; }
+.phone-app header strong { display: block; font-size: 14px; line-height: 1.1; }
+.phone-app header small { color: var(--muted); font-size: 12px; }
+.live {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  color: #0197b2;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 800;
+}
+.live i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #0197b2;
+  animation: pulse 1.6s ease infinite;
+}
+.phone-sale {
+  padding: 14px 14px 12px;
+  border-radius: 16px;
+  background: #0197b2;
+  color: white;
+}
+.phone-sale span,
+.phone-sale small { display: block; }
+.phone-sale strong {
+  display: block;
+  margin: 2px 0;
+  font-size: 1.7rem;
+  letter-spacing: -0.04em;
+}
+.phone-sale small { font-size: 12px; font-weight: 600; opacity: 0.9; }
+.phone-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: white;
+  font-size: 14px;
+  font-weight: 700;
+}
+.phone-row b { color: #0197b2; }
+.phone-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  margin: 8px 14px 8px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: white;
+  font-size: 12px;
+  font-weight: 800;
+  text-align: center;
+}
+.phone-tabs span { padding: 8px 0; color: var(--muted); }
+.phone-tabs .is-on {
+  border-radius: 12px;
+  background: #0197b2;
+  color: white;
+}
+.phone-home {
+  width: 108px;
+  height: 5px;
+  margin: 6px auto 10px;
+  border-radius: 999px;
+  background: #1c1c1f;
+}
+
+html.js .card,
+html.js .case,
+html.js .section-head,
+html.js .cloud-grid > *,
+html.js .phone-copy,
+html.js .phone,
+html.js .faq-grid > :first-child,
+html.js .faq-list details,
+html.js .cta-box {
+  opacity: 0;
+  transform: translateY(22px);
+  transition: opacity 0.65s ease, transform 0.65s ease;
+}
+html.js .is-in {
+  opacity: 1;
+  transform: none;
+}
+html.js .card-grid .card:nth-child(2),
+html.js .case-grid .case:nth-child(2) { transition-delay: 0.08s; }
+html.js .card-grid .card:nth-child(3),
+html.js .case-grid .case:nth-child(3) { transition-delay: 0.16s; }
+html.js .card-grid .card:nth-child(4) { transition-delay: 0.24s; }
+html.js .faq-list details:nth-child(2) { transition-delay: 0.06s; }
+html.js .faq-list details:nth-child(3) { transition-delay: 0.12s; }
+html.js .faq-list details:nth-child(4) { transition-delay: 0.18s; }
+html.js .phone.is-in .phone-frame { animation: floaty 5.5s ease-in-out 0.45s infinite; }
+html.js .phone-app article { opacity: 0; transform: translateY(8px); }
+html.js .phone.is-in .phone-app article { animation: rise 0.55s ease forwards; }
+html.js .phone.is-in .phone-app article:nth-child(2) { animation-delay: 0.12s; }
+html.js .phone.is-in .phone-app article:nth-child(3) { animation-delay: 0.2s; }
+html.js .phone.is-in .phone-app article:nth-child(4) { animation-delay: 0.28s; }
+html.js .phone.is-in .phone-app article:nth-child(5) { animation-delay: 0.36s; }
+
+@keyframes floaty {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-12px); }
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.75); }
+}
+
 @media (max-width: 1080px) {
-  .hero-grid, .cloud-grid, .faq-grid, .privacy-box { grid-template-columns: 1fr; }
+  .hero-grid, .cloud-grid, .phone-grid, .faq-grid, .privacy-box { grid-template-columns: 1fr; }
   .stage-kpis { grid-template-columns: repeat(3, 1fr); }
   .device-side { width: 156px; }
+  .phone-sec { padding-top: 8px; }
 }
 
 @media (max-width: 980px) {
@@ -967,6 +1158,21 @@ dialog::backdrop { background: rgba(16, 16, 18, 0.52); }
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
-  .chart-line, .hero-copy, .device { animation: none; }
+  .chart-line, .hero-copy, .device, .live i, .phone-frame { animation: none; }
   .chart-line { stroke-dashoffset: 0; }
+  html.js .card,
+  html.js .case,
+  html.js .section-head,
+  html.js .cloud-grid > *,
+  html.js .phone-copy,
+  html.js .phone,
+  html.js .faq-grid > :first-child,
+  html.js .faq-list details,
+  html.js .cta-box,
+  html.js .phone-app article {
+    opacity: 1;
+    transform: none;
+    transition: none;
+    animation: none;
+  }
 }

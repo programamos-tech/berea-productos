@@ -262,4 +262,20 @@
       if (nombre) nombre.focus();
     });
   }
+
+  var reveal = document.querySelectorAll(
+    ".card, .case, .section-head, .cloud-grid > *, .phone-copy, .phone, .faq-grid > :first-child, .faq-list details, .cta-box"
+  );
+  if (!("IntersectionObserver" in window)) {
+    reveal.forEach(function (el) { el.classList.add("is-in"); });
+  } else {
+    var seen = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) return;
+        entry.target.classList.add("is-in");
+        seen.unobserve(entry.target);
+      });
+    }, { rootMargin: "0px 0px -8% 0px", threshold: 0.15 });
+    reveal.forEach(function (el) { seen.observe(el); });
+  }
 })();
