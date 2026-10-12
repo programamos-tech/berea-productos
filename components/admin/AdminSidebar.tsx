@@ -229,10 +229,10 @@ function SidebarPoweredBy() {
         Powered by
       </span>
       <Image
-        src="/logo-berea-wordmark-white.png"
+        src="/logo-berea-lockup-white.png"
         alt={adminProductBrand}
-        width={408}
-        height={96}
+        width={218}
+        height={60}
         unoptimized
         className="h-7 w-auto max-w-[9.5rem] object-contain"
       />

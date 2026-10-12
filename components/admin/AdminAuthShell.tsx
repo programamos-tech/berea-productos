@@ -76,10 +76,10 @@ export function AdminAuthShell({
                 Powered by
               </span>
               <Image
-                src="/logo-berea-wordmark.png"
+                src="/logo-berea-lockup.png"
                 alt={adminProductBrand}
-                width={408}
-                height={96}
+                width={218}
+                height={60}
                 className="h-6 w-auto max-w-[9.5rem] object-contain dark:brightness-0 dark:invert"
               />
             </p>
