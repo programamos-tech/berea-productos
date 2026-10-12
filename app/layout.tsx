@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import type { CSSProperties } from "react";
-import { Afacad, Geist_Mono } from "next/font/google";
+import { Geist_Mono, Roboto } from "next/font/google";
 import Script from "next/script";
 import { storeBrand, storeShortDescription } from "@/lib/brand";
 import {
@@ -29,10 +29,10 @@ import {
 } from "@/lib/store-theme";
 import "./globals.css";
 
-const afacad = Afacad({
-  variable: "--font-afacad",
+const roboto = Roboto({
+  variable: "--font-roboto",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  weight: ["300", "400", "500", "700"],
 });
 
 const geistMono = Geist_Mono({
@@ -62,7 +62,7 @@ export default function RootLayout({
   return (
     <html
       lang="es"
-      className={`${afacad.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${roboto.variable} ${geistMono.variable} h-full antialiased`}
     >
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
