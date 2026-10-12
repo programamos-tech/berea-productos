@@ -252,7 +252,7 @@
   }
 
   var reveal = document.querySelectorAll(
-    ".card, .case, .section-head, .cloud-grid > *, .phone-copy, .phone, .faq-grid > :first-child, .faq-list details, .cta-box, .tour-nav, .tour-stage"
+    ".card, .case, .section-head, .cloud-grid > *, .phone-copy, .phone, .ipad, .faq-grid > :first-child, .faq-list details, .cta-box, .tour-nav, .tour-stage"
   );
   if (!("IntersectionObserver" in window)) {
     reveal.forEach(function (el) { el.classList.add("is-in"); });

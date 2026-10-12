@@ -840,18 +840,19 @@ details[open] .plus::after { opacity: 0; }
 
 .footer {
   padding: 36px 0 28px;
-  background: #111111;
-  color: white;
-  border-top: 0;
+  background: #ffffff;
+  color: var(--ink);
+  border-top: 1px solid var(--line);
 }
 .footer-grid { display: grid; grid-template-columns: 1.4fr repeat(3, 1fr); gap: 24px; }
-.footer-logo { height: 34px; width: auto; margin-bottom: 10px; filter: brightness(0) invert(1); }
+.footer-logo { height: 36px; width: auto; margin-bottom: 10px; }
 .footer p, .footer a, .footer button {
-  color: rgba(255, 255, 255, 0.72);
+  color: var(--muted);
   font-weight: 700;
   text-decoration: none;
 }
-.footer h3 { margin: 0 0 10px; font-size: 0.92rem; color: white; }
+.footer h3 { margin: 0 0 10px; font-size: 0.92rem; color: var(--ink); }
+.footer .footer-place { margin: 0 0 10px; color: var(--ink); font-weight: 800; line-height: 1.35; }
 .footer a, .footer button {
   display: block;
   padding: 0;
@@ -860,15 +861,15 @@ details[open] .plus::after { opacity: 0; }
   background: none;
   text-align: left;
 }
-.footer a:hover, .footer button:hover { color: #7fd4e4; }
+.footer a:hover, .footer button:hover { color: #0197b2; }
 .footer-bottom {
   display: flex;
   justify-content: space-between;
   gap: 12px;
   margin-top: 28px;
   padding-top: 16px;
-  border-top: 1px solid rgba(255, 255, 255, 0.14);
-  color: rgba(255, 255, 255, 0.55);
+  border-top: 1px solid var(--line);
+  color: var(--muted);
   font-size: 0.88rem;
   font-weight: 700;
 }
@@ -956,10 +957,127 @@ dialog::backdrop { background: rgba(16, 16, 18, 0.52); }
 .phone-sec { padding: 12px 0 96px; }
 .phone-grid {
   display: grid;
-  grid-template-columns: 1.1fr 0.9fr;
-  gap: 48px;
+  grid-template-columns: 0.92fr 1.08fr;
+  gap: 40px;
   align-items: center;
 }
+.phone-copy .fine { margin-top: 4px; }
+.devices {
+  position: relative;
+  min-height: 470px;
+}
+.ipad {
+  position: absolute;
+  left: 0;
+  top: 8px;
+  width: calc(100% - 168px);
+}
+.ipad-frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 2.85;
+  padding: 14px 14px 14px 20px;
+  border-radius: 28px;
+  background: #1c1c1f;
+  box-shadow:
+    inset 0 0 0 1px #3c3c40,
+    0 22px 48px rgba(20, 20, 22, 0.14);
+}
+.ipad-frame::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(125deg, rgba(255, 255, 255, 0.16), transparent 36%);
+}
+.ipad-btn {
+  position: absolute;
+  top: -3px;
+  left: 78px;
+  width: 46px;
+  height: 3px;
+  border-radius: 2px;
+  background: #2c2c30;
+}
+.ipad-cam {
+  position: absolute;
+  left: 7px;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  margin-top: -4px;
+  border-radius: 50%;
+  background: #2a2a2e;
+  box-shadow: inset 0 0 0 2px #111;
+}
+.ipad-screen {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  overflow: hidden;
+  border-radius: 14px;
+  background: #f4f6f8;
+}
+.ipad-screen header,
+.ipad-list p {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ipad-screen header img { width: 22px; height: auto; }
+.ipad-screen header strong { display: block; font-size: 13px; line-height: 1.1; }
+.ipad-screen header small { color: var(--muted); font-size: 11px; }
+.ipad-kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.ipad-kpis article {
+  padding: 10px;
+  border-radius: 12px;
+  background: white;
+  border: 1px solid var(--line);
+}
+.ipad-kpis span { display: block; color: var(--muted); font-size: 11px; font-weight: 700; }
+.ipad-kpis strong { display: block; margin-top: 2px; font-size: 1.05rem; letter-spacing: -0.03em; }
+.ipad-kpis article:first-child { background: #0197b2; border-color: #0197b2; color: white; }
+.ipad-kpis article:first-child span { color: rgba(255, 255, 255, 0.86); }
+.ipad-list { display: grid; gap: 6px; }
+.ipad-list p {
+  justify-content: space-between;
+  margin: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: white;
+  font-size: 13px;
+  font-weight: 700;
+}
+.ipad-list b { color: #0197b2; }
+.devices .phone {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+}
+.devices .phone-frame {
+  width: 196px;
+  height: 404px;
+  padding: 8px;
+  border-radius: 36px;
+}
+.devices .phone-screen { border-radius: 28px; }
+.devices .phone-island { width: 70px; height: 20px; margin-left: -35px; top: 8px; }
+.devices .phone-status { padding: 12px 16px 0; font-size: 11px; }
+.devices .phone-app { gap: 7px; padding: 14px 10px 0; }
+.devices .phone-app header img { width: 20px; }
+.devices .phone-app header strong { font-size: 12px; }
+.devices .phone-app header small { font-size: 10px; }
+.devices .phone-sale { padding: 10px; border-radius: 12px; }
+.devices .phone-sale strong { font-size: 1.25rem; }
+.devices .phone-sale small { font-size: 10px; }
+.devices .phone-row { padding: 8px 10px; border-radius: 12px; font-size: 12px; }
+.devices .phone-tabs { margin: 6px 10px; font-size: 11px; }
+.devices .phone-tabs span { padding: 6px 0; }
+.devices .phone-home { width: 78px; margin-bottom: 8px; }
 .phone {
   display: grid;
   justify-items: center;
@@ -1106,6 +1224,7 @@ html.js .section-head,
 html.js .cloud-grid > *,
 html.js .phone-copy,
 html.js .phone,
+html.js .ipad,
 html.js .faq-grid > :first-child,
 html.js .faq-list details,
 html.js .cta-box,
@@ -1123,6 +1242,7 @@ html.js .tour-nav { transform: translateX(-40px); }
 html.js .cloud-card,
 html.js .tour-stage { transform: translateX(40px); }
 html.js .phone { transform: translateX(48px) rotate(3deg); }
+html.js .ipad { transform: translateX(-36px); }
 html.js .case-grid .case:nth-child(1) { transform: translateX(-42px); }
 html.js .case-grid .case:nth-child(2) { transform: translateY(42px) scale(0.92); }
 html.js .case-grid .case:nth-child(3) { transform: translateX(42px); }
@@ -1132,6 +1252,7 @@ html.js .is-in,
 html.js .case-grid .case.is-in,
 html.js .faq-list details.is-in,
 html.js .card.is-in,
+html.js .ipad.is-in,
 html.js .phone.is-in {
   opacity: 1;
   transform: none;
@@ -1161,6 +1282,7 @@ html.js .faq-list details:nth-child(3) { transition-delay: 0.12s; }
 html.js .faq-list details:nth-child(4) { transition-delay: 0.18s; }
 html.js .faq-list details:nth-child(5) { transition-delay: 0.24s; }
 html.js .faq-list details:nth-child(6) { transition-delay: 0.3s; }
+html.js .ipad.is-in .ipad-frame { animation: floaty 6.4s ease-in-out infinite; }
 html.js .phone.is-in .phone-frame { animation: floaty 5.5s ease-in-out 0.45s infinite; }
 html.js .phone-app article { opacity: 0; transform: translateY(8px); }
 html.js .phone.is-in .phone-app article { animation: rise 0.55s ease forwards; }
@@ -1187,6 +1309,9 @@ html.js .phone.is-in .phone-app article:nth-child(5) { animation-delay: 0.36s; }
   .stage-kpis { grid-template-columns: repeat(3, 1fr); }
   .device-side { width: 156px; }
   .phone-sec { padding-top: 8px; }
+  .devices { min-height: 0; display: grid; justify-items: center; gap: 28px; }
+  .ipad, .devices .phone { position: static; width: min(100%, 520px); }
+  .devices .phone { display: flex; justify-content: center; }
 }
 
 @media (max-width: 980px) {
@@ -1234,7 +1359,7 @@ html.js .phone.is-in .phone-app article:nth-child(5) { animation-delay: 0.36s; }
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
-  .chart-line, .hero-copy, .device, .live i, .phone-frame, .to-top, .to-top.is-done { animation: none; }
+  .chart-line, .hero-copy, .device, .live i, .phone-frame, .ipad-frame, .to-top, .to-top.is-done { animation: none; }
   .chart-line { stroke-dashoffset: 0; }
   html.js .card,
   html.js .case,
@@ -1242,6 +1367,7 @@ html.js .phone.is-in .phone-app article:nth-child(5) { animation-delay: 0.36s; }
   html.js .cloud-grid > *,
   html.js .phone-copy,
   html.js .phone,
+  html.js .ipad,
   html.js .faq-grid > :first-child,
   html.js .faq-list details,
   html.js .cta-box,
