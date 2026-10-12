@@ -43,6 +43,7 @@ const egresoCuentasBarClass = "bg-zinc-300 dark:bg-zinc-600";
 
 function Metric({
   label,
+  shortLabel,
   children,
   hint,
   staggerMs = 0,
@@ -52,6 +53,7 @@ function Metric({
   iconClassName,
 }: {
   label: string;
+  shortLabel?: string;
   children: React.ReactNode;
   hint?: React.ReactNode;
   staggerMs?: number;
@@ -60,29 +62,40 @@ function Metric({
   icon?: LucideIcon;
   iconClassName?: string;
 }) {
+  const mobileLabel = shortLabel ?? label;
   return (
     <div
-      className="reports-metric-card min-w-0 overflow-hidden"
+      className="reports-metric-card min-w-0 overflow-hidden max-sm:rounded-2xl max-sm:border max-sm:border-zinc-200/80 max-sm:bg-white max-sm:p-3 max-sm:dark:border-zinc-800 max-sm:dark:bg-zinc-900"
       style={{ ["--reports-stagger" as string]: `${staggerMs}ms` }}
     >
-      <div className="inline-flex min-w-0 items-center gap-1.5">
+      <div className="flex min-w-0 items-center gap-2">
         {Icon ? (
-          <Icon
-            className={`size-3.5 shrink-0 ${iconClassName ?? "text-zinc-400 dark:text-zinc-500"}`}
-            strokeWidth={2.25}
-            aria-hidden
-          />
+          <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300 sm:hidden">
+            <Icon className="size-4" strokeWidth={2.25} aria-hidden />
+          </span>
         ) : null}
-        <p className={`min-w-0 truncate ${labelClassName ?? labelClass}`}>
-          {label}
-        </p>
-        {labelExtra}
+        <div className="inline-flex min-w-0 items-center gap-1.5">
+          {Icon ? (
+            <Icon
+              className={`hidden size-3.5 shrink-0 sm:block ${iconClassName ?? "text-zinc-400 dark:text-zinc-500"}`}
+              strokeWidth={2.25}
+              aria-hidden
+            />
+          ) : null}
+          <p className="min-w-0 truncate text-xs font-medium text-zinc-500 sm:hidden">
+            {mobileLabel}
+          </p>
+          <p className={`hidden min-w-0 truncate sm:block ${labelClassName ?? labelClass}`}>
+            {label}
+          </p>
+          {labelExtra}
+        </div>
       </div>
-      <div className="mt-1 min-w-0 text-base font-semibold tabular-nums tracking-tight text-zinc-900 dark:text-zinc-50 sm:text-lg lg:text-xl">
+      <div className="mt-2 min-w-0 whitespace-nowrap text-[15px] font-semibold tabular-nums tracking-tight text-zinc-900 dark:text-zinc-50 sm:mt-1 sm:text-lg lg:text-xl">
         {children}
       </div>
       {hint ? (
-        <div className="mt-1 text-[11px] leading-snug text-zinc-500 dark:text-zinc-400">
+        <div className="mt-1 hidden text-[11px] leading-snug text-zinc-500 sm:block dark:text-zinc-400">
           {hint}
         </div>
       ) : null}
@@ -272,7 +285,7 @@ export async function ReportsDashboardBody({
     >
       {isSingleDayPeriod && canSeeCash ? (
         <div className="mb-4 flex flex-wrap items-center gap-2">
-          <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
+          <span className="hidden text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500 sm:inline">
             Cierre de caja
           </span>
           <Suspense fallback={<ReportDayCashCloseChipSkeleton />}>
@@ -282,7 +295,7 @@ export async function ReportsDashboardBody({
       ) : null}
 
       <div
-        className={`grid grid-cols-2 gap-x-4 gap-y-4 sm:gap-x-6 sm:gap-y-5 md:grid-cols-3 ${
+        className={`grid grid-cols-2 gap-2 sm:gap-x-6 sm:gap-y-5 md:grid-cols-3 ${
           isTienda
             ? canSeeExpenses
               ? "xl:grid-cols-7"
@@ -296,6 +309,7 @@ export async function ReportsDashboardBody({
       >
           <Metric
             label="Total ingresos"
+            shortLabel="Ingresos"
             icon={CircleDollarSign}
             staggerMs={0}
             hint={
@@ -343,6 +357,7 @@ export async function ReportsDashboardBody({
 
           <Metric
             label={isTienda ? "En cuentas" : "Transferencia"}
+            shortLabel={isTienda ? "Cuentas" : "Transf."}
             icon={ArrowLeftRight}
             staggerMs={40}
             hint={
@@ -366,6 +381,7 @@ export async function ReportsDashboardBody({
           {isTienda ? (
             <Metric
               label="Ganancia bruta"
+            shortLabel="Bruta"
               icon={TrendingUp}
               staggerMs={50}
               labelExtra={
@@ -448,7 +464,7 @@ export async function ReportsDashboardBody({
             </Metric>
             ) : null
           ) : canSeeCash ? (
-            <Metric label="Dinero en caja" icon={Wallet} staggerMs={60}>
+            <Metric label="Dinero en caja" shortLabel="Caja" icon={Wallet} staggerMs={60}>
               <StaticCopCents
                 cents={cajaHoyCents}
                 className={
@@ -478,7 +494,7 @@ export async function ReportsDashboardBody({
               <StaticCopCents cents={stockInversionNet} />
             </Metric>
           ) : (
-            <Metric label="Facturas anuladas" icon={FileX2} staggerMs={70}>
+            <Metric label="Facturas anuladas" shortLabel="Anuladas" icon={FileX2} staggerMs={70}>
               <StaticInteger value={anuladas} />
             </Metric>
           )}

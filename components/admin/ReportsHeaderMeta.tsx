@@ -70,7 +70,7 @@ export function ReportsHeaderMeta({
       : `Por periodo · ${periodLabel}`;
 
   return (
-    <p className={`min-w-0 truncate ${adminPageSubtitleClass}`} title={lead}>
+    <p className={`hidden min-w-0 truncate sm:block ${adminPageSubtitleClass}`} title={lead}>
       <span>{lead}</span>
       {now ? (
         <>

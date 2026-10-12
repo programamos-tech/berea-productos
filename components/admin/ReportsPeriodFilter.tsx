@@ -10,6 +10,7 @@ import {
   adminToolbarBtnIdleClass,
 } from "@/lib/admin-ui";
 import { useReportsNavPending } from "@/components/admin/ReportsNavPending";
+import { Calendar } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 
@@ -27,6 +28,32 @@ const primaryBtn =
 
 const labelClass =
   "text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500 dark:text-zinc-500";
+
+const MONTHS_SHORT = [
+  "ene",
+  "feb",
+  "mar",
+  "abr",
+  "may",
+  "jun",
+  "jul",
+  "ago",
+  "sep",
+  "oct",
+  "nov",
+  "dic",
+] as const;
+
+function mobilePeriodLabel(from: string, to: string, todayKey: string): string {
+  if (from === to) {
+    if (from === todayKey) return "Hoy";
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(from);
+    if (!match) return "Día";
+    const month = MONTHS_SHORT[Number(match[2]) - 1];
+    return month ? `${Number(match[3])} ${month}` : "Día";
+  }
+  return "Rango";
+}
 
 export function ReportsPeriodFilter({
   rangeFrom,
@@ -101,12 +128,15 @@ export function ReportsPeriodFilter({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className={`${adminToolbarBtnBaseClass} max-w-[9rem] ${adminToolbarBtnIdleClass}`}
+        className={`${adminToolbarBtnBaseClass} max-w-[9rem] max-sm:max-w-none max-sm:px-2.5 ${adminToolbarBtnIdleClass}`}
         aria-expanded={open}
         aria-haspopup="dialog"
+        aria-label={summary}
         title={summary}
       >
-        <span className="min-w-0 truncate">{summary}</span>
+        <Calendar className="size-4 shrink-0 sm:hidden" strokeWidth={2.25} aria-hidden />
+        <span className="min-w-0 truncate sm:hidden">{mobilePeriodLabel(rangeFrom, rangeTo, todayKey)}</span>
+        <span className="hidden min-w-0 truncate sm:inline">{summary}</span>
         {busy ? (
           <span className="text-xs font-medium opacity-60">…</span>
         ) : (

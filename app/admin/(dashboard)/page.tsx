@@ -115,7 +115,7 @@ export default async function AdminHomePage({ searchParams }: PageProps) {
                 isCurrentTiendaMonth={isCurrentTiendaMonth}
               />
             }
-            actionsClassName="flex w-full min-w-0 max-w-full flex-wrap items-center gap-2 xl:w-auto xl:flex-1 xl:flex-nowrap xl:justify-end"
+            actionsClassName="flex w-full min-w-0 max-w-full flex-nowrap items-center gap-1.5 overflow-x-auto overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:flex-wrap sm:gap-2 sm:overflow-visible xl:w-auto xl:flex-1 xl:flex-nowrap xl:justify-end"
             actions={
               <>
               <ReportsVistaFilter
@@ -173,7 +173,7 @@ export default async function AdminHomePage({ searchParams }: PageProps) {
               </Suspense>
             </ReportsPendingSwap>
 
-            <div className="grid min-h-0 flex-1 grid-cols-1 items-start gap-5 border-t border-zinc-200/70 pt-4 dark:border-zinc-800 max-xl:flex-none lg:grid-cols-12 lg:gap-6 xl:items-stretch">
+            <div className="grid min-h-0 flex-1 grid-cols-1 items-start gap-4 border-t border-zinc-200/70 pt-4 dark:border-zinc-800 max-xl:flex-none sm:gap-5 lg:grid-cols-12 lg:gap-6 xl:items-stretch">
               <div className="flex min-h-0 min-w-0 flex-col lg:col-span-7 max-xl:min-h-0">
                 <ReportMonthlyChartsSection
                   todayKey={todayKey}

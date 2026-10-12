@@ -119,9 +119,11 @@ export function ReportsAleyaExportButton({
         type="button"
         onClick={() => setOpen((v) => !v)}
         disabled={busy}
-        className={`${adminToolbarBtnBaseClass} ${adminToolbarBtnIdleClass} disabled:cursor-wait disabled:opacity-60`}
+        className={`${adminToolbarBtnBaseClass} size-9 px-0 sm:h-9 sm:w-auto sm:px-2.5 ${adminToolbarBtnIdleClass} disabled:cursor-wait disabled:opacity-60`}
         aria-expanded={open}
         aria-haspopup="dialog"
+        aria-label="Exportar CSV"
+        title="Exportar CSV"
       >
         <svg
           viewBox="0 0 24 24"
@@ -137,7 +139,7 @@ export function ReportsAleyaExportButton({
             strokeLinejoin="round"
           />
         </svg>
-        <span className="xl:hidden">CSV</span>
+        <span className="max-sm:sr-only xl:hidden">CSV</span>
         <span className="hidden xl:inline">Exportar CSV</span>
       </button>
 

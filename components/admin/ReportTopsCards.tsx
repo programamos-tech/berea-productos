@@ -36,7 +36,7 @@ export function ReportTopsCards({
       <section className="flex min-h-0 min-w-0 flex-col">
         <div className="shrink-0">
           <h2 className={labelClass}>Clientes top</h2>
-          <p className="mt-0.5 text-[11px] text-zinc-500">{periodHint}</p>
+          <p className="mt-0.5 hidden text-[11px] text-zinc-500 sm:block">{periodHint}</p>
         </div>
         {clients.length === 0 ? (
           <p className="mt-4 text-sm text-zinc-500">Sin ventas en este periodo.</p>
@@ -83,7 +83,7 @@ export function ReportTopsCards({
       <section className="flex min-h-0 min-w-0 flex-col">
         <div className="shrink-0">
           <h2 className={labelClass}>Productos top</h2>
-          <p className="mt-0.5 text-[11px] text-zinc-500">{periodHint}</p>
+          <p className="mt-0.5 hidden text-[11px] text-zinc-500 sm:block">{periodHint}</p>
         </div>
         {products.length === 0 ? (
           <p className="mt-4 text-sm text-zinc-500">Sin productos vendidos aún.</p>

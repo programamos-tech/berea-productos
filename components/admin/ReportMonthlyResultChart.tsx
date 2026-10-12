@@ -47,7 +47,8 @@ export function ReportMonthlyResultChart({
     return (
       <div className="flex min-h-[12rem] w-full flex-col justify-center">
         <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-          {showExpenses ? "Ingresos vs egresos" : "Ingresos"}
+          <span className="sm:hidden">{showExpenses ? "Ingresos y gastos" : "Ingresos"}</span>
+          <span className="hidden sm:inline">{showExpenses ? "Ingresos vs egresos" : "Ingresos"}</span>
         </h2>
         <p className="mt-2 text-sm text-zinc-500">
           {showExpenses
@@ -106,9 +107,10 @@ export function ReportMonthlyResultChart({
     <div className="flex w-full min-w-0 flex-col">
       <div className="mb-2 min-w-0 shrink-0">
         <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-          {showExpenses ? "Ingresos vs egresos" : "Ingresos"}
+          <span className="sm:hidden">{showExpenses ? "Ingresos y gastos" : "Ingresos"}</span>
+          <span className="hidden sm:inline">{showExpenses ? "Ingresos vs egresos" : "Ingresos"}</span>
         </h2>
-        <p className="mt-0.5 text-[11px] leading-snug text-zinc-500">
+        <p className="mt-0.5 hidden text-[11px] leading-snug text-zinc-500 sm:block">
           {showExpenses
             ? "Lo que entra a la caja de ventas vs lo que sale en gastos"
             : "Lo que entra a la caja de ventas"}

@@ -1,7 +1,21 @@
 "use client";
 
 import Link from "next/link";
-import { ChevronDown } from "lucide-react";
+import {
+  ArrowLeftRight,
+  BadgeDollarSign,
+  Ban,
+  ChevronDown,
+  HandCoins,
+  Landmark,
+  Package,
+  PackagePlus,
+  Pencil,
+  UserPlus,
+  UserRoundPen,
+  Wallet,
+  type LucideIcon,
+} from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { actionTypeLabel, type AdminActivityAction } from "@/lib/admin-activity-log";
 import type { ActivityFeedItem } from "@/lib/admin-activity-feed";
@@ -30,6 +44,64 @@ function formatRelativeWhen(iso: string, nowMs: number): string {
     }).format(new Date(iso));
   } catch {
     return iso;
+  }
+}
+
+function actionIcon(action: AdminActivityAction): LucideIcon {
+  switch (action) {
+    case "customer_created":
+      return UserPlus;
+    case "customer_updated":
+      return UserRoundPen;
+    case "product_created":
+      return PackagePlus;
+    case "product_updated":
+      return Pencil;
+    case "stock_adjusted":
+      return Package;
+    case "stock_transferred":
+      return ArrowLeftRight;
+    case "sale_created":
+      return BadgeDollarSign;
+    case "sale_cancelled":
+    case "credit_payment_cancelled":
+      return Ban;
+    case "credit_payment":
+      return HandCoins;
+    case "cash_session_opened":
+      return Wallet;
+    case "cash_session_closed":
+      return Landmark;
+    default:
+      return BadgeDollarSign;
+  }
+}
+
+function actionShortLabel(action: AdminActivityAction): string {
+  switch (action) {
+    case "customer_created":
+    case "customer_updated":
+      return "Cliente";
+    case "product_created":
+    case "product_updated":
+      return "Producto";
+    case "stock_adjusted":
+      return "Stock";
+    case "stock_transferred":
+      return "Traslado";
+    case "sale_created":
+      return "Venta";
+    case "sale_cancelled":
+      return "Anulada";
+    case "credit_payment":
+      return "Abono";
+    case "credit_payment_cancelled":
+      return "Abono";
+    case "cash_session_opened":
+    case "cash_session_closed":
+      return "Caja";
+    default:
+      return "Actividad";
   }
 }
 
@@ -199,7 +271,8 @@ export function ReportActivityFeedLive({
       <div className="flex shrink-0 items-end justify-between gap-2">
         <div>
           <h2 className="text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
-            Actividad reciente
+            <span className="sm:hidden">Actividad</span>
+            <span className="hidden sm:inline">Actividad reciente</span>
           </h2>
         </div>
         <Link
@@ -221,16 +294,26 @@ export function ReportActivityFeedLive({
           >
             {items.map((row) => {
               const fresh = freshIds.has(row.id);
+              const ActionIcon = actionIcon(row.action_type);
               const body = (
                 <>
                   <span
-                    className={`mt-1.5 size-1.5 shrink-0 rounded-full ${dotClass(row.action_type)}`}
+                    className={`mt-1.5 hidden size-1.5 shrink-0 rounded-full sm:block ${dotClass(row.action_type)}`}
                     aria-hidden
                   />
+                  <span
+                    className="mt-0.5 grid size-8 shrink-0 place-items-center rounded-lg bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300 sm:hidden"
+                    title={actionTypeLabel(row.action_type)}
+                  >
+                    <ActionIcon className="size-4" strokeWidth={2.25} aria-hidden />
+                  </span>
                   <span className="min-w-0 flex-1 border-b border-zinc-200/60 pb-2.5 dark:border-zinc-800/80">
                     <span className="flex items-baseline justify-between gap-2">
-                      <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
+                      <span className="hidden text-[10px] font-semibold uppercase tracking-wide text-zinc-500 sm:inline">
                         {actionTypeLabel(row.action_type)}
+                      </span>
+                      <span className="inline-flex min-w-0 items-center gap-1 text-xs font-medium text-zinc-500 sm:hidden">
+                        {actionShortLabel(row.action_type)}
                       </span>
                       <time
                         dateTime={row.created_at}

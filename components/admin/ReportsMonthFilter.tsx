@@ -15,6 +15,29 @@ import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 const panelClass =
   "absolute right-0 top-[calc(100%+0.35rem)] z-40 w-[min(16rem,calc(100dvw-1.5rem))] max-w-full rounded-xl border border-zinc-200 bg-white p-2 shadow-[0_16px_48px_-24px_rgba(24,24,27,0.22)] dark:border-zinc-700 dark:bg-zinc-900 dark:shadow-[0_16px_48px_-24px_rgba(0,0,0,0.55)]";
 
+const MONTHS_SHORT = [
+  "ene",
+  "feb",
+  "mar",
+  "abr",
+  "may",
+  "jun",
+  "jul",
+  "ago",
+  "sep",
+  "oct",
+  "nov",
+  "dic",
+] as const;
+
+function mobileMonthLabel(ym: string): string {
+  const match = /^(\d{4})-(\d{2})$/.exec(ym.trim());
+  if (!match) return ym;
+  const month = MONTHS_SHORT[Number(match[2]) - 1];
+  if (!month) return ym;
+  return `${month} ${match[1].slice(2)}`;
+}
+
 function sentenceCase(label: string): string {
   const t = label.trim();
   if (!t) return t;
@@ -85,6 +108,7 @@ export function ReportsMonthFilter({
       ? `${sentenceCase(prettyYearMonthLabel(selectedYm))} · hasta hoy`
       : sentenceCase(prettyYearMonthLabel(selectedYm));
   const summaryShort = sentenceCase(prettyYearMonthLabel(selectedYm));
+  const summaryMobile = mobileMonthLabel(selectedYm);
 
   return (
     <div
@@ -95,12 +119,14 @@ export function ReportsMonthFilter({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className={`${adminToolbarBtnBaseClass} max-w-[9rem] ${adminToolbarBtnIdleClass}`}
+        className={`${adminToolbarBtnBaseClass} max-w-[9rem] max-sm:max-w-none max-sm:px-2.5 ${adminToolbarBtnIdleClass}`}
         aria-expanded={open}
         aria-haspopup="listbox"
+        aria-label={summaryFull}
         title={summaryFull}
       >
-        <span className="min-w-0 truncate">{summaryShort}</span>
+        <span className="min-w-0 truncate sm:hidden">{summaryMobile}</span>
+        <span className="hidden min-w-0 truncate sm:inline">{summaryShort}</span>
         <svg
           viewBox="0 0 24 24"
           className={`size-4 shrink-0 opacity-70 transition ${open ? "rotate-180" : ""}`}

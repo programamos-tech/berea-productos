@@ -121,11 +121,12 @@ export function ReportsVistaFilter({
               );
             }}
             aria-pressed={active}
+            aria-label={opt.label}
             title={opt.hint}
-            className={`${adminToolbarBtnBaseClass} shrink-0 px-2.5 sm:px-3 ${active ? adminToolbarBtnActiveClass : adminToolbarBtnIdleClass} disabled:cursor-wait`}
+            className={`${adminToolbarBtnBaseClass} size-9 shrink-0 px-0 sm:h-9 sm:w-auto sm:px-3 ${active ? adminToolbarBtnActiveClass : adminToolbarBtnIdleClass} disabled:cursor-wait`}
           >
             <Icon className="size-4 shrink-0" strokeWidth={2.25} aria-hidden />
-            <span className="xl:hidden">{shortLabel}</span>
+            <span className="max-sm:sr-only xl:hidden">{shortLabel}</span>
             <span className="hidden xl:inline">{opt.label}</span>
           </button>
         );
