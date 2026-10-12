@@ -229,11 +229,12 @@ function SidebarPoweredBy() {
         Powered by
       </span>
       <Image
-        src="/logo-berea-wordmark.png"
+        src="/logo-berea-wordmark-white.png"
         alt={adminProductBrand}
         width={408}
         height={96}
-        className="h-6 w-auto max-w-[9.5rem] object-contain brightness-0 invert"
+        unoptimized
+        className="h-7 w-auto max-w-[9.5rem] object-contain"
       />
     </p>
   );
