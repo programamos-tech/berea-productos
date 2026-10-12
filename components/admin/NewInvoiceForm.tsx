@@ -1676,7 +1676,8 @@ export function NewInvoiceForm({
             )}
           </section>
 
-            <section className={`${sectionClass} order-1 min-w-0 xl:order-none xl:col-start-2 xl:row-start-1 xl:border-l xl:border-t-0 xl:border-zinc-200/70 xl:pl-8 xl:pt-0 dark:xl:border-zinc-800 2xl:pl-10`}>
+          <div className="contents xl:col-start-2 xl:row-span-2 xl:row-start-1 xl:flex xl:min-w-0 xl:flex-col xl:self-start xl:border-l xl:border-zinc-200/70 xl:pl-8 dark:xl:border-zinc-800 2xl:pl-10">
+            <section className={`${sectionClass} order-1 min-w-0 xl:border-t-0 xl:pt-0`}>
               <h2 className={sectionTitle}>
                 Cliente <span className="text-red-600 dark:text-red-400">*</span>
               </h2>
@@ -1791,15 +1792,7 @@ export function NewInvoiceForm({
               </div>
             </section>
 
-          <div
-            className="
-              order-4 flex min-w-0 flex-col
-              xl:order-none xl:col-start-2 xl:row-start-2 xl:self-start
-              xl:sticky xl:top-20 xl:z-10
-              xl:border-l xl:border-zinc-200/70 xl:pl-8 dark:xl:border-zinc-800
-              2xl:pl-10
-            "
-          >
+          <div className="order-4 flex min-w-0 flex-col xl:sticky xl:top-20 xl:z-10">
             <section className={`${sectionClass} xl:order-none`}>
               <h2 className={`${sectionTitle} flex items-center gap-2`}>
                 <IconHome />
@@ -2165,6 +2158,7 @@ export function NewInvoiceForm({
                 }}
               />
             </section>
+          </div>
           </div>
         </div>
       </form>
