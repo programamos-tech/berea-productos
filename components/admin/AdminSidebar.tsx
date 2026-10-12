@@ -229,13 +229,23 @@ function SidebarPoweredBy() {
       <span className={`text-[9px] font-medium uppercase tracking-[0.14em] ${sidebarInkMuted}`}>
         Powered by
       </span>
-      <Image
-        src={adminSidebarLogoPath}
-        alt={adminProductBrand}
-        width={480}
-        height={265}
-        className="h-5 w-auto max-w-[7.5rem] object-contain object-center brightness-0 invert"
-      />
+      <span className="flex items-center gap-1.5">
+        <Image
+          src="/logo-berea-wolf.png"
+          alt=""
+          width={122}
+          height={150}
+          aria-hidden
+          className="h-5 w-auto object-contain brightness-0 invert"
+        />
+        <Image
+          src={adminSidebarLogoPath}
+          alt={adminProductBrand}
+          width={480}
+          height={265}
+          className="h-5 w-auto max-w-[7.5rem] object-contain object-center brightness-0 invert"
+        />
+      </span>
     </p>
   );
 }
