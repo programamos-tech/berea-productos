@@ -229,9 +229,9 @@ function SidebarPoweredBy() {
         Powered by
       </span>
       <Image
-        src="/logo-berea-lockup-white-2.png"
+        src="/logo-berea-sidebar.png"
         alt={adminProductBrand}
-        width={218}
+        width={220}
         height={60}
         unoptimized
         className="h-5 w-auto max-w-[7.5rem] object-contain"
