@@ -63,6 +63,7 @@ export default function RootLayout({
     <html
       lang="es"
       className={`${poppins.variable} ${geistMono.variable} h-full antialiased`}
+      suppressHydrationWarning
     >
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
