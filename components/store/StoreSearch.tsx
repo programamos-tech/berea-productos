@@ -9,7 +9,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useStorefrontBrand } from "@/components/store/StorefrontBrandProvider";
 import { formatCop } from "@/lib/money";
 import { storefrontListGrossUnitCents } from "@/lib/storefront-gross-price";
-import { pseudoReviewCount } from "@/lib/pseudo-review";
 import {
   shouldUnoptimizeStorageImageUrl,
   storagePublicObjectUrl,
@@ -68,61 +67,55 @@ function SearchResultsPanel({
           No hay productos que coincidan con “{debounced}”.
         </p>
       ) : (
-        <ul className="py-1">
-          {products.map((p, idx) => {
-            const img = storagePublicObjectUrl(p.image_path);
-            const reviews = pseudoReviewCount(p.id);
-            return (
-              <li
-                key={p.id}
-                className={idx < products.length - 1 ? "border-b border-stone-100" : ""}
-              >
-                <Link
-                  href={`/products/${p.id}`}
-                  onClick={onPick}
-                  className="flex items-center gap-3 px-3 py-2.5 transition hover:bg-[var(--store-wash)]"
-                >
-                  <div className="relative size-12 shrink-0 overflow-hidden rounded-lg bg-stone-100 ring-1 ring-stone-200/80">
-                    {img ? (
-                      <Image
-                        src={img}
-                        alt=""
-                        fill
-                        className="object-cover"
-                        sizes="48px"
-                        unoptimized={shouldUnoptimizeStorageImageUrl(img)}
-                      />
-                    ) : (
-                      <div className="flex h-full items-center justify-center text-xs text-stone-400">
-                        —
-                      </div>
-                    )}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-[var(--store-brand)]">{p.name}</p>
-                    <p className="mt-0.5 flex items-center gap-1.5">
-                      <span
-                        className="text-[11px] leading-none tracking-tight text-amber-500"
-                        aria-hidden
-                      >
-                        ★★★★★
-                      </span>
-                      <span className="text-[11px] text-stone-400">({reviews})</span>
-                    </p>
-                  </div>
-                  <p className="shrink-0 text-sm font-semibold text-stone-900">
-                    {formatCop(
-                      storefrontListGrossUnitCents(
-                        p.price_cents,
-                        p.has_vat,
-                      ),
-                    )}
-                  </p>
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
+        <>
+          <ul className="p-1.5">
+            {products.map((p) => {
+              const img = storagePublicObjectUrl(p.image_path);
+              return (
+                <li key={p.id}>
+                  <Link
+                    href={`/products/${p.id}`}
+                    onClick={onPick}
+                    className="flex items-center gap-3 rounded-lg p-2 transition hover:bg-[var(--store-wash)]"
+                  >
+                    <div className="relative size-12 shrink-0 overflow-hidden rounded-md bg-[var(--store-image-well)]">
+                      {img ? (
+                        <Image
+                          src={img}
+                          alt=""
+                          fill
+                          className="object-cover"
+                          sizes="48px"
+                          unoptimized={shouldUnoptimizeStorageImageUrl(img)}
+                        />
+                      ) : null}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="line-clamp-2 text-[12px] font-medium uppercase leading-snug tracking-[0.04em] text-stone-800">
+                        {p.name}
+                      </p>
+                      <p className="mt-1 text-[13px] font-semibold text-stone-900">
+                        {formatCop(
+                          storefrontListGrossUnitCents(
+                            p.price_cents,
+                            p.has_vat,
+                          ),
+                        )}
+                      </p>
+                    </div>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+          <Link
+            href={`/products?q=${encodeURIComponent(debounced)}`}
+            onClick={onPick}
+            className="block border-t border-stone-100 px-4 py-3 text-center text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-600 transition hover:bg-[var(--store-wash)] hover:text-stone-900"
+          >
+            Ver todos los resultados
+          </Link>
+        </>
       )}
     </div>
   );
@@ -235,7 +228,7 @@ export function StoreSearch({
   const showPanel = open && debounced.length >= 2;
 
   const panelBase =
-    "absolute left-0 top-full z-50 mt-2 max-h-[min(70vh,22rem)] min-w-0 overflow-y-auto rounded-xl border border-stone-200/90 bg-white shadow-xl shadow-stone-200/90 ring-1 ring-stone-100";
+    "absolute top-full z-50 mt-3 max-h-[min(70vh,26rem)] min-w-0 overflow-y-auto rounded-xl border border-stone-200/80 bg-white shadow-[0_18px_40px_-16px_rgba(41,37,36,0.28)]";
 
   const resultsPanel = showPanel ? (
     <SearchResultsPanel
@@ -247,8 +240,8 @@ export function StoreSearch({
         variant === "drawer"
           ? "mt-2 max-h-[min(45vh,18rem)] w-full overflow-y-auto rounded-xl border border-stone-200/90 bg-white shadow-lg ring-1 ring-stone-100"
           : variant === "minimal"
-            ? `${panelBase} right-0 w-[min(100vw-2rem,22rem)]`
-            : `${panelBase} right-0 w-full`
+            ? `${panelBase} right-0 w-[22rem] max-w-[calc(100vw-2rem)]`
+            : `${panelBase} left-0 right-0`
       }
     />
   ) : null;
@@ -272,7 +265,7 @@ export function StoreSearch({
             onFocus={() => {
               if (debounced.length >= 2) setOpen(true);
             }}
-            className="min-w-0 flex-1 bg-transparent text-sm text-stone-800 placeholder:text-stone-400 focus:outline-none"
+            className="min-w-0 flex-1 bg-transparent text-sm text-stone-800 placeholder:text-stone-400 focus:outline-none [&::-webkit-search-cancel-button]:hidden"
             aria-controls="store-search-results"
             aria-autocomplete="list"
             aria-haspopup="listbox"
@@ -315,7 +308,7 @@ export function StoreSearch({
             onFocus={() => {
               if (debounced.length >= 2) setOpen(true);
             }}
-            className="min-w-0 flex-1 bg-transparent text-[13px] text-white placeholder:text-white/50 focus:outline-none"
+            className="min-w-0 flex-1 bg-transparent text-[13px] text-white placeholder:text-white/50 focus:outline-none [&::-webkit-search-cancel-button]:hidden"
             aria-controls="store-search-results"
             aria-autocomplete="list"
             aria-haspopup="listbox"
@@ -343,7 +336,7 @@ export function StoreSearch({
           onFocus={() => {
             if (debounced.length >= 2) setOpen(true);
           }}
-          className="min-w-0 flex-1 bg-transparent text-sm text-stone-800 placeholder:text-stone-400 focus:outline-none"
+          className="min-w-0 flex-1 bg-transparent text-sm text-stone-800 placeholder:text-stone-400 focus:outline-none [&::-webkit-search-cancel-button]:hidden"
           aria-controls="store-search-results"
           aria-autocomplete="list"
           aria-haspopup="listbox"
