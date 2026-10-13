@@ -233,7 +233,7 @@ function SidebarPoweredBy() {
         width={663}
         height={312}
         unoptimized
-        className="h-9 w-auto object-contain"
+        className="h-[30px] w-auto object-contain"
       />
     </p>
   );
