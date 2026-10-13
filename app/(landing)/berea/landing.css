@@ -875,386 +875,76 @@
   white-space: nowrap;
 }
 
-/* Precios */
+/* Cotizar */
 .bl .pricing {
   background: var(--bg-soft);
 }
 
-.bl .calc {
-  display: grid;
-  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
-  gap: 18px;
-  align-items: stretch;
-}
-
-.bl .calc-form {
-  display: grid;
-  align-content: space-evenly;
-  gap: 32px;
-  padding: 36px;
-  border-radius: 28px;
-  background: #fff;
-  border: 1px solid var(--line);
-  box-shadow: var(--shadow);
-}
-
-.bl .calc-field {
-  min-width: 0;
-  margin: 0;
-  padding: 0;
-  border: 0;
-}
-
-.bl .calc-label {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 0;
-  margin-bottom: 14px;
-  font-size: 17px;
-  font-weight: 800;
-  color: var(--ink);
-}
-
-.bl .calc-ico {
-  display: grid;
-  place-items: center;
-  flex: none;
-  width: 38px;
-  height: 38px;
-  border-radius: 12px;
-  background: var(--teal-soft);
-  color: var(--teal);
-}
-
-.bl .calc-ico svg {
-  width: 19px;
-  height: 19px;
-}
-
-.bl .calc-stepper {
-  display: grid;
-  grid-template-columns: 52px minmax(0, 1fr) 52px;
-  align-items: center;
-  gap: 10px;
-}
-
-.bl .calc-stepper button {
-  height: 52px;
-  border-radius: 14px;
-  border: 1px solid var(--line);
-  background: var(--bg-soft);
-  color: var(--ink);
-  font: inherit;
-  font-size: 24px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: background 0.2s, border-color 0.2s, color 0.2s;
-}
-
-.bl .calc-stepper button:hover:not(:disabled) {
-  border-color: var(--teal);
-  color: var(--teal);
-  background: #fff;
-}
-
-.bl .calc-stepper button:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-.bl .calc-stepper output {
-  text-align: center;
-  font-size: 28px;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  color: var(--ink);
-}
-
-.bl .calc-range {
-  --fill: 0%;
-  width: 100%;
-  height: 8px;
-  margin-top: 18px;
-  border-radius: 999px;
-  appearance: none;
-  background: linear-gradient(to right, var(--teal) var(--fill), var(--line) var(--fill));
-  cursor: pointer;
-}
-
-.bl .calc-range::-webkit-slider-thumb {
-  appearance: none;
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  background: #fff;
-  border: 3px solid var(--teal);
-  box-shadow: 0 4px 12px rgba(1, 151, 178, 0.35);
-}
-
-.bl .calc-range::-moz-range-thumb {
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: #fff;
-  border: 3px solid var(--teal);
-  box-shadow: 0 4px 12px rgba(1, 151, 178, 0.35);
-}
-
-.bl .calc-range:focus-visible {
-  outline: 3px solid rgba(1, 151, 178, 0.35);
-  outline-offset: 6px;
-}
-
-.bl .calc-toggle input {
-  position: absolute;
-  opacity: 0;
-  pointer-events: none;
-}
-
-.bl .calc-toggle label:has(input:focus-visible) {
-  outline: 3px solid rgba(1, 151, 178, 0.35);
-  outline-offset: 2px;
-}
-
-.bl .calc-toggle {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 6px;
-  padding: 6px;
-  border-radius: 16px;
-  background: var(--bg-soft);
-  border: 1px solid var(--line);
-}
-
-.bl .calc-toggle label {
+.bl .quote {
   position: relative;
   display: flex;
   align-items: center;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 8px;
-  min-height: 48px;
-  padding: 8px 12px;
-  border-radius: 12px;
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--muted);
-  cursor: pointer;
-  transition: background 0.2s, color 0.2s, box-shadow 0.2s;
-}
-
-.bl .calc-toggle label.is-on {
-  background: #fff;
-  color: var(--ink);
-  box-shadow: 0 4px 14px rgba(15, 23, 32, 0.08);
-}
-
-.bl .calc-save {
-  padding: 3px 9px;
-  border-radius: 999px;
-  background: #e3f6ea;
-  color: #187a43;
-  font-size: 12px;
-  font-weight: 800;
-}
-
-.bl .calc-result {
-  display: flex;
-  flex-direction: column;
-  padding: 36px;
+  justify-content: space-between;
+  gap: 28px;
+  padding: 40px 44px;
   border-radius: 28px;
   background: var(--ink);
   color: #fff;
   box-shadow: var(--shadow);
+  overflow: hidden;
 }
 
-.bl .calc-result-head {
-  font-size: 22px;
-  font-weight: 800;
-  margin-bottom: 14px;
+.bl .quote::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(55% 90% at 100% 100%, rgba(1, 151, 178, 0.35), transparent 70%);
+  pointer-events: none;
 }
 
-.bl .calc-line {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 16px;
-  padding: 18px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+.bl .quote > * {
+  position: relative;
 }
 
-.bl .calc-line > div:first-child {
-  display: grid;
-  gap: 2px;
-}
-
-.bl .calc-line span {
-  font-weight: 700;
-}
-
-.bl .calc-line small {
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.55);
-}
-
-.bl .calc-line b {
-  font-size: 22px;
+.bl .quote h3 {
+  font-size: clamp(24px, 2.6vw, 32px);
   font-weight: 800;
   letter-spacing: -0.02em;
-  white-space: nowrap;
+  line-height: 1.15;
 }
 
-.bl .calc-amount {
-  display: grid;
-  justify-items: end;
-  gap: 2px;
+.bl .quote p {
+  margin-top: 8px;
+  max-width: 52ch;
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.65);
 }
 
-.bl .calc-amount s {
-  font-size: 14px;
-  color: rgba(255, 255, 255, 0.45);
-}
-
-.bl .calc-savings,
-.bl .calc-hint {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 16px;
-  padding: 10px 14px;
-  border-radius: 12px;
-  font-size: 14px;
-  font-weight: 700;
-}
-
-.bl .calc-savings {
-  background: rgba(46, 204, 113, 0.14);
-  color: #6ee7a0;
-}
-
-.bl .calc-savings svg {
-  width: 16px;
-  height: 16px;
-}
-
-.bl .calc-hint {
-  background: rgba(255, 255, 255, 0.06);
-  color: rgba(255, 255, 255, 0.7);
-  font-weight: 600;
-}
-
-.bl .calc-total {
-  display: grid;
-  gap: 4px;
-  margin-top: auto;
-  padding-top: 28px;
-}
-
-.bl .calc-total span {
-  font-size: 14px;
-  color: rgba(255, 255, 255, 0.6);
-}
-
-.bl .calc-total strong {
-  font-size: clamp(36px, 4vw, 48px);
-  font-weight: 800;
-  letter-spacing: -0.03em;
-  line-height: 1.05;
-}
-
-.bl .calc-next {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-top: 16px;
-  padding: 14px 16px;
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.bl .calc-next-ico {
-  display: grid;
-  place-items: center;
+.bl .quote .btn {
   flex: none;
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  background: rgba(46, 204, 113, 0.14);
-  color: #6ee7a0;
 }
 
-.bl .calc-next-ico svg {
-  width: 18px;
-  height: 18px;
-}
-
-.bl .calc-next > div {
-  display: grid;
-  gap: 2px;
-  flex: 1;
-  min-width: 0;
-}
-
-.bl .calc-next > div span {
-  font-size: 14px;
-  font-weight: 700;
-}
-
-.bl .calc-next > div small {
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.55);
-}
-
-.bl .calc-next b {
-  font-size: 20px;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  white-space: nowrap;
-  color: #6ee7a0;
-}
-
-.bl .calc-next b small {
-  font-size: 13px;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.55);
-}
-
-.bl .calc-cta {
-  width: 100%;
-  justify-content: center;
-  margin-top: 22px;
-}
-
-.bl .calc-fine {
-  margin-top: 14px;
-  font-size: 13px;
-  text-align: center;
-  color: rgba(255, 255, 255, 0.5);
-}
-
-.bl .calc-includes {
+.bl .includes {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 18px;
   margin-top: 18px;
 }
 
-.bl .calc-includes > div {
+.bl .includes > div {
   padding: 26px 28px;
   border-radius: 20px;
   background: #fff;
   border: 1px solid var(--line);
 }
 
-.bl .calc-includes h3 {
+.bl .includes h3 {
   font-size: 17px;
   font-weight: 800;
   margin-bottom: 14px;
 }
 
-.bl .calc-includes ul {
+.bl .includes ul {
   display: grid;
   gap: 12px;
   list-style: none;
@@ -1262,7 +952,7 @@
   padding: 0;
 }
 
-.bl .calc-includes li {
+.bl .includes li {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -1270,7 +960,7 @@
   color: var(--ink-2);
 }
 
-.bl .calc-includes li svg {
+.bl .includes li svg {
   flex: none;
   width: 18px;
   height: 18px;
@@ -3750,10 +3440,6 @@
     grid-template-columns: 1fr;
   }
 
-  .bl .calc {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
   .bl .faq-side {
     position: static;
   }
@@ -4004,39 +3690,23 @@
     justify-self: start;
   }
 
-  .bl .calc-form,
-  .bl .calc-result {
-    padding: 22px;
+  .bl .quote {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 22px;
+    padding: 28px 24px;
     border-radius: 22px;
   }
 
-  .bl .calc-form {
-    gap: 26px;
+  .bl .quote .btn {
+    justify-content: center;
   }
 
-  .bl .calc-label {
-    font-size: 16px;
-  }
-
-  .bl .calc-stepper output {
-    font-size: 19px;
-    line-height: 1.2;
-  }
-
-  .bl .calc-toggle label {
-    font-size: 14px;
-    gap: 6px;
-  }
-
-  .bl .calc-line b {
-    font-size: 19px;
-  }
-
-  .bl .calc-includes {
+  .bl .includes {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .bl .calc-includes > div {
+  .bl .includes > div {
     padding: 22px;
   }
 

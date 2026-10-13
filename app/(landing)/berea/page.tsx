@@ -12,7 +12,6 @@ import { CajaScreen, CreditosScreen, ReportesScreen, SedesScreen, TrasladosScree
 import { TourTabs, type TourPanel } from "./TourTabs";
 import { LandingInteractions } from "./LandingInteractions";
 import { ProcessSteps } from "./ProcessSteps";
-import { PriceCalculator } from "./PriceCalculator";
 import "./landing.css";
 
 const manrope = Manrope({
@@ -57,6 +56,10 @@ const CITY_PHOTO = "/landing/sincelejo.jpg";
 
 const WHATSAPP_DEMO_URL = `${adminSupportWhatsAppUrl}?text=${encodeURIComponent(
   "Hola, quiero agendar una demo gratis de Berea.",
+)}`;
+
+const WHATSAPP_QUOTE_URL = `${adminSupportWhatsAppUrl}?text=${encodeURIComponent(
+  "Hola, quiero una cotización de Berea para mi negocio.",
 )}`;
 
 const WHATSAPP_INTEGRATIONS_URL = `${adminSupportWhatsAppUrl}?text=${encodeURIComponent(
@@ -132,7 +135,7 @@ const faqs = [
   },
   {
     q: "¿Sirve si tengo una sola tienda?",
-    a: "Sí. Funciona igual con un solo local y la mensualidad es de $120.000. Desde 2 sedes pagas $100.000 al mes por cada una.",
+    a: "Sí. Funciona igual con un solo local o con varias sedes. Te cotizamos según el tamaño de tu negocio.",
   },
   {
     q: "¿Tengo que instalar algo?",
@@ -156,7 +159,7 @@ export default function BereaLandingPage() {
             <nav className="links" id="site-nav" aria-label="Principal">
               <a className="text-link" href="#inicio">Inicio</a>
               <a className="text-link" href="#recorrido">Qué incluye</a>
-              <a className="text-link" href="#precios">Precios</a>
+              <a className="text-link" href="#cotizar">Cotizar</a>
               <a className="text-link" href="#preguntas">Preguntas</a>
               <a className="text-link links-login" href={LOGIN_URL}>Ingresar</a>
             </nav>
@@ -183,7 +186,7 @@ export default function BereaLandingPage() {
                 <WhatsAppLink className="btn btn-primary btn-lg">
                   <Icon id="whatsapp" /> Agenda tu demo gratis
                 </WhatsAppLink>
-                <a className="btn btn-ghost btn-lg" href="#precios">Ver precios</a>
+                <a className="btn btn-ghost btn-lg" href="#cotizar">Cotizar</a>
               </div>
               <p className="fine">Te lo implementamos y capacitamos a tu equipo en tu local.</p>
             </div>
@@ -327,16 +330,24 @@ export default function BereaLandingPage() {
           </div>
         </section>
 
-        <section className="pricing" id="precios">
+        <section className="pricing" id="cotizar">
           <div className="wrap">
             <div className="section-head">
-              <h2>¿Cuánto cuesta Berea para tu negocio?</h2>
-              <p className="lead">Cuéntanos cuántas sedes tienes y cuántos productos manejas, y te mostramos un valor estimado al instante.</p>
+              <h2>Cotiza Berea para tu negocio</h2>
+              <p className="lead">Cada negocio es distinto. Te cotizamos según tus sedes y tu catálogo.</p>
             </div>
 
-            <PriceCalculator whatsappUrl={adminSupportWhatsAppUrl} />
+            <div className="quote">
+              <div>
+                <h3>Pide tu cotización por WhatsApp</h3>
+                <p>Cuéntanos cuántas sedes tienes y cuántos productos manejas, y te enviamos una propuesta.</p>
+              </div>
+              <WhatsAppLink className="btn btn-primary btn-lg" href={WHATSAPP_QUOTE_URL}>
+                <Icon id="whatsapp" /> Cotizar por WhatsApp
+              </WhatsAppLink>
+            </div>
 
-            <div className="calc-includes">
+            <div className="includes">
               <div>
                 <h3>La implementación incluye</h3>
                 <ul>
@@ -347,7 +358,7 @@ export default function BereaLandingPage() {
                 </ul>
               </div>
               <div>
-                <h3>La mensualidad incluye</h3>
+                <h3>El servicio incluye</h3>
                 <ul>
                   <li><Icon id="layers" /> Todos los módulos del sistema</li>
                   <li><Icon id="chart" /> En PC, iPad y celular</li>
@@ -432,7 +443,7 @@ export default function BereaLandingPage() {
             <h3>Berea</h3>
             <a href="#recorrido">Qué incluye</a>
             <a href="#proceso">Cómo empezamos</a>
-            <a href="#precios">Precios</a>
+            <a href="#cotizar">Cotizar</a>
             <a href="#preguntas">Preguntas</a>
           </div>
           <div>
