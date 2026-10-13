@@ -501,16 +501,15 @@
   flex: none;
   display: grid;
   place-items: center;
-  width: 170px;
   height: 64px;
-  margin-right: 20px;
+  margin-right: 72px;
 }
 
 .bl .client img {
   display: block;
   width: auto;
   height: auto;
-  max-width: 100%;
+  max-width: 160px;
   max-height: 46px;
   object-fit: contain;
   filter: grayscale(1);
@@ -3518,8 +3517,11 @@
   }
 
   .bl .client {
-    width: 130px;
-    margin-right: 12px;
+    margin-right: 44px;
+  }
+
+  .bl .client img {
+    max-width: 124px;
   }
 
   .bl .dv-stage {
