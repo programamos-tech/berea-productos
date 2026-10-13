@@ -4,7 +4,7 @@ import { Icon } from "./Icon";
 export type Variant = "desktop" | "tablet" | "phone";
 
 const MARK = "/berea-productos-icon.png";
-const BEREA_WORDMARK = "/logo-berea-productos-v3.png";
+const BEREA_WORDMARK = "/landing/berea-house-logo-white.png";
 
 const navMain = [
   { icon: "home", label: "Reportes", active: true },

@@ -11,7 +11,7 @@ const PHRASES = [
   "Sigue. Ya vas más lejos.",
 ];
 
-export function LoginPhrases() {
+export function LoginPhrases({ className = "" }: { className?: string }) {
   const [index, setIndex] = useState(0);
   const [visible, setVisible] = useState(true);
 
@@ -30,7 +30,7 @@ export function LoginPhrases() {
 
   return (
     <p
-      className="mt-8 h-10 max-w-[18rem] text-center text-sm font-medium text-white/95 transition-opacity duration-300"
+      className={`min-h-6 font-medium transition-opacity duration-300 ${className}`}
       style={{ opacity: visible ? 1 : 0 }}
       aria-live="polite"
     >

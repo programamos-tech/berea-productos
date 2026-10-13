@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Building2, LayoutGrid, Pencil, Receipt, ToggleRight, Users } from "lucide-react";
+import { AdminThemeToggle } from "@/components/admin/AdminThemeToggle";
 import { AdminWolfAvatar } from "@/components/admin/AdminUserAvatar";
 import { AdminUserMenu } from "@/components/admin/AdminUserMenu";
 import { adminProductBrand, adminSidebarLogoPath } from "@/lib/brand";
@@ -105,6 +106,7 @@ export function OperatorBackofficeShell({
                 <span className="text-zinc-400"> · Detalle</span>
               ) : null}
             </p>
+            <AdminThemeToggle className="rounded-full" />
             <AdminUserMenu
               displayName={displayName}
               email={email}

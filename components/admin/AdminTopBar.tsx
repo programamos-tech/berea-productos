@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { AdminGlobalSearch } from "@/components/admin/AdminGlobalSearch";
+import { AdminThemeToggle } from "@/components/admin/AdminThemeToggle";
 import { AdminWolfAvatar } from "@/components/admin/AdminUserAvatar";
 import { AdminUserMenu } from "@/components/admin/AdminUserMenu";
 import { BranchSwitcher } from "@/components/admin/BranchSwitcher";
@@ -86,7 +87,7 @@ export function AdminTopBar({
           >
             +
           </Link>
-
+          <AdminThemeToggle className="rounded-full" />
           <AdminUserMenu
             displayName={displayName}
             email={email}

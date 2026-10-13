@@ -1880,10 +1880,9 @@
 }
 
 .bl .am-powered-logo {
-  height: calc(22 * var(--u));
+  height: calc(34 * var(--u));
   width: auto;
-  margin-top: calc(2 * var(--u));
-  filter: brightness(0) invert(1);
+  margin-top: calc(4 * var(--u));
 }
 
 /* Contenido */

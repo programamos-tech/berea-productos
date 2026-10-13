@@ -11,7 +11,6 @@ import {
 import { BranchSwitcher } from "@/components/admin/BranchSwitcher";
 import { OperatorAccountLogo } from "@/components/admin/OperatorAccountLogo";
 import {
-  adminProductBrand,
   adminSupportWhatsAppDisplay,
   adminSupportWhatsAppPrefilledText,
   adminSupportWhatsAppUrl,
@@ -229,12 +228,12 @@ function SidebarPoweredBy() {
         Powered by
       </span>
       <Image
-        src="/logo-berea-sidebar.png"
-        alt={adminProductBrand}
-        width={220}
-        height={60}
+        src="/landing/berea-house-logo-white.png"
+        alt="Berea House, software para negocios"
+        width={663}
+        height={312}
         unoptimized
-        className="h-5 w-auto max-w-[7.5rem] object-contain"
+        className="h-9 w-auto object-contain"
       />
     </p>
   );
