@@ -1,6 +1,7 @@
 /**
  * Berea Facturas — multi-tenant host convention.
  *
+ * Marketing landing:      bereahouse.com
  * Platform (SaaS entry):  productos.bereahouse.com
  * Tenant storefront/admin: {slug}.productos.bereahouse.com
  * Custom domains:          mapped via tenants.custom_domains (and LEGACY map below)
@@ -19,7 +20,7 @@ export const TENANT_SLUG_HEADER = "x-berea-tenant-slug" as const;
 /** Request header: platform | tenant | unknown */
 export const TENANT_KIND_HEADER = "x-berea-tenant-kind" as const;
 
-export type TenantHostKind = "platform" | "tenant" | "legacy" | "local" | "unknown";
+export type TenantHostKind = "marketing" | "platform" | "tenant" | "legacy" | "local" | "unknown";
 
 export type ResolvedTenantHost = {
   kind: TenantHostKind;
@@ -88,6 +89,10 @@ export function resolveTenantFromHost(hostHeader: string | null | undefined): Re
       slug: fromEnv || DEFAULT_TENANT_SLUG,
       host,
     };
+  }
+
+  if (host === PLATFORM_ROOT_DOMAIN || host === `www.${PLATFORM_ROOT_DOMAIN}`) {
+    return { kind: "marketing", slug: null, host: PLATFORM_ROOT_DOMAIN };
   }
 
   if (host === PLATFORM_PRODUCT_HOST || host === `www.${PLATFORM_PRODUCT_HOST}`) {

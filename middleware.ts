@@ -18,6 +18,7 @@ import {
   firstHostname,
   isProductionVercelAlias,
   PLATFORM_PRODUCT_HOST,
+  PLATFORM_ROOT_DOMAIN,
   publicHostname,
   resolveTenantFromHost,
   TENANT_KIND_HEADER,
@@ -55,6 +56,7 @@ function skipsMiddlewareAuth(path: string): boolean {
   return (
     path === "/empezar" ||
     path.startsWith("/empezar/") ||
+    path === "/berea" ||
     path.startsWith("/api/products/") ||
     path.startsWith("/api/webhooks/") ||
     // Auth en requireAdminApiSession (getSession local), no en edge.
@@ -131,25 +133,56 @@ export async function middleware(request: NextRequest) {
     !alreadyOnPlatform &&
     (host === `www.${PLATFORM_PRODUCT_HOST}` || isProductionVercelAlias(host))
   ) {
-    const destPath = path === "/" ? "/empezar" : path;
-    return NextResponse.redirect(canonicalPlatformUrl(destPath, search), 307);
+    return NextResponse.redirect(canonicalPlatformUrl(path, search), 307);
   }
 
   if (hostKind === "unknown" && isPublicStorePath(path)) {
     return NextResponse.redirect(canonicalPlatformUrl("/empezar", search), 307);
   }
 
-  // productos.bereahouse.com = entrada SaaS (onboarding), no la tienda Aleya/Milagros.
+  // bereahouse.com = landing comercial; el resto de rutas vive en productos.bereahouse.com.
+  if (hostKind === "marketing") {
+    if (host === `www.${PLATFORM_ROOT_DOMAIN}`) {
+      const canonical = new URL(`${path}${search}`, `https://${PLATFORM_ROOT_DOMAIN}`);
+      return NextResponse.redirect(canonical, 307);
+    }
+    if (path === "/") {
+      const destination = request.nextUrl.clone();
+      destination.pathname = "/berea";
+      return withTenantHeaders(
+        request,
+        NextResponse.rewrite(destination, { request }),
+      );
+    }
+    const marketingOk =
+      path === "/icon.png" ||
+      path === "/icon" ||
+      path.startsWith("/icon?") ||
+      path === "/favicon.ico" ||
+      path === "/apple-icon" ||
+      path.startsWith("/apple-icon") ||
+      path === "/manifest.webmanifest";
+    if (path === "/berea") {
+      return NextResponse.redirect(new URL(`/${search}`, `https://${PLATFORM_ROOT_DOMAIN}`), 307);
+    }
+    if (!marketingOk) {
+      return NextResponse.redirect(canonicalPlatformUrl(path, search), 307);
+    }
+    return nextWithTenant(request);
+  }
+
+  // productos.bereahouse.com = landing comercial + onboarding SaaS, no la tienda Aleya/Milagros.
   if (hostKind === "platform") {
     if (path === "/") {
       const destination = request.nextUrl.clone();
-      destination.pathname = "/empezar";
+      destination.pathname = "/berea";
       return withTenantHeaders(
         request,
         NextResponse.rewrite(destination, { request }),
       );
     }
     const platformOk =
+      path === "/berea" ||
       path === "/empezar" ||
       path.startsWith("/empezar/") ||
       path.startsWith("/admin") ||
