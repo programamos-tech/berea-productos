@@ -7,6 +7,7 @@ import { normalizeStorefrontColor } from "@/lib/storefront-brand";
 import { parseTenantBrand } from "@/lib/tenant-brand";
 import { requireAdminSession } from "@/lib/require-admin-permission";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseServiceClient } from "@/lib/supabase/service";
 
 const MAX_LOGO_BYTES = 3 * 1024 * 1024;
 const IMAGE_EXTENSIONS: Record<string, string> = {
@@ -27,7 +28,14 @@ export async function updateStorefrontBrandAction(formData: FormData) {
   }
 
   const supabase = await createSupabaseServerClient();
-  const { data: tenant } = await supabase
+  // `tenants` has no UPDATE policy for staff: write with the service client, scoped to the session's tenant.
+  let service: ReturnType<typeof createSupabaseServiceClient>;
+  try {
+    service = createSupabaseServiceClient();
+  } catch {
+    redirect("/admin/cuenta?storefront=error");
+  }
+  const { data: tenant } = await service
     .from("tenants")
     .select("brand,storefront_config")
     .eq("id", session.tenantId)
@@ -85,11 +93,12 @@ export async function updateStorefrontBrandAction(formData: FormData) {
     checkout_mode: checkoutMode,
   };
 
-  const { error } = await supabase
+  const { data: updated, error } = await service
     .from("tenants")
     .update({ brand, storefront_config: storefrontConfig })
-    .eq("id", session.tenantId);
-  if (error) redirect("/admin/cuenta?storefront=error");
+    .eq("id", session.tenantId)
+    .select("id");
+  if (error || !updated?.length) redirect("/admin/cuenta?storefront=error");
 
   for (const [key, raw] of formData.entries()) {
     if (!key.startsWith("wholesale_color__")) continue;
