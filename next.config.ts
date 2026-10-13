@@ -12,6 +12,8 @@ const nextConfig: NextConfig = {
     viewTransition: true,
   },
   images: {
+    // El plan de Vercel agotó la cuota de optimización (402 en /_next/image): se sirven los originales.
+    unoptimized: true,
     // Incluye 1920 para retina en PDP; evita 4K innecesario.
     deviceSizes: [640, 750, 828, 1080, 1200, 1400, 1600, 1920],
     imageSizes: [64, 96, 128, 256, 384, 480],
