@@ -55,6 +55,10 @@ export function IconSprite() {
       <symbol id="i-coins" viewBox="0 0 24 24"><path {...stroke} d="M11 15h2a2 2 0 0 0 0-4h-3c-.6 0-1.1.2-1.4.6L3 17M7 21l1.6-1.4c.3-.4.8-.6 1.4-.6h4c1.1 0 2.1-.4 2.8-1.2l4.6-4.4a2 2 0 0 0-2.8-2.9l-4.2 3.9M2 16l6 6" /><circle {...stroke} cx="16" cy="6" r="3" /></symbol>
       <symbol id="i-globe" viewBox="0 0 24 24"><circle {...stroke} cx="12" cy="12" r="9" /><path {...stroke} d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18" /></symbol>
       <symbol id="i-plus" viewBox="0 0 24 24"><path {...stroke} d="M12 5v14M5 12h14" /></symbol>
+      <symbol id="i-instagram" viewBox="0 0 24 24"><rect {...stroke} x="3.5" y="3.5" width="17" height="17" rx="5" /><circle {...stroke} cx="12" cy="12" r="4" /><circle cx="17.2" cy="6.8" r="1.1" fill="currentColor" /></symbol>
+      <symbol id="i-tiktok" viewBox="0 0 24 24"><path fill="currentColor" d="M16.6 5.8a4.3 4.3 0 0 1-1-2.8h-3.1v12.4a2.6 2.6 0 1 1-2.6-2.6c.3 0 .5 0 .8.1V9.7a5.7 5.7 0 1 0 4.9 5.7V9a7.3 7.3 0 0 0 4.3 1.4V7.3a4.3 4.3 0 0 1-3.3-1.5z" /></symbol>
+      <symbol id="i-linkedin" viewBox="0 0 24 24"><path fill="currentColor" d="M4.98 3.5a2.1 2.1 0 1 1 0 4.2 2.1 2.1 0 0 1 0-4.2zM3.2 9h3.6v11.5H3.2V9zm5.9 0h3.4v1.6h.1c.5-.9 1.7-1.9 3.4-1.9 3.6 0 4.3 2.4 4.3 5.5v6.3h-3.6v-5.6c0-1.3 0-3-1.9-3s-2.1 1.4-2.1 2.9v5.7H9.1V9z" /></symbol>
+      <symbol id="i-facebook" viewBox="0 0 24 24"><path fill="currentColor" d="M13.5 21v-7.5H16l.5-3.2h-3V8.4c0-.9.3-1.6 1.6-1.6h1.7V3.9c-.3 0-1.3-.1-2.5-.1-2.5 0-4.1 1.5-4.1 4.2v2.3H7.5v3.2h2.7V21h3.3z" /></symbol>
     </svg>
   );
 }

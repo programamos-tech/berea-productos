@@ -31,6 +31,25 @@ export const viewport: Viewport = {
   themeColor: "#0197b2",
 };
 
+const ADDRESS = "Carrera 35 #25 - 142, Apto 102, El Socorro";
+
+const socials = [
+  { icon: "instagram", label: "Instagram", href: "https://www.instagram.com/bereahousetech/" },
+  { icon: "tiktok", label: "TikTok", href: "https://www.tiktok.com/@bereahouseagencia" },
+  { icon: "facebook", label: "Facebook", href: "https://www.facebook.com/profile.php?id=61594635459319" },
+  { icon: "linkedin", label: "LinkedIn", href: "https://www.linkedin.com/company/bereahouse/" },
+];
+
+function ColombiaFlag() {
+  return (
+    <svg className="flag-co" viewBox="0 0 3 2" role="img" aria-label="Bandera de Colombia">
+      <rect width="3" height="1" fill="#FCD116" />
+      <rect y="1" width="3" height="0.5" fill="#003893" />
+      <rect y="1.5" width="3" height="0.5" fill="#CE1126" />
+    </svg>
+  );
+}
+
 const LOGO = "/landing/berea-house-logo.png";
 const LOGO_WHITE = "/landing/berea-house-logo-white.png";
 const LOGIN_URL = "/admin/login";
@@ -392,6 +411,22 @@ export default function BereaLandingPage() {
           <div>
             <img className="footer-logo" src={LOGO_WHITE} alt="Berea House, software para negocios" width={663} height={312} loading="lazy" />
             <p>Sistema para comerciantes y mayoristas. Ubicados en Sincelejo y la Costa Caribe.</p>
+            <address className="footer-address">
+              <Icon id="pin" />
+              <span>
+                {ADDRESS}
+                <small>Sincelejo, Sucre · Colombia <ColombiaFlag /></small>
+              </span>
+            </address>
+            <ul className="socials">
+              {socials.map((s) => (
+                <li key={s.icon}>
+                  <a href={s.href} target="_blank" rel="noopener noreferrer" aria-label={`Berea House en ${s.label}`}>
+                    <Icon id={s.icon} />
+                  </a>
+                </li>
+              ))}
+            </ul>
           </div>
           <div>
             <h3>Berea</h3>
@@ -411,7 +446,6 @@ export default function BereaLandingPage() {
               {supportHours.map((h) => (
                 <div key={h.days}><dt>{h.days}</dt><dd>{h.hours}</dd></div>
               ))}
-              <div><dt>Dónde estamos</dt><dd>Barrio El Socorro</dd></div>
             </dl>
           </div>
           <div>
@@ -420,7 +454,8 @@ export default function BereaLandingPage() {
           </div>
         </div>
         <div className="wrap footer-bottom">
-          <span>© {new Date().getFullYear()} Berea · Barrio El Socorro, Sincelejo</span>
+          <span>© {new Date().getFullYear()} Berea House</span>
+          <span className="footer-made">Hecho en Sincelejo, Colombia <ColombiaFlag /></span>
         </div>
       </footer>
 
