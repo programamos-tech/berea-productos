@@ -277,7 +277,7 @@ html.topbar-off .nav-wrap { margin-top: 0; padding-top: 0; }
 .nav > * { position: relative; z-index: 1; }
 
 .brand { display: flex; align-items: center; margin-right: auto; }
-.brand img { height: 40px; width: auto; }
+.brand img { height: 36px; width: auto; }
 
 .links {
   display: flex;
@@ -1367,7 +1367,7 @@ html.js .phone.is-in .phone-app article:nth-child(5) { animation-delay: 0.36s; }
   .cookie-actions { justify-content: flex-end; }
   .cta-box { padding: 32px 22px; }
   .nav { width: min(var(--max), calc(100% - 28px)); padding-left: 14px; padding-right: 14px; }
-  .brand img { height: 32px; }
+  .brand img { height: 30px; }
   .topbar p { font-size: 13px; }
   .hero { padding-top: 18px; }
   body.has-cookie .to-top { bottom: 176px; }
