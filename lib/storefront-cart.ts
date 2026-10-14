@@ -14,7 +14,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getStorefrontTenant } from "@/lib/storefront-tenant";
 import {
   withRequestStorefrontBranchStock,
-  withStorefrontKitStock,
+  withRequestStorefrontKitStock,
 } from "@/lib/storefront-branch-inventory";
 
 /** Misma lógica que checkout: publicados, stock y kits disponibles. */
@@ -60,7 +60,7 @@ export async function normalizeStorefrontCartLines(
       publishedOnly: true,
       tenantId: tenant.id,
     });
-    const kits = await withStorefrontKitStock(supabase, tenant.id, rawKits);
+    const kits = await withRequestStorefrontKitStock(supabase, tenant.id, rawKits);
     const byKitId = new Map(kits.map((k) => [k.id, k]));
     const merged = new Map<string, number>();
     for (const line of kitLines) {

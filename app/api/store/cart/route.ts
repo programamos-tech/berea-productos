@@ -26,7 +26,7 @@ import { getStorefrontTenant } from "@/lib/storefront-tenant";
 import { getStorefrontScope } from "@/lib/storefront-scope";
 import {
   withRequestStorefrontBranchStock,
-  withStorefrontKitStock,
+  withRequestStorefrontKitStock,
 } from "@/lib/storefront-branch-inventory";
 
 export const dynamic = "force-dynamic";
@@ -120,7 +120,7 @@ export async function GET(request: Request) {
   const scope = await getStorefrontScope();
   const [productRows, kits] = await Promise.all([
     withRequestStorefrontBranchStock(supabase, tenant.id, productRowsRaw),
-    withStorefrontKitStock(supabase, tenant.id, rawKits),
+    withRequestStorefrontKitStock(supabase, tenant.id, rawKits),
   ]);
 
   const byId = new Map(productRows.map((p) => [p.id, p]));

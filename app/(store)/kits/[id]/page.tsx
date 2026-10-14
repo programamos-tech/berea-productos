@@ -18,7 +18,7 @@ import { storeShellClass } from "@/lib/store-theme";
 import { storagePublicObjectUrl } from "@/lib/storage-public-url";
 import { getStorefrontTenant } from "@/lib/storefront-tenant";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { withStorefrontKitStock } from "@/lib/storefront-branch-inventory";
+import { withRequestStorefrontKitStock } from "@/lib/storefront-branch-inventory";
 export const dynamic = "force-dynamic";
 
 type Props = { params: Promise<{ id: string }> };
@@ -30,7 +30,7 @@ const loadPublishedKit = cache(async (id: string) => {
   if (!kit?.is_published) return null;
   const kitTenantId = (kit as { tenant_id?: string }).tenant_id;
   if (kitTenantId && kitTenantId !== tenant.id) return null;
-  const [scopedKit] = await withStorefrontKitStock(
+  const [scopedKit] = await withRequestStorefrontKitStock(
     supabase,
     tenant.id,
     [kit],

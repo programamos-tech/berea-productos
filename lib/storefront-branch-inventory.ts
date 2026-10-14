@@ -22,9 +22,11 @@ export async function withStorefrontKitStock(
   supabase: SupabaseClient,
   tenantId: string,
   kits: ProductKitRow[],
+  branchId?: string | null,
 ): Promise<ProductKitRow[]> {
-  const branchId = await getStorefrontBranchId(supabase, tenantId);
-  if (!branchId) return kits;
+  const resolvedBranchId =
+    branchId || (await getStorefrontBranchId(supabase, tenantId));
+  if (!resolvedBranchId || kits.length === 0) return kits;
   const ids = [
     ...new Set(
       kits.flatMap((kit) =>
@@ -32,7 +34,11 @@ export async function withStorefrontKitStock(
       ),
     ),
   ];
-  const inventory = await fetchBranchInventoryMap(supabase, branchId, ids);
+  const inventory = await fetchBranchInventoryMap(
+    createSupabaseServiceClient(),
+    resolvedBranchId,
+    ids,
+  );
   return kits.map((kit) => ({
     ...kit,
     items: (kit.items ?? []).map((item) => ({
@@ -83,4 +89,14 @@ export async function withRequestStorefrontBranchStock<
 ): Promise<T[]> {
   const scope = await getStorefrontScope();
   return withStorefrontBranchStock(supabase, tenantId, rows, scope.branchId);
+}
+
+/** Kits con el stock de la sucursal de la sesión (Local por defecto, Bodega si hay código). */
+export async function withRequestStorefrontKitStock(
+  supabase: SupabaseClient,
+  tenantId: string,
+  kits: ProductKitRow[],
+): Promise<ProductKitRow[]> {
+  const scope = await getStorefrontScope();
+  return withStorefrontKitStock(supabase, tenantId, kits, scope.branchId);
 }

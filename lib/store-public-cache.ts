@@ -22,6 +22,7 @@ import {
 } from "@/lib/storefront-product-image";
 import type { TenantRef } from "@/lib/tenant-context";
 import { withStorefrontKitStock } from "@/lib/storefront-branch-inventory";
+import { getStorefrontScope } from "@/lib/storefront-scope";
 
 const STORE_CACHE_REVALIDATE_SEC = 300;
 
@@ -224,6 +225,7 @@ export type HomeFeaturedKit = {
 
 async function loadAvailableStorefrontKits(
   tenant: TenantRef,
+  branchId: string | null,
 ): Promise<HomeFeaturedKit[]> {
   const supabase = publicSupabase(tenant.slug);
   const rawKits = await fetchKitsWithItems(supabase, {
@@ -234,6 +236,7 @@ async function loadAvailableStorefrontKits(
     supabase,
     tenant.id,
     rawKits,
+    branchId,
   );
   return kits
     .filter(
@@ -257,12 +260,13 @@ async function loadAvailableStorefrontKits(
 
 export async function getCachedHomeFeaturedKits() {
   const tenant = await getStorefrontTenant();
+  const { branchId } = await getStorefrontScope();
   return unstable_cache(
     async (): Promise<HomeFeaturedKit[]> => {
-      const kits = await loadAvailableStorefrontKits(tenant);
+      const kits = await loadAvailableStorefrontKits(tenant, branchId);
       return kits.slice(0, HOME_KITS_LIMIT);
     },
-    ["store-home-featured-kits", tenant.id],
+    ["store-home-featured-kits", tenant.id, branchId ?? "default"],
     {
       revalidate: STORE_CACHE_REVALIDATE_SEC,
       tags: storeCacheTags("store-kits", tenant.slug),
@@ -273,9 +277,11 @@ export async function getCachedHomeFeaturedKits() {
 /** Todos los kits disponibles para la sección del catálogo. */
 export async function getCachedCatalogKits() {
   const tenant = await getStorefrontTenant();
+  const { branchId } = await getStorefrontScope();
   return unstable_cache(
-    async (): Promise<HomeFeaturedKit[]> => loadAvailableStorefrontKits(tenant),
-    ["store-catalog-kits", tenant.id],
+    async (): Promise<HomeFeaturedKit[]> =>
+      loadAvailableStorefrontKits(tenant, branchId),
+    ["store-catalog-kits", tenant.id, branchId ?? "default"],
     {
       revalidate: STORE_CACHE_REVALIDATE_SEC,
       tags: storeCacheTags("store-kits", tenant.slug),
