@@ -205,7 +205,7 @@ export function ProductDetailView({
     prefersReducedMotion || !heroZoom ? 1 : 1.6;
 
   return (
-    <div className="grid gap-8 lg:grid-cols-2 lg:gap-12 lg:items-start">
+    <div className="grid gap-8 lg:mx-auto lg:max-w-[1040px] lg:grid-cols-2 lg:gap-12 lg:items-start">
       {/* Imagen — proporción natural (sin cuadrado fijo) + zoom al mover el cursor */}
       <div
         className="relative mx-auto overflow-hidden bg-[var(--store-image-well)] motion-safe:cursor-crosshair lg:mr-0"
