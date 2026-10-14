@@ -1,4 +1,7 @@
-import { unitPriceAfterWholesaleCents } from "@/lib/customer-wholesale-pricing";
+import {
+  unitGrossAfterWholesaleCents,
+  unitPriceAfterWholesaleCents,
+} from "@/lib/customer-wholesale-pricing";
 import {
   applyPosLineNetDiscountCents,
   discountedUnitNetCentsFromLine,
@@ -36,13 +39,20 @@ export function computePosProductLineAmounts(opts: {
     opts.priceCatalog,
     opts.wholesalePct,
   );
-  const catalogGross = unitPriceGrossCents(catalogNet, opts.hasVat, null);
+  const catalogGross = unitGrossAfterWholesaleCents(
+    opts.priceCatalog,
+    opts.hasVat,
+    opts.wholesalePct,
+  );
   const chargedRaw = opts.chargedUnitCents;
   const chargedUnitCents =
     chargedRaw != null && Number.isFinite(Number(chargedRaw)) && Number(chargedRaw) >= 0
       ? Math.floor(Number(chargedRaw))
       : null;
-  const custom = posCustomSaleUnits(catalogNet, opts.hasVat, chargedUnitCents);
+  const custom =
+    chargedUnitCents == null
+      ? { net: catalogNet, gross: catalogGross }
+      : posCustomSaleUnits(catalogNet, opts.hasVat, chargedUnitCents);
   const lineNetBefore = custom.net * quantity;
   const pctForCalc =
     opts.discountPercent != null &&

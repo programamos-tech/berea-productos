@@ -1,4 +1,4 @@
-import { unitPriceAfterWholesaleCents } from "@/lib/customer-wholesale-pricing";
+import { unitGrossAfterWholesaleCents } from "@/lib/customer-wholesale-pricing";
 import { unitPriceGrossCents } from "@/lib/product-vat-price";
 import { storefrontPriceAfterCouponCents } from "@/lib/store-coupons";
 
@@ -16,11 +16,11 @@ export function storefrontPayableUnitGrossCents(
   hasVat: boolean | null | undefined,
   wholesaleDiscountPercent: number,
 ): number {
-  const netUnit = unitPriceAfterWholesaleCents(
+  return unitGrossAfterWholesaleCents(
     catalogNetCents,
+    hasVat,
     wholesaleDiscountPercent,
   );
-  return unitPriceGrossCents(netUnit, hasVat, null);
 }
 
 /**

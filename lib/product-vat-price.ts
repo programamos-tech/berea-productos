@@ -26,6 +26,16 @@ export function unitPriceGrossCents(
   return Math.round(gross / 100) * 100;
 }
 
+/** Con IVA al peso, sin llevar a la centena. */
+export function unitPriceGrossExactCents(
+  price_cents: number,
+  has_vat: boolean | null | undefined,
+): number {
+  const base = unitPriceNetCents(price_cents);
+  if (!has_vat) return base;
+  return Math.round((base * (100 + SALE_VAT_PERCENT)) / 100);
+}
+
 export function unitVatAmountCents(
   price_cents: number,
   has_vat: boolean | null | undefined,

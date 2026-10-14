@@ -31,6 +31,7 @@ import {
 import { isDefaultPosCustomerName } from "@/lib/pos-default-customer";
 import {
   parseStoreCustomerKind,
+  unitGrossAfterWholesaleCents,
   unitPriceAfterWholesaleCents,
   wholesaleDiscountPercentFromRow,
 } from "@/lib/customer-wholesale-pricing";
@@ -125,11 +126,11 @@ type CartLine = {
 };
 
 function unitFinalCents(product: ProductHit, wholesalePct: number): number {
-  const net = unitPriceAfterWholesaleCents(
+  return unitGrossAfterWholesaleCents(
     Number(product.price_cents ?? 0),
+    product.has_vat,
     wholesalePct,
   );
-  return unitPriceGrossCents(net, product.has_vat, product.vat_percent);
 }
 
 const LIST_PRICE_ONLY_POLICY: PosPricePolicy = {

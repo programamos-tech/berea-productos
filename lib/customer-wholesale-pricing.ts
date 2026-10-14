@@ -1,3 +1,8 @@
+import {
+  unitPriceGrossCents,
+  unitPriceGrossExactCents,
+} from "@/lib/product-vat-price";
+
 /** Consumidor final vs mayorista (panel admin). */
 export type StoreCustomerKind = "retail" | "wholesale";
 
@@ -23,6 +28,22 @@ export function unitPriceAfterWholesaleCents(
   if (p >= 100) return 0;
   const base = Math.max(0, Math.floor(Number(catalogPriceCents ?? 0)));
   return Math.max(0, base - Math.round((base * p) / 100));
+}
+
+/**
+ * Unitario con IVA para el cliente. La lista va a la centena; el precio mayorista
+ * queda exacto al peso para no cobrar más de lo que da el porcentaje.
+ */
+export function unitGrossAfterWholesaleCents(
+  catalogPriceCents: number,
+  hasVat: boolean | null | undefined,
+  discountPercent: number,
+): number {
+  const net = unitPriceAfterWholesaleCents(catalogPriceCents, discountPercent);
+  if (clampWholesaleDiscountPercent(discountPercent) <= 0) {
+    return unitPriceGrossCents(net, hasVat, null);
+  }
+  return unitPriceGrossExactCents(net, hasVat);
 }
 
 export function wholesaleDiscountPercentFromRow(row: {
