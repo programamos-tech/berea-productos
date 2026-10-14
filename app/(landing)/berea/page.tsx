@@ -12,6 +12,9 @@ import { CajaScreen, CreditosScreen, ReportesScreen, SedesScreen, TrasladosScree
 import { TourTabs, type TourPanel } from "./TourTabs";
 import { LandingInteractions } from "./LandingInteractions";
 import { ProcessSteps } from "./ProcessSteps";
+import { LandingStats, type LandingStat } from "./LandingStats";
+import { LandingVideo } from "./LandingVideo";
+import { WelcomeModal } from "./WelcomeModal";
 import "./landing.css";
 
 const manrope = Manrope({
@@ -98,6 +101,18 @@ const clients: { name: string; src: string; solid?: boolean; tall?: boolean }[] 
   { name: "Estación iPhone", src: "/logo-estacion-iphone.png", solid: true },
   { name: "Torocell Store", src: "/landing/logo-torocell-mono.png", tall: true },
 ];
+
+const STORES_COUNT = 17;
+
+const stats: LandingStat[] = [
+  { icon: "store", value: STORES_COUNT, label: "Tiendas", detail: "En Sincelejo y sus alrededores" },
+  { icon: "users", value: 50, prefix: "+", label: "Usuarios activos", detail: "Vendiendo todos los días" },
+  { icon: "receipt", value: 70000, prefix: "+", label: "Facturas registradas", detail: "Cada venta queda guardada" },
+  { icon: "boxes", value: 1000, prefix: "+", label: "Referencias activas", detail: "Inventario al día en cada sede" },
+];
+
+const DEMO_VIDEO = "/landing/berea-sistema-pc.mp4";
+const DEMO_VIDEO_POSTER = "/landing/berea-sistema-pc-poster.jpg";
 
 function WhatsAppLink({ className, children, href = WHATSAPP_DEMO_URL }: { className: string; children: ReactNode; href?: string }) {
   return (
@@ -219,6 +234,39 @@ export default function BereaLandingPage() {
                   ))}
                 </ul>
               ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="stats" id="cifras" aria-labelledby="stats-title">
+          <div className="wrap">
+            <div className="section-head section-head-center">
+              <p className="stats-badge"><Icon id="pin" /> Sincelejo y sus alrededores</p>
+              <h2 id="stats-title">Los comercios de la región ya venden con Berea</h2>
+              <p className="lead">Tiendas de aquí que facturan, controlan su inventario y manejan sus sedes con nuestro sistema todos los días.</p>
+            </div>
+            <LandingStats stats={stats} />
+          </div>
+        </section>
+
+        <section className="demo-sec" id="video">
+          <div className="wrap">
+            <div className="section-head section-head-center">
+              <p className="eyebrow">Míralo en acción</p>
+              <h2>Así se usa Berea desde el computador</h2>
+              <p className="lead">Una factura, los créditos, el cambio entre sedes y un traslado de mercancía. Todo en menos de un minuto.</p>
+            </div>
+            <div className="demo-frame">
+              <LandingVideo
+                src={DEMO_VIDEO}
+                poster={DEMO_VIDEO_POSTER}
+                label="Recorrido por Berea en el computador: crear una factura, ver créditos, cambiar de sede y hacer un traslado"
+              />
+            </div>
+            <div className="demo-actions">
+              <WhatsAppLink className="btn btn-primary btn-lg">
+                <Icon id="whatsapp" /> Quiero verlo en mi negocio
+              </WhatsAppLink>
             </div>
           </div>
         </section>
@@ -472,6 +520,7 @@ export default function BereaLandingPage() {
 
       <IconSprite />
       <LandingInteractions />
+      <WelcomeModal demoUrl={WHATSAPP_DEMO_URL} storesCount={STORES_COUNT} />
     </div>
   );
 }
