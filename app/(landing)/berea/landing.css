@@ -3504,19 +3504,14 @@
 }
 
 .bl .stat-ico {
-  display: grid;
-  place-items: center;
-  width: 46px;
-  height: 46px;
-  margin-bottom: 22px;
-  border-radius: 14px;
-  background: rgba(1, 151, 178, 0.18);
+  display: flex;
+  margin-bottom: 20px;
   color: #5fd3e8;
 }
 
 .bl .stat-ico .icon {
-  width: 22px;
-  height: 22px;
+  width: 28px;
+  height: 28px;
 }
 
 .bl .stat-num {
@@ -4022,9 +4017,7 @@
   }
 
   .bl .stat-ico {
-    width: 40px;
-    height: 40px;
-    margin-bottom: 16px;
+    margin-bottom: 14px;
   }
 
   .bl .stat-num {
