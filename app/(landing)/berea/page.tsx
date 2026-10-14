@@ -253,7 +253,7 @@ export default function BereaLandingPage() {
           <div className="wrap">
             <div className="section-head section-head-center">
               <p className="eyebrow">Míralo en acción</p>
-              <h2>Así se usa Berea desde el computador</h2>
+              <h2>Menos cuaderno, más ventas</h2>
               <p className="lead">Una factura, los créditos, el cambio entre sedes y un traslado de mercancía. Todo en menos de un minuto.</p>
             </div>
             <div className="demo-frame">
