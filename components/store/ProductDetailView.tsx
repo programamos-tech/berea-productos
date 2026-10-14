@@ -94,6 +94,10 @@ function usePrefersReducedMotion() {
 /** Alto máximo de la foto: cabe en pantalla junto al encabezado y no se estira más allá de su resolución. */
 const HERO_MAX_HEIGHT = "clamp(320px, calc(100svh - 260px), 600px)";
 
+/** Zoom al pasar el cursor: hasta 1,6× y solo si la foto tiene píxeles para eso. */
+const HERO_MAX_ZOOM = 1.6;
+const HERO_MIN_ZOOM = 1.15;
+
 export function ProductDetailView({
   productId,
   name,
@@ -125,7 +129,8 @@ export function ProductDetailView({
     width: number;
     height: number;
   } | null>(null);
-  const [heroZoom, setHeroZoom] = useState(false);
+  /** Escala del zoom; 1 = sin zoom. Nunca pasa de la resolución real de la foto. */
+  const [heroZoom, setHeroZoom] = useState(1);
   const [heroZoomOrigin, setHeroZoomOrigin] = useState({ x: 50, y: 50 });
   const prefersReducedMotion = usePrefersReducedMotion();
 
@@ -201,20 +206,31 @@ export function ProductDetailView({
     } as const;
   }, [heroImageUrl, heroLayout]);
 
-  const heroZoomScale =
-    prefersReducedMotion || !heroZoom ? 1 : 1.6;
+  const heroZoomScale = prefersReducedMotion ? 1 : heroZoom;
 
   return (
     <div className="grid gap-8 lg:mx-auto lg:max-w-[1040px] lg:grid-cols-2 lg:gap-12 lg:items-start">
       {/* Imagen — proporción natural (sin cuadrado fijo) + zoom al mover el cursor */}
       <div
-        className="relative mx-auto overflow-hidden bg-[var(--store-image-well)] motion-safe:cursor-crosshair lg:mr-0"
+        className={`relative mx-auto overflow-hidden bg-[var(--store-image-well)] lg:mr-0 ${
+          heroZoomScale > 1 ? "cursor-crosshair" : ""
+        }`}
         style={heroFrameStyle}
-        onMouseEnter={() => {
-          if (!prefersReducedMotion) setHeroZoom(true);
+        onMouseEnter={(e) => {
+          if (prefersReducedMotion) return;
+          const naturalWidth =
+            heroLayout && heroLayout.url === heroImageUrl ? heroLayout.width : 0;
+          const shownWidth =
+            e.currentTarget.getBoundingClientRect().width *
+            (window.devicePixelRatio || 1);
+          const scale =
+            naturalWidth > 0 && shownWidth > 0
+              ? Math.min(HERO_MAX_ZOOM, naturalWidth / shownWidth)
+              : 1;
+          setHeroZoom(scale >= HERO_MIN_ZOOM ? scale : 1);
         }}
         onMouseLeave={() => {
-          setHeroZoom(false);
+          setHeroZoom(1);
         }}
         onMouseMove={(e) => {
           if (prefersReducedMotion) return;
