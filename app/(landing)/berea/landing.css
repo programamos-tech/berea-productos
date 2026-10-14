@@ -4049,6 +4049,82 @@
   }
 }
 
+/* Entrada al hacer scroll (clases puestas por LandingInteractions) */
+.bl .rv:not(.rv-in) {
+  opacity: 0;
+}
+
+.bl .rv.rv-in {
+  animation: rv-up 0.8s cubic-bezier(0.2, 0.75, 0.2, 1) both;
+  animation-delay: calc(var(--rv-i, 0) * 90ms);
+}
+
+.bl .rv.rv-in[data-rv-from="top"] {
+  animation-name: rv-down;
+}
+
+.bl .stat.rv.rv-in,
+.bl .person.rv.rv-in,
+.bl .dv-tablet.rv.rv-in,
+.bl .dv-phone.rv.rv-in {
+  animation-name: rv-pop;
+}
+
+.bl .stat.rv.rv-in[data-rv-from="top"],
+.bl .person.rv.rv-in[data-rv-from="top"],
+.bl .dv-tablet.rv.rv-in[data-rv-from="top"],
+.bl .dv-phone.rv.rv-in[data-rv-from="top"] {
+  animation-name: rv-pop-down;
+}
+
+@keyframes rv-up {
+  from {
+    opacity: 0;
+    translate: 0 44px;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+
+@keyframes rv-down {
+  from {
+    opacity: 0;
+    translate: 0 -44px;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+
+@keyframes rv-pop {
+  from {
+    opacity: 0;
+    translate: 0 56px;
+    scale: 0.94;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+    scale: 1;
+  }
+}
+
+@keyframes rv-pop-down {
+  from {
+    opacity: 0;
+    translate: 0 -56px;
+    scale: 0.94;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+    scale: 1;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .bl,
   .bl * {
