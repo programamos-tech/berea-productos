@@ -91,6 +91,9 @@ function usePrefersReducedMotion() {
   );
 }
 
+/** Alto máximo de la foto: cabe en pantalla junto al encabezado y no se estira más allá de su resolución. */
+const HERO_MAX_HEIGHT = "clamp(320px, calc(100svh - 260px), 600px)";
+
 export function ProductDetailView({
   productId,
   name,
@@ -190,22 +193,22 @@ export function ProductDetailView({
       heroLayout.height > 0
         ? heroLayout
         : null;
-    if (natural) {
-      return {
-        aspectRatio: `${natural.width} / ${natural.height}`,
-      } as const;
-    }
-    return { minHeight: "clamp(280px, 62vw, 78vh)" } as const;
+    const w = natural?.width ?? 4;
+    const h = natural?.height ?? 5;
+    return {
+      aspectRatio: `${w} / ${h}`,
+      width: `min(100%, calc(${HERO_MAX_HEIGHT} * ${w} / ${h}))`,
+    } as const;
   }, [heroImageUrl, heroLayout]);
 
   const heroZoomScale =
-    prefersReducedMotion || !heroZoom ? 1 : 1.9;
+    prefersReducedMotion || !heroZoom ? 1 : 1.6;
 
   return (
-    <div className="grid gap-10 lg:grid-cols-2 lg:gap-16 lg:items-start">
+    <div className="grid gap-8 lg:grid-cols-2 lg:gap-12 lg:items-start">
       {/* Imagen — proporción natural (sin cuadrado fijo) + zoom al mover el cursor */}
       <div
-        className="relative w-full overflow-hidden bg-[var(--store-image-well)] motion-safe:cursor-crosshair"
+        className="relative mx-auto overflow-hidden bg-[var(--store-image-well)] motion-safe:cursor-crosshair lg:mr-0"
         style={heroFrameStyle}
         onMouseEnter={() => {
           if (!prefersReducedMotion) setHeroZoom(true);
@@ -224,9 +227,7 @@ export function ProductDetailView({
       >
         {heroImageUrl ? (
           <div
-            className={`absolute inset-0 ${
-              heroZoomScale > 1 ? "will-change-transform" : ""
-            }`}
+            className="absolute inset-0"
             style={
               heroZoomScale > 1
                 ? {
@@ -293,11 +294,11 @@ export function ProductDetailView({
 
       {/* Datos */}
       <div className="flex min-w-0 flex-col lg:max-w-xl lg:pt-2">
-        <h1 className="text-xl font-semibold uppercase leading-snug tracking-[0.06em] text-[var(--store-brand)] sm:text-2xl">
+        <h1 className="text-lg font-semibold uppercase leading-snug tracking-[0.06em] text-[var(--store-brand)] sm:text-xl">
           {name}
         </h1>
 
-        <div className="mt-4">
+        <div className="mt-3">
           {pct > 0 ? (
             <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-stone-500">
               −{pct}% con cupón al pagar
@@ -307,7 +308,7 @@ export function ProductDetailView({
               Precio mayorista · {wholesalePct}%
             </p>
           ) : null}
-          <p className="text-lg font-normal tabular-nums text-stone-900 sm:text-xl">
+          <p className="text-lg font-normal tabular-nums text-stone-900">
             {hasCouponPrice ? (
               <>
                 <span className="mr-2 text-base text-stone-400 line-through decoration-stone-300">
@@ -321,7 +322,7 @@ export function ProductDetailView({
           </p>
         </div>
 
-        <div className="mt-5 flex items-center gap-2">
+        <div className="mt-3 flex items-center gap-2">
           <span className="flex text-amber-500" aria-hidden>
             {Array.from({ length: 5 }, (_, i) => (
               <Star
@@ -335,13 +336,13 @@ export function ProductDetailView({
         </div>
 
         {outOfStock ? (
-          <p className="mt-6 border-t border-stone-200/80 pt-6 text-sm font-medium uppercase tracking-wide text-stone-500">
+          <p className="mt-5 border-t border-stone-200/80 pt-5 text-sm font-medium uppercase tracking-wide text-stone-500">
             Agotado
           </p>
         ) : null}
 
         {colorOptions.length > 0 ? (
-          <div className="mt-8">
+          <div className="mt-6">
             <div className="flex flex-wrap gap-2.5">
               {colorOptions.map((color, i) => (
                 <button
@@ -372,7 +373,7 @@ export function ProductDetailView({
         ) : null}
 
         {fragranceLabels.length > 1 ? (
-          <fieldset className="mt-8 min-w-0 border-0 p-0">
+          <fieldset className="mt-6 min-w-0 border-0 p-0">
             <legend className="text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-900">
               Fragancia / tono
             </legend>
@@ -400,7 +401,7 @@ export function ProductDetailView({
         ) : null}
 
         {!outOfStock ? (
-          <form className="mt-10 space-y-4">
+          <form className="mt-6 space-y-3">
             <input type="hidden" name="productId" value={productId} />
             <input type="hidden" name="quantity" value={String(safeQty)} />
             <input
@@ -452,7 +453,7 @@ export function ProductDetailView({
                 router.refresh();
                 openCart();
               }}
-              className="w-full bg-[var(--store-accent)] py-3.5 text-center text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[var(--store-accent-hover)]"
+              className="w-full bg-[var(--store-accent)] py-3 text-center text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[var(--store-accent-hover)]"
             >
               Añadir a la bolsa
             </button>
@@ -467,7 +468,7 @@ export function ProductDetailView({
           </form>
         ) : null}
 
-        <div className="mt-12">
+        <div className="mt-8">
           <AccordionSection title="Descripción" defaultOpen>
             {descriptionText ? (
               <div className="space-y-2">
@@ -533,7 +534,7 @@ export function ProductDetailView({
           </AccordionSection>
         </div>
 
-        <p className="mt-10 text-[13px] text-stone-500">
+        <p className="mt-8 text-[13px] text-stone-500">
           <Link href="/products" className="text-stone-800 underline decoration-stone-300 underline-offset-4 hover:text-stone-950">
             Ver más
           </Link>

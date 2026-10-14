@@ -112,8 +112,8 @@ export default async function ProductDetailPage({ params }: Props) {
   const categoryId = product.category_id;
 
   return (
-    <div className={`${storeShellClass} py-10 sm:py-12 lg:py-14`}>
-      <nav aria-label="Migas de pan" className="mb-8 text-[11px] uppercase tracking-[0.12em] text-stone-400">
+    <div className={`${storeShellClass} py-6 sm:py-8`}>
+      <nav aria-label="Migas de pan" className="mb-5 text-[11px] uppercase tracking-[0.12em] text-stone-400">
         <ol className="flex flex-wrap items-center gap-x-2 gap-y-1">
           <li>
             <Link href="/" className="transition hover:text-stone-700">
