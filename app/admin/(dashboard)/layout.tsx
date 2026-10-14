@@ -103,7 +103,7 @@ export default async function AdminDashboardLayout({
         logoFullColor: perm.tenantLogoFullColor,
       }}
       branchContext={perm.branchContext}
-      storefrontOrigin={await requestStorefrontOrigin()}
+      storefrontOrigin={await requestStorefrontOrigin(perm.tenantId)}
     >
       {children}
     </AdminDashboardShell>

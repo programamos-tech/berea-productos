@@ -52,7 +52,7 @@ export default async function BranchesPage() {
       },
     ]),
   );
-  const storefrontOrigin = await requestStorefrontOrigin();
+  const storefrontOrigin = await requestStorefrontOrigin(perm?.tenantId);
 
   return (
     <div className="flex flex-col gap-5">

@@ -115,7 +115,7 @@ export default async function AdminCustomerDetailPage({
       .eq("id", customer.branch_id)
       .maybeSingle();
     if (branch?.code) {
-      wholesaleStorePath = storefrontUrlForBranch(await requestStorefrontOrigin(), {
+      wholesaleStorePath = storefrontUrlForBranch(await requestStorefrontOrigin(perm?.tenantId), {
         code: String(branch.code),
         isDefault: branch.is_default === true,
       });
