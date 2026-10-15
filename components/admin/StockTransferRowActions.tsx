@@ -21,12 +21,19 @@ export function StockTransferRowActions({
 
   return (
     <div className="flex items-center justify-end gap-0.5">
-      <Link href={href} className={actionBtnClass} title="Ver traslado" aria-label="Ver traslado">
+      <Link
+        href={href}
+        prefetch={false}
+        className={actionBtnClass}
+        title="Ver traslado"
+        aria-label="Ver traslado"
+      >
         <Eye className={iconClass} strokeWidth={1.75} aria-hidden />
       </Link>
       {canReceive ? (
         <Link
           href={href}
+          prefetch={false}
           className={actionBtnClass}
           title="Recibir traslado"
           aria-label="Recibir traslado"
@@ -37,6 +44,7 @@ export function StockTransferRowActions({
       {canCancel ? (
         <Link
           href={href}
+          prefetch={false}
           className={`${actionBtnClass} hover:text-red-700 dark:hover:text-red-300`}
           title="Anular traslado"
           aria-label="Anular traslado"

@@ -93,6 +93,7 @@ export function AdminNotificationBell({ className }: { className?: string }) {
                   <li key={n.id}>
                     <Link
                       href={href}
+                      prefetch={false}
                       onClick={() => {
                         markRead(n.id);
                         setPanelOpen(false);

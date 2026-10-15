@@ -186,6 +186,7 @@ export function ActivityLogCard({ row, actorDisplay, formatWhen }: Props) {
                 <span className="text-zinc-300 dark:text-zinc-600">·</span>
                 <Link
                   href={link.href}
+                  prefetch={false}
                   className="font-medium text-blue-700 hover:underline dark:text-blue-400"
                 >
                   {link.label}

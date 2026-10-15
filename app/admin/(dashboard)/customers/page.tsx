@@ -259,6 +259,7 @@ export default async function AdminCustomersPage({
                         <div className="min-w-0 flex-1">
                           <Link
                             href={`/admin/customers/${r.id}`}
+                            prefetch={false}
                             className="font-medium text-zinc-900 hover:underline dark:text-zinc-100"
                           >
                             {r.name}
@@ -334,6 +335,7 @@ export default async function AdminCustomersPage({
                             <CustomerKindIcon wholesale={isWholesale} />
                             <Link
                               href={`/admin/customers/${r.id}`}
+                              prefetch={false}
                               className="font-medium text-zinc-900 hover:underline dark:text-zinc-100"
                             >
                               {r.name}

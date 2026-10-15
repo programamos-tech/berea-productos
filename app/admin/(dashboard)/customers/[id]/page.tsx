@@ -626,6 +626,7 @@ export default async function AdminCustomerDetailPage({
                         <td className="py-1.5 pr-3 align-middle">
                           <Link
                             href={`/admin/orders/${o.id}`}
+                            prefetch={false}
                             className="inline-flex items-center gap-2 font-medium text-zinc-900 hover:underline dark:text-zinc-100"
                           >
                             <PagoIcon

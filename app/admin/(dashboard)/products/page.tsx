@@ -390,6 +390,7 @@ export default async function AdminProductsPage({
                       <div className="flex items-start justify-between gap-4">
                         <Link
                           href={`/admin/products/${p.id}`}
+                          prefetch={false}
                           className="min-w-0 flex-1 no-underline"
                         >
                           <p className="font-mono text-[11px] tabular-nums text-zinc-500">
@@ -468,6 +469,7 @@ export default async function AdminProductsPage({
                           <td className={`${tdClass} min-w-0`}>
                             <Link
                               href={`/admin/products/${p.id}`}
+                              prefetch={false}
                               className="block truncate font-medium text-zinc-900 hover:underline dark:text-zinc-100"
                             >
                               {p.name}

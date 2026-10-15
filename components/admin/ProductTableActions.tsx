@@ -36,6 +36,7 @@ export function ProductTableActions({
     <div className="flex shrink-0 flex-nowrap items-center justify-end gap-0.5">
       <Link
         href={`/admin/products/${productId}`}
+        prefetch={false}
         className={actionBtnClass}
         title="Ver detalle del producto"
         aria-label="Ver detalle"
@@ -45,6 +46,7 @@ export function ProductTableActions({
       {canEdit ? (
         <Link
           href={`/admin/products/${productId}/edit`}
+          prefetch={false}
           className={actionBtnClass}
           title="Editar producto"
           aria-label="Editar"

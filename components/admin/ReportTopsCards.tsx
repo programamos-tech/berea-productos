@@ -66,6 +66,7 @@ export function ReportTopsCards({
                   {c.customerId ? (
                     <Link
                       href={`/admin/customers/${c.customerId}`}
+                      prefetch={false}
                       className="flex items-start gap-2.5 rounded-xl px-1 py-1.5 transition hover:bg-zinc-100/80 dark:hover:bg-zinc-900/60"
                     >
                       {body}
@@ -112,6 +113,7 @@ export function ReportTopsCards({
                   {p.productId ? (
                     <Link
                       href={`/admin/products/${p.productId}`}
+                      prefetch={false}
                       className="flex items-start gap-2.5 rounded-xl px-1 py-1.5 transition hover:bg-zinc-100/80 dark:hover:bg-zinc-900/60"
                     >
                       {body}

@@ -21,6 +21,7 @@ export function CustomerRowActions({
     <div className="flex justify-end gap-0.5">
       <Link
         href={`/admin/customers/${customerId}`}
+        prefetch={false}
         className={actionBtnClass}
         title="Ver cliente"
         aria-label="Ver ficha del cliente"
@@ -29,6 +30,7 @@ export function CustomerRowActions({
       </Link>
       <Link
         href={`/admin/customers/${customerId}/edit`}
+        prefetch={false}
         className={actionBtnClass}
         title="Editar cliente"
         aria-label="Editar cliente"
@@ -38,6 +40,7 @@ export function CustomerRowActions({
       {lastOrderId ? (
         <Link
           href={`/admin/orders/${lastOrderId}`}
+          prefetch={false}
           className={actionBtnClass}
           title="Última compra"
           aria-label="Ver última compra"

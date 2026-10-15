@@ -21,6 +21,7 @@ export function ExpenseRowActions({
     <div className="flex justify-end gap-0.5">
       <Link
         href={`/admin/egresos/${expenseId}`}
+        prefetch={false}
         className={iconBtnClass}
         title="Ver detalle"
         aria-label="Ver detalle del gasto"

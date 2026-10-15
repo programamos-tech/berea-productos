@@ -33,6 +33,7 @@ export function CreditosTable({ rows }: { rows: CreditListRow[] }) {
             <li key={row.id} className="min-w-0">
               <Link
                 href={`/admin/creditos/${row.id}`}
+                prefetch={false}
                 className="flex items-start justify-between gap-3 py-3 no-underline transition hover:bg-zinc-50/60 dark:hover:bg-zinc-900/40"
                 aria-label={`Ver crédito ${ref}, ${row.customerName}`}
               >
@@ -129,6 +130,7 @@ export function CreditosTable({ rows }: { rows: CreditListRow[] }) {
                   <td className="py-2.5 pr-0 text-right">
                     <Link
                       href={`/admin/creditos/${row.id}`}
+                      prefetch={false}
                       className="inline-flex size-8 items-center justify-center rounded-lg text-zinc-500 transition hover:bg-zinc-50 hover:text-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
                       aria-label={`Ver crédito ${ref}`}
                     >

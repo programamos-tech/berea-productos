@@ -131,6 +131,7 @@ export default async function AdminOrdersPage({
               <li key={o.id}>
                 <Link
                   href={`/admin/orders/${o.id}`}
+                  prefetch={false}
                   className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 transition hover:bg-zinc-50"
                 >
                   <div>

@@ -382,6 +382,7 @@ export default async function AdminCajaPage({
                           {s.status === "closed" ? (
                             <Link
                               href={`/admin/caja/${s.id}`}
+                              prefetch={false}
                               className="inline-flex size-8 items-center justify-center rounded-lg text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
                               aria-label={`Ver cierre del ${prettyReportDayShortLabel(s.business_day)}`}
                               title="Ver cierre"

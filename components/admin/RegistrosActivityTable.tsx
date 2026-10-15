@@ -93,6 +93,7 @@ export function RegistrosActivityTable({ rows }: { rows: RegistrosTableRow[] }) 
               {link ? (
                 <Link
                   href={link.href}
+                  prefetch={false}
                   className="flex items-start justify-between gap-3 py-3 no-underline transition hover:bg-zinc-50/60 dark:hover:bg-zinc-900/40"
                   aria-label={`${link.label}: ${row.summary}`}
                 >
@@ -158,6 +159,7 @@ export function RegistrosActivityTable({ rows }: { rows: RegistrosTableRow[] }) 
                     {link ? (
                       <Link
                         href={link.href}
+                        prefetch={false}
                         className="inline-flex size-8 items-center justify-center rounded-lg text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
                         aria-label={`Abrir ${link.label}`}
                         title={link.label}
