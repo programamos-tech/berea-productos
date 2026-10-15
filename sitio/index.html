@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Berea · Tu comercio, en un panel</title>
+  <meta name="description" content="Berea es la plataforma de gestión comercial para tiendas y mayoristas. Ventas, inventario, créditos y multisede, en la nube.">
+  <meta name="theme-color" content="#0197b2">
+  <link rel="icon" href="assets/favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+  <script>
+    try {
+      if (localStorage.getItem("berea-cookie")) document.documentElement.classList.add("cookie-ok");
+      if (sessionStorage.getItem("berea-topbar") === "off") document.documentElement.classList.add("topbar-off");
+      document.documentElement.classList.add("js");
+    } catch (err) { /* almacenamiento no disponible */ }
+  </script>
+</head>
+<body>
+  <a class="skip" href="#contenido">Saltar al contenido</a>
+  <div class="scroll-line" aria-hidden="true"><span id="scroll-line"></span></div>
+
+  <div class="site-head">
+  <div class="topbar">
+    <p>
+      Este mes: 20% de descuento al empezar tu panel.
+      <button class="topbar-link" type="button" data-open="demo">Aprovecha</button>
+    </p>
+    <button class="topbar-close" type="button" aria-label="Cerrar anuncio">
+      <svg class="icon" aria-hidden="true"><use href="#i-close"></use></svg>
+    </button>
+  </div>
+
+  <header class="nav-wrap">
+    <div class="nav">
+      <a class="brand" href="#inicio">
+        <img src="assets/beaver.png" alt="Berea" width="70" height="47">
+      </a>
+
+      <nav class="links" id="site-nav" aria-label="Principal">
+        <div class="has-menu">
+          <button class="menu-btn" type="button" aria-expanded="false" aria-haspopup="true">
+            Producto
+            <svg class="icon chev" aria-hidden="true"><use href="#i-chevron"></use></svg>
+          </button>
+          <div class="menu">
+            <a href="#recorrido" data-goto="ventas"><strong>Ventas y caja</strong><span>Facturas, mostrador y cierre del día</span></a>
+            <a href="#recorrido" data-goto="inventario"><strong>Inventario</strong><span>Stock, kits y traslados entre sedes</span></a>
+            <a href="#recorrido" data-goto="creditos"><strong>Créditos</strong><span>Cartera, abonos y saldos</span></a>
+            <a href="#recorrido" data-goto="reportes"><strong>Reportes</strong><span>Ingresos, gastos y utilidad</span></a>
+            <a href="#recorrido" data-goto="sedes"><strong>Multisede</strong><span>Cada sucursal con su operación</span></a>
+          </div>
+        </div>
+        <div class="has-menu">
+          <button class="menu-btn" type="button" aria-expanded="false" aria-haspopup="true">
+            Soluciones
+            <svg class="icon chev" aria-hidden="true"><use href="#i-chevron"></use></svg>
+          </button>
+          <div class="menu">
+            <a href="#soluciones"><strong>Tiendas</strong><span>Mostrador, caja e inventario del día</span></a>
+            <a href="#nube"><strong>Mayoristas</strong><span>Pedidos, cartera y bodega</span></a>
+            <a href="#soluciones"><strong>Varias sedes</strong><span>Un consolidado para quien dirige</span></a>
+          </div>
+        </div>
+        <div class="has-menu">
+          <button class="menu-btn" type="button" aria-expanded="false" aria-haspopup="true">
+            Nube
+            <svg class="icon chev" aria-hidden="true"><use href="#i-chevron"></use></svg>
+          </button>
+          <div class="menu">
+            <a href="#nube"><strong>Panel en el navegador</strong><span>Sin instalar programas</span></a>
+            <a href="#nube"><strong>Equipo por sede</strong><span>Cada quien ve lo que le toca</span></a>
+            <a href="#telefono"><strong>Cualquier dispositivo</strong><span>Computador, iPad y iPhone</span></a>
+          </div>
+        </div>
+        <a class="text-link" href="#preguntas">Preguntas</a>
+        <button class="btn btn-dark mobile-only" type="button" data-open="login">Ingresar</button>
+      </nav>
+
+      <div class="nav-actions">
+        <button class="btn btn-ghost btn-login" type="button" data-open="login">Ingresar</button>
+        <button class="btn btn-dark" type="button" data-open="demo">Empieza ya</button>
+        <button class="burger" type="button" aria-expanded="false" aria-controls="site-nav" aria-label="Abrir menú">
+          <span></span><span></span>
+        </button>
+      </div>
+    </div>
+  </header>
+  </div>
+
+  <main id="contenido">
+    <section class="hero" id="inicio">
+      <div class="wrap hero-grid">
+        <div class="hero-copy">
+          <p class="eyebrow">Plataforma de gestión comercial</p>
+          <h1>Tu comercio, <em>en un panel</em></h1>
+          <p class="lead">Vende, controla el inventario y mira los créditos en tiempo real. Un sistema en la nube para tiendas y mayoristas, con una sede o con varias.</p>
+          <div class="hero-actions">
+            <button class="btn btn-dark btn-lg" type="button" data-open="demo">Empieza ya</button>
+            <a class="btn btn-ghost btn-lg" href="#recorrido">Ver el panel</a>
+          </div>
+          <p class="fine">Sin instalación. El mismo panel abre en el computador, en el iPad y en el iPhone.</p>
+        </div>
+
+        <div class="device" aria-hidden="true">
+          <div class="device-bar">
+            <span class="dot dot-r"></span>
+            <span class="dot dot-y"></span>
+            <span class="dot dot-g"></span>
+            <div class="device-url">Vista de ejemplo · panel</div>
+          </div>
+          <div class="device-body">
+            <aside class="device-side">
+              <div class="side-brand">
+                <img src="assets/beaver.png" alt="" width="70" height="47">
+                <div>
+                  <strong>Aleya Shop</strong>
+                  <small>Sede centro</small>
+                </div>
+              </div>
+              <div class="side-label">Comercial</div>
+              <ul class="side-nav">
+                <li class="is-on"><svg class="icon"><use href="#i-chart"></use></svg> Reportes</li>
+                <li><svg class="icon"><use href="#i-cash"></use></svg> Caja</li>
+                <li><svg class="icon"><use href="#i-bag"></use></svg> Ventas</li>
+                <li><svg class="icon"><use href="#i-receipt"></use></svg> Gastos</li>
+                <li><svg class="icon"><use href="#i-boxes"></use></svg> Inventario</li>
+                <li><svg class="icon"><use href="#i-card"></use></svg> Créditos</li>
+                <li><svg class="icon"><use href="#i-users"></use></svg> Clientes</li>
+                <li><svg class="icon"><use href="#i-pin"></use></svg> Sucursales</li>
+              </ul>
+              <div class="side-help">
+                <strong>¿Necesitas ayuda?</strong>
+                <span>Soporte en el panel</span>
+              </div>
+            </aside>
+            <div class="device-main">
+              <div class="device-top">
+                <div class="fake-search"><svg class="icon"><use href="#i-search"></use></svg> Clientes, facturas, productos…</div>
+                <div class="who">
+                  <img src="assets/beaver.png" alt="" width="70" height="47">
+                  <span>Berea</span>
+                </div>
+              </div>
+              <div class="report-head">
+                <div>
+                  <h2>Reportes</h2>
+                  <p>Aleya Shop · corte de ejemplo · octubre de 2026</p>
+                </div>
+                <span class="live"><i></i> En vivo</span>
+              </div>
+              <div class="kpis">
+                <article>
+                  <span>Total ingresos</span>
+                  <strong>$18.400.000</strong>
+                  <em>IVA de ejemplo</em>
+                </article>
+                <article>
+                  <span>En caja</span>
+                  <strong>$6.250.000</strong>
+                  <em>Efectivo del corte</em>
+                </article>
+                <article>
+                  <span>En cuentas</span>
+                  <strong>$9.800.000</strong>
+                  <em>Cartera vigente</em>
+                </article>
+                <article class="kpi-good">
+                  <span>Utilidad</span>
+                  <strong>$3.420.000</strong>
+                  <em>Después de gastos</em>
+                </article>
+              </div>
+              <div class="device-split">
+                <article class="panel-card">
+                  <header>
+                    <strong>Ingresos vs egresos</strong>
+                    <span>Lo que entra y lo que sale</span>
+                  </header>
+                  <svg class="chart" viewBox="0 0 360 132" preserveAspectRatio="none">
+                    <defs>
+                      <linearGradient id="fillTeal" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0" stop-color="#0197b2" stop-opacity="0.28"/>
+                        <stop offset="1" stop-color="#0197b2" stop-opacity="0"/>
+                      </linearGradient>
+                    </defs>
+                    <path d="M0 96 C48 92 78 84 118 72 C158 60 188 50 228 40 C262 32 286 46 322 74 C340 88 350 96 360 104 L360 132 L0 132 Z" fill="url(#fillTeal)"/>
+                    <path class="chart-line" d="M0 96 C48 92 78 84 118 72 C158 60 188 50 228 40 C262 32 286 46 322 74 C340 88 350 96 360 104" fill="none" stroke="#0197b2" stroke-width="2.6" stroke-linecap="round"/>
+                    <path d="M0 108 C90 106 180 100 270 104 C320 106 344 110 360 112" fill="none" stroke="#b7bcc6" stroke-width="1.7" stroke-dasharray="4 4"/>
+                  </svg>
+                  <div class="months"><span>Feb</span><span>Abr</span><span>Jun</span><span>Ago</span><span>Oct</span></div>
+                  <div class="legend"><span><i class="swatch"></i> Ingresos</span><span><i class="swatch swatch-muted"></i> Egresos</span></div>
+                </article>
+                <article class="panel-card">
+                  <header>
+                    <strong>Actividad reciente</strong>
+                    <span>Ver todo</span>
+                  </header>
+                  <ul class="feed">
+                    <li><i class="pulse"></i><div><b>Nueva venta · $48.500</b><small>Mostrador · hace 32 min</small></div></li>
+                    <li><i class="pulse pulse-teal"></i><div><b>Apertura de caja</b><small>Base $1.200.000 · hace 3 h</small></div></li>
+                    <li><i class="pulse"></i><div><b>Cierre de caja</b><small>Cuadre · 24 ud · hace 16 h</small></div></li>
+                  </ul>
+                </article>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="modules" id="producto">
+      <div class="wrap">
+        <div class="section-head">
+          <p class="eyebrow">Producto</p>
+          <h2>Lo que el panel ordena</h2>
+          <p class="lead">Ventas, inventario, créditos y sedes. Lo que hoy está repartido en cuadernos, chats y hojas sueltas.</p>
+        </div>
+        <div class="card-grid">
+          <article class="card">
+            <div class="ico"><svg class="icon"><use href="#i-bag"></use></svg></div>
+            <h3>Ventas y caja</h3>
+            <p>Facturas, mostrador y cierre. Ves lo que entró, lo que quedó en caja y si el día cuadró.</p>
+            <button type="button" data-goto="ventas">Ver cómo se ve</button>
+          </article>
+          <article class="card">
+            <div class="ico"><svg class="icon"><use href="#i-boxes"></use></svg></div>
+            <h3>Inventario</h3>
+            <p>Stock por sede, kits y traslados. Lo que se vende descuenta en la bodega que corresponde.</p>
+            <button type="button" data-goto="inventario">Ver cómo se ve</button>
+          </article>
+          <article class="card">
+            <div class="ico"><svg class="icon"><use href="#i-card"></use></svg></div>
+            <h3>Créditos</h3>
+            <p>Cartera, abonos y lo que sigue pendiente. El mayorista cobra sin perder el hilo del cliente.</p>
+            <button type="button" data-goto="creditos">Ver cómo se ve</button>
+          </article>
+          <article class="card">
+            <div class="ico"><svg class="icon"><use href="#i-pin"></use></svg></div>
+            <h3>Multisede</h3>
+            <p>Cada sucursal con su caja, su inventario y su equipo. Quien dirige mira el consolidado.</p>
+            <button type="button" data-goto="sedes">Ver cómo se ve</button>
+          </article>
+          <article class="card">
+            <div class="ico"><svg class="icon"><use href="#i-chart"></use></svg></div>
+            <h3>Reportes</h3>
+            <p>Ingresos, gastos, utilidad y stock. El corte del mes, sin armar la cuenta a mano.</p>
+            <button type="button" data-goto="reportes">Ver cómo se ve</button>
+          </article>
+          <article class="card">
+            <div class="ico"><svg class="icon"><use href="#i-cloud"></use></svg></div>
+            <h3>Nube</h3>
+            <p>El mismo panel en la tienda, la bodega o la casa. Hecho para que el mayorista trabaje desde el navegador.</p>
+            <button type="button" data-goto="sedes">Ver sedes</button>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="tour-sec" id="recorrido">
+      <div class="wrap">
+        <div class="section-head">
+          <p class="eyebrow">El sistema</p>
+          <h2>Así se mueve un día en Berea</h2>
+          <p class="lead">Cifras de ejemplo para recorrer el panel. El diseño sigue el sistema: reportes, caja, inventario, créditos y sucursales.</p>
+        </div>
+        <div class="tour">
+          <div class="tour-nav" role="tablist" aria-label="Módulos del panel" aria-orientation="vertical">
+            <button class="tour-tab" type="button" role="tab" id="tab-reportes" aria-selected="true" aria-controls="panel-reportes" data-tour="reportes" tabindex="0">Reportes</button>
+            <button class="tour-tab" type="button" role="tab" id="tab-ventas" aria-selected="false" aria-controls="panel-ventas" data-tour="ventas" tabindex="-1">Ventas y caja</button>
+            <button class="tour-tab" type="button" role="tab" id="tab-inventario" aria-selected="false" aria-controls="panel-inventario" data-tour="inventario" tabindex="-1">Inventario</button>
+            <button class="tour-tab" type="button" role="tab" id="tab-creditos" aria-selected="false" aria-controls="panel-creditos" data-tour="creditos" tabindex="-1">Créditos</button>
+            <button class="tour-tab" type="button" role="tab" id="tab-sedes" aria-selected="false" aria-controls="panel-sedes" data-tour="sedes" tabindex="-1">Sedes</button>
+          </div>
+
+          <div class="tour-stage">
+            <article class="tour-panel" id="panel-reportes" role="tabpanel" aria-labelledby="tab-reportes">
+              <header class="stage-head">
+                <div>
+                  <h3>Resumen del mes</h3>
+                  <p>Octubre de 2026 · datos de ejemplo</p>
+                </div>
+                <span class="pill">Exportar no hace falta para mirar</span>
+              </header>
+              <div class="stage-kpis">
+                <article><span>Ingresos</span><strong>$18.400.000</strong></article>
+                <article><span>En caja</span><strong>$6.250.000</strong></article>
+                <article><span>Gastos</span><strong>$1.540.000</strong></article>
+                <article><span>Utilidad</span><strong class="good">$3.420.000</strong></article>
+                <article><span>Stock</span><strong>$8.900.000</strong></article>
+              </div>
+              <div class="tops">
+                <div>
+                  <h4>Clientes del corte</h4>
+                  <ol>
+                    <li><span>Cliente mostrador</span><b>86 ventas</b></li>
+                    <li><span>Distribuidora Andina</span><b>$4.200.000</b></li>
+                    <li><span>Mini mercado El Parque</span><b>$1.150.000</b></li>
+                  </ol>
+                </div>
+                <div>
+                  <h4>Productos del corte</h4>
+                  <ol>
+                    <li><span>Aceite vegetal 12×1 L</span><b>140 und</b></li>
+                    <li><span>Arroz premium 25 lb</span><b>86 und</b></li>
+                    <li><span>Detergente en polvo</span><b>54 und</b></li>
+                  </ol>
+                </div>
+              </div>
+            </article>
+
+            <article class="tour-panel" id="panel-ventas" role="tabpanel" aria-labelledby="tab-ventas" hidden>
+              <header class="stage-head">
+                <div>
+                  <h3>Ventas del día</h3>
+                  <p>Caja abierta · sede centro</p>
+                </div>
+                <span class="pill pill-live"><i></i> Caja abierta</span>
+              </header>
+              <ul class="rows">
+                <li><span class="tag">Contado</span><div><b>FAC-1042 · Cliente mostrador</b><small>3 productos · efectivo</small></div><strong>$70.800</strong></li>
+                <li><span class="tag tag-credit">Crédito</span><div><b>FAC-1041 · Distribuidora Andina</b><small>Pedido de bodega · a 15 días</small></div><strong>$890.000</strong></li>
+                <li><span class="tag">Contado</span><div><b>FAC-1040 · Cliente mostrador</b><small>Mostrador · transferencia</small></div><strong>$33.900</strong></li>
+                <li><span class="tag tag-muted">Cierre</span><div><b>Cuadre de caja</b><small>24 unidades · 1 egreso registrado</small></div><strong>Cuadra</strong></li>
+              </ul>
+            </article>
+
+            <article class="tour-panel" id="panel-inventario" role="tabpanel" aria-labelledby="tab-inventario" hidden>
+              <header class="stage-head">
+                <div>
+                  <h3>Stock por sede</h3>
+                  <p>Lo que hay en bodega y en tienda</p>
+                </div>
+                <span class="pill">Traslado en curso</span>
+              </header>
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr><th>Producto</th><th>Bodega</th><th>Tienda</th></tr>
+                  </thead>
+                  <tbody>
+                    <tr><td>Aceite vegetal 12×1 L</td><td>140</td><td>22</td></tr>
+                    <tr><td>Arroz premium 25 lb</td><td>86</td><td>14</td></tr>
+                    <tr><td>Detergente en polvo</td><td>54</td><td>9</td></tr>
+                    <tr><td>Jabón en barra caja</td><td>210</td><td>36</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <p class="note">Traslado de ejemplo: 20 unidades salen de bodega hacia la tienda norte. El stock no se duplica.</p>
+            </article>
+
+            <article class="tour-panel" id="panel-creditos" role="tabpanel" aria-labelledby="tab-creditos" hidden>
+              <header class="stage-head">
+                <div>
+                  <h3>Cartera</h3>
+                  <p>Lo que te deben y lo que ya abonaron</p>
+                </div>
+                <span class="pill">Saldo de ejemplo $3.340.000</span>
+              </header>
+              <ul class="rows">
+                <li><span class="tag tag-credit">Al día</span><div><b>Distribuidora Andina</b><small>Último abono $400.000</small></div><strong>$2.450.000</strong></li>
+                <li><span class="tag tag-credit">Al día</span><div><b>Mini mercado El Parque</b><small>Vence en 8 días</small></div><strong>$680.000</strong></li>
+                <li><span class="tag tag-warn">Por vencer</span><div><b>Autoservicio Barrio Sur</b><small>Abono pendiente esta semana</small></div><strong>$210.000</strong></li>
+              </ul>
+            </article>
+
+            <article class="tour-panel" id="panel-sedes" role="tabpanel" aria-labelledby="tab-sedes" hidden>
+              <header class="stage-head">
+                <div>
+                  <h3>Sucursales</h3>
+                  <p>Cada sede opera. Tú ves el total.</p>
+                </div>
+                <span class="pill">3 sedes de ejemplo</span>
+              </header>
+              <div class="sede-grid">
+                <article>
+                  <span class="pill pill-live"><i></i> Caja abierta</span>
+                  <h4>Tienda centro</h4>
+                  <p>Ventas del mes</p>
+                  <strong>$12.400.000</strong>
+                </article>
+                <article>
+                  <span class="pill">Bodega</span>
+                  <h4>Bodega principal</h4>
+                  <p>Stock valorado</p>
+                  <strong>$8.900.000</strong>
+                </article>
+                <article>
+                  <span class="pill">Caja cerrada</span>
+                  <h4>Tienda norte</h4>
+                  <p>Ventas del mes</p>
+                  <strong>$4.100.000</strong>
+                </article>
+              </div>
+            </article>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="cloud" id="nube">
+      <div class="wrap cloud-grid">
+        <div>
+          <p class="eyebrow">Nube</p>
+          <h2>Para cualquier mayorista, desde cualquier lugar</h2>
+          <p class="lead">Entras desde la bodega, la tienda o la casa. El equipo ve la misma información y cada sede conserva su caja y su stock.</p>
+          <ul class="checks">
+            <li><svg class="icon"><use href="#i-check"></use></svg> Varias sucursales y un consolidado</li>
+            <li><svg class="icon"><use href="#i-check"></use></svg> Traslados de inventario entre sedes</li>
+            <li><svg class="icon"><use href="#i-check"></use></svg> Créditos y abonos por cliente</li>
+            <li><svg class="icon"><use href="#i-check"></use></svg> Reportes de ingresos, gastos y utilidad</li>
+            <li><svg class="icon"><use href="#i-check"></use></svg> El mismo panel para todo el equipo</li>
+          </ul>
+          <button class="btn btn-teal btn-lg" type="button" data-open="demo">Quiero el panel</button>
+        </div>
+        <aside class="cloud-card">
+          <div class="cloud-card-top">
+            <img src="assets/beaver.png" alt="" width="70" height="47">
+            <div>
+              <strong>Berea</strong>
+              <span>Cuenta en la nube</span>
+            </div>
+            <em>En línea</em>
+          </div>
+          <p class="cloud-kicker">Sedes conectadas</p>
+          <ul>
+            <li><span>Tienda centro</span><b>Caja abierta</b></li>
+            <li><span>Bodega principal</span><b>Stock al día</b></li>
+            <li><span>Tienda norte</span><b>Caja cerrada</b></li>
+          </ul>
+          <div class="cloud-total">
+            <span>Consolidado de ejemplo</span>
+            <strong>$16.500.000</strong>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="phone-sec" id="telefono">
+      <div class="wrap phone-grid">
+        <div class="phone-copy">
+          <p class="eyebrow">En cualquier dispositivo</p>
+          <h2>Computador, iPad o iPhone</h2>
+          <p class="lead">Berea abre en el navegador, en la pantalla que tengas a mano. Las actualizaciones son constantes: entras y ya está la versión nueva, sin instalar nada.</p>
+          <ul class="checks">
+            <li><svg class="icon"><use href="#i-check"></use></svg> El mismo panel en el computador, el iPad y el iPhone</li>
+            <li><svg class="icon"><use href="#i-check"></use></svg> Actualizaciones constantes, sin reinstalar</li>
+            <li><svg class="icon"><use href="#i-check"></use></svg> Caja, ventas y créditos en la misma cuenta</li>
+          </ul>
+          <p class="fine">Oficinas de Berea en Sincelejo, Colombia. Barrio El Socorro.</p>
+        </div>
+        <div class="devices" aria-hidden="true">
+          <div class="ipad">
+            <div class="ipad-frame">
+              <span class="ipad-btn"></span>
+              <span class="ipad-cam"></span>
+              <div class="ipad-screen">
+                <header>
+                  <img src="assets/beaver.png" alt="" width="70" height="47">
+                  <div>
+                    <strong>Berea</strong>
+                    <small>Aleya Shop · Sede centro</small>
+                  </div>
+                  <em class="live"><i></i> En vivo</em>
+                </header>
+                <div class="ipad-kpis">
+                  <article><span>Ingresos</span><strong>$18.4 M</strong></article>
+                  <article><span>En caja</span><strong>$6.2 M</strong></article>
+                  <article><span>Versión</span><strong>Al día</strong></article>
+                </div>
+                <div class="ipad-list">
+                  <p><span>Venta mostrador</span><b>$48.500</b></p>
+                  <p><span>Stock sede</span><b>Al día</b></p>
+                </div>
+              </div>
+            </div>
+          </div>
+        <div class="phone">
+          <div class="phone-frame">
+            <span class="phone-btn phone-btn-silent"></span>
+            <span class="phone-btn phone-btn-vol"></span>
+            <span class="phone-btn phone-btn-power"></span>
+            <div class="phone-screen">
+              <div class="phone-island"></div>
+              <div class="phone-status"><span>9:41</span><span>5G</span></div>
+              <div class="phone-app">
+                <header>
+                  <img src="assets/beaver.png" alt="" width="70" height="47">
+                  <div>
+                    <strong>Berea</strong>
+                    <small>Aleya Shop</small>
+                  </div>
+                  <em class="live"><i></i> En vivo</em>
+                </header>
+                <article class="phone-sale">
+                  <span>Nueva venta</span>
+                  <strong>$48.500</strong>
+                  <small>Mostrador · hace 2 min</small>
+                </article>
+                <article class="phone-row"><span>Caja</span><b>Abierta</b></article>
+                <article class="phone-row"><span>En caja</span><b>$6.250.000</b></article>
+                <article class="phone-row"><span>Stock sede</span><b>Al día</b></article>
+              </div>
+              <nav class="phone-tabs">
+                <span class="is-on">Inicio</span>
+                <span>Caja</span>
+                <span>Ventas</span>
+              </nav>
+              <span class="phone-home"></span>
+            </div>
+          </div>
+        </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="cases" id="soluciones">
+      <div class="wrap">
+        <div class="section-head">
+          <p class="eyebrow">Soluciones</p>
+          <h2>Una tienda, un mayorista o varias sedes</h2>
+          <p class="lead">El mismo sistema se acomoda al tamaño del comercio. Empiezas por donde estás hoy.</p>
+        </div>
+        <div class="case-grid">
+          <article class="case">
+            <span>01</span>
+            <h3>Tienda</h3>
+            <p>Un local, una caja, el inventario del día. Para quien vende en mostrador y quiere cerrar sin cuaderno.</p>
+          </article>
+          <article class="case case-dark">
+            <span>02</span>
+            <h3>Mayorista</h3>
+            <p>Pedidos grandes, precios y créditos. La cartera queda al lado de la venta, con los abonos a la vista.</p>
+          </article>
+          <article class="case">
+            <span>03</span>
+            <h3>Varias sedes</h3>
+            <p>La tienda, la bodega y la que sigue. Cada una opera con su stock. Quien dirige mira el total.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="faq" id="preguntas">
+      <div class="wrap faq-grid">
+        <div class="faq-side">
+          <p class="eyebrow">Preguntas</p>
+          <h2>Antes de abrir el panel</h2>
+          <p class="lead">Si tu caso no está aquí, escríbenos por WhatsApp desde el formulario.</p>
+          <figure class="faq-portrait">
+            <img src="assets/faq-persona.jpg" alt="Comerciante en el mostrador de su local" width="864" height="1152">
+          </figure>
+        </div>
+        <div class="faq-list">
+          <details>
+            <summary>¿Berea sirve si tengo una sola tienda?<span class="plus" aria-hidden="true"></span></summary>
+            <p>Sí. Caja, ventas e inventario alcanzan para un solo local. Multisede queda listo para cuando abras otro punto.</p>
+          </details>
+          <details>
+            <summary>¿Y si vendo al por mayor?<span class="plus" aria-hidden="true"></span></summary>
+            <p>El panel lleva pedidos, clientes y créditos. Puedes ver la cartera y los abonos sin salir de la operación del día.</p>
+          </details>
+          <details>
+            <summary>¿Cómo funciona con varias sedes?<span class="plus" aria-hidden="true"></span></summary>
+            <p>Cada sucursal tiene su caja y su stock. Los traslados mueven inventario de una a otra y el consolidado junta la lectura.</p>
+          </details>
+          <details>
+            <summary>¿Tengo que instalar algo?<span class="plus" aria-hidden="true"></span></summary>
+            <p>No. Berea es un sistema en la nube. Se abre en el navegador del computador, del iPad o del iPhone. Las actualizaciones llegan solas.</p>
+          </details>
+          <details>
+            <summary>¿Puedo llevar los créditos de mis clientes?<span class="plus" aria-hidden="true"></span></summary>
+            <p>Sí. Una venta a crédito queda en la cartera y cada abono baja el saldo. Así sabes quién debe y desde cuándo.</p>
+          </details>
+          <details>
+            <summary>¿Qué pasa con el inventario cuando vendo?<span class="plus" aria-hidden="true"></span></summary>
+            <p>La venta descuenta en la sede donde ocurre. Si mueves mercancía, el traslado saca de un lado y entra en el otro.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <section class="cta">
+      <div class="wrap cta-box">
+        <p class="eyebrow eyebrow-light">Empieza ya</p>
+        <h2>Empieza por tu sede.</h2>
+        <p>Cuando abras la siguiente, el panel ya sabe llevarla. Ventas, inventario, créditos y multisede, en la nube.</p>
+        <button class="btn btn-light btn-lg" type="button" data-open="demo">Hablar con Berea</button>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="wrap footer-grid">
+      <div>
+        <img class="footer-logo" src="assets/logo.png" alt="Berea" width="244" height="49">
+        <p>berea | sistema para comerciantes y mayoristas</p>
+      </div>
+      <div>
+        <h3>Producto</h3>
+        <a href="#recorrido" data-goto="ventas">Ventas y caja</a>
+        <a href="#recorrido" data-goto="inventario">Inventario</a>
+        <a href="#recorrido" data-goto="creditos">Créditos</a>
+        <a href="#recorrido" data-goto="sedes">Multisede</a>
+      </div>
+      <div>
+        <h3>Empresa</h3>
+        <a href="#soluciones">Soluciones</a>
+        <a href="#nube">Nube</a>
+        <a href="#preguntas">Preguntas</a>
+      </div>
+      <div>
+        <h3>Contacto</h3>
+        <p class="footer-place">Sincelejo, Colombia<br>Barrio El Socorro</p>
+        <a href="https://wa.me/573001575829" target="_blank" rel="noopener noreferrer">WhatsApp · 300 157 5829</a>
+        <button type="button" data-open="demo">Pedir una presentación</button>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <span>© <span id="year">2026</span> Berea</span>
+      <span>El castor es el isotipo de la marca.</span>
+    </div>
+  </footer>
+
+  <a class="to-top" id="to-top" href="#inicio" aria-label="Volver arriba">
+    <svg class="icon" aria-hidden="true"><use href="#i-up"></use></svg>
+  </a>
+
+  <div class="cookie" id="cookie" role="region" aria-label="Aviso de cookies">
+    <p>Guardamos tu elección en este navegador. No usamos rastreadores de terceros.</p>
+    <div class="cookie-actions">
+      <button class="btn btn-ghost" type="button" data-cookie="rejected">Rechazar</button>
+      <button class="btn btn-dark" type="button" data-cookie="accepted">Aceptar</button>
+    </div>
+  </div>
+
+  <dialog id="demo-dialog" aria-labelledby="demo-title">
+    <form id="demo-form" class="modal" novalidate>
+      <div class="modal-head">
+        <div>
+          <p class="eyebrow">Empieza ya</p>
+          <h2 id="demo-title">Cuéntanos de tu comercio</h2>
+        </div>
+        <button class="icon-btn" type="button" data-close aria-label="Cerrar">
+          <svg class="icon"><use href="#i-close"></use></svg>
+        </button>
+      </div>
+      <div class="modal-body" id="demo-fields">
+        <p class="modal-lead">Te abrimos WhatsApp con el mensaje listo. Tú confirmas el envío.</p>
+        <div class="field">
+          <label for="nombre">Nombre</label>
+          <input id="nombre" name="nombre" autocomplete="name" maxlength="80" required>
+          <p class="field-error" id="err-nombre"></p>
+        </div>
+        <div class="field">
+          <label for="comercio">Comercio</label>
+          <input id="comercio" name="comercio" autocomplete="organization" maxlength="80" required>
+          <p class="field-error" id="err-comercio"></p>
+        </div>
+        <div class="split-fields">
+          <div class="field">
+            <label for="ciudad">Ciudad</label>
+            <input id="ciudad" name="ciudad" autocomplete="address-level2" maxlength="60" required>
+            <p class="field-error" id="err-ciudad"></p>
+          </div>
+          <div class="field">
+            <label for="tipo">Tipo</label>
+            <select id="tipo" name="tipo" required>
+              <option value="Tienda">Tienda</option>
+              <option value="Mayorista">Mayorista</option>
+              <option value="Varias sedes">Varias sedes</option>
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label for="whatsapp">WhatsApp</label>
+          <input id="whatsapp" name="whatsapp" type="tel" inputmode="tel" autocomplete="tel" placeholder="300 000 0000" required>
+          <p class="field-error" id="err-whatsapp"></p>
+        </div>
+        <button class="btn btn-dark btn-lg btn-block" type="submit">Abrir WhatsApp</button>
+      </div>
+      <div class="modal-success" id="demo-success" hidden>
+        <div class="ico"><svg class="icon"><use href="#i-check"></use></svg></div>
+        <h3>Listo para enviar</h3>
+        <p>Si el chat no se abrió, usa este enlace. La solicitud también quedó guardada en este navegador.</p>
+        <a class="btn btn-teal btn-lg" id="wa-fallback" href="https://wa.me/573001575829" target="_blank" rel="noopener noreferrer">Abrir WhatsApp</a>
+        <button class="btn btn-ghost" type="button" id="demo-reset">Escribir otra</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="login-dialog" aria-labelledby="login-title">
+    <div class="modal">
+      <div class="modal-head">
+        <div>
+          <p class="eyebrow">Ingresar</p>
+          <h2 id="login-title">El panel vive en la nube</h2>
+        </div>
+        <button class="icon-btn" type="button" data-close aria-label="Cerrar">
+          <svg class="icon"><use href="#i-close"></use></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <img class="modal-mark" src="assets/beaver.png" alt="" width="70" height="47">
+        <p class="modal-lead">Cada comercio entra con la cuenta de su equipo. Esta página presenta Berea y no pide contraseña.</p>
+        <a class="btn btn-dark btn-lg btn-block" href="https://wa.me/573001575829?text=Hola%2C%20quiero%20ingresar%20al%20panel%20de%20Berea." target="_blank" rel="noopener noreferrer">Pedir acceso por WhatsApp</a>
+        <button class="btn btn-ghost btn-block" type="button" data-close>Cerrar</button>
+      </div>
+    </div>
+  </dialog>
+
+  <svg class="sprite" aria-hidden="true">
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+    <symbol id="i-chevron" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-up" viewBox="0 0 24 24"><path d="M6 14l6-6 6 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.2 4.2L19 7.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-cloud" viewBox="0 0 24 24"><path d="M7.2 17.5h9.6a3.4 3.4 0 0 0 .4-6.8 5 5 0 0 0-9.6-1.1 3.4 3.4 0 0 0-.4 7.9z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M16 16l4 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+    <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 16l4.2-5 3.6 3 7.2-8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 19h16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+    <symbol id="i-cash" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="2.1" fill="none" stroke="currentColor" stroke-width="1.8"/></symbol>
+    <symbol id="i-bag" viewBox="0 0 24 24"><path d="M6.5 8h11l-.8 11.2a1 1 0 0 1-1 .8H8.3a1 1 0 0 1-1-.8L6.5 8z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M9 8V7a3 3 0 0 1 6 0v1" fill="none" stroke="currentColor" stroke-width="1.8"/></symbol>
+    <symbol id="i-receipt" viewBox="0 0 24 24"><path d="M7 3.5h10.5V20l-2-1.1-2 1.1-2-1.1-2 1.1-2-1.1L5.5 20V5.2A1.7 1.7 0 0 1 7 3.5z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M9 8.5h6M9 12h6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+    <symbol id="i-boxes" viewBox="0 0 24 24"><path d="M3 8l9-4 9 4-9 4-9-4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M3 8v8l9 4 9-4V8M12 12v8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="9" r="3" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3.8 18.5c.6-2.6 2.5-4 5.2-4s4.6 1.4 5.2 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="17" cy="9.2" r="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M16 14.4c1.5.3 2.7 1.3 3.3 3.2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+    <symbol id="i-card" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3 10h18M7 14.5h4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+    <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s6-5.1 6-10a6 6 0 1 0-12 0c0 4.9 6 10 6 10z" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="11" r="1.7" fill="currentColor"/></symbol>
+  </svg>
+
+  <script src="js/main.js"></script>
+</body>
+</html>
