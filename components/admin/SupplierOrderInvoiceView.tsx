@@ -6,12 +6,13 @@ import {
   toggleSupplierLineDefectAction,
   uploadSupplierInvoiceAttachmentAction,
 } from "@/app/actions/admin/suppliers";
-import { SupplierAbonoForm } from "@/components/admin/SupplierAbonoForm";
 import { SupplierOrderAbonosPanel } from "@/components/admin/SupplierOrderAbonosPanel";
 import { SupplierCancelInvoiceButton } from "@/components/admin/SupplierCancelInvoiceButton";
 import { SupplierOrderAddProducts } from "@/components/admin/SupplierOrderAddProducts";
 import { SupplierOrderReceiptSelect } from "@/components/admin/SupplierOrderReceiptSelect";
+import { StaticCopCents } from "@/components/admin/ReportsAnimatedFigures";
 import { formatCop } from "@/lib/money";
+import { ventaCreditoToneClass } from "@/lib/ventas-sales";
 import {
   isSupplierReceiptStatus,
   type SupplierInvoiceUiStatus,
@@ -22,8 +23,39 @@ import { shouldUnoptimizeStorageImageUrl, storagePublicObjectUrl } from "@/lib/s
 const th =
   "pb-2 pr-4 text-left text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500";
 const labelClass = "text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500";
+const metaIconClass = "size-4 shrink-0 text-zinc-400 dark:text-zinc-500";
 const metaTextClass = "text-zinc-700 dark:text-zinc-300";
 const metaSepClass = "text-zinc-300 dark:text-zinc-600";
+
+function IconClock({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.65} strokeLinecap="round" className={className} aria-hidden>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v6l3.5 2" />
+    </svg>
+  );
+}
+
+function IconUser({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.65} strokeLinecap="round" className={className} aria-hidden>
+      <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+      <circle cx="12" cy="7" r="4" />
+    </svg>
+  );
+}
+
+function IconBuilding({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.65} strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden>
+      <path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z" />
+      <path d="M6 12h12" />
+      <path d="M6 16h12" />
+      <path d="M10 6h4" />
+      <path d="M10 22v-4h4v4" />
+    </svg>
+  );
+}
 
 export type SupplierOrderLine = {
   id: string;
@@ -65,7 +97,6 @@ export function SupplierOrderInvoiceView({
   notes,
   cancelled,
   totalCents,
-  pendingCents,
   receiptStatus,
   lines,
   payments,
@@ -107,7 +138,7 @@ export function SupplierOrderInvoiceView({
         </p>
       ) : null}
 
-      <header className="flex flex-wrap items-start justify-between gap-3">
+      <header className="flex flex-wrap items-center justify-between gap-2 gap-y-2">
         <div className="min-w-0">
           <p className="text-[11px] text-zinc-500">
             <Link href="/admin/proveedores" className="hover:text-zinc-800 dark:hover:text-zinc-200">
@@ -120,16 +151,33 @@ export function SupplierOrderInvoiceView({
             Orden de compra #{folio}
           </h1>
           <p className="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1.5 text-sm text-zinc-500">
-            <span className={`tabular-nums ${metaTextClass}`}>{issueLabel}</span>
+            <span className="inline-flex items-center gap-1.5">
+              <IconClock className={metaIconClass} />
+              <span className={`tabular-nums ${metaTextClass}`}>{issueLabel}</span>
+            </span>
             <span className={metaSepClass} aria-hidden>
               ·
             </span>
-            <Link
-              href={`/admin/proveedores/${supplierId}`}
-              className="min-w-0 truncate font-medium text-zinc-800 underline-offset-2 transition hover:text-zinc-950 hover:underline dark:text-zinc-200 dark:hover:text-white"
-            >
-              {supplierName}
-            </Link>
+            <span className="inline-flex min-w-0 items-center gap-1.5">
+              <IconUser className={metaIconClass} />
+              <Link
+                href={`/admin/proveedores/${supplierId}`}
+                className="min-w-0 truncate font-medium text-zinc-800 underline-offset-2 transition hover:text-zinc-950 hover:underline dark:text-zinc-200 dark:hover:text-white"
+              >
+                {supplierName}
+              </Link>
+            </span>
+            {supplierAddress ? (
+              <>
+                <span className={metaSepClass} aria-hidden>
+                  ·
+                </span>
+                <span className="inline-flex min-w-0 items-center gap-1.5">
+                  <IconBuilding className={metaIconClass} />
+                  <span className={`min-w-0 truncate ${metaTextClass}`}>{supplierAddress}</span>
+                </span>
+              </>
+            ) : null}
             {supplierDocument ? (
               <>
                 <span className={metaSepClass} aria-hidden>
@@ -137,7 +185,9 @@ export function SupplierOrderInvoiceView({
                 </span>
                 <span>
                   NIT{" "}
-                  <span className={`font-medium tabular-nums ${metaTextClass}`}>{supplierDocument}</span>
+                  <span className="font-medium tabular-nums text-zinc-800 dark:text-zinc-200">
+                    {supplierDocument}
+                  </span>
                 </span>
               </>
             ) : null}
@@ -148,49 +198,25 @@ export function SupplierOrderInvoiceView({
                 </span>
                 <span>
                   Tel.{" "}
-                  <span className={`font-medium tabular-nums ${metaTextClass}`}>{supplierPhone}</span>
-                </span>
-              </>
-            ) : null}
-            {supplierAddress ? (
-              <>
-                <span className={metaSepClass} aria-hidden>
-                  ·
-                </span>
-                <span className="min-w-0 break-words">
-                  Dir. <span className={`font-medium ${metaTextClass}`}>{supplierAddress}</span>
+                  <span className="font-medium tabular-nums text-zinc-800 dark:text-zinc-200">
+                    {supplierPhone}
+                  </span>
                 </span>
               </>
             ) : null}
           </p>
           {notes ? <p className="mt-1.5 text-sm text-zinc-600 dark:text-zinc-300">{notes}</p> : null}
         </div>
-        <div className="flex flex-wrap items-center justify-end gap-2">
-          {!cancelled ? (
-            <SupplierAbonoForm invoiceId={invoiceId} supplierId={supplierId} pendingCents={pendingCents} />
-          ) : null}
-          <div className="w-[11.5rem]">
-            <SupplierOrderReceiptSelect
-              invoiceId={invoiceId}
-              supplierId={supplierId}
-              currentStatus={receipt}
-              disabled={cancelled}
-            />
-          </div>
-          {!cancelled ? (
-            <SupplierCancelInvoiceButton supplierId={supplierId} invoiceId={invoiceId} />
-          ) : null}
-          <Link
-            href="/admin/proveedores"
-            className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-zinc-300 bg-white text-zinc-700 transition hover:border-zinc-400 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200 dark:hover:border-zinc-600 dark:hover:bg-zinc-800"
-            title="Volver"
-            aria-label="Volver a proveedores"
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="size-4" aria-hidden>
-              <path d="m15 18-6-6 6-6" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </Link>
-        </div>
+        <Link
+          href="/admin/proveedores"
+          className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-zinc-300 bg-white text-zinc-700 transition hover:border-zinc-400 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200 dark:hover:border-zinc-600 dark:hover:bg-zinc-800"
+          title="Volver"
+          aria-label="Volver a proveedores"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="size-4" aria-hidden>
+            <path d="m15 18-6-6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </Link>
       </header>
 
       <div className="flex flex-col gap-6 border-t border-zinc-200/70 pt-4 dark:border-zinc-800 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(18rem,20rem)] lg:items-start lg:gap-10 xl:gap-12">
@@ -304,18 +330,37 @@ export function SupplierOrderInvoiceView({
         </section>
 
         <aside className="reports-chart-reveal shrink-0 space-y-5 border-t border-zinc-200/70 pt-4 dark:border-zinc-800 lg:sticky lg:top-3 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0 xl:pl-10 dark:lg:border-zinc-800">
-          <SupplierOrderAbonosPanel
-            invoiceId={invoiceId}
-            supplierId={supplierId}
-            totalCents={totalCents}
-            cancelled={cancelled}
-            payments={payments}
-          />
-
-          {canEnterQty ? (
-            <p className="text-xs leading-relaxed text-zinc-500">
-              Escribí las unidades que llegaron y ingresalas al inventario de esta sucursal.
+          <div>
+            <p className={labelClass}>Total</p>
+            <p className="mt-2 text-3xl font-semibold tabular-nums tracking-tight text-zinc-900 dark:text-zinc-50">
+              <StaticCopCents cents={totalCents} />
             </p>
+          </div>
+
+          <div>
+            <p className={labelClass}>Método de pago</p>
+            <p className={`mt-1.5 text-sm ${ventaCreditoToneClass}`}>Crédito</p>
+          </div>
+
+          <div>
+            <p className={labelClass}>Estado de recepción</p>
+            <div className="mt-1.5">
+              <SupplierOrderReceiptSelect
+                invoiceId={invoiceId}
+                supplierId={supplierId}
+                currentStatus={receipt}
+                disabled={cancelled}
+              />
+            </div>
+            {canEnterQty ? (
+              <p className="mt-2 text-xs leading-relaxed text-zinc-500">
+                Escribí las unidades que llegaron y ingresalas al inventario de esta sucursal.
+              </p>
+            ) : null}
+          </div>
+
+          {!cancelled ? (
+            <SupplierCancelInvoiceButton supplierId={supplierId} invoiceId={invoiceId} />
           ) : null}
 
           <div>
@@ -387,9 +432,16 @@ export function SupplierOrderInvoiceView({
               </form>
             ) : null}
           </div>
-
         </aside>
       </div>
+
+      <SupplierOrderAbonosPanel
+        invoiceId={invoiceId}
+        supplierId={supplierId}
+        totalCents={totalCents}
+        cancelled={cancelled}
+        payments={payments}
+      />
     </div>
   );
 }

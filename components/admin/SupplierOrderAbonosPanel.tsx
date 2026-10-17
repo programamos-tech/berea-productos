@@ -6,6 +6,7 @@ import { createPortal } from "react-dom";
 import { Trash2 } from "lucide-react";
 import { cancelSupplierInvoicePaymentAction } from "@/app/actions/admin/suppliers";
 import { AdminPortalRoot } from "@/components/admin/AdminPortalRoot";
+import { SupplierAbonoForm } from "@/components/admin/SupplierAbonoForm";
 import { productInputClass as inputClass } from "@/components/admin/product-form-primitives";
 import { adminButtonCancelClass } from "@/lib/admin-ui";
 import { formatCop } from "@/lib/money";
@@ -21,6 +22,7 @@ type AbonoRow = {
   amountCents: number;
   methodLabel: string;
   paidAt: string | null;
+  notes?: string | null;
   isCancelled: boolean;
   cancellationReason: string | null;
 };
@@ -196,6 +198,13 @@ export function SupplierOrderAbonosPanel({
             </span>
           </p>
         </div>
+        {!cancelled ? (
+          <SupplierAbonoForm
+            invoiceId={invoiceId}
+            supplierId={supplierId}
+            pendingCents={pendingCents}
+          />
+        ) : null}
       </div>
 
       <div className="mt-4 grid grid-cols-3 gap-3 border-t border-zinc-100 pt-4 dark:border-zinc-800">
@@ -253,6 +262,7 @@ export function SupplierOrderAbonosPanel({
                         })}`
                       : ""}
                   </p>
+                  {pay.notes ? <p className="mt-0.5 text-xs text-zinc-500">{pay.notes}</p> : null}
                   {pay.isCancelled && pay.cancellationReason ? (
                     <p className="mt-0.5 text-xs text-red-700 dark:text-red-400">
                       Motivo: {pay.cancellationReason}
