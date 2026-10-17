@@ -2,27 +2,38 @@ import Image from "next/image";
 import Link from "next/link";
 import {
   deleteSupplierInvoiceAttachmentAction,
+  receiveSupplierOrderStockAction,
   toggleSupplierLineDefectAction,
   uploadSupplierInvoiceAttachmentAction,
 } from "@/app/actions/admin/suppliers";
 import { SupplierAbonoForm } from "@/components/admin/SupplierAbonoForm";
 import { SupplierCancelInvoiceButton } from "@/components/admin/SupplierCancelInvoiceButton";
 import { SupplierOrderAddProducts } from "@/components/admin/SupplierOrderAddProducts";
+import { SupplierOrderReceiptSelect } from "@/components/admin/SupplierOrderReceiptSelect";
 import { StaticCopCents } from "@/components/admin/ReportsAnimatedFigures";
 import { formatCop } from "@/lib/money";
 import { formatStoreDateTime } from "@/lib/store-datetime-format";
-import { supplierInvoiceStatusBadge, type SupplierInvoiceUiStatus } from "@/lib/supplier-invoices";
+import {
+  isSupplierReceiptStatus,
+  type SupplierInvoiceUiStatus,
+  type SupplierReceiptStatus,
+} from "@/lib/supplier-invoices";
 import { shouldUnoptimizeStorageImageUrl, storagePublicObjectUrl } from "@/lib/storage-public-url";
+import { ventaCreditoToneClass, ventaPagoRecibidoTone } from "@/lib/ventas-sales";
 
 const th =
   "pb-2 pr-4 text-left text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500";
 const labelClass = "text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500";
+const metaTextClass = "text-zinc-700 dark:text-zinc-300";
+const metaSepClass = "text-zinc-300 dark:text-zinc-600";
 
 export type SupplierOrderLine = {
   id: string;
+  productId: string | null;
   name: string;
   reference: string | null;
   quantity: number;
+  receivedQuantity: number;
   unitPriceCents: number;
   grossCents: number;
   isDefective: boolean;
@@ -59,6 +70,7 @@ export function SupplierOrderInvoiceView({
   paidCents,
   pendingCents,
   status,
+  receiptStatus,
   lines,
   payments,
   attachments,
@@ -78,13 +90,19 @@ export function SupplierOrderInvoiceView({
   paidCents: number;
   pendingCents: number;
   status: SupplierInvoiceUiStatus;
+  receiptStatus: string;
   lines: SupplierOrderLine[];
   payments: SupplierOrderPayment[];
   attachments: SupplierOrderAttachment[];
   errorMessage: string | null;
 }) {
-  const badge = supplierInvoiceStatusBadge(status);
-  const pagoLabel = cancelled ? "Anulada" : pendingCents <= 0 ? "Pagada" : "Crédito · pendiente";
+  const pago = ventaPagoRecibidoTone(status);
+  const receipt: SupplierReceiptStatus = isSupplierReceiptStatus(receiptStatus)
+    ? receiptStatus
+    : "sent";
+  const canEnterQty = !cancelled && (receipt === "receiving" || receipt === "received");
+  const hasPendingQty = lines.some((line) => line.receivedQuantity < line.quantity);
+  const receiveFormId = `receive-${invoiceId}`;
 
   return (
     <div className="flex w-full min-w-0 max-w-none flex-col gap-4">
@@ -94,199 +112,291 @@ export function SupplierOrderInvoiceView({
         </p>
       ) : null}
 
-      <header className="flex flex-wrap items-start justify-between gap-3">
+      <header className="flex flex-wrap items-center justify-between gap-2 gap-y-2">
         <div className="min-w-0">
           <p className="text-[11px] text-zinc-500">
             <Link href="/admin/proveedores" className="hover:text-zinc-800 dark:hover:text-zinc-200">
               Proveedores
             </Link>
             <span className="mx-1.5 text-zinc-400">/</span>
-            Orden #{folio}
+            Orden de compra #{folio}
           </p>
           <h1 className="mt-0.5 text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 sm:text-2xl">
-            Orden #{folio}
+            Orden de compra #{folio}
           </h1>
-          <p className="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-sm text-zinc-500">
-            <span className="tabular-nums text-zinc-700 dark:text-zinc-300">{issueLabel}</span>
-            <span className="text-zinc-300 dark:text-zinc-600">·</span>
+          <p className="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1.5 text-sm text-zinc-500">
+            <span className={`tabular-nums ${metaTextClass}`}>{issueLabel}</span>
+            <span className={metaSepClass} aria-hidden>
+              ·
+            </span>
             <Link
               href={`/admin/proveedores/${supplierId}`}
-              className="font-medium text-zinc-800 underline-offset-2 hover:underline dark:text-zinc-200"
+              className="min-w-0 truncate font-medium text-zinc-800 underline-offset-2 transition hover:text-zinc-950 hover:underline dark:text-zinc-200 dark:hover:text-white"
             >
               {supplierName}
             </Link>
             {supplierDocument ? (
               <>
-                <span className="text-zinc-300 dark:text-zinc-600">·</span>
+                <span className={metaSepClass} aria-hidden>
+                  ·
+                </span>
                 <span>
-                  NIT <span className="font-medium text-zinc-800 dark:text-zinc-200">{supplierDocument}</span>
+                  NIT{" "}
+                  <span className={`font-medium tabular-nums ${metaTextClass}`}>{supplierDocument}</span>
                 </span>
               </>
             ) : null}
             {supplierPhone ? (
               <>
-                <span className="text-zinc-300 dark:text-zinc-600">·</span>
+                <span className={metaSepClass} aria-hidden>
+                  ·
+                </span>
                 <span>
-                  Tel. <span className="font-medium text-zinc-800 dark:text-zinc-200">{supplierPhone}</span>
+                  Tel.{" "}
+                  <span className={`font-medium tabular-nums ${metaTextClass}`}>{supplierPhone}</span>
                 </span>
               </>
             ) : null}
             {supplierAddress ? (
               <>
-                <span className="text-zinc-300 dark:text-zinc-600">·</span>
-                <span>
-                  Dir. <span className="font-medium text-zinc-800 dark:text-zinc-200">{supplierAddress}</span>
+                <span className={metaSepClass} aria-hidden>
+                  ·
+                </span>
+                <span className="min-w-0 break-words">
+                  Dir. <span className={`font-medium ${metaTextClass}`}>{supplierAddress}</span>
                 </span>
               </>
             ) : null}
           </p>
           {notes ? <p className="mt-1.5 text-sm text-zinc-600 dark:text-zinc-300">{notes}</p> : null}
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <SupplierAbonoForm invoiceId={invoiceId} supplierId={supplierId} pendingCents={pendingCents} />
-          {!cancelled ? <SupplierCancelInvoiceButton supplierId={supplierId} invoiceId={invoiceId} /> : null}
-          <Link
-            href="/admin/proveedores"
-            className="inline-flex size-9 items-center justify-center rounded-lg border border-zinc-300 bg-white text-zinc-700 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200"
-            aria-label="Volver a proveedores"
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="size-4" aria-hidden>
-              <path d="m15 18-6-6 6-6" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </Link>
-        </div>
+        <Link
+          href="/admin/proveedores"
+          className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-zinc-300 bg-white text-zinc-700 transition hover:border-zinc-400 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200 dark:hover:border-zinc-600 dark:hover:bg-zinc-800"
+          title="Volver"
+          aria-label="Volver a proveedores"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="size-4" aria-hidden>
+            <path d="m15 18-6-6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </Link>
       </header>
 
-      <div className="flex flex-col gap-6 border-t border-zinc-200/70 pt-4 dark:border-zinc-800 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(18rem,20rem)] lg:items-start lg:gap-10">
-        <section className="min-w-0">
+      <div className="flex flex-col gap-6 border-t border-zinc-200/70 pt-4 dark:border-zinc-800 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(18rem,20rem)] lg:items-start lg:gap-10 xl:gap-12">
+        <section className="reports-chart-reveal min-w-0">
+          {canEnterQty && hasPendingQty ? (
+            <form id={receiveFormId} action={receiveSupplierOrderStockAction} className="hidden">
+              <input type="hidden" name="invoice_id" value={invoiceId} />
+              <input type="hidden" name="supplier_id" value={supplierId} />
+            </form>
+          ) : null}
           {lines.length === 0 ? (
             <p className="text-sm text-zinc-500 dark:text-zinc-400">Esta orden todavía no tiene productos.</p>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[40rem] text-left text-sm">
-                <thead>
-                  <tr className="border-b border-zinc-200/70 dark:border-zinc-800">
-                    <th className={th}>Producto</th>
-                    <th className={`${th} text-right`}>Ud</th>
-                    <th className={`${th} text-right`}>P. unit.</th>
-                    <th className={`${th} text-right`}>Subtotal</th>
-                    <th className={`${th} text-right`}> </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {lines.map((line) => (
-                    <tr key={line.id} className="border-b border-zinc-100 last:border-0 dark:border-zinc-800">
-                      <td className="py-3 pr-4">
-                        <span className="block font-medium text-zinc-900 dark:text-zinc-100">{line.name}</span>
-                        {line.reference ? (
-                          <span className="mt-0.5 block font-mono text-xs text-zinc-500">Ref. {line.reference}</span>
-                        ) : null}
-                        {line.isDefective ? (
-                          <span className="mt-1 inline-flex rounded-full bg-red-50 px-2 py-0.5 text-[11px] font-medium text-red-800 ring-1 ring-red-200 dark:bg-red-950/40 dark:text-red-200 dark:ring-red-800">
-                            Malo
-                          </span>
-                        ) : null}
-                      </td>
-                      <td className="py-3 pr-4 text-right tabular-nums text-zinc-700 dark:text-zinc-300">
-                        {line.quantity}
-                      </td>
-                      <td className="py-3 pr-4 text-right tabular-nums text-zinc-700 dark:text-zinc-300">
-                        {formatCop(line.unitPriceCents)}
-                      </td>
-                      <td className="py-3 pr-4 text-right text-base font-semibold tabular-nums text-zinc-900 dark:text-zinc-100">
-                        {formatCop(line.grossCents)}
-                      </td>
-                      <td className="py-3 text-right">
-                        {!cancelled ? (
-                          <form action={toggleSupplierLineDefectAction}>
-                            <input type="hidden" name="invoice_id" value={invoiceId} />
-                            <input type="hidden" name="supplier_id" value={supplierId} />
-                            <input type="hidden" name="line_id" value={line.id} />
-                            <input type="hidden" name="is_defective" value={line.isDefective ? "0" : "1"} />
-                            <button
-                              type="submit"
-                              className="text-xs font-medium text-zinc-600 underline-offset-2 hover:underline dark:text-zinc-300"
-                            >
-                              {line.isDefective ? "Quitar marca" : "Marcar como malo"}
-                            </button>
-                          </form>
-                        ) : null}
-                      </td>
+            <>
+              <div className="max-h-[min(56dvh,32rem)] overflow-x-auto overflow-y-auto lg:max-h-[calc(100dvh-13rem)]">
+                <table className="w-full min-w-[40rem] table-fixed text-left text-sm leading-relaxed sm:text-[15px]">
+                  <colgroup>
+                    <col className="w-auto" />
+                    <col className="w-14" />
+                    <col className="w-[7.5rem]" />
+                    <col className="w-[9.5rem]" />
+                  </colgroup>
+                  <thead className="sticky top-0 z-[1] bg-white dark:bg-zinc-950">
+                    <tr className="border-b border-zinc-200/70 dark:border-zinc-800">
+                      <th className={th}>Producto</th>
+                      <th className={`${th} text-right`}>Ud</th>
+                      <th className={`${th} text-right`}>P. unit.</th>
+                      <th className={`${th} !pr-6 text-right sm:!pr-8`}>Subtotal</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {lines.map((line) => {
+                      const ref = line.reference?.trim();
+                      const remaining = Math.max(0, line.quantity - line.receivedQuantity);
+                      const suggested =
+                        line.isDefective && line.receivedQuantity === 0 ? 0 : remaining;
+                      return (
+                        <tr
+                          key={line.id}
+                          className="border-b border-zinc-100/80 last:border-0 dark:border-zinc-800/80"
+                        >
+                          <td className="py-3 pr-5 align-middle text-zinc-800 dark:text-zinc-200">
+                            <span className="block font-medium leading-snug">{line.name}</span>
+                            {ref ? (
+                              <span className="mt-1 block font-mono text-xs text-zinc-500">Ref. {ref}</span>
+                            ) : null}
+                            {line.isDefective ? (
+                              <span className="mt-1 inline-flex text-xs font-semibold text-red-600 dark:text-red-400">
+                                Malo
+                              </span>
+                            ) : null}
+                            {!cancelled ? (
+                              <form action={toggleSupplierLineDefectAction} className="mt-1">
+                                <input type="hidden" name="invoice_id" value={invoiceId} />
+                                <input type="hidden" name="supplier_id" value={supplierId} />
+                                <input type="hidden" name="line_id" value={line.id} />
+                                <input type="hidden" name="is_defective" value={line.isDefective ? "0" : "1"} />
+                                <button
+                                  type="submit"
+                                  className="text-xs font-medium text-zinc-500 underline-offset-2 hover:underline dark:text-zinc-400"
+                                >
+                                  {line.isDefective ? "Quitar marca" : "Marcar como malo"}
+                                </button>
+                              </form>
+                            ) : null}
+                          </td>
+                          <td className="py-3 pr-4 text-right align-middle tabular-nums text-zinc-700 dark:text-zinc-300">
+                            {line.quantity}
+                            {line.receivedQuantity > 0 ? (
+                              <span className="mt-1 block text-[11px] font-medium text-emerald-700 dark:text-emerald-400">
+                                {line.receivedQuantity} ingresadas
+                              </span>
+                            ) : null}
+                            {canEnterQty && remaining > 0 ? (
+                              <input
+                                form={receiveFormId}
+                                name={`receive_${line.id}`}
+                                type="number"
+                                min={0}
+                                max={remaining}
+                                defaultValue={suggested}
+                                aria-label={`Cantidad a ingresar de ${line.name}`}
+                                className="mt-1.5 w-16 rounded-lg border border-zinc-300 bg-white px-2 py-1 text-right text-xs font-medium text-zinc-800 outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 dark:border-zinc-600 dark:bg-zinc-950 dark:text-zinc-100"
+                              />
+                            ) : null}
+                          </td>
+                          <td className="whitespace-nowrap py-3 pr-4 text-right tabular-nums text-zinc-700 dark:text-zinc-300">
+                            {formatCop(line.unitPriceCents)}
+                          </td>
+                          <td className="whitespace-nowrap py-3 pl-3 pr-6 text-right tabular-nums text-base font-semibold text-zinc-900 dark:text-zinc-100 sm:pr-8">
+                            {formatCop(line.grossCents)}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              {canEnterQty && hasPendingQty ? (
+                <button
+                  type="submit"
+                  form={receiveFormId}
+                  className="mt-4 inline-flex items-center justify-center rounded-lg border border-emerald-600 bg-emerald-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-emerald-700"
+                >
+                  Ingresar al inventario
+                </button>
+              ) : null}
+            </>
           )}
           {!cancelled ? <SupplierOrderAddProducts invoiceId={invoiceId} supplierId={supplierId} /> : null}
-
-          {payments.length > 0 ? (
-            <div className="mt-6">
-              <p className={labelClass}>Abonos</p>
-              <ul className="mt-2 divide-y divide-zinc-100 dark:divide-zinc-800">
-                {payments.map((pay) => (
-                  <li key={pay.id} className="flex items-baseline justify-between gap-3 py-2 text-sm">
-                    <div>
-                      <p className="font-medium tabular-nums text-zinc-900 dark:text-zinc-100">
-                        {formatCop(pay.amountCents)}
-                      </p>
-                      <p className="text-xs text-zinc-500">
-                        {pay.paidAt
-                          ? formatStoreDateTime(pay.paidAt, { dateStyle: "medium", timeStyle: "short" })
-                          : ""}
-                        {" · "}
-                        {pay.methodLabel}
-                        {pay.notes ? ` · ${pay.notes}` : ""}
-                      </p>
-                      {pay.expenseId ? (
-                        <Link
-                          href={`/admin/egresos/${pay.expenseId}`}
-                          className="text-xs font-medium text-zinc-700 underline-offset-2 hover:underline dark:text-zinc-300"
-                        >
-                          {pay.expenseCancelled ? "Egreso anulado" : "Egreso de caja"}
-                        </Link>
-                      ) : null}
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ) : null}
         </section>
 
-        <aside className="space-y-5 border-t border-zinc-200/70 pt-4 dark:border-zinc-800 lg:sticky lg:top-3 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0 dark:lg:border-zinc-800">
+        <aside className="reports-chart-reveal shrink-0 space-y-5 border-t border-zinc-200/70 pt-4 dark:border-zinc-800 lg:sticky lg:top-3 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0 xl:pl-10 dark:lg:border-zinc-800">
           <div>
             <p className={labelClass}>Total</p>
             <p className="mt-2 text-3xl font-semibold tabular-nums tracking-tight text-zinc-900 dark:text-zinc-50">
               <StaticCopCents cents={totalCents} />
             </p>
           </div>
-          <div className="grid grid-cols-2 gap-3 text-sm">
-            <div>
-              <p className={labelClass}>Pagado</p>
-              <p className="mt-1 font-semibold tabular-nums text-emerald-700 dark:text-emerald-400">
-                <StaticCopCents cents={paidCents} />
-              </p>
-            </div>
-            <div>
-              <p className={labelClass}>Pendiente</p>
-              <p className="mt-1 font-semibold tabular-nums text-orange-600 dark:text-orange-400">
-                <StaticCopCents cents={pendingCents} />
-              </p>
-            </div>
+
+          <div>
+            <p className={labelClass}>Método de pago</p>
+            <p className={`mt-1.5 text-sm ${ventaCreditoToneClass}`}>Crédito</p>
           </div>
+
           <div>
             <p className={labelClass}>Estado del pago</p>
-            <p className="mt-1.5">
-              <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${badge.className}`}>
-                {badge.label}
-              </span>
+            <p className={`mt-1.5 text-sm ${pago.className}`}>
+              {cancelled ? "Anulada" : pago.label}
             </p>
-            <p className="mt-1.5 text-sm text-zinc-600 dark:text-zinc-300">{pagoLabel}</p>
+            {paidCents > 0 ? (
+              <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-300">
+                Pagado <span className="font-semibold tabular-nums text-emerald-700 dark:text-emerald-400"><StaticCopCents cents={paidCents} /></span>
+                {pendingCents > 0 ? (
+                  <>
+                    {" · "}
+                    Pendiente <span className="font-semibold tabular-nums text-amber-700 dark:text-amber-300"><StaticCopCents cents={pendingCents} /></span>
+                  </>
+                ) : null}
+              </p>
+            ) : null}
+            {!cancelled ? (
+              <div className="mt-3">
+                <SupplierAbonoForm invoiceId={invoiceId} supplierId={supplierId} pendingCents={pendingCents} />
+              </div>
+            ) : null}
+          </div>
+
+          <div>
+            <p className={labelClass}>Estado de recepción</p>
+            <div className="mt-1.5">
+              <SupplierOrderReceiptSelect
+                invoiceId={invoiceId}
+                supplierId={supplierId}
+                currentStatus={receipt}
+                disabled={cancelled}
+              />
+            </div>
+            {canEnterQty ? (
+              <p className="mt-2 text-xs leading-relaxed text-zinc-500">
+                Escribí las unidades que llegaron y ingresalas al inventario de esta sucursal.
+              </p>
+            ) : null}
           </div>
 
           <div>
             <p className={labelClass}>Comprobantes</p>
+            {attachments.length === 0 ? (
+              <p className="mt-1.5 text-sm text-zinc-500">Sin comprobantes.</p>
+            ) : (
+              <ul className="mt-1.5 space-y-1">
+                {attachments.map((file, idx) => {
+                  const url = storagePublicObjectUrl(file.storagePath);
+                  const label = file.fileName.trim() || `Archivo ${idx + 1}`;
+                  const isPdf =
+                    file.fileName.toLowerCase().endsWith(".pdf") ||
+                    file.storagePath.toLowerCase().endsWith(".pdf");
+                  return (
+                    <li key={file.id} className="flex items-center gap-2">
+                      {url && !isPdf ? (
+                        <span className="relative size-8 shrink-0 overflow-hidden rounded bg-zinc-100 dark:bg-zinc-900">
+                          <Image
+                            src={url}
+                            alt=""
+                            fill
+                            className="object-cover"
+                            sizes="32px"
+                            unoptimized={shouldUnoptimizeStorageImageUrl(url)}
+                          />
+                        </span>
+                      ) : null}
+                      {url ? (
+                        <a
+                          href={url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="min-w-0 flex-1 truncate text-xs font-medium text-sky-700 underline-offset-2 hover:underline dark:text-sky-400"
+                        >
+                          {label}
+                        </a>
+                      ) : (
+                        <span className="min-w-0 flex-1 truncate text-xs text-zinc-600">{label}</span>
+                      )}
+                      <form action={deleteSupplierInvoiceAttachmentAction}>
+                        <input type="hidden" name="attachment_id" value={file.id} />
+                        <input type="hidden" name="invoice_id" value={invoiceId} />
+                        <input type="hidden" name="supplier_id" value={supplierId} />
+                        <input type="hidden" name="storage_path" value={file.storagePath} />
+                        <button type="submit" className="text-[11px] text-red-600 hover:underline">
+                          Quitar
+                        </button>
+                      </form>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
             {!cancelled && attachments.length < 5 ? (
               <form action={uploadSupplierInvoiceAttachmentAction} className="mt-2 space-y-2">
                 <input type="hidden" name="invoice_id" value={invoiceId} />
@@ -298,56 +408,51 @@ export function SupplierOrderInvoiceView({
                   required
                   className="block w-full text-xs text-zinc-600 file:mr-2 file:rounded-md file:border-0 file:bg-zinc-100 file:px-2 file:py-1.5 file:text-xs file:font-medium dark:text-zinc-300 dark:file:bg-zinc-800"
                 />
-                <button type="submit" className="text-xs font-medium text-zinc-800 underline dark:text-zinc-200">
+                <button type="submit" className="text-xs font-medium text-sky-700 underline-offset-2 hover:underline dark:text-sky-400">
                   Subir archivo
                 </button>
               </form>
             ) : null}
-            {attachments.length === 0 ? (
-              <p className="mt-1.5 text-sm text-zinc-500">Sin comprobantes.</p>
-            ) : (
-              <ul className="mt-2 space-y-2">
-                {attachments.map((file) => {
-                  const url = storagePublicObjectUrl(file.storagePath);
-                  const isPdf = file.fileName.toLowerCase().endsWith(".pdf") || file.storagePath.toLowerCase().endsWith(".pdf");
-                  return (
-                    <li key={file.id} className="text-sm">
-                      {url && !isPdf ? (
-                        <div className="relative mb-1 aspect-[4/3] overflow-hidden rounded-lg bg-zinc-100 dark:bg-zinc-900">
-                          <Image
-                            src={url}
-                            alt=""
-                            fill
-                            className="object-contain"
-                            sizes="320px"
-                            unoptimized={shouldUnoptimizeStorageImageUrl(url)}
-                          />
-                        </div>
-                      ) : null}
-                      {url ? (
-                        <a href={url} target="_blank" rel="noopener noreferrer" className="font-medium underline-offset-2 hover:underline">
-                          {file.fileName || (isPdf ? "PDF" : "Archivo")}
-                        </a>
-                      ) : (
-                        <span>{file.fileName || "Archivo"}</span>
-                      )}
-                      <form action={deleteSupplierInvoiceAttachmentAction} className="inline">
-                        <input type="hidden" name="attachment_id" value={file.id} />
-                        <input type="hidden" name="invoice_id" value={invoiceId} />
-                        <input type="hidden" name="supplier_id" value={supplierId} />
-                        <input type="hidden" name="storage_path" value={file.storagePath} />
-                        <button type="submit" className="ml-2 text-xs text-red-600 hover:underline">
-                          Quitar
-                        </button>
-                      </form>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
           </div>
+
+          {!cancelled ? (
+            <SupplierCancelInvoiceButton supplierId={supplierId} invoiceId={invoiceId} />
+          ) : null}
         </aside>
       </div>
+
+      {payments.length > 0 ? (
+        <div>
+          <p className={labelClass}>Abonos</p>
+          <ul className="mt-2 divide-y divide-zinc-100 dark:divide-zinc-800">
+            {payments.map((pay) => (
+              <li key={pay.id} className="flex items-baseline justify-between gap-3 py-2 text-sm">
+                <div>
+                  <p className="font-medium tabular-nums text-zinc-900 dark:text-zinc-100">
+                    {formatCop(pay.amountCents)}
+                  </p>
+                  <p className="text-xs text-zinc-500">
+                    {pay.paidAt
+                      ? formatStoreDateTime(pay.paidAt, { dateStyle: "medium", timeStyle: "short" })
+                      : ""}
+                    {" · "}
+                    {pay.methodLabel}
+                    {pay.notes ? ` · ${pay.notes}` : ""}
+                  </p>
+                  {pay.expenseId ? (
+                    <Link
+                      href={`/admin/egresos/${pay.expenseId}`}
+                      className="text-xs font-medium text-sky-700 underline-offset-2 hover:underline dark:text-sky-400"
+                    >
+                      {pay.expenseCancelled ? "Egreso anulado" : "Egreso de caja"}
+                    </Link>
+                  ) : null}
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
     </div>
   );
 }

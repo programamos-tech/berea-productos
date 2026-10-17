@@ -16,8 +16,10 @@ const drawerLinkClass =
 
 export function StoreNavDropdowns({
   menuCategories,
+  wholesaleHref = null,
 }: {
   menuCategories: StoreCategoryMenuItem[];
+  wholesaleHref?: string | null;
 }) {
   const chrome = useStorefrontBrand();
   const [open, setOpen] = useState(false);
@@ -221,6 +223,15 @@ export function StoreNavDropdowns({
               aria-hidden
             />
           </Link>
+          {wholesaleHref ? (
+            <Link
+              href={wholesaleHref}
+              onClick={close}
+              className="mx-4 mt-3 flex items-center justify-center rounded-full bg-[var(--store-brand)] px-4 py-3 text-center text-[12px] font-semibold uppercase tracking-[0.12em] text-white transition hover:opacity-90"
+            >
+              Ingresar como mayorista
+            </Link>
+          ) : null}
         </div>
       </div>
     </nav>

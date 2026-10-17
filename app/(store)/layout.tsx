@@ -116,7 +116,15 @@ export default async function StoreLayout({
   const top = (
     <>
       <Suspense fallback={<StoreHeaderSkeleton />}>
-        <StoreHeader chrome={chrome} onLight={theme.foreground !== "#FFFFFF"} />
+        <StoreHeader
+          chrome={chrome}
+          onLight={theme.foreground !== "#FFFFFF"}
+          wholesaleHref={
+            chrome.tenantSlug === "aleya" && scope.branchCode !== "bodega"
+              ? "/sucursal/bodega"
+              : null
+          }
+        />
       </Suspense>
       {wholesaleBanner}
       {promoBanner && scope.isDefault ? (

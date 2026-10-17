@@ -10,6 +10,7 @@ import {
   EXPENSE_CONCEPT_SUPPLIER_PAYMENT,
   mapSupplierPaymentMethodToExpense,
 } from "@/lib/expense-concepts";
+import { fetchCurrentBranchInventoryMap } from "@/lib/branch-inventory";
 import { fetchOpenCashSession } from "@/lib/cash-register";
 import {
   assertActionPermission,
@@ -17,9 +18,11 @@ import {
 } from "@/lib/require-admin-permission";
 import {
   DEFAULT_SUPPLIER_VAT_BPS,
+  isSupplierReceiptStatus,
   supplierInvoiceFolioFromIssueDate,
   supplierLineGrossCents,
   supplierLineNetCents,
+  type SupplierReceiptStatus,
 } from "@/lib/supplier-invoices";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
@@ -613,4 +616,113 @@ export async function deleteSupplierInvoiceAttachmentAction(formData: FormData) 
   await supabase.from("supplier_invoice_attachments").delete().eq("id", attachmentId);
   revalidateSupplierPaths(supplierId, invoiceId);
   redirect(`/admin/proveedores/${supplierId}/facturas/${invoiceId}`);
+}
+
+export async function updateSupplierReceiptStatusAction(
+  invoiceId: string,
+  supplierId: string,
+  status: SupplierReceiptStatus,
+): Promise<{ ok: boolean }> {
+  await assertActionPermission("proveedores_ver");
+  if (!invoiceId || !supplierId || !isSupplierReceiptStatus(status)) return { ok: false };
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("supplier_invoices")
+    .update({ receipt_status: status })
+    .eq("id", invoiceId)
+    .eq("supplier_id", supplierId)
+    .eq("is_cancelled", false)
+    .select("id")
+    .maybeSingle();
+  if (error || !data?.id) return { ok: false };
+  revalidateSupplierPaths(supplierId, invoiceId);
+  return { ok: true };
+}
+
+export async function receiveSupplierOrderStockAction(formData: FormData) {
+  await assertActionPermission("proveedores_ver");
+  const supabase = await createSupabaseServerClient();
+  const invoiceId = String(formData.get("invoice_id") ?? "").trim();
+  const supplierId = String(formData.get("supplier_id") ?? "").trim();
+  const back = `/admin/proveedores/${supplierId}/facturas/${invoiceId}`;
+  if (!invoiceId || !supplierId) redirect(`${back}?error=db`);
+
+  const { data: inv } = await supabase
+    .from("supplier_invoices")
+    .select("id,is_cancelled,receipt_status")
+    .eq("id", invoiceId)
+    .eq("supplier_id", supplierId)
+    .maybeSingle();
+  if (!inv || inv.is_cancelled) redirect(`${back}?error=db`);
+
+  const { data: lineRows, error: lineErr } = await supabase
+    .from("supplier_invoice_lines")
+    .select("id,product_id,quantity,received_quantity")
+    .eq("invoice_id", invoiceId);
+  if (lineErr || !lineRows) redirect(`${back}?error=db`);
+
+  const posts: { id: string; productId: string | null; add: number; nextReceived: number }[] = [];
+  for (const row of lineRows) {
+    const ordered = Math.max(0, Math.floor(Number(row.quantity ?? 0)));
+    const already = Math.max(0, Math.floor(Number(row.received_quantity ?? 0)));
+    const raw = Math.floor(Number.parseInt(String(formData.get(`receive_${row.id}`) ?? "0"), 10) || 0);
+    const add = Math.max(0, Math.min(raw, Math.max(0, ordered - already)));
+    if (add <= 0) continue;
+    posts.push({
+      id: String(row.id),
+      productId: row.product_id ? String(row.product_id) : null,
+      add,
+      nextReceived: already + add,
+    });
+  }
+  if (posts.length === 0) redirect(back);
+
+  const productAdds = new Map<string, number>();
+  for (const post of posts) {
+    if (!post.productId) continue;
+    productAdds.set(post.productId, (productAdds.get(post.productId) ?? 0) + post.add);
+  }
+
+  const current = await fetchCurrentBranchInventoryMap(supabase, [...productAdds.keys()]);
+  for (const [productId, add] of productAdds) {
+    const { error } = await supabase.rpc("set_product_branch_stock", {
+      p_product_id: productId,
+      p_quantity: (current.get(productId) ?? 0) + add,
+    });
+    if (error) {
+      console.error("receiveSupplierOrderStockAction", error.message);
+      redirect(`${back}?error=stock`);
+    }
+  }
+
+  for (const post of posts) {
+    const { error } = await supabase
+      .from("supplier_invoice_lines")
+      .update({ received_quantity: post.nextReceived })
+      .eq("id", post.id)
+      .eq("invoice_id", invoiceId);
+    if (error) redirect(`${back}?error=stock`);
+  }
+
+  const postedById = new Map(posts.map((post) => [post.id, post.nextReceived]));
+  const complete = lineRows.every((row) => {
+    const ordered = Math.max(0, Math.floor(Number(row.quantity ?? 0)));
+    const received = postedById.get(String(row.id)) ?? Math.max(0, Math.floor(Number(row.received_quantity ?? 0)));
+    return received >= ordered;
+  });
+  if (complete) {
+    await supabase
+      .from("supplier_invoices")
+      .update({ receipt_status: "received" })
+      .eq("id", invoiceId);
+  } else if (String(inv.receipt_status) === "sent") {
+    await supabase
+      .from("supplier_invoices")
+      .update({ receipt_status: "receiving" })
+      .eq("id", invoiceId);
+  }
+
+  revalidateSupplierPaths(supplierId, invoiceId);
+  revalidatePath("/admin/products");
+  redirect(back);
 }

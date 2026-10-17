@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { getStorefrontCartItemCount } from "@/lib/storefront-cart";
 import { StoreAnnouncementBar } from "@/components/store/StoreAnnouncementBar";
 import { StoreHeaderActions } from "@/components/store/StoreHeaderActions";
@@ -12,9 +13,12 @@ import type { StorefrontChrome } from "@/lib/storefront-brand";
 export async function StoreHeader({
   chrome,
   onLight = false,
+  wholesaleHref = null,
 }: {
   chrome: StorefrontChrome;
   onLight?: boolean;
+  /** Tienda mayorista (Bodega). Solo en la vitrina pública de Aleya. */
+  wholesaleHref?: string | null;
 }) {
   const [menuCategories, cartItemCount] = await Promise.all([
     getCachedStoreCategoriesWithCounts(),
@@ -30,8 +34,20 @@ export async function StoreHeader({
         className="border-b border-white/20 bg-[var(--store-header-bg)] text-[var(--store-header-fg)]"
       >
         <div className={`${storeShellClass} grid grid-cols-[auto_1fr_auto] items-center gap-x-2 py-3 sm:gap-x-3 md:py-3.5 lg:grid-cols-[1fr_auto_1fr] lg:gap-x-6 lg:py-5`}>
-          <div className="flex min-w-0 items-center justify-start lg:pr-4">
-            <StoreNavDropdowns menuCategories={menuCategories} />
+          <div className="flex min-w-0 items-center justify-start gap-4 lg:gap-6 lg:pr-4">
+            <StoreNavDropdowns
+              menuCategories={menuCategories}
+              wholesaleHref={wholesaleHref}
+            />
+            {wholesaleHref ? (
+              <Link
+                href={wholesaleHref}
+                className="hidden whitespace-nowrap text-[12px] font-medium tracking-wide text-white/90 underline-offset-4 transition hover:text-white hover:underline sm:inline lg:text-[13px]"
+              >
+                <span className="lg:hidden">Mayorista</span>
+                <span className="hidden lg:inline">Ingresar como mayorista</span>
+              </Link>
+            ) : null}
           </div>
 
           <div className="flex min-w-0 flex-col items-center justify-center px-1 sm:px-2">

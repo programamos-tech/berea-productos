@@ -64,7 +64,7 @@ export default async function AdminProveedorFacturaDetailPage({ params, searchPa
     supabase
       .from("supplier_invoice_lines")
       .select(
-        "id,product_name_snapshot,quantity,unit_price_cents,vat_rate_bps,is_defective,products(reference)",
+        "id,product_id,product_name_snapshot,quantity,unit_price_cents,vat_rate_bps,is_defective,received_quantity,products(reference)",
       )
       .eq("invoice_id", invoiceId)
       .order("sort_order", { ascending: true }),
@@ -96,9 +96,11 @@ export default async function AdminProveedorFacturaDetailPage({ params, searchPa
     const net = supplierLineNetCents(quantity, unitPriceCents);
     return {
       id: String(row.id),
+      productId: row.product_id ? String(row.product_id) : null,
       name: String(row.product_name_snapshot ?? "Producto"),
       reference: productRef(row.products as { reference?: string | null } | { reference?: string | null }[] | null),
       quantity,
+      receivedQuantity: Math.max(0, Math.floor(Number(row.received_quantity ?? 0))),
       unitPriceCents,
       grossCents: supplierLineGrossCents(net, vatBps),
       isDefective: Boolean(row.is_defective),
@@ -142,7 +144,9 @@ export default async function AdminProveedorFacturaDetailPage({ params, searchPa
                 ? "Máximo 5 archivos adjuntos."
                 : err === "subida" || err === "archivo"
                   ? "No se pudo subir el archivo."
-                  : null;
+                  : err === "stock"
+                    ? "No se pudieron ingresar las cantidades al inventario de esta sucursal."
+                    : null;
 
   return (
     <SupplierOrderInvoiceView
@@ -160,6 +164,7 @@ export default async function AdminProveedorFacturaDetailPage({ params, searchPa
       paidCents={paid}
       pendingCents={pending}
       status={supplierInvoiceUiStatus(total, paid, cancelled)}
+      receiptStatus={typeof inv.receipt_status === "string" ? inv.receipt_status : "sent"}
       lines={lines}
       payments={payments}
       attachments={(atts ?? []).map((file) => ({

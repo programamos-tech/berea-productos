@@ -41,6 +41,29 @@ export function supplierInvoiceFolioFromIssueDate(issueDateYmd: string, id: stri
 
 export type SupplierInvoiceUiStatus = "paid" | "pending" | "cancelled";
 
+export type SupplierReceiptStatus = "sent" | "receiving" | "received";
+
+export const SUPPLIER_RECEIPT_STATUSES: SupplierReceiptStatus[] = [
+  "sent",
+  "receiving",
+  "received",
+];
+
+export function isSupplierReceiptStatus(value: string): value is SupplierReceiptStatus {
+  return (SUPPLIER_RECEIPT_STATUSES as string[]).includes(value);
+}
+
+export function supplierReceiptLabel(status: SupplierReceiptStatus): string {
+  switch (status) {
+    case "sent":
+      return "Enviada";
+    case "receiving":
+      return "Recibiendo";
+    case "received":
+      return "Recibido";
+  }
+}
+
 export function supplierInvoiceUiStatus(
   totalCents: number,
   paidCents: number,
