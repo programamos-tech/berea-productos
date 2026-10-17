@@ -39,7 +39,7 @@ export default async function AdminProveedoresPage({ searchParams }: Props) {
 
   const { data: suppliers, error } = await supabase
     .from("suppliers")
-    .select("id,name,document_id,phone")
+    .select("id,name,document_id,phone,email")
     .order("name", { ascending: true })
     .limit(500);
 
@@ -89,6 +89,7 @@ export default async function AdminProveedoresPage({ searchParams }: Props) {
     const name = String(supplier.name ?? "Proveedor");
     const documentId = supplier.document_id ? String(supplier.document_id).trim() : "";
     const phone = supplier.phone ? String(supplier.phone).trim() : "";
+    const email = supplier.email ? String(supplier.email).trim() : "";
     const orderCount = ordersBySupplier.get(id) ?? 0;
     const pendingCents = pendingBySupplier.get(id) ?? 0;
     if (filter === "balance" && pendingCents <= 0) continue;
@@ -102,6 +103,7 @@ export default async function AdminProveedoresPage({ searchParams }: Props) {
       name,
       documentId: documentId || null,
       phone: phone || null,
+      avatarSeed: email || id,
       orderCount,
       pendingCents,
     });

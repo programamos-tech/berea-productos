@@ -460,7 +460,7 @@ export function SupplierNewInvoiceForm({
                         <button
                           type="button"
                           onClick={() => removeLine(line.key)}
-                          className="text-xs font-semibold text-red-600 hover:underline dark:text-red-400"
+                          className="text-xs font-semibold text-[var(--admin-coral-deep)] hover:underline"
                         >
                           Quitar
                         </button>
@@ -525,7 +525,11 @@ export function SupplierNewInvoiceForm({
               </p>
             </div>
 
-            <AdminFormSubmitButton pendingLabel="Creando…" disabled={!canSubmit} className="mt-4 w-full rounded-lg border border-rose-950 bg-rose-950 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-rose-900 hover:border-rose-900 disabled:cursor-not-allowed disabled:border-zinc-200 disabled:bg-zinc-200 disabled:text-zinc-500 dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-white dark:disabled:bg-zinc-800 dark:disabled:text-zinc-500">
+            <AdminFormSubmitButton
+              pendingLabel="Creando…"
+              disabled={!canSubmit}
+              className="mt-4 w-full rounded-lg border border-[var(--admin-coral)] bg-[var(--admin-coral)] py-3 text-sm font-semibold text-white shadow-sm transition hover:border-[var(--admin-coral-hover)] hover:bg-[var(--admin-coral-hover)] disabled:cursor-not-allowed disabled:border-zinc-200 disabled:bg-zinc-200 disabled:text-zinc-500 dark:disabled:border-zinc-700 dark:disabled:bg-zinc-800 dark:disabled:text-zinc-500"
+            >
               {formContext === "orden" ? "Crear orden" : "Crear factura"}
             </AdminFormSubmitButton>
           </section>

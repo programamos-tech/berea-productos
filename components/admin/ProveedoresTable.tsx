@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Eye } from "lucide-react";
+import { AdminUserAvatar } from "@/components/admin/AdminUserAvatar";
 import { StaticCopCents } from "@/components/admin/ReportsAnimatedFigures";
 import { ventaCreditoToneClass } from "@/lib/ventas-sales";
 
@@ -11,6 +12,7 @@ export type SupplierDirectoryRow = {
   name: string;
   documentId: string | null;
   phone: string | null;
+  avatarSeed: string;
   orderCount: number;
   pendingCents: number;
 };
@@ -35,7 +37,9 @@ export function ProveedoresTable({ rows }: { rows: SupplierDirectoryRow[] }) {
               className="flex items-start justify-between gap-3 py-3 no-underline transition hover:bg-zinc-50/60 dark:hover:bg-zinc-900/40"
               aria-label={`Ver proveedor ${row.name}`}
             >
-              <div className="min-w-0">
+              <div className="flex min-w-0 items-start gap-3">
+                <AdminUserAvatar displayName={row.name} seed={row.avatarSeed} size={40} />
+                <div className="min-w-0">
                 <p className="truncate text-sm font-semibold text-zinc-900 dark:text-zinc-100">
                   {row.name}
                 </p>
@@ -52,6 +56,7 @@ export function ProveedoresTable({ rows }: { rows: SupplierDirectoryRow[] }) {
                     Por pagar <StaticCopCents cents={row.pendingCents} />
                   </span>
                 </p>
+                </div>
               </div>
               <span
                 className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg text-zinc-500 dark:text-zinc-400"
@@ -79,8 +84,11 @@ export function ProveedoresTable({ rows }: { rows: SupplierDirectoryRow[] }) {
           <tbody>
             {rows.map((row) => (
               <tr key={row.id} className="border-t border-zinc-100 dark:border-zinc-800">
-                <td className="max-w-[18rem] truncate py-3 pr-4 font-medium text-zinc-900 dark:text-zinc-100">
-                  {row.name}
+                <td className="max-w-[18rem] py-3 pr-4">
+                  <span className="flex min-w-0 items-center gap-3">
+                    <AdminUserAvatar displayName={row.name} seed={row.avatarSeed} size={36} />
+                    <span className="truncate font-medium text-zinc-900 dark:text-zinc-100">{row.name}</span>
+                  </span>
                 </td>
                 <td className="py-3 pr-4 tabular-nums text-zinc-600 dark:text-zinc-300">
                   {row.documentId || "—"}

@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { CustomerAvatar } from "@/components/admin/CustomerAvatar";
-import { customerAvatarSeed } from "@/lib/customer-avatar-seed";
+import { AdminUserAvatar } from "@/components/admin/AdminUserAvatar";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { formatCop } from "@/lib/money";
 import { formatStoreTimeHourMinute } from "@/lib/store-datetime-format";
@@ -93,17 +92,16 @@ export default async function AdminProveedorDetailPage({ params, searchParams }:
   const metaLine =
     metaParts.length > 0 ? metaParts.join(" · ") : "Sin datos de contacto cargados.";
   const notesTrim = s.notes?.trim() ?? "";
-  const avatarSeed = customerAvatarSeed(s.id, s.email);
+  const avatarSeed = s.email?.trim() || s.id;
 
   return (
     <div className="w-full min-w-0 space-y-4">
       <div className="flex flex-col gap-3 border-b border-zinc-100 pb-4 dark:border-zinc-800 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex min-w-0 items-center gap-3 sm:gap-4">
-          <CustomerAvatar
+          <AdminUserAvatar
+            displayName={String(s.name)}
             seed={avatarSeed}
             size={88}
-            className="shadow ring-1 ring-zinc-200/90 dark:ring-zinc-600"
-            label={`Avatar de ${String(s.name)}`}
           />
           <div className="min-w-0">
             <h1 className="text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 sm:text-2xl">
@@ -165,7 +163,7 @@ export default async function AdminProveedorDetailPage({ params, searchParams }:
         </select>
         <button
           type="submit"
-          className="rounded-lg border border-rose-950 bg-rose-950 px-3 py-2 text-sm font-semibold text-white transition hover:bg-rose-900 hover:border-rose-900 dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-white"
+          className="rounded-lg border border-[var(--admin-coral)] bg-[var(--admin-coral)] px-3 py-2 text-sm font-semibold text-white transition hover:border-[var(--admin-coral-hover)] hover:bg-[var(--admin-coral-hover)]"
         >
           Filtrar
         </button>
