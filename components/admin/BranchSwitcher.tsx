@@ -191,28 +191,38 @@ export function BranchSwitcher({
           id={menuId}
           role="menu"
           aria-label="Cambiar sucursal"
-          className="absolute left-0 top-full z-[80] mt-1.5 w-full min-w-40 overflow-hidden rounded-xl border border-zinc-200 bg-white p-1 shadow-xl shadow-zinc-950/10 dark:border-zinc-700 dark:bg-zinc-900 dark:shadow-black/30"
+          className={
+            onSidebar
+              ? "absolute left-0 top-full z-[80] mt-1.5 w-full min-w-40 overflow-hidden rounded-xl border border-zinc-700 bg-[#161618] p-1 shadow-xl shadow-black/40"
+              : "absolute left-0 top-full z-[80] mt-1.5 w-full min-w-40 overflow-hidden rounded-xl border border-zinc-200 bg-white p-1 shadow-xl shadow-zinc-950/10 dark:border-zinc-700 dark:bg-zinc-900 dark:shadow-black/30"
+          }
         >
-          {branches.map((branch) => (
+          {branches.map((branch) => {
+            const selected = branch.id === active.id;
+            const itemClass = onSidebar
+              ? selected
+                ? "bg-white/10 text-white"
+                : "text-zinc-300 hover:bg-white/[0.06] hover:text-white"
+              : selected
+                ? "bg-zinc-100 text-zinc-950 dark:bg-zinc-800 dark:text-white"
+                : "text-zinc-600 hover:bg-zinc-50 hover:text-zinc-950 dark:text-zinc-300 dark:hover:bg-zinc-800/70 dark:hover:text-white";
+            return (
             <button
               key={branch.id}
               type="button"
               role="menuitemradio"
-              aria-checked={branch.id === active.id}
+              aria-checked={selected}
               onClick={() => selectBranch(branch.id)}
-              className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-medium outline-none transition focus-visible:ring-2 focus-visible:ring-zinc-400/50 ${
-                branch.id === active.id
-                  ? "bg-zinc-100 text-zinc-950 dark:bg-zinc-800 dark:text-white"
-                  : "text-zinc-600 hover:bg-zinc-50 hover:text-zinc-950 dark:text-zinc-300 dark:hover:bg-zinc-800/70 dark:hover:text-white"
-              }`}
+              className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-medium outline-none transition focus-visible:ring-2 focus-visible:ring-zinc-400/50 ${itemClass}`}
             >
               <BranchOptionMark branch={branch} />
               <span className="min-w-0 flex-1 truncate">{branch.name}</span>
-              {branch.id === active.id ? (
+              {selected ? (
                 <Check className="size-3.5 shrink-0" aria-hidden />
               ) : null}
             </button>
-          ))}
+            );
+          })}
         </div>
       ) : null}
       {switching && switchingBranch ? (
