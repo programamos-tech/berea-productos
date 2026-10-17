@@ -223,19 +223,24 @@ function IconWhatsApp({ className }: { className?: string }) {
 
 function SidebarPoweredBy() {
   return (
-    <p className="mt-3 flex flex-col items-center gap-1 px-1">
+    <a
+      href="https://bereahouse.com"
+      target="_blank"
+      rel="noopener noreferrer"
+      className="mt-3 flex flex-col items-center gap-1 px-1 outline-none transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-white/40"
+    >
       <span className={`text-[9px] font-medium uppercase tracking-[0.14em] ${sidebarInkMuted}`}>
         Powered by
       </span>
       <Image
         src="/landing/berea-house-logo-white.png"
-        alt="Berea House, software para negocios"
+        alt="Berea House"
         width={663}
         height={312}
         unoptimized
-        className="h-[30px] w-auto object-contain"
+        className="h-6 w-auto object-contain"
       />
-    </p>
+    </a>
   );
 }
 
