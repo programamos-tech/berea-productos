@@ -1,4 +1,9 @@
-import { isAccountModuleEnabled, type AccountModuleId } from "@/lib/admin-account-modules";
+import {
+  accountModuleIdForPermission,
+  isAccountModuleEnabled,
+  modulePreviewHref,
+  type AccountModuleId,
+} from "@/lib/admin-account-modules";
 import {
   jobRoleSkipsCashRegister,
   type PermissionKey,
@@ -26,11 +31,23 @@ export async function requireAdminSession(): Promise<AdminActingSession> {
   return { ...perm, branchContext: perm.branchContext };
 }
 
-/** El módulo tiene que estar encendido en la cuenta. Si no, no existe para ese cliente. */
+function redirectToLockedModulePreview(
+  perm: AdminActingSession,
+  keys: PermissionKey[],
+) {
+  for (const key of keys) {
+    const moduleId = accountModuleIdForPermission(key);
+    if (!moduleId || isAccountModuleEnabled(perm.disabledModules, moduleId)) continue;
+    if (!perm.rolePermissions[key]) continue;
+    redirect(modulePreviewHref(moduleId));
+  }
+}
+
+/** El módulo tiene que estar encendido en la cuenta. Si no, abre el simulacro. */
 export async function requireAccountModule(moduleId: AccountModuleId) {
   const perm = await requireAdminSession();
   if (!isAccountModuleEnabled(perm.disabledModules, moduleId)) {
-    redirect("/admin/products");
+    redirect(modulePreviewHref(moduleId));
   }
   return perm;
 }
@@ -38,7 +55,10 @@ export async function requireAccountModule(moduleId: AccountModuleId) {
 /** Exige un permiso concreto (AND implícito de un solo elemento). */
 export async function requireAdminPermission(key: PermissionKey) {
   const perm = await requireAdminSession();
-  if (!perm.permissions[key]) redirect(ADMIN_FORBIDDEN_REDIRECT);
+  if (!perm.permissions[key]) {
+    redirectToLockedModulePreview(perm, [key]);
+    redirect(ADMIN_FORBIDDEN_REDIRECT);
+  }
   return perm;
 }
 
@@ -46,6 +66,7 @@ export async function requireAdminPermission(key: PermissionKey) {
 export async function requireAdminAnyPermission(keys: PermissionKey[]) {
   const perm = await requireAdminSession();
   if (!keys.length || !keys.some((k) => perm.permissions[k])) {
+    redirectToLockedModulePreview(perm, keys);
     redirect(ADMIN_FORBIDDEN_REDIRECT);
   }
   return perm;

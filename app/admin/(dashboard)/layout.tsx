@@ -1,5 +1,8 @@
 import { AdminDashboardShell } from "@/components/admin/AdminDashboardShell";
-import { adminNavAllowedHrefList } from "@/lib/admin-nav-allowed";
+import {
+  adminNavAllowedHrefList,
+  adminNavLockedHrefList,
+} from "@/lib/admin-nav-allowed";
 import { prettyReportDayShortLabel } from "@/lib/admin-report-range";
 import {
   fetchCashSessionForBusinessDay,
@@ -49,6 +52,10 @@ export default async function AdminDashboardLayout({
     canOnboard: showOnboarding,
     disabledModules: perm.disabledModules,
   });
+  let lockedNavHrefs = adminNavLockedHrefList(perm.rolePermissions, {
+    jobRole: perm.jobRole,
+    disabledModules: perm.disabledModules,
+  });
   let cashGate: {
     mustOpen: boolean;
     businessDayLabel: string;
@@ -64,6 +71,7 @@ export default async function AdminDashboardLayout({
 
   if (mustOpen) {
     allowedNavHrefs = navHrefsForCashGate(allowedNavHrefs);
+    lockedNavHrefs = [];
     const supabase = await createSupabaseServerClient();
     const today = todayBusinessDayYmd();
     const [{ data: profile }, suggestedOpeningFloatCents] = await Promise.all([
@@ -88,6 +96,7 @@ export default async function AdminDashboardLayout({
   return (
     <AdminDashboardShell
       allowedNavHrefs={allowedNavHrefs}
+      lockedNavHrefs={lockedNavHrefs}
       notifyNewOrders={Boolean(perm.permissions.ventas_ver)}
       notifyLowStock={Boolean(perm.permissions.inventario_ver)}
       cashGate={cashGate}

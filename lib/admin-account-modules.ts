@@ -34,47 +34,69 @@ export type AccountModuleDef = {
   id: AccountModuleId;
   label: string;
   hint?: string;
+  /** Qué puede hacer el cliente con el módulo, para el menú y el simulacro. */
+  pitch: string;
+  /** Ruta real cuando el módulo está habilitado. */
+  href?: string;
   permissionKeys: PermissionKey[];
   /** Si es false, no se lista en Cuentas (el id sigue valiendo al reactivar el menú). */
   listed?: boolean;
 };
 
+export function modulePreviewHref(moduleId: AccountModuleId): string {
+  return `/admin/modulos/${moduleId}`;
+}
+
 export const ACCOUNT_MODULES: AccountModuleDef[] = [
   {
     id: "reportes",
     label: "Reportes",
+    href: "/admin",
+    pitch: "Ventas del día, del mes y cómo va la tienda en un solo tablero.",
     permissionKeys: ["inicio_reportes", "reportes_tienda"],
   },
   {
     id: "caja",
     label: "Caja",
+    href: "/admin/caja",
+    pitch: "Apertura, cierre y el efectivo del día de cada sucursal.",
     permissionKeys: ["caja_ver", "caja_gestionar"],
   },
   {
     id: "ventas",
     label: "Ventas",
+    href: "/admin/ventas",
+    pitch: "Facturas, cotizaciones y el detalle de cada venta.",
     permissionKeys: ["ventas_ver", "ventas_crear"],
   },
   {
     id: "creditos",
     label: "Créditos",
+    href: "/admin/creditos",
     hint: "Menú, abonos y vender a crédito",
+    pitch: "Vendé a crédito, registrá abonos y mirá lo que falta por cobrar.",
     permissionKeys: ["creditos_ver", "creditos_abonar"],
   },
   {
     id: "proveedores",
     label: "Proveedores",
+    href: "/admin/proveedores",
     hint: "Órdenes de compra y abonos",
+    pitch: "Órdenes de compra, abonos y el ingreso de la mercancía al inventario.",
     permissionKeys: ["proveedores_ver"],
   },
   {
     id: "egresos",
     label: "Gastos",
+    href: "/admin/egresos",
+    pitch: "Gastos del negocio, con método de pago y comprobante.",
     permissionKeys: ["egresos_ver", "egresos_crear"],
   },
   {
     id: "inventario",
     label: "Inventario",
+    href: "/admin/products",
+    pitch: "Productos, precios, stock por sucursal y categorías.",
     permissionKeys: [
       "inventario_ver",
       "productos_crear",
@@ -86,38 +108,51 @@ export const ACCOUNT_MODULES: AccountModuleDef[] = [
   {
     id: "traslados",
     label: "Traslados",
+    href: "/admin/traslados",
     hint: "Movimientos de inventario entre sucursales",
+    pitch: "Pasá unidades de una sucursal a otra sin perder el conteo.",
     permissionKeys: ["stock_transferir"],
   },
   {
     id: "kits",
     label: "Kits",
+    href: "/admin/kits",
+    pitch: "Armá combos con varios productos y vendelos como uno solo.",
     permissionKeys: ["kits_ver", "kits_gestionar"],
   },
   {
     id: "clientes",
     label: "Clientes",
+    href: "/admin/customers",
+    pitch: "Fichas de clientes, documentos y lo que te deben.",
     permissionKeys: ["clientes_ver", "clientes_crear", "clientes_editar"],
   },
   {
     id: "equipo",
     label: "Equipo",
+    href: "/admin/usuarios",
+    pitch: "Usuarios del panel y lo que cada uno puede ver.",
     permissionKeys: ["roles_ver", "colaboradores_gestionar"],
   },
   {
     id: "sucursales",
     label: "Sucursales",
+    href: "/admin/sucursales",
+    pitch: "Locales de la cuenta, con inventario y caja propios.",
     permissionKeys: ["sucursales_ver", "sucursales_gestionar"],
   },
   {
     id: "registros",
     label: "Registros",
+    href: "/admin/actividades",
+    pitch: "Quién hizo cada cambio: ventas, abonos y anulaciones.",
     permissionKeys: ["actividades_ver"],
   },
   {
     id: "marketing",
     label: "Marketing",
     hint: "Banners y cupones",
+    pitch: "Banners y cupones de la tienda.",
     permissionKeys: ["marketing_ver"],
     listed: false,
   },
@@ -125,6 +160,7 @@ export const ACCOUNT_MODULES: AccountModuleDef[] = [
     id: "tienda",
     label: "Tienda",
     hint: "Ajustes de tienda y envíos",
+    pitch: "Ajustes de la tienda y de los envíos.",
     permissionKeys: ["ajustes_tienda_ver"],
     listed: false,
   },
@@ -147,6 +183,17 @@ export function isAccountModuleEnabled(
 
 export function listedAccountModules(): AccountModuleDef[] {
   return ACCOUNT_MODULES.filter((mod) => mod.listed !== false);
+}
+
+export function accountModuleById(id: AccountModuleId): AccountModuleDef | undefined {
+  return MODULE_BY_ID.get(id);
+}
+
+export function accountModuleIdForPermission(key: PermissionKey): AccountModuleId | null {
+  for (const mod of ACCOUNT_MODULES) {
+    if (mod.permissionKeys.includes(key)) return mod.id;
+  }
+  return null;
 }
 
 export function parseDisabledAccountModules(raw: unknown): AccountModuleId[] {

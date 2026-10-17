@@ -233,7 +233,7 @@ export default async function AdminCuentaDetallePage({
       <Section
         id="modulos"
         title="Módulos"
-        hint="Lo que apagues desaparece del menú y del panel de esta cuenta, para todo el equipo."
+        hint="Si lo apagás, el equipo no opera ese módulo. Igual lo ven en el menú, con un ejemplo y el WhatsApp de Berea para habilitarlo."
       >
         <OperatorAccountModulesPanel
           tenantId={row.id}

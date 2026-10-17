@@ -1,4 +1,5 @@
 import type { ReactNode, SVGProps } from "react";
+import { lockedNavItemMeta } from "@/lib/admin-nav-allowed";
 
 function Icon(props: SVGProps<SVGSVGElement> & { children: ReactNode }) {
   const { children, className = "", ...rest } = props;
@@ -25,6 +26,9 @@ export type AdminNavItem = {
   icon: ReactNode;
   /** Submenú (p. ej. Productos / Kits bajo Inventario). */
   children?: AdminNavItem[];
+  /** La cuenta no lo tiene habilitado: se muestra para adquirirlo. */
+  locked?: boolean;
+  lockedPitch?: string;
 };
 
 export type AdminNavSection = {
@@ -296,31 +300,61 @@ export function adminNavItemActive(
   return pathMatches(pathname, href);
 }
 
+function asLockedNavItem(item: AdminNavItem): AdminNavItem | null {
+  const meta = lockedNavItemMeta(item.href);
+  if (!meta) return null;
+  return {
+    ...item,
+    href: meta.href,
+    locked: true,
+    lockedPitch: meta.pitch,
+    children: undefined,
+  };
+}
+
 function filterNavItem(
   item: AdminNavItem,
   allowed: Set<string>,
+  locked: Set<string>,
 ): AdminNavItem | null {
   if (item.children?.length) {
-    const children = item.children.filter((child) => allowed.has(child.href));
-    if (children.length === 0) return null;
+    const children = item.children
+      .map((child) => filterNavItem(child, allowed, locked))
+      .filter((child): child is AdminNavItem => child != null);
+    const parentAllowed = allowed.has(item.href);
+    const parentLocked = !parentAllowed && locked.has(item.href);
+    if (children.length === 0) {
+      if (parentAllowed) return { ...item, children: undefined };
+      if (parentLocked) return asLockedNavItem(item);
+      return null;
+    }
+    if (parentLocked) {
+      const lockedParent = asLockedNavItem(item);
+      if (!lockedParent) return { ...item, children };
+      const extras = children.filter((child) => child.href !== lockedParent.href);
+      return extras.length > 0 ? { ...lockedParent, children: extras } : lockedParent;
+    }
     return {
       ...item,
-      href: children[0]!.href,
+      href: parentAllowed ? item.href : children[0]!.href,
       children,
     };
   }
-  if (!allowed.has(item.href)) return null;
-  return item;
+  if (allowed.has(item.href)) return item;
+  if (locked.has(item.href)) return asLockedNavItem(item);
+  return null;
 }
 
 export function filterAdminNavSections(
   allowedNavHrefs: string[],
+  lockedNavHrefs: string[] = [],
 ): AdminNavSection[] {
   const allowed = new Set(allowedNavHrefs);
+  const locked = new Set(lockedNavHrefs);
   return ADMIN_NAV_SECTIONS.map((section) => ({
     ...section,
     items: section.items
-      .map((item) => filterNavItem(item, allowed))
+      .map((item) => filterNavItem(item, allowed, locked))
       .filter((item): item is AdminNavItem => item != null),
   })).filter((section) => section.items.length > 0);
 }

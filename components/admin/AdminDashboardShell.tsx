@@ -19,6 +19,7 @@ import {
 export function AdminDashboardShell({
   children,
   allowedNavHrefs,
+  lockedNavHrefs = [],
   notifyNewOrders = false,
   notifyLowStock = false,
   cashGate = null,
@@ -31,6 +32,8 @@ export function AdminDashboardShell({
   children: React.ReactNode;
   /** Hrefs del menú lateral permitidos para esta sesión (incluye `/admin/cuenta` y `/`). */
   allowedNavHrefs: string[];
+  /** Módulos apagados que igual se listan para adquirirlos. */
+  lockedNavHrefs?: string[];
   notifyNewOrders?: boolean;
   notifyLowStock?: boolean;
   cashGate?: {
@@ -90,6 +93,7 @@ export function AdminDashboardShell({
       <div className="isolate flex min-h-dvh max-w-full items-stretch antialiased">
         <AdminSidebar
           allowedNavHrefs={allowedNavHrefs}
+          lockedNavHrefs={lockedNavHrefs}
           account={accountBrand}
           branchContext={branchContext}
           storefrontOrigin={storefrontOrigin}
@@ -111,7 +115,10 @@ export function AdminDashboardShell({
           </main>
         </div>
 
-        <AdminMobileBottomNav allowedNavHrefs={allowedNavHrefs} />
+        <AdminMobileBottomNav
+          allowedNavHrefs={allowedNavHrefs}
+          lockedNavHrefs={lockedNavHrefs}
+        />
 
         {mustOpen && cashGate ? (
           <CashRegisterMorningGateModal

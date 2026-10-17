@@ -11,12 +11,16 @@ import {
 
 export function AdminMobileBottomNav({
   allowedNavHrefs,
+  lockedNavHrefs = [],
 }: {
   allowedNavHrefs: string[];
+  lockedNavHrefs?: string[];
 }) {
   const pathname = usePathname();
   const scrollerRef = useRef<HTMLDivElement>(null);
-  const items = flattenAdminNavItems(filterAdminNavSections(allowedNavHrefs));
+  const items = flattenAdminNavItems(
+    filterAdminNavSections(allowedNavHrefs, lockedNavHrefs),
+  );
 
   useEffect(() => {
     const root = scrollerRef.current;
@@ -49,6 +53,7 @@ export function AdminMobileBottomNav({
                 key={item.href}
                 href={item.href}
                 prefetch
+                title={item.locked ? item.lockedPitch : undefined}
                 data-active={active ? "true" : "false"}
                 aria-current={active ? "page" : undefined}
                 className={[
@@ -68,7 +73,7 @@ export function AdminMobileBottomNav({
                   {item.icon}
                 </span>
                 <span className="w-full truncate text-[10px] font-semibold leading-tight tracking-wide">
-                  {item.label}
+                  {item.locked ? `${item.label} ·` : item.label}
                 </span>
               </Link>
             );

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { Suspense, type SVGProps } from "react";
+import { Suspense, type ReactNode, type SVGProps } from "react";
 import {
   adminNavItemActive,
   filterAdminNavSections,
@@ -278,20 +278,63 @@ function SidebarSupportCard() {
   );
 }
 
+function SidebarNavLink({
+  href,
+  locked,
+  pitch,
+  className,
+  children,
+}: {
+  href: string;
+  locked?: boolean;
+  pitch?: string;
+  className: string;
+  children: ReactNode;
+}) {
+  return (
+    <Link
+      href={href}
+      prefetch
+      title={locked ? pitch : undefined}
+      className={`group/nav relative ${className}`}
+    >
+      {children}
+      {locked ? (
+        <span className="ml-auto rounded-full bg-amber-400/15 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-amber-200">
+          Adquirir
+        </span>
+      ) : null}
+      {locked && pitch ? (
+        <span
+          role="tooltip"
+          className="pointer-events-none absolute left-full top-1/2 z-[60] ml-2 hidden w-56 -translate-y-1/2 rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-left text-[11px] font-normal leading-snug text-zinc-200 shadow-xl group-hover/nav:block"
+        >
+          {pitch}
+          <span className="mt-1 block font-semibold text-amber-200">
+            Entrá para ver cómo funciona y pedirlo por WhatsApp.
+          </span>
+        </span>
+      ) : null}
+    </Link>
+  );
+}
+
 function AdminSidebarInner({
   allowedNavHrefs,
+  lockedNavHrefs = [],
   account,
   branchContext,
   storefrontOrigin,
 }: {
   allowedNavHrefs: string[];
+  lockedNavHrefs?: string[];
   account: AccountBrand;
   branchContext: BranchContext;
   storefrontOrigin: string;
 }) {
   const pathname = usePathname();
   const allowed = new Set(allowedNavHrefs);
-  const navSectionsFiltered = filterAdminNavSections(allowedNavHrefs);
+  const navSectionsFiltered = filterAdminNavSections(allowedNavHrefs, lockedNavHrefs);
 
   const linkClass = (active: boolean) =>
     [
@@ -330,14 +373,11 @@ function AdminSidebarInner({
                 const children = item.children ?? [];
                 return (
                   <li key={`${section.title}-${item.label}`}>
-                    <Link
+                    <SidebarNavLink
                       href={item.href}
-                      prefetch
-                      className={linkClass(
-                        children.length > 0
-                          ? false
-                          : active,
-                      )}
+                      locked={item.locked}
+                      pitch={item.lockedPitch}
+                      className={linkClass(children.length > 0 ? false : active)}
                     >
                       {item.icon}
                       <span
@@ -349,7 +389,7 @@ function AdminSidebarInner({
                       >
                         {item.label}
                       </span>
-                    </Link>
+                    </SidebarNavLink>
                     {children.length > 0 ? (
                       <ul className="mt-0.5 space-y-0.5 border-l border-zinc-800 py-0.5 pl-2 ml-[1.15rem]">
                         {children.map((child) => {
@@ -359,9 +399,10 @@ function AdminSidebarInner({
                           );
                           return (
                             <li key={child.href}>
-                              <Link
+                              <SidebarNavLink
                                 href={child.href}
-                                prefetch
+                                locked={child.locked}
+                                pitch={child.lockedPitch}
                                 className={[
                                   "flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[12px] font-medium transition",
                                   childActive
@@ -370,7 +411,7 @@ function AdminSidebarInner({
                                 ].join(" ")}
                               >
                                 {child.label}
-                              </Link>
+                              </SidebarNavLink>
                             </li>
                           );
                         })}
@@ -426,11 +467,13 @@ function AdminSidebarFallback({
 
 export function AdminSidebar({
   allowedNavHrefs,
+  lockedNavHrefs = [],
   account,
   branchContext,
   storefrontOrigin,
 }: {
   allowedNavHrefs: string[];
+  lockedNavHrefs?: string[];
   account: AccountBrand;
   branchContext: BranchContext;
   storefrontOrigin: string;
@@ -439,6 +482,7 @@ export function AdminSidebar({
     <Suspense fallback={<AdminSidebarFallback account={account} />}>
       <AdminSidebarInner
         allowedNavHrefs={allowedNavHrefs}
+        lockedNavHrefs={lockedNavHrefs}
         account={account}
         branchContext={branchContext}
         storefrontOrigin={storefrontOrigin}

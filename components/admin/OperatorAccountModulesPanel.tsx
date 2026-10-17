@@ -88,7 +88,7 @@ export function OperatorAccountModulesPanel({
                     ) : null}
                   </td>
                   <td className="px-3 py-2.5 text-zinc-600 dark:text-zinc-300">
-                    {enabled ? "Visible" : "Apagado"}
+                    {enabled ? "Habilitado" : "Visible para adquirir"}
                   </td>
                   <td className="px-3 py-2.5 text-right">
                     <form action={setTenantAccountModuleAction} className="inline-flex">

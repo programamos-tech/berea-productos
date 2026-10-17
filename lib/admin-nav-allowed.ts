@@ -1,5 +1,7 @@
 import {
+  accountModuleById,
   isAccountModuleEnabled,
+  modulePreviewHref,
   type AccountModuleId,
 } from "@/lib/admin-account-modules";
 import type {
@@ -14,27 +16,27 @@ const NAV_HREFS_WITH_PERMISSION: {
   keys: PermissionKey[];
   module?: AccountModuleId;
 }[] = [
-  { href: "/admin", keys: ["inicio_reportes"] },
-  { href: "/admin/ventas", keys: ["ventas_ver"] },
-  { href: "/admin/creditos", keys: ["creditos_ver"] },
+  { href: "/admin", keys: ["inicio_reportes"], module: "reportes" },
+  { href: "/admin/ventas", keys: ["ventas_ver"], module: "ventas" },
+  { href: "/admin/creditos", keys: ["creditos_ver"], module: "creditos" },
   { href: "/admin/proveedores", keys: ["proveedores_ver"], module: "proveedores" },
-  { href: "/admin/caja", keys: ["caja_ver"] },
-  { href: "/admin/egresos", keys: ["egresos_ver"] },
-  { href: "/admin/products", keys: ["inventario_ver"] },
+  { href: "/admin/caja", keys: ["caja_ver"], module: "caja" },
+  { href: "/admin/egresos", keys: ["egresos_ver"], module: "egresos" },
+  { href: "/admin/products", keys: ["inventario_ver"], module: "inventario" },
   {
     href: "/admin/traslados",
     keys: ["stock_transferir", "inventario_ver"],
     module: "traslados",
   },
-  { href: "/admin/kits", keys: ["kits_ver"] },
-  { href: "/admin/customers", keys: ["clientes_ver"] },
-  { href: "/admin/usuarios", keys: ["roles_ver"] },
-  { href: "/admin/sucursales", keys: ["sucursales_ver"] },
-  { href: "/admin/actividades", keys: ["actividades_ver"] },
-  { href: "/admin/banners", keys: ["marketing_ver"] },
-  { href: "/admin/coupons", keys: ["marketing_ver"] },
-  { href: "/admin/envios", keys: ["ajustes_tienda_ver"] },
-  { href: "/admin/settings", keys: ["ajustes_tienda_ver"] },
+  { href: "/admin/kits", keys: ["kits_ver"], module: "kits" },
+  { href: "/admin/customers", keys: ["clientes_ver"], module: "clientes" },
+  { href: "/admin/usuarios", keys: ["roles_ver"], module: "equipo" },
+  { href: "/admin/sucursales", keys: ["sucursales_ver"], module: "sucursales" },
+  { href: "/admin/actividades", keys: ["actividades_ver"], module: "registros" },
+  { href: "/admin/banners", keys: ["marketing_ver"], module: "marketing" },
+  { href: "/admin/coupons", keys: ["marketing_ver"], module: "marketing" },
+  { href: "/admin/envios", keys: ["ajustes_tienda_ver"], module: "tienda" },
+  { href: "/admin/settings", keys: ["ajustes_tienda_ver"], module: "tienda" },
 ];
 
 /** Onboarding multi-tenant: solo propietarios. */
@@ -59,4 +61,42 @@ export function adminNavAllowedHrefList(
     out.add(TENANT_ONBOARDING_HREF);
   }
   return [...out];
+}
+
+/**
+ * Módulos apagados en la cuenta que igual se muestran en el menú,
+ * como vista para adquirirlos. El propietario y el administrador ven el catálogo;
+ * el resto, solo los que su rol ya incluiría.
+ */
+export function adminNavLockedHrefList(
+  rolePermissions: PermissionMap,
+  opts?: {
+    jobRole?: CollaboratorJobRole;
+    disabledModules?: readonly AccountModuleId[];
+  },
+): string[] {
+  const disabled = opts?.disabledModules ?? [];
+  const decisionMaker = opts?.jobRole === "owner" || opts?.jobRole === "admin";
+  const out: string[] = [];
+  for (const { href, keys, module } of NAV_HREFS_WITH_PERMISSION) {
+    if (!module || isAccountModuleEnabled(disabled, module)) continue;
+    const roleCan = keys.some((key) => Boolean(rolePermissions[key]));
+    if (!decisionMaker && !roleCan) continue;
+    if (!out.includes(href)) out.push(href);
+  }
+  return out;
+}
+
+export function lockedNavItemMeta(href: string): {
+  href: string;
+  pitch: string;
+} | null {
+  const row = NAV_HREFS_WITH_PERMISSION.find((item) => item.href === href);
+  if (!row?.module) return null;
+  const mod = accountModuleById(row.module);
+  if (!mod) return null;
+  return {
+    href: modulePreviewHref(row.module),
+    pitch: mod.pitch,
+  };
 }

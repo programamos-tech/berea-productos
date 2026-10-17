@@ -25,6 +25,8 @@ const ADMIN_AUTH_TIMEOUT_MS = 12_000;
 export type AdminSession = {
   userId: string;
   permissions: PermissionMap;
+  /** Permisos del rol, antes de apagar módulos de la cuenta. */
+  rolePermissions: PermissionMap;
   jobRole: CollaboratorJobRole;
   tenantId: string;
   tenantSlug: string;
@@ -142,13 +144,11 @@ async function loadAdminPermissionsUncached(): Promise<AdminSession | null> {
   const disabledModules = parseDisabledAccountModules(
     acting?.disabledModules ?? homeTenant?.disabled_modules,
   );
-  const permissions = applyDisabledAccountModules(
-    mergePermissionsWithDefaults(
-      row.permissions as PermissionMap | null,
-      jobRole,
-    ),
-    disabledModules,
+  const rolePermissions = mergePermissionsWithDefaults(
+    row.permissions as PermissionMap | null,
+    jobRole,
   );
+  const permissions = applyDisabledAccountModules(rolePermissions, disabledModules);
 
   const email = (user.email ?? "").trim();
   const profileName =
@@ -161,6 +161,7 @@ async function loadAdminPermissionsUncached(): Promise<AdminSession | null> {
   return {
     userId: user.id,
     permissions,
+    rolePermissions,
     jobRole,
     tenantId,
     tenantSlug,
