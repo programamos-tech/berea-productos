@@ -36,10 +36,9 @@ import {
   adminToolbarBtnIdleClass,
   adminToolbarIconBtnClass,
 } from "@/lib/admin-ui";
+import { LOW_STOCK_MAX } from "@/lib/admin-low-stock-notifications";
 
 export const dynamic = "force-dynamic";
-
-const LOW_STOCK_MAX = 4;
 
 const thClass =
   "pb-3 pr-5 text-left text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500";

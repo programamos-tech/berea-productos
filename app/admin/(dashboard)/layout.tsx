@@ -88,7 +88,8 @@ export default async function AdminDashboardLayout({
   return (
     <AdminDashboardShell
       allowedNavHrefs={allowedNavHrefs}
-      notifyNewWebOrders={perm.permissions.ventas_ver}
+      notifyNewOrders={Boolean(perm.permissions.ventas_ver)}
+      notifyLowStock={Boolean(perm.permissions.inventario_ver)}
       cashGate={cashGate}
       sessionUser={{
         displayName: perm.displayName,

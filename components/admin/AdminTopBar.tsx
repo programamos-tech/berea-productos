@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { AdminGlobalSearch } from "@/components/admin/AdminGlobalSearch";
+import { AdminNotificationBell } from "@/components/admin/AdminNotificationBell";
 import { AdminThemeToggle } from "@/components/admin/AdminThemeToggle";
 import { AdminWolfAvatar } from "@/components/admin/AdminUserAvatar";
 import { AdminUserMenu } from "@/components/admin/AdminUserMenu";
@@ -29,6 +30,7 @@ type AdminTopBarProps = {
   };
   branchContext: BranchContext;
   storefrontOrigin: string;
+  showNotifications?: boolean;
 };
 
 export function AdminTopBar({
@@ -39,6 +41,7 @@ export function AdminTopBar({
   accountBrand,
   branchContext,
   storefrontOrigin,
+  showNotifications = false,
 }: AdminTopBarProps) {
   const storeHref = storefrontPathForBranch(branchContext.active);
   const storeLabel = storefrontUrlLabel(
@@ -87,6 +90,7 @@ export function AdminTopBar({
           >
             +
           </Link>
+          {showNotifications ? <AdminNotificationBell /> : null}
           <AdminThemeToggle className="rounded-full" />
           <AdminUserMenu
             displayName={displayName}

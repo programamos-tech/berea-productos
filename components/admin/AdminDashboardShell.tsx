@@ -19,7 +19,8 @@ import {
 export function AdminDashboardShell({
   children,
   allowedNavHrefs,
-  notifyNewWebOrders = false,
+  notifyNewOrders = false,
+  notifyLowStock = false,
   cashGate = null,
   sessionUser,
   actingAccount = null,
@@ -30,7 +31,8 @@ export function AdminDashboardShell({
   children: React.ReactNode;
   /** Hrefs del menú lateral permitidos para esta sesión (incluye `/admin/cuenta` y `/`). */
   allowedNavHrefs: string[];
-  notifyNewWebOrders?: boolean;
+  notifyNewOrders?: boolean;
+  notifyLowStock?: boolean;
   cashGate?: {
     mustOpen: boolean;
     businessDayLabel: string;
@@ -80,7 +82,8 @@ export function AdminDashboardShell({
 
   return (
     <AdminOrderNotificationsProvider
-      enabled={notifyNewWebOrders && !mustOpen}
+      ordersEnabled={notifyNewOrders && !mustOpen}
+      stockEnabled={notifyLowStock && !mustOpen}
       branchId={branchContext.active.id}
     >
       <AdminAuthVisibilityKeepAlive />
@@ -101,6 +104,7 @@ export function AdminDashboardShell({
             accountBrand={accountBrand}
             branchContext={branchContext}
             storefrontOrigin={storefrontOrigin}
+            showNotifications={(notifyNewOrders || notifyLowStock) && !mustOpen}
           />
           <main className="relative z-0 min-h-0 min-w-0 max-w-full flex-1 overflow-x-clip overflow-y-visible p-3 pb-[calc(4.75rem+env(safe-area-inset-bottom,0px))] sm:p-4 md:p-6 lg:pb-6 print:bg-white print:p-8 print:pb-8">
             {children}

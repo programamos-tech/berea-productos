@@ -8,7 +8,7 @@ export type AdminWebOrderNotification = {
   read: boolean;
 };
 
-const STORAGE_KEY = "admin_web_order_notification_ids_v1";
+const STORAGE_KEY = "admin_web_order_notification_ids_v2";
 const MAX_ITEMS = 30;
 
 export function isWebStorefrontOrder(row: Record<string, unknown>): boolean {

@@ -10,6 +10,15 @@ import {
   useState,
 } from "react";
 import {
+  type LowStockNotice,
+  type LowStockRow,
+  type LowStockSeen,
+  LOW_STOCK_MAX,
+  loadLowStockSeen,
+  persistLowStockSeen,
+  reconcileLowStock,
+} from "@/lib/admin-low-stock-notifications";
+import {
   type AdminWebOrderNotification,
   loadPersistedNotificationIds,
   persistNotificationIds,
@@ -17,14 +26,17 @@ import {
 } from "@/lib/admin-web-order-notifications";
 import { isDocumentVisible, trimSet } from "@/lib/document-visibility";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-import type { RealtimeChannel } from "@supabase/supabase-js";
+import type { RealtimeChannel, SupabaseClient } from "@supabase/supabase-js";
 
 type Ctx = {
+  ordersEnabled: boolean;
+  stockEnabled: boolean;
   notifications: AdminWebOrderNotification[];
+  lowStock: LowStockNotice[];
   unreadCount: number;
   panelOpen: boolean;
   setPanelOpen: (open: boolean) => void;
-  markRead: (id: string) => void;
+  markRead: (id: string, kind: "order" | "stock") => void;
   markAllRead: () => void;
 };
 
@@ -39,52 +51,153 @@ export function useAdminOrderNotifications() {
 }
 
 const POLL_MS = 30_000;
+const STOCK_POLL_MS = 60_000;
 const SEEN_IDS_CAP = 400;
 const ORDER_SELECT =
   "id, status, customer_name, customer_email, total_cents, created_at, checkout_payment_method, wompi_reference";
 
+async function fetchLowStockRows(
+  supabase: SupabaseClient,
+  branchId: string,
+  seen: LowStockSeen,
+): Promise<LowStockRow[]> {
+  const { data, error } = await supabase
+    .from("branch_inventory")
+    .select("product_id, quantity")
+    .eq("branch_id", branchId)
+    .lte("quantity", LOW_STOCK_MAX);
+  if (error) {
+    console.error("[low-stock]", error.message);
+    return [];
+  }
+
+  const qtyById = new Map<string, number>();
+  for (const row of data ?? []) {
+    const id = String((row as { product_id?: unknown }).product_id ?? "");
+    if (!id) continue;
+    const quantity = Math.max(
+      0,
+      Math.floor(Number((row as { quantity?: unknown }).quantity ?? 0)),
+    );
+    if (quantity > LOW_STOCK_MAX) continue;
+    if (quantity === 0 && !seen[id]) continue;
+    qtyById.set(id, quantity);
+  }
+  const ids = [...qtyById.keys()];
+  if (ids.length === 0) return [];
+
+  const products: { id: string; name?: string | null; reference?: string | null }[] = [];
+  for (let i = 0; i < ids.length; i += 80) {
+    const slice = ids.slice(i, i + 80);
+    const withRef = await supabase
+      .from("products")
+      .select("id, name, reference")
+      .in("id", slice);
+    const batch = withRef.error
+      ? await supabase.from("products").select("id, name").in("id", slice)
+      : withRef;
+    if (batch.error) {
+      console.error("[low-stock] products", batch.error.message);
+      continue;
+    }
+    products.push(
+      ...((batch.data ?? []) as {
+        id: string;
+        name?: string | null;
+        reference?: string | null;
+      }[]),
+    );
+  }
+
+  const byId = new Map(products.map((p) => [String(p.id), p]));
+  return ids.map((id) => {
+    const product = byId.get(id);
+    return {
+      id,
+      name: String(product?.name ?? "Producto").trim() || "Producto",
+      reference: String(product?.reference ?? "").trim(),
+      quantity: qtyById.get(id) ?? 0,
+    };
+  });
+}
+
 export function AdminOrderNotificationsProvider({
-  enabled,
+  ordersEnabled,
+  stockEnabled,
   branchId,
   children,
 }: {
-  enabled: boolean;
+  ordersEnabled: boolean;
+  stockEnabled: boolean;
   branchId: string;
   children: React.ReactNode;
 }) {
+  const enabled = ordersEnabled || stockEnabled;
   const [notifications, setNotifications] = useState<AdminWebOrderNotification[]>([]);
+  const [lowStock, setLowStock] = useState<LowStockNotice[]>([]);
   const [panelOpen, setPanelOpen] = useState(false);
   const seenIdsRef = useRef<Set<string>>(new Set());
-  const bootstrappedRef = useRef(false);
+  const stockSeenRef = useRef<LowStockSeen>({});
 
   const pushNotification = useCallback((item: AdminWebOrderNotification) => {
-    const isNew = !seenIdsRef.current.has(item.id);
-    if (isNew) {
-      seenIdsRef.current.add(item.id);
-      trimSet(seenIdsRef.current, SEEN_IDS_CAP);
-      persistNotificationIds(seenIdsRef.current);
-    }
-
     setNotifications((prev) => {
       if (prev.some((n) => n.id === item.id)) {
-        return prev.map((n) => (n.id === item.id ? { ...n, ...item } : n));
+        return prev.map((n) =>
+          n.id === item.id ? { ...item, read: n.read } : n,
+        );
       }
-      return [{ ...item, read: false }, ...prev].slice(0, 30);
+      return [
+        { ...item, read: seenIdsRef.current.has(item.id) },
+        ...prev,
+      ].slice(0, 30);
     });
   }, []);
 
-  const markRead = useCallback((id: string) => {
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, read: true } : n)),
-    );
-  }, []);
+  const markRead = useCallback((id: string, kind: "order" | "stock") => {
+    if (kind === "order") {
+      seenIdsRef.current.add(id);
+      trimSet(seenIdsRef.current, SEEN_IDS_CAP);
+      persistNotificationIds(seenIdsRef.current);
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === id ? { ...n, read: true } : n)),
+      );
+      return;
+    }
+    setLowStock((prev) => {
+      const next = prev.map((n) => (n.id === id ? { ...n, read: true } : n));
+      const current = next.find((n) => n.id === id);
+      if (current) {
+        stockSeenRef.current = {
+          ...stockSeenRef.current,
+          [id]: { qty: current.quantity, read: true },
+        };
+        persistLowStockSeen(branchId, stockSeenRef.current);
+      }
+      return next;
+    });
+  }, [branchId]);
 
   const markAllRead = useCallback(() => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-  }, []);
+    setNotifications((prev) => {
+      for (const item of prev) seenIdsRef.current.add(item.id);
+      trimSet(seenIdsRef.current, SEEN_IDS_CAP);
+      persistNotificationIds(seenIdsRef.current);
+      return prev.map((n) => ({ ...n, read: true }));
+    });
+    setLowStock((prev) => {
+      const seen = { ...stockSeenRef.current };
+      for (const item of prev) seen[item.id] = { qty: item.quantity, read: true };
+      stockSeenRef.current = seen;
+      persistLowStockSeen(branchId, seen);
+      return prev.map((n) => ({ ...n, read: true }));
+    });
+  }, [branchId]);
 
   useEffect(() => {
-    if (!enabled) return;
+    if (!ordersEnabled) {
+      setNotifications([]);
+      return;
+    }
 
     seenIdsRef.current = loadPersistedNotificationIds();
     const supabase = createSupabaseBrowserClient();
@@ -190,8 +303,6 @@ export function AdminOrderNotificationsProvider({
     };
 
     const bootstrap = async () => {
-      if (bootstrappedRef.current) return;
-      bootstrappedRef.current = true;
       const { data } = await supabase
         .from("orders")
         .select(ORDER_SELECT)
@@ -241,23 +352,102 @@ export function AdminOrderNotificationsProvider({
       document.removeEventListener("visibilitychange", onVisibility);
       pause();
     };
-  }, [branchId, enabled, pushNotification]);
+  }, [branchId, ordersEnabled, pushNotification]);
+
+  useEffect(() => {
+    if (!stockEnabled) {
+      setLowStock([]);
+      return;
+    }
+
+    stockSeenRef.current = loadLowStockSeen(branchId);
+    const supabase = createSupabaseBrowserClient();
+    let cancelled = false;
+    let timer: number | undefined;
+    let inFlight = false;
+
+    const refresh = async () => {
+      if (cancelled || inFlight || !isDocumentVisible()) return;
+      inFlight = true;
+      try {
+        const rows = await fetchLowStockRows(
+          supabase,
+          branchId,
+          stockSeenRef.current,
+        );
+        if (cancelled) return;
+        const next = reconcileLowStock(rows, stockSeenRef.current);
+        stockSeenRef.current = next.seen;
+        persistLowStockSeen(branchId, next.seen);
+        setLowStock(next.notices);
+      } finally {
+        inFlight = false;
+      }
+    };
+
+    const start = () => {
+      if (cancelled || timer != null) return;
+      timer = window.setInterval(() => {
+        void refresh();
+      }, STOCK_POLL_MS);
+    };
+
+    const stop = () => {
+      if (timer != null) {
+        window.clearInterval(timer);
+        timer = undefined;
+      }
+    };
+
+    const onVisibility = () => {
+      if (!isDocumentVisible()) {
+        stop();
+        return;
+      }
+      void refresh();
+      start();
+    };
+
+    void refresh();
+    if (isDocumentVisible()) start();
+    document.addEventListener("visibilitychange", onVisibility);
+
+    return () => {
+      cancelled = true;
+      document.removeEventListener("visibilitychange", onVisibility);
+      stop();
+    };
+  }, [branchId, stockEnabled]);
 
   const unreadCount = useMemo(
-    () => notifications.filter((n) => !n.read).length,
-    [notifications],
+    () =>
+      notifications.filter((n) => !n.read).length +
+      lowStock.filter((n) => !n.read).length,
+    [notifications, lowStock],
   );
 
   const value = useMemo(
     () => ({
+      ordersEnabled,
+      stockEnabled,
       notifications,
+      lowStock,
       unreadCount,
       panelOpen,
       setPanelOpen,
       markRead,
       markAllRead,
     }),
-    [notifications, unreadCount, panelOpen, markRead, markAllRead],
+    [
+      ordersEnabled,
+      stockEnabled,
+      notifications,
+      lowStock,
+      unreadCount,
+      panelOpen,
+      markRead,
+      markAllRead,
+    ],
   );
 
   if (!enabled) {
