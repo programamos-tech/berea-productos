@@ -69,6 +69,43 @@ const WHATSAPP_INTEGRATIONS_URL = `${adminSupportWhatsAppUrl}?text=${encodeURICo
   "Hola, quiero cotizar una automatización o integración con Berea.",
 )}`;
 
+const WHATSAPP_CUSTOM_URL = `${adminSupportWhatsAppUrl}?text=${encodeURIComponent(
+  "Hola, quiero cotizar un desarrollo a la medida para mi negocio.",
+)}`;
+
+const customOffers = [
+  {
+    icon: "calendar",
+    title: "Agendamiento",
+    text: "Citas, turnos y reservas para tu negocio, con recordatorios para que no se te escape nadie.",
+  },
+  {
+    icon: "bag",
+    title: "Tienda virtual",
+    text: "Un catálogo en línea para que te compren desde el celular, con tus productos y tus precios.",
+  },
+  {
+    icon: "globe",
+    title: "Sitio web",
+    text: "Una página de tu negocio: quién eres, qué ofreces y cómo te contactan.",
+  },
+  {
+    icon: "layers",
+    title: "Integraciones",
+    text: "Conectamos las herramientas que ya usas para que la información no se quede en un solo lado.",
+  },
+  {
+    icon: "bolt",
+    title: "Automatizaciones",
+    text: "Avisos, reportes y tareas repetitivas que se hacen solas, sin que tengas que estar encima.",
+  },
+  {
+    icon: "plus",
+    title: "Lo que necesites",
+    text: "Si no está en la lista, cuéntanos. Lo diseñamos contigo, a la medida de tu negocio.",
+  },
+];
+
 const team = [
   {
     name: "Andrew",
@@ -174,6 +211,7 @@ export default function BereaLandingPage() {
             <nav className="links" id="site-nav" aria-label="Principal">
               <a className="text-link" href="#inicio">Inicio</a>
               <a className="text-link" href="#recorrido">Qué incluye</a>
+              <a className="text-link" href="#medida">A la medida</a>
               <a className="text-link" href="#cotizar">Cotizar</a>
               <a className="text-link" href="#preguntas">Preguntas</a>
               <a className="text-link links-login" href={LOGIN_URL}>Ingresar</a>
@@ -378,6 +416,39 @@ export default function BereaLandingPage() {
           </div>
         </section>
 
+        <section className="custom" id="medida">
+          <div className="wrap">
+            <div className="section-head section-head-center">
+              <p className="eyebrow">A la medida</p>
+              <h2>Hacemos lo que tu negocio necesite</h2>
+              <p className="lead">
+                Lo de arriba es el sistema para comerciantes. Si necesitas otra cosa, la construimos:
+                un agendamiento, una tienda virtual, un sitio web, integraciones o automatizaciones.
+              </p>
+            </div>
+
+            <ul className="custom-grid">
+              {customOffers.map((item) => (
+                <li className={`custom-card${item.icon === "plus" ? " custom-card-open" : ""}`} key={item.title}>
+                  <span className="custom-ico" aria-hidden="true"><Icon id={item.icon} /></span>
+                  <h3>{item.title}</h3>
+                  <p>{item.text}</p>
+                </li>
+              ))}
+            </ul>
+
+            <div className="quote">
+              <div>
+                <h3>Cuéntanos qué necesitas</h3>
+                <p>Nos escribes por WhatsApp, entendemos tu negocio y te enviamos una propuesta.</p>
+              </div>
+              <WhatsAppLink className="btn btn-primary btn-lg" href={WHATSAPP_CUSTOM_URL}>
+                <Icon id="whatsapp" /> Cotizar a la medida
+              </WhatsAppLink>
+            </div>
+          </div>
+        </section>
+
         <section className="pricing" id="cotizar">
           <div className="wrap">
             <div className="section-head">
@@ -490,6 +561,7 @@ export default function BereaLandingPage() {
           <div>
             <h3>Berea</h3>
             <a href="#recorrido">Qué incluye</a>
+            <a href="#medida">A la medida</a>
             <a href="#proceso">Cómo empezamos</a>
             <a href="#cotizar">Cotizar</a>
             <a href="#preguntas">Preguntas</a>

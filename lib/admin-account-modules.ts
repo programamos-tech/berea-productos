@@ -15,6 +15,7 @@ export const ACCOUNT_MODULE_IDS = [
   "caja",
   "ventas",
   "creditos",
+  "proveedores",
   "egresos",
   "inventario",
   "traslados",
@@ -61,9 +62,15 @@ export const ACCOUNT_MODULES: AccountModuleDef[] = [
     permissionKeys: ["creditos_ver", "creditos_abonar"],
   },
   {
+    id: "proveedores",
+    label: "Proveedores",
+    hint: "Deudas con proveedores y abonos",
+    permissionKeys: ["proveedores_ver"],
+  },
+  {
     id: "egresos",
     label: "Gastos",
-    permissionKeys: ["egresos_ver", "egresos_crear", "proveedores_ver"],
+    permissionKeys: ["egresos_ver", "egresos_crear"],
   },
   {
     id: "inventario",

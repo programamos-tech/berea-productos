@@ -1,11 +1,11 @@
-import { redirect } from "next/navigation";
+import { requireAdminPermission } from "@/lib/require-admin-permission";
 import type { ReactNode } from "react";
 
-/** Módulo oculto temporalmente: no accesible por URL ni sidebar. */
 export default async function ProveedoresLayout({
-  children: _children,
+  children,
 }: {
   children: ReactNode;
 }) {
-  redirect("/admin");
+  await requireAdminPermission("proveedores_ver");
+  return children;
 }

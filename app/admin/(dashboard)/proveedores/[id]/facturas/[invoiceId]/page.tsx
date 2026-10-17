@@ -141,9 +141,9 @@ export default async function AdminProveedorFacturaDetailPage({ params, searchPa
             </Link>
           </p>
           <h1 className="mt-2 text-xl font-semibold text-zinc-900 dark:text-zinc-100 sm:text-2xl">
-            ID de factura · {invoiceId.slice(0, 6)}
+            Deuda · {inv.folio}
           </h1>
-          <p className="mt-1 font-mono text-sm text-zinc-600 dark:text-zinc-300">Folio {inv.folio}</p>
+          <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-300">{supplier.name}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <SupplierAbonoForm
@@ -151,19 +151,11 @@ export default async function AdminProveedorFacturaDetailPage({ params, searchPa
             supplierId={supplierId}
             pendingCents={pending}
           />
-          <button
-            type="button"
-            disabled
-            className="rounded-lg border border-zinc-200 bg-white px-4 py-2.5 text-sm font-semibold text-zinc-400 dark:border-zinc-700 dark:bg-zinc-800/80 dark:text-zinc-500"
-            title="Próximamente"
-          >
-            Editar
-          </button>
           {!inv.is_cancelled ? (
             <SupplierCancelInvoiceButton supplierId={supplierId} invoiceId={invoiceId} />
           ) : null}
           <Link
-            href={`/admin/proveedores/${supplierId}`}
+            href="/admin/proveedores"
             className="rounded-lg border border-zinc-200 bg-white px-4 py-2.5 text-sm font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:bg-zinc-700"
           >
             Volver
@@ -181,7 +173,7 @@ export default async function AdminProveedorFacturaDetailPage({ params, searchPa
         <aside className="space-y-4 lg:col-span-4">
           <div className={`${detailCard} p-5`}>
             <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-400 dark:text-zinc-500">
-              Estado de la factura
+              Estado de la deuda
             </p>
             <div className="mt-3">
               <SupplierInvoiceStatusPill
@@ -261,16 +253,11 @@ export default async function AdminProveedorFacturaDetailPage({ params, searchPa
             </dl>
           </section>
 
+          {lines.length > 0 ? (
           <section className={`${detailCard} p-6`}>
             <h2 className="text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-400 dark:text-zinc-500">
               Productos / ítems
             </h2>
-            {lines.length === 0 ? (
-              <p className="mt-4 text-sm text-zinc-500 dark:text-zinc-400">
-                Esta factura no tiene líneas de compra registradas (facturas anteriores a ítems o migración
-                pendiente).
-              </p>
-            ) : (
               <div className="mt-4 overflow-x-auto">
                 <table className="w-full min-w-[640px] border-collapse text-left text-sm">
                   <thead>
@@ -326,8 +313,8 @@ export default async function AdminProveedorFacturaDetailPage({ params, searchPa
                   ) : null}
                 </table>
               </div>
-            )}
           </section>
+          ) : null}
 
           <section className={`${detailCard} p-6`}>
             <h2 className="text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-400 dark:text-zinc-500">

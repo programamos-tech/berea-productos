@@ -148,7 +148,11 @@ export const PERMISSION_MODULES: PermissionModule[] = [
       { key: "egresos_crear", label: "Crear gastos" },
     ],
   },
-  // Módulo Proveedores oculto del panel (permiso se conserva en DB por compatibilidad).
+  {
+    id: "proveedores",
+    label: "Proveedores",
+    items: [{ key: "proveedores_ver", label: "Ver deudas y registrar abonos" }],
+  },
   {
     id: "inventario",
     label: "Inventario",

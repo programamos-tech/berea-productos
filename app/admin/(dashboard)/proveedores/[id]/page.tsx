@@ -75,7 +75,7 @@ export default async function AdminProveedorDetailPage({ params, searchParams }:
   });
 
   const nFacturas = invoices.length;
-  const subtitle = `${nFacturas} ${nFacturas === 1 ? "factura" : "facturas"} · Por pagar ${formatCop(pendingTotal)}`;
+  const subtitle = `${nFacturas} ${nFacturas === 1 ? "deuda" : "deudas"} · Por pagar ${formatCop(pendingTotal)}`;
 
   const s = supplier as {
     id: string;
@@ -120,10 +120,10 @@ export default async function AdminProveedorDetailPage({ params, searchParams }:
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Link
-            href={`/admin/proveedores/${id}/nueva-factura`}
-            className="inline-flex items-center justify-center rounded-lg border border-rose-950 bg-rose-950 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-rose-900 hover:border-rose-900 dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-white"
+            href={`/admin/proveedores/nueva-deuda?proveedor=${id}`}
+            className="inline-flex items-center justify-center rounded-lg border border-[var(--admin-coral)] bg-[var(--admin-coral)] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:border-[var(--admin-coral-hover)] hover:bg-[var(--admin-coral-hover)]"
           >
-            + Nueva factura
+            Nueva deuda
           </Link>
           <Link
             href="/admin/proveedores"
@@ -149,7 +149,7 @@ export default async function AdminProveedorDetailPage({ params, searchParams }:
             name="q"
             type="search"
             defaultValue={q}
-            placeholder="Buscar por factura…"
+            placeholder="Buscar por folio…"
             className="w-full rounded-lg border border-zinc-200 bg-white py-2 pl-10 pr-3 text-sm text-zinc-900 placeholder:text-zinc-400 shadow-[0_1px_0_0_rgb(24_24_27/0.04)] focus:border-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-300/50 dark:border-zinc-700 dark:bg-zinc-950/80 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:shadow-none dark:focus:border-zinc-500 dark:focus:ring-zinc-600/40"
           />
         </div>
@@ -177,7 +177,7 @@ export default async function AdminProveedorDetailPage({ params, searchParams }:
             <thead>
               <tr className="border-b border-zinc-100 bg-zinc-50/80 dark:border-zinc-800 dark:bg-zinc-950/60">
                 <th className="px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500 dark:text-zinc-400">
-                  Factura
+                  Folio
                 </th>
                 <th className="px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500 dark:text-zinc-400">
                   Emisión · hora
@@ -201,7 +201,7 @@ export default async function AdminProveedorDetailPage({ params, searchParams }:
               {filtered.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="px-3 py-8 text-center text-sm text-zinc-500 dark:text-zinc-400">
-                    No hay facturas con ese criterio.
+                    No hay deudas con ese criterio.
                   </td>
                 </tr>
               ) : (
@@ -222,7 +222,7 @@ export default async function AdminProveedorDetailPage({ params, searchParams }:
                     <ClickableTableRow
                       key={r.id}
                       href={`/admin/proveedores/${id}/facturas/${r.id}`}
-                      ariaLabel={`Ver factura ${r.folio}`}
+                      ariaLabel={`Ver deuda ${r.folio}`}
                     >
                       <td className="px-3 py-2 font-mono text-xs text-zinc-800 dark:text-zinc-200">{r.folio}</td>
                       <td className="px-3 py-2 text-xs text-zinc-600 dark:text-zinc-300">

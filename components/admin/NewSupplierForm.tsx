@@ -28,8 +28,7 @@ export function NewSupplierHeader() {
           Nuevo proveedor
         </h1>
         <p className="mt-2 max-w-2xl text-sm text-zinc-500 dark:text-zinc-400">
-          Registra un proveedor para asignarle facturas de compra, saldos pendientes y abonos desde
-          Facturas de proveedores.
+          Registrá el proveedor. Después cargás la deuda y vas abonando hasta saldarla.
         </p>
       </div>
       <Link

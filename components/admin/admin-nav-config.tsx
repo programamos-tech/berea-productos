@@ -82,6 +82,18 @@ export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
         ),
       },
       {
+        href: "/admin/proveedores",
+        label: "Proveedores",
+        icon: (
+          <Icon>
+            <path d="M3 7h11v8H3z" />
+            <path d="M14 10h4l3 3v2h-7" />
+            <circle cx="7" cy="17" r="1.5" />
+            <circle cx="17" cy="17" r="1.5" />
+          </Icon>
+        ),
+      },
+      {
         href: "/admin/egresos",
         label: "Gastos",
         icon: (

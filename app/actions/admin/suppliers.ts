@@ -71,6 +71,59 @@ type ParsedSupplierLine = {
   vatRateBps?: number;
 };
 
+export async function createSupplierDebtAction(formData: FormData) {
+  await assertActionPermission("proveedores_ver");
+  const supabase = await createSupabaseServerClient();
+  const supplierId = String(formData.get("supplier_id") ?? "").trim();
+  const issueDateRaw = String(formData.get("issue_date") ?? "").trim().slice(0, 10);
+  const issueDate = /^\d{4}-\d{2}-\d{2}$/.test(issueDateRaw)
+    ? issueDateRaw
+    : todayYmdInReportStore();
+  const notes = String(formData.get("notes") ?? "").trim() || null;
+  const totalCents = Math.max(
+    0,
+    Math.floor(Number.parseInt(String(formData.get("amount_cents") ?? "0"), 10) || 0),
+  );
+  const back = supplierId
+    ? `/admin/proveedores/nueva-deuda?proveedor=${encodeURIComponent(supplierId)}`
+    : "/admin/proveedores/nueva-deuda";
+
+  if (!supplierId || totalCents <= 0) {
+    redirect(`${back}${back.includes("?") ? "&" : "?"}error=validation`);
+  }
+
+  const { data: supplier } = await supabase
+    .from("suppliers")
+    .select("id")
+    .eq("id", supplierId)
+    .maybeSingle();
+  if (!supplier) redirect(`${back}&error=validation`);
+
+  const id = randomUUID();
+  const folio = supplierInvoiceFolioFromIssueDate(issueDate, id);
+  const { data: ins, error: insErr } = await supabase
+    .from("supplier_invoices")
+    .insert({
+      id,
+      supplier_id: supplierId,
+      folio,
+      total_cents: totalCents,
+      issue_date: issueDate,
+      notes,
+    })
+    .select("id")
+    .single();
+
+  if (insErr || !ins?.id) redirect(`${back}&error=db`);
+  if (!(await verifyInsertedRowInDev(supabase, "supplier_invoices", ins.id))) {
+    await supabase.from("supplier_invoices").delete().eq("id", ins.id);
+    redirect(`${back}&error=db`);
+  }
+
+  revalidateSupplierPaths(supplierId, ins.id);
+  redirect(`/admin/proveedores/${supplierId}/facturas/${ins.id}`);
+}
+
 export async function createSupplierInvoiceAction(formData: FormData) {
   await assertActionPermission("proveedores_ver");
   const supabase = await createSupabaseServerClient();
