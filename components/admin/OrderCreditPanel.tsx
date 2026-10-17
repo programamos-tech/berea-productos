@@ -43,6 +43,7 @@ export function OrderCreditPanel({
   variant = "full",
   errorCode,
   canViewCredits = true,
+  readOnly = false,
 }: {
   orderId: string;
   totalCents: number;
@@ -52,6 +53,8 @@ export function OrderCreditPanel({
   variant?: "full" | "summary";
   errorCode?: string | null;
   canViewCredits?: boolean;
+  /** Muestra el botón de abono sin dejar registrarlo. */
+  readOnly?: boolean;
 }) {
   const paidCents = sumOrderCreditPaidCents(payments);
   const pendingCents = orderCreditPendingCents(totalCents, paidCents);
@@ -84,6 +87,10 @@ export function OrderCreditPanel({
           >
             Ver en Créditos
           </Link>
+        ) : readOnly && pendingCents > 0 && uiStatus === "pending" ? (
+          <span className="inline-flex cursor-default items-center justify-center rounded-lg border border-[var(--admin-coral)] bg-[var(--admin-coral)] px-4 py-2.5 text-sm font-semibold text-white opacity-80 shadow-sm">
+            Registrar abono
+          </span>
         ) : canRegister && pendingCents > 0 && uiStatus === "pending" ? (
           <OrderCreditAbonoForm orderId={orderId} pendingCents={pendingCents} />
         ) : null}
@@ -166,7 +173,7 @@ export function OrderCreditPanel({
                       </p>
                     ) : null}
                   </div>
-                  {!p.isCancelled && orderStatus !== "cancelled" ? (
+                  {!readOnly && !p.isCancelled && orderStatus !== "cancelled" ? (
                     <OrderCreditCancelButton
                       paymentId={p.id}
                       amountCents={p.amountCents}

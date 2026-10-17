@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Eye, RefreshCw } from "lucide-react";
 import { AdminModuleHeader, type AdminModuleIcon } from "@/components/admin/AdminModuleHeader";
 import { CreditosTable } from "@/components/admin/CreditosTable";
@@ -43,7 +44,7 @@ const SUBTITLES: Partial<Record<AccountModuleId, string>> = {
 const thClass =
   "pb-2 pr-4 text-left text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500";
 
-const MOCK_CREDITS: CreditListRow[] = [
+export const MOCK_CREDITS: CreditListRow[] = [
   {
     id: "11111111-1111-4111-8111-111111111111",
     customerId: null,
@@ -260,7 +261,15 @@ function LockedFilters({
   );
 }
 
-function LockedTable({ columns, rows }: { columns: string[]; rows: string[][] }) {
+function LockedTable({
+  moduleId,
+  columns,
+  rows,
+}: {
+  moduleId: string;
+  columns: string[];
+  rows: string[][];
+}) {
   return (
     <div className="min-w-0 overflow-x-auto">
       <table className="min-w-full text-left text-sm">
@@ -275,7 +284,7 @@ function LockedTable({ columns, rows }: { columns: string[]; rows: string[][] })
           </tr>
         </thead>
         <tbody>
-          {rows.map((row) => (
+          {rows.map((row, index) => (
             <tr key={row.join("|")} className="border-t border-zinc-100 dark:border-zinc-800">
               {row.map((cell, index) => (
                 <td
@@ -290,9 +299,13 @@ function LockedTable({ columns, rows }: { columns: string[]; rows: string[][] })
                 </td>
               ))}
               <td className="py-2.5 pr-0 text-right">
-                <span className="inline-flex size-8 items-center justify-center rounded-lg text-zinc-500 dark:text-zinc-400">
+                <Link
+                  href={`/admin/modulos/${moduleId}/${index}`}
+                  className="inline-flex size-8 items-center justify-center rounded-lg text-zinc-500 transition hover:bg-zinc-50 hover:text-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+                  aria-label={`Ver detalle de ${row[0] ?? "registro"}`}
+                >
                   <Eye className="size-4" strokeWidth={2} />
-                </span>
+                </Link>
               </td>
             </tr>
           ))}
@@ -340,7 +353,7 @@ export function AccountModulePreview({
         <>
           <LockedFilters search={list.search} estado={list.estado} />
           <section className="min-h-0 border-t border-zinc-200/70 pt-4 dark:border-zinc-800">
-            <LockedTable columns={list.columns} rows={list.rows} />
+            <LockedTable moduleId={mod.id} columns={list.columns} rows={list.rows} />
           </section>
         </>
       ) : null}

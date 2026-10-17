@@ -102,6 +102,7 @@ export function SupplierOrderInvoiceView({
   payments,
   attachments,
   errorMessage,
+  preview = false,
 }: {
   supplierId: string;
   supplierName: string;
@@ -122,11 +123,15 @@ export function SupplierOrderInvoiceView({
   payments: SupplierOrderPayment[];
   attachments: SupplierOrderAttachment[];
   errorMessage: string | null;
+  /** Misma pantalla, sin guardar cambios. */
+  preview?: boolean;
 }) {
+  const listHref = preview ? "/admin/modulos/proveedores" : "/admin/proveedores";
   const receipt: SupplierReceiptStatus = isSupplierReceiptStatus(receiptStatus)
     ? receiptStatus
     : "sent";
-  const canEnterQty = !cancelled && (receipt === "receiving" || receipt === "received");
+  const canEnterQty =
+    !cancelled && (receipt === "receiving" || receipt === "received");
   const hasPendingQty = lines.some((line) => line.receivedQuantity < line.quantity);
   const receiveFormId = `receive-${invoiceId}`;
 
@@ -141,7 +146,7 @@ export function SupplierOrderInvoiceView({
       <header className="flex flex-wrap items-center justify-between gap-2 gap-y-2">
         <div className="min-w-0">
           <p className="text-[11px] text-zinc-500">
-            <Link href="/admin/proveedores" className="hover:text-zinc-800 dark:hover:text-zinc-200">
+            <Link href={listHref} className="hover:text-zinc-800 dark:hover:text-zinc-200">
               Proveedores
             </Link>
             <span className="mx-1.5 text-zinc-400">/</span>
@@ -160,12 +165,18 @@ export function SupplierOrderInvoiceView({
             </span>
             <span className="inline-flex min-w-0 items-center gap-1.5">
               <IconUser className={metaIconClass} />
-              <Link
-                href={`/admin/proveedores/${supplierId}`}
-                className="min-w-0 truncate font-medium text-zinc-800 underline-offset-2 transition hover:text-zinc-950 hover:underline dark:text-zinc-200 dark:hover:text-white"
-              >
-                {supplierName}
-              </Link>
+              {preview ? (
+                <span className="min-w-0 truncate font-medium text-zinc-800 dark:text-zinc-200">
+                  {supplierName}
+                </span>
+              ) : (
+                <Link
+                  href={`/admin/proveedores/${supplierId}`}
+                  className="min-w-0 truncate font-medium text-zinc-800 underline-offset-2 transition hover:text-zinc-950 hover:underline dark:text-zinc-200 dark:hover:text-white"
+                >
+                  {supplierName}
+                </Link>
+              )}
             </span>
             {supplierAddress ? (
               <>
@@ -208,7 +219,7 @@ export function SupplierOrderInvoiceView({
           {notes ? <p className="mt-1.5 text-sm text-zinc-600 dark:text-zinc-300">{notes}</p> : null}
         </div>
         <Link
-          href="/admin/proveedores"
+          href={listHref}
           className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-zinc-300 bg-white text-zinc-700 transition hover:border-zinc-400 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200 dark:hover:border-zinc-600 dark:hover:bg-zinc-800"
           title="Volver"
           aria-label="Volver a proveedores"
@@ -221,7 +232,7 @@ export function SupplierOrderInvoiceView({
 
       <div className="flex flex-col gap-6 border-t border-zinc-200/70 pt-4 dark:border-zinc-800 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(18rem,20rem)] lg:items-start lg:gap-10 xl:gap-12">
         <section className="reports-chart-reveal min-w-0">
-          {canEnterQty && hasPendingQty ? (
+          {!preview && canEnterQty && hasPendingQty ? (
             <form id={receiveFormId} action={receiveSupplierOrderStockAction} className="hidden">
               <input type="hidden" name="invoice_id" value={invoiceId} />
               <input type="hidden" name="supplier_id" value={supplierId} />
@@ -272,7 +283,7 @@ export function SupplierOrderInvoiceView({
                                 Malo
                               </span>
                             ) : null}
-                            {!cancelled ? (
+                            {!preview && !cancelled ? (
                               <form action={toggleSupplierLineDefectAction} className="mt-1">
                                 <input type="hidden" name="invoice_id" value={invoiceId} />
                                 <input type="hidden" name="supplier_id" value={supplierId} />
@@ -299,12 +310,14 @@ export function SupplierOrderInvoiceView({
                             <td className="py-3 pr-4 text-right align-middle">
                               {remaining > 0 ? (
                                 <input
-                                  form={receiveFormId}
+                                  form={preview ? undefined : receiveFormId}
                                   name={`receive_${line.id}`}
                                   type="number"
                                   min={0}
                                   max={remaining}
                                   defaultValue={suggested}
+                                  readOnly={preview}
+                                  disabled={preview}
                                   aria-label={`Cantidad a ingresar de ${line.name}`}
                                   className="ml-auto block w-16 rounded-lg border border-zinc-300 bg-white px-2 py-1.5 text-right text-sm font-medium tabular-nums text-zinc-800 outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 dark:border-zinc-600 dark:bg-zinc-950 dark:text-zinc-100"
                                 />
@@ -327,7 +340,7 @@ export function SupplierOrderInvoiceView({
               </div>
             </>
           )}
-          {!cancelled ? <SupplierOrderAddProducts invoiceId={invoiceId} supplierId={supplierId} /> : null}
+          {!preview && !cancelled ? <SupplierOrderAddProducts invoiceId={invoiceId} supplierId={supplierId} /> : null}
         </section>
 
         <aside className="reports-chart-reveal shrink-0 space-y-5 border-t border-zinc-200/70 pt-4 dark:border-zinc-800 lg:sticky lg:top-3 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0 xl:pl-10 dark:lg:border-zinc-800">
@@ -350,7 +363,7 @@ export function SupplierOrderInvoiceView({
                 invoiceId={invoiceId}
                 supplierId={supplierId}
                 currentStatus={receipt}
-                disabled={cancelled}
+                disabled={cancelled || preview}
               />
             </div>
             {canEnterQty && hasPendingQty ? (
@@ -359,9 +372,10 @@ export function SupplierOrderInvoiceView({
                   Ajustá la columna A ingresar y sumalas al inventario de esta sucursal.
                 </p>
                 <button
-                  type="submit"
-                  form={receiveFormId}
-                  className="inline-flex w-full items-center justify-center rounded-lg border border-[var(--admin-coral)] bg-[var(--admin-coral)] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:border-[var(--admin-coral-hover)] hover:bg-[var(--admin-coral-hover)]"
+                  type={preview ? "button" : "submit"}
+                  form={preview ? undefined : receiveFormId}
+                  disabled={preview}
+                  className="inline-flex w-full items-center justify-center rounded-lg border border-[var(--admin-coral)] bg-[var(--admin-coral)] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:border-[var(--admin-coral-hover)] hover:bg-[var(--admin-coral-hover)] disabled:cursor-default disabled:opacity-80"
                 >
                   Ingresar al inventario
                 </button>
@@ -369,7 +383,7 @@ export function SupplierOrderInvoiceView({
             ) : null}
           </div>
 
-          {!cancelled ? (
+          {!preview && !cancelled ? (
             <SupplierCancelInvoiceButton supplierId={supplierId} invoiceId={invoiceId} />
           ) : null}
 
@@ -411,6 +425,7 @@ export function SupplierOrderInvoiceView({
                       ) : (
                         <span className="min-w-0 flex-1 truncate text-xs text-zinc-600">{label}</span>
                       )}
+                      {!preview ? (
                       <form action={deleteSupplierInvoiceAttachmentAction}>
                         <input type="hidden" name="attachment_id" value={file.id} />
                         <input type="hidden" name="invoice_id" value={invoiceId} />
@@ -420,12 +435,13 @@ export function SupplierOrderInvoiceView({
                           Quitar
                         </button>
                       </form>
+                      ) : null}
                     </li>
                   );
                 })}
               </ul>
             )}
-            {!cancelled && attachments.length < 5 ? (
+            {!preview && !cancelled && attachments.length < 5 ? (
               <form action={uploadSupplierInvoiceAttachmentAction} className="mt-2 space-y-2">
                 <input type="hidden" name="invoice_id" value={invoiceId} />
                 <input type="hidden" name="supplier_id" value={supplierId} />
@@ -449,9 +465,10 @@ export function SupplierOrderInvoiceView({
         invoiceId={invoiceId}
         supplierId={supplierId}
         totalCents={totalCents}
-        cancelled={cancelled}
-        payments={payments}
-      />
+          cancelled={cancelled}
+          payments={payments}
+          readOnly={preview}
+        />
     </div>
   );
 }

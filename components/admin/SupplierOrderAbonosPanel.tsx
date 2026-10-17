@@ -165,12 +165,14 @@ export function SupplierOrderAbonosPanel({
   totalCents,
   cancelled,
   payments,
+  readOnly = false,
 }: {
   invoiceId: string;
   supplierId: string;
   totalCents: number;
   cancelled: boolean;
   payments: AbonoRow[];
+  readOnly?: boolean;
 }) {
   const router = useRouter();
   const [cancelId, setCancelId] = useState<string | null>(null);
@@ -198,12 +200,16 @@ export function SupplierOrderAbonosPanel({
             </span>
           </p>
         </div>
-        {!cancelled ? (
+        {!cancelled && !readOnly ? (
           <SupplierAbonoForm
             invoiceId={invoiceId}
             supplierId={supplierId}
             pendingCents={pendingCents}
           />
+        ) : readOnly && !cancelled && pendingCents > 0 ? (
+          <span className="inline-flex cursor-default items-center justify-center rounded-lg border border-[var(--admin-coral)] bg-[var(--admin-coral)] px-4 py-2.5 text-sm font-semibold text-white opacity-80 shadow-sm">
+            Registrar abono
+          </span>
         ) : null}
       </div>
 
@@ -269,7 +275,7 @@ export function SupplierOrderAbonosPanel({
                     </p>
                   ) : null}
                 </div>
-                {!pay.isCancelled && !cancelled ? (
+                {!readOnly && !pay.isCancelled && !cancelled ? (
                   <button
                     type="button"
                     onClick={() => setCancelId(pay.id)}

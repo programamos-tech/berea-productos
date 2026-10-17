@@ -300,7 +300,7 @@ function SidebarNavLink({
     >
       {children}
       {locked ? (
-        <span className="ml-auto rounded-full bg-amber-400/15 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-amber-200">
+        <span className="ml-auto rounded-full border border-white/15 bg-white/5 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-zinc-300">
           Adquirir
         </span>
       ) : null}
@@ -310,7 +310,7 @@ function SidebarNavLink({
           className="pointer-events-none absolute left-full top-1/2 z-[60] ml-2 hidden w-56 -translate-y-1/2 rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-left text-[11px] font-normal leading-snug text-zinc-200 shadow-xl group-hover/nav:block"
         >
           {pitch}
-          <span className="mt-1 block font-semibold text-amber-200">
+          <span className="mt-1 block font-semibold text-zinc-100">
             Entrá para ver cómo funciona y pedirlo por WhatsApp.
           </span>
         </span>
