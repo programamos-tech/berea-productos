@@ -236,6 +236,7 @@ export function SupplierOrderInvoiceView({
                   <colgroup>
                     <col className="w-auto" />
                     <col className="w-14" />
+                    {canEnterQty && hasPendingQty ? <col className="w-[6.5rem]" /> : null}
                     <col className="w-[7.5rem]" />
                     <col className="w-[9.5rem]" />
                   </colgroup>
@@ -243,6 +244,9 @@ export function SupplierOrderInvoiceView({
                     <tr className="border-b border-zinc-200/70 dark:border-zinc-800">
                       <th className={th}>Producto</th>
                       <th className={`${th} text-right`}>Ud</th>
+                      {canEnterQty && hasPendingQty ? (
+                        <th className={`${th} text-right`}>A ingresar</th>
+                      ) : null}
                       <th className={`${th} text-right`}>P. unit.</th>
                       <th className={`${th} !pr-6 text-right sm:!pr-8`}>Subtotal</th>
                     </tr>
@@ -290,19 +294,25 @@ export function SupplierOrderInvoiceView({
                                 {line.receivedQuantity} ingresadas
                               </span>
                             ) : null}
-                            {canEnterQty && remaining > 0 ? (
-                              <input
-                                form={receiveFormId}
-                                name={`receive_${line.id}`}
-                                type="number"
-                                min={0}
-                                max={remaining}
-                                defaultValue={suggested}
-                                aria-label={`Cantidad a ingresar de ${line.name}`}
-                                className="mt-1.5 w-16 rounded-lg border border-zinc-300 bg-white px-2 py-1 text-right text-xs font-medium text-zinc-800 outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 dark:border-zinc-600 dark:bg-zinc-950 dark:text-zinc-100"
-                              />
-                            ) : null}
                           </td>
+                          {canEnterQty && hasPendingQty ? (
+                            <td className="py-3 pr-4 text-right align-middle">
+                              {remaining > 0 ? (
+                                <input
+                                  form={receiveFormId}
+                                  name={`receive_${line.id}`}
+                                  type="number"
+                                  min={0}
+                                  max={remaining}
+                                  defaultValue={suggested}
+                                  aria-label={`Cantidad a ingresar de ${line.name}`}
+                                  className="ml-auto block w-16 rounded-lg border border-zinc-300 bg-white px-2 py-1.5 text-right text-sm font-medium tabular-nums text-zinc-800 outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 dark:border-zinc-600 dark:bg-zinc-950 dark:text-zinc-100"
+                                />
+                              ) : (
+                                <span className="text-sm text-zinc-400">—</span>
+                              )}
+                            </td>
+                          ) : null}
                           <td className="whitespace-nowrap py-3 pr-4 text-right tabular-nums text-zinc-700 dark:text-zinc-300">
                             {formatCop(line.unitPriceCents)}
                           </td>
@@ -315,15 +325,6 @@ export function SupplierOrderInvoiceView({
                   </tbody>
                 </table>
               </div>
-              {canEnterQty && hasPendingQty ? (
-                <button
-                  type="submit"
-                  form={receiveFormId}
-                  className="mt-4 inline-flex items-center justify-center rounded-lg border border-emerald-600 bg-emerald-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-emerald-700"
-                >
-                  Ingresar al inventario
-                </button>
-              ) : null}
             </>
           )}
           {!cancelled ? <SupplierOrderAddProducts invoiceId={invoiceId} supplierId={supplierId} /> : null}
@@ -352,10 +353,19 @@ export function SupplierOrderInvoiceView({
                 disabled={cancelled}
               />
             </div>
-            {canEnterQty ? (
-              <p className="mt-2 text-xs leading-relaxed text-zinc-500">
-                Escribí las unidades que llegaron y ingresalas al inventario de esta sucursal.
-              </p>
+            {canEnterQty && hasPendingQty ? (
+              <div className="mt-3 space-y-2">
+                <p className="text-xs leading-relaxed text-zinc-500">
+                  Ajustá la columna A ingresar y sumalas al inventario de esta sucursal.
+                </p>
+                <button
+                  type="submit"
+                  form={receiveFormId}
+                  className="inline-flex w-full items-center justify-center rounded-lg border border-[var(--admin-coral)] bg-[var(--admin-coral)] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:border-[var(--admin-coral-hover)] hover:bg-[var(--admin-coral-hover)]"
+                >
+                  Ingresar al inventario
+                </button>
+              </div>
             ) : null}
           </div>
 
