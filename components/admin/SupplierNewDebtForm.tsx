@@ -1,8 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
-import { createSupplierDebtAction } from "@/app/actions/admin/suppliers";
+import { useEffect, useState } from "react";
+import { useFormStatus } from "react-dom";
+import { Loader2 } from "lucide-react";
+import {
+  createSupplierDebtAction,
+  createSupplierFromOrderAction,
+} from "@/app/actions/admin/suppliers";
 import {
   AdminFormSubmitButton,
   adminPrimarySubmitButtonClass,
@@ -19,6 +24,155 @@ export type SupplierDebtOption = { id: string; name: string };
 const cardClass =
   "rounded-xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-700/90 dark:bg-zinc-900 dark:shadow-none sm:p-6";
 
+function ModalSubmitButton() {
+  const { pending } = useFormStatus();
+  return (
+    <button
+      type="submit"
+      disabled={pending}
+      className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-[var(--admin-coral)] bg-[var(--admin-coral)] py-2.5 text-sm font-semibold text-white transition hover:border-[var(--admin-coral-hover)] hover:bg-[var(--admin-coral-hover)] disabled:pointer-events-none disabled:opacity-70"
+    >
+      {pending ? (
+        <>
+          <Loader2 className="size-4 shrink-0 animate-spin" strokeWidth={2.25} aria-hidden />
+          Creando…
+        </>
+      ) : (
+        "Crear proveedor"
+      )}
+    </button>
+  );
+}
+
+function FirstSupplierModal({
+  required,
+  onClose,
+  errorMessage,
+}: {
+  required: boolean;
+  onClose: () => void;
+  errorMessage: string | null;
+}) {
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && !required) onClose();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = prev;
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [onClose, required]);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center p-4 sm:items-center">
+      {required ? (
+        <Link href="/admin/proveedores" className="absolute inset-0 bg-zinc-950/45" aria-label="Volver a proveedores" />
+      ) : (
+        <button
+          type="button"
+          className="absolute inset-0 bg-zinc-950/45"
+          aria-label="Cerrar"
+          onClick={onClose}
+        />
+      )}
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="first-supplier-title"
+        className="relative z-10 w-full max-w-md rounded-2xl border border-zinc-200 bg-white p-5 shadow-xl dark:border-zinc-700 dark:bg-zinc-900 sm:p-6"
+      >
+        <h2 id="first-supplier-title" className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
+          {required ? "Todavía no tienes proveedores" : "Nuevo proveedor"}
+        </h2>
+        <p className="mt-1.5 text-sm text-zinc-500 dark:text-zinc-400">
+          {required
+            ? "Crea el primero para registrar la orden de compra."
+            : "Nombre, NIT, teléfono y dirección. Con eso alcanza para la orden."}
+        </p>
+        {errorMessage ? (
+          <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950 dark:border-amber-800/60 dark:bg-amber-950/35 dark:text-amber-100">
+            {errorMessage}
+          </p>
+        ) : null}
+        <form action={createSupplierFromOrderAction} className="mt-4 space-y-3">
+          <div>
+            <label htmlFor="supplier-name" className={labelClass}>
+              Nombre
+            </label>
+            <input
+              id="supplier-name"
+              name="name"
+              required
+              autoFocus
+              autoComplete="organization"
+              placeholder="Ej. Distribuidora American"
+              className={inputClass}
+            />
+          </div>
+          <div>
+            <label htmlFor="supplier-nit" className={labelClass}>
+              NIT
+            </label>
+            <input
+              id="supplier-nit"
+              name="document_id"
+              placeholder="Ej. 900123456-7"
+              className={inputClass}
+            />
+          </div>
+          <div>
+            <label htmlFor="supplier-phone" className={labelClass}>
+              Teléfono
+            </label>
+            <input
+              id="supplier-phone"
+              name="phone"
+              inputMode="tel"
+              autoComplete="tel"
+              placeholder="Ej. 300 000 0000"
+              className={inputClass}
+            />
+          </div>
+          <div>
+            <label htmlFor="supplier-address" className={labelClass}>
+              Dirección
+            </label>
+            <input
+              id="supplier-address"
+              name="address"
+              autoComplete="street-address"
+              placeholder="Ej. Calle 20 # 15-30"
+              className={inputClass}
+            />
+          </div>
+          <div className="flex flex-col gap-2 pt-1">
+            <ModalSubmitButton />
+            {required ? (
+              <Link
+                href="/admin/proveedores"
+                className="rounded-lg px-3 py-2 text-center text-sm text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+              >
+                Ahora no
+              </Link>
+            ) : (
+              <button
+                type="button"
+                onClick={onClose}
+                className="rounded-lg px-3 py-2 text-sm text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+              >
+                Cancelar
+              </button>
+            )}
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 export function SupplierNewDebtForm({
   suppliers,
   defaultSupplierId,
@@ -32,17 +186,21 @@ export function SupplierNewDebtForm({
 }) {
   const [amountCents, setAmountCents] = useState(0);
   const [issueDate, setIssueDate] = useState(defaultDate);
+  const needsFirst = suppliers.length === 0;
+  const [supplierModal, setSupplierModal] = useState(needsFirst || errorCode === "proveedor");
   const selected =
     defaultSupplierId && suppliers.some((s) => s.id === defaultSupplierId)
       ? defaultSupplierId
       : (suppliers[0]?.id ?? "");
 
-  const errorMessage =
+  const orderError =
     errorCode === "validation"
       ? "Elegí un proveedor y un monto mayor a cero."
       : errorCode === "db"
-        ? "No se pudo guardar la deuda. Intentá de nuevo."
+        ? "No se pudo guardar la orden. Intentá de nuevo."
         : null;
+  const supplierError =
+    errorCode === "proveedor" ? "No se pudo crear el proveedor. Revisá el nombre e intentá de nuevo." : null;
 
   return (
     <div className="mx-auto w-full max-w-xl">
@@ -52,35 +210,23 @@ export function SupplierNewDebtForm({
             Proveedores
           </Link>
           <span className="mx-1.5 text-zinc-300 dark:text-zinc-600">/</span>
-          <span className="text-zinc-700 dark:text-zinc-300">Nueva deuda</span>
+          <span className="text-zinc-700 dark:text-zinc-300">Nueva orden de compra</span>
         </p>
         <h1 className="mt-2 text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 sm:text-2xl">
-          Nueva deuda
+          Nueva orden de compra
         </h1>
         <p className="mt-1.5 text-sm text-zinc-500 dark:text-zinc-400">
-          Registrá cuánto le debés al proveedor. Después podés ir abonando hasta saldarla.
+          Registrá el total de la orden. Después podés ir abonando hasta saldarla.
         </p>
       </div>
 
-      {errorMessage ? (
+      {orderError ? (
         <p className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950 dark:border-amber-800/60 dark:bg-amber-950/35 dark:text-amber-100">
-          {errorMessage}
+          {orderError}
         </p>
       ) : null}
 
-      {suppliers.length === 0 ? (
-        <div className={cardClass}>
-          <p className="text-sm text-zinc-600 dark:text-zinc-300">
-            Todavía no hay proveedores. Creá uno y volvé a registrar la deuda.
-          </p>
-          <Link
-            href="/admin/proveedores/nuevo"
-            className="mt-4 inline-flex items-center justify-center rounded-lg border border-[var(--admin-coral)] bg-[var(--admin-coral)] px-4 py-2.5 text-sm font-semibold text-white"
-          >
-            Nuevo proveedor
-          </Link>
-        </div>
-      ) : (
+      {needsFirst ? null : (
         <form action={createSupplierDebtAction} className={`${cardClass} space-y-4`}>
           <div>
             <label htmlFor="supplier_id" className={labelClass}>
@@ -101,13 +247,17 @@ export function SupplierNewDebtForm({
             </select>
             <p className="mt-1.5 text-xs text-zinc-500">
               ¿No está?{" "}
-              <Link href="/admin/proveedores/nuevo" className="font-medium text-zinc-800 underline dark:text-zinc-200">
+              <button
+                type="button"
+                onClick={() => setSupplierModal(true)}
+                className="font-medium text-zinc-800 underline dark:text-zinc-200"
+              >
                 Crear proveedor
-              </Link>
+              </button>
             </p>
           </div>
           <div>
-            <label className={labelClass}>Monto que debés (COP)</label>
+            <label className={labelClass}>Total de la orden (COP)</label>
             <ProductMoneyInput
               name="amount_cents"
               value={amountCents}
@@ -136,12 +286,12 @@ export function SupplierNewDebtForm({
               name="notes"
               type="text"
               className={inputClass}
-              placeholder="Pedido, factura del proveedor…"
+              placeholder="Número de factura del proveedor, pedido…"
             />
           </div>
           <div className="flex items-center gap-2 pt-1">
             <AdminFormSubmitButton className={`${adminPrimarySubmitButtonClass} px-4 py-2.5`}>
-              Guardar deuda
+              Guardar orden
             </AdminFormSubmitButton>
             <Link
               href="/admin/proveedores"
@@ -152,6 +302,14 @@ export function SupplierNewDebtForm({
           </div>
         </form>
       )}
+
+      {supplierModal ? (
+        <FirstSupplierModal
+          required={needsFirst}
+          onClose={() => setSupplierModal(false)}
+          errorMessage={supplierError}
+        />
+      ) : null}
     </div>
   );
 }

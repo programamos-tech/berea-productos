@@ -151,7 +151,7 @@ export const PERMISSION_MODULES: PermissionModule[] = [
   {
     id: "proveedores",
     label: "Proveedores",
-    items: [{ key: "proveedores_ver", label: "Ver deudas y registrar abonos" }],
+    items: [{ key: "proveedores_ver", label: "Ver órdenes de compra y registrar abonos" }],
   },
   {
     id: "inventario",

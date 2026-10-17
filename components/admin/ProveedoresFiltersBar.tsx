@@ -124,10 +124,10 @@ export function ProveedoresHeaderActions() {
   return (
     <div className="flex items-center gap-2">
       <Link
-        href="/admin/proveedores/nueva-deuda"
+        href="/admin/proveedores/nueva-orden"
         className="inline-flex items-center justify-center rounded-lg border border-[var(--admin-coral)] bg-[var(--admin-coral)] px-3 py-2 text-sm font-semibold text-white transition hover:border-[var(--admin-coral-hover)] hover:bg-[var(--admin-coral-hover)]"
       >
-        Nueva deuda
+        Nueva orden de compra
       </Link>
       <button
         type="button"

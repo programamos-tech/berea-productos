@@ -29,7 +29,7 @@ export function ProveedoresTable({ rows }: { rows: SupplierDebtRow[] }) {
   if (rows.length === 0) {
     return (
       <p className="py-8 text-sm text-zinc-500 dark:text-zinc-400">
-        No hay deudas que coincidan con los filtros.
+        No hay órdenes de compra que coincidan con los filtros.
       </p>
     );
   }
@@ -45,7 +45,7 @@ export function ProveedoresTable({ rows }: { rows: SupplierDebtRow[] }) {
                 href={`/admin/proveedores/${row.supplierId}/facturas/${row.id}`}
                 prefetch={false}
                 className="flex items-start justify-between gap-3 py-3 no-underline transition hover:bg-zinc-50/60 dark:hover:bg-zinc-900/40"
-                aria-label={`Ver deuda ${row.folio}, ${row.supplierName}`}
+                aria-label={`Ver orden ${row.folio}, ${row.supplierName}`}
               >
                 <div className="min-w-0">
                   <p className="font-mono text-sm font-semibold tabular-nums text-zinc-900 dark:text-zinc-100">
@@ -135,7 +135,7 @@ export function ProveedoresTable({ rows }: { rows: SupplierDebtRow[] }) {
                       href={`/admin/proveedores/${row.supplierId}/facturas/${row.id}`}
                       prefetch={false}
                       className="inline-flex size-8 items-center justify-center rounded-lg text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
-                      aria-label={`Ver deuda ${row.folio}`}
+                      aria-label={`Ver orden ${row.folio}`}
                     >
                       <Eye className="size-4" strokeWidth={2} />
                     </Link>

@@ -75,7 +75,7 @@ export default async function AdminProveedorDetailPage({ params, searchParams }:
   });
 
   const nFacturas = invoices.length;
-  const subtitle = `${nFacturas} ${nFacturas === 1 ? "deuda" : "deudas"} · Por pagar ${formatCop(pendingTotal)}`;
+  const subtitle = `${nFacturas} ${nFacturas === 1 ? "orden" : "órdenes"} · Por pagar ${formatCop(pendingTotal)}`;
 
   const s = supplier as {
     id: string;
@@ -120,10 +120,10 @@ export default async function AdminProveedorDetailPage({ params, searchParams }:
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Link
-            href={`/admin/proveedores/nueva-deuda?proveedor=${id}`}
+            href={`/admin/proveedores/nueva-orden?proveedor=${id}`}
             className="inline-flex items-center justify-center rounded-lg border border-[var(--admin-coral)] bg-[var(--admin-coral)] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:border-[var(--admin-coral-hover)] hover:bg-[var(--admin-coral-hover)]"
           >
-            Nueva deuda
+            Nueva orden
           </Link>
           <Link
             href="/admin/proveedores"
@@ -201,7 +201,7 @@ export default async function AdminProveedorDetailPage({ params, searchParams }:
               {filtered.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="px-3 py-8 text-center text-sm text-zinc-500 dark:text-zinc-400">
-                    No hay deudas con ese criterio.
+                    No hay órdenes con ese criterio.
                   </td>
                 </tr>
               ) : (
@@ -222,7 +222,7 @@ export default async function AdminProveedorDetailPage({ params, searchParams }:
                     <ClickableTableRow
                       key={r.id}
                       href={`/admin/proveedores/${id}/facturas/${r.id}`}
-                      ariaLabel={`Ver deuda ${r.folio}`}
+                      ariaLabel={`Ver orden ${r.folio}`}
                     >
                       <td className="px-3 py-2 font-mono text-xs text-zinc-800 dark:text-zinc-200">{r.folio}</td>
                       <td className="px-3 py-2 text-xs text-zinc-600 dark:text-zinc-300">

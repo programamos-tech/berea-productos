@@ -141,7 +141,7 @@ export default async function AdminProveedorFacturaDetailPage({ params, searchPa
             </Link>
           </p>
           <h1 className="mt-2 text-xl font-semibold text-zinc-900 dark:text-zinc-100 sm:text-2xl">
-            Deuda · {inv.folio}
+            Orden de compra · {inv.folio}
           </h1>
           <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-300">{supplier.name}</p>
         </div>
@@ -173,7 +173,7 @@ export default async function AdminProveedorFacturaDetailPage({ params, searchPa
         <aside className="space-y-4 lg:col-span-4">
           <div className={`${detailCard} p-5`}>
             <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-400 dark:text-zinc-500">
-              Estado de la deuda
+              Estado de la orden
             </p>
             <div className="mt-3">
               <SupplierInvoiceStatusPill

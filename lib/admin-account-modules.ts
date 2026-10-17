@@ -64,7 +64,7 @@ export const ACCOUNT_MODULES: AccountModuleDef[] = [
   {
     id: "proveedores",
     label: "Proveedores",
-    hint: "Deudas con proveedores y abonos",
+    hint: "Órdenes de compra y abonos",
     permissionKeys: ["proveedores_ver"],
   },
   {

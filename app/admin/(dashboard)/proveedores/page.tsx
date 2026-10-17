@@ -103,7 +103,7 @@ export default async function AdminProveedoresPage({ searchParams }: Props) {
         icon="proveedores"
         title="Proveedores"
         branchName={perm?.branchContext?.active.name}
-        subtitle="Deudas con proveedores y abonos. El saldo baja con cada pago."
+        subtitle="Órdenes de compra y abonos. El saldo baja con cada pago."
         actions={<ProveedoresHeaderActions />}
       />
 
@@ -123,7 +123,7 @@ export default async function AdminProveedoresPage({ searchParams }: Props) {
       <section className="min-h-0 border-t border-zinc-200/70 pt-4 dark:border-zinc-800">
         {error ? (
           <p className="text-sm text-amber-700 dark:text-amber-300">
-            No se pudieron cargar las deudas. Revisá permisos y migraciones.
+            No se pudieron cargar las órdenes. Revisá permisos y migraciones.
           </p>
         ) : (
           <ProveedoresTable rows={rows} />

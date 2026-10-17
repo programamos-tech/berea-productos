@@ -48,6 +48,7 @@ export async function createSupplierAction(formData: FormData) {
       phone: String(formData.get("phone") ?? "").trim() || null,
       email: String(formData.get("email") ?? "").trim().toLowerCase() || null,
       document_id: String(formData.get("document_id") ?? "").trim() || null,
+      address: String(formData.get("address") ?? "").trim() || null,
       notes: String(formData.get("notes") ?? "").trim() || null,
     })
     .select("id")
@@ -60,6 +61,34 @@ export async function createSupplierAction(formData: FormData) {
   }
   revalidatePath("/admin/proveedores");
   redirect(`/admin/proveedores/${supplierId}`);
+}
+
+export async function createSupplierFromOrderAction(formData: FormData) {
+  await assertActionPermission("proveedores_ver");
+  const supabase = await createSupabaseServerClient();
+  const name = String(formData.get("name") ?? "").trim();
+  const back = "/admin/proveedores/nueva-orden?error=proveedor";
+  if (!name) redirect(back);
+
+  const { data, error } = await supabase
+    .from("suppliers")
+    .insert({
+      name,
+      document_id: String(formData.get("document_id") ?? "").trim() || null,
+      phone: String(formData.get("phone") ?? "").trim() || null,
+      address: String(formData.get("address") ?? "").trim() || null,
+    })
+    .select("id")
+    .single();
+
+  if (error || !data?.id) redirect(back);
+  const supplierId = String(data.id);
+  if (!(await verifyInsertedRowInDev(supabase, "suppliers", supplierId))) {
+    redirect(back);
+  }
+  revalidatePath("/admin/proveedores");
+  revalidatePath("/admin/proveedores/nueva-orden");
+  redirect(`/admin/proveedores/nueva-orden?proveedor=${encodeURIComponent(supplierId)}`);
 }
 
 type ParsedSupplierLine = {
@@ -85,8 +114,8 @@ export async function createSupplierDebtAction(formData: FormData) {
     Math.floor(Number.parseInt(String(formData.get("amount_cents") ?? "0"), 10) || 0),
   );
   const back = supplierId
-    ? `/admin/proveedores/nueva-deuda?proveedor=${encodeURIComponent(supplierId)}`
-    : "/admin/proveedores/nueva-deuda";
+    ? `/admin/proveedores/nueva-orden?proveedor=${encodeURIComponent(supplierId)}`
+    : "/admin/proveedores/nueva-orden";
 
   if (!supplierId || totalCents <= 0) {
     redirect(`${back}${back.includes("?") ? "&" : "?"}error=validation`);

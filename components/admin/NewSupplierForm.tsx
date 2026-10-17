@@ -28,7 +28,7 @@ export function NewSupplierHeader() {
           Nuevo proveedor
         </h1>
         <p className="mt-2 max-w-2xl text-sm text-zinc-500 dark:text-zinc-400">
-          Registrá el proveedor. Después cargás la deuda y vas abonando hasta saldarla.
+          Registrá el proveedor. Después cargás la orden de compra y vas abonando hasta saldarla.
         </p>
       </div>
       <Link
@@ -104,6 +104,18 @@ export function NewSupplierForm() {
                   onChange={(e) => setPhone(e.target.value)}
                   placeholder="Ej. 601 000 0000"
                   inputMode="tel"
+                  className={inputClass}
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <label htmlFor="ns-address" className={labelClass}>
+                  Dirección
+                </label>
+                <input
+                  id="ns-address"
+                  name="address"
+                  placeholder="Ej. Calle 20 # 15-30"
+                  autoComplete="street-address"
                   className={inputClass}
                 />
               </div>
