@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { adminProductBrand, adminSidebarLogoPath } from "@/lib/brand";
 import { storeShellClass } from "@/lib/store-theme";
+import { storefrontLogoSrc } from "@/lib/tenant-brand";
 import type { StorefrontChrome } from "@/lib/storefront-brand";
 
 const footerColumnTitle =
@@ -40,14 +41,12 @@ export function StoreFooter({
                 className="inline-block outline-none transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-white/45 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--store-header-bg)]"
               >
                 <Image
-                  src={chrome.logoSrc}
+                  src={storefrontLogoSrc(chrome.logoSrc, onLight)}
                   alt={chrome.name}
                   width={560}
                   height={200}
                   unoptimized
-                  className={`h-16 w-auto max-w-[min(88vw,16rem)] bg-transparent object-contain object-center sm:h-20 sm:max-w-[18rem] lg:h-24${
-                    onLight ? " brightness-0" : ""
-                  }`}
+                  className="h-16 w-auto max-w-[min(88vw,16rem)] bg-transparent object-contain object-center sm:h-20 sm:max-w-[18rem] lg:h-24"
                 />
               </Link>
             </div>

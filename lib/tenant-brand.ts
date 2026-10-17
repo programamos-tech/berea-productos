@@ -126,6 +126,14 @@ export function resolveInvoiceLogoSrc(logoPath: string): string {
   return storagePublicObjectUrl(p) ?? p;
 }
 
+/** En una barra clara el wordmark blanco no se lee; se usa el rosa de marca. */
+export function storefrontLogoSrc(logoSrc: string, onLight: boolean): string {
+  if (onLight && logoSrc.endsWith("/logo-aleya-wordmark.png")) {
+    return "/logo-aleya-wordmark-color.png";
+  }
+  return logoSrc;
+}
+
 const ACCOUNT_LOGO_BY_SLUG: Record<string, string> = {
   aleya: "/logo-aleya-wordmark.png",
   "estacion-iphone": "/logo-estacion-iphone.png",

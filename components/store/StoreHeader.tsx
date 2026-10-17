@@ -6,6 +6,7 @@ import { StoreNavDropdowns } from "@/components/store/StoreNavDropdowns";
 import { StoreSearch } from "@/components/store/StoreSearch";
 import { getCachedStoreCategoriesWithCounts } from "@/lib/store-public-cache";
 import { storeShellClass } from "@/lib/store-theme";
+import { storefrontLogoSrc } from "@/lib/tenant-brand";
 import type { StorefrontChrome } from "@/lib/storefront-brand";
 
 export async function StoreHeader({
@@ -36,9 +37,8 @@ export async function StoreHeader({
           <div className="flex min-w-0 flex-col items-center justify-center px-1 sm:px-2">
             <StoreLogoLink
               brand={chrome.name}
-              logoPath={chrome.logoSrc}
+              logoPath={storefrontLogoSrc(chrome.logoSrc, onLight)}
               square={chrome.logoSquare}
-              ink={onLight}
               className="block max-w-[min(100%,16rem)] bg-transparent outline-none focus-visible:ring-2 focus-visible:ring-white/45 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--store-header-bg)] sm:max-w-[min(100%,18rem)] lg:max-w-[20rem]"
             />
           </div>
