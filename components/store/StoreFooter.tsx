@@ -45,7 +45,9 @@ export function StoreFooter({
                   width={560}
                   height={200}
                   unoptimized
-                  className="h-16 w-auto max-w-[min(88vw,16rem)] rounded-xl bg-white object-contain object-center px-3 py-1.5 sm:h-20 sm:max-w-[18rem] lg:h-24"
+                  className={`h-16 w-auto max-w-[min(88vw,16rem)] bg-transparent object-contain object-center sm:h-20 sm:max-w-[18rem] lg:h-24${
+                    onLight ? " brightness-0" : ""
+                  }`}
                 />
               </Link>
             </div>

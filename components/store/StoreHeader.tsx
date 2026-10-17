@@ -38,7 +38,8 @@ export async function StoreHeader({
               brand={chrome.name}
               logoPath={chrome.logoSrc}
               square={chrome.logoSquare}
-              className="block max-w-[min(100%,16rem)] rounded-xl bg-white px-3 py-1.5 outline-none focus-visible:ring-2 focus-visible:ring-white/45 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--store-header-bg)] sm:max-w-[min(100%,18rem)] lg:max-w-[20rem]"
+              ink={onLight}
+              className="block max-w-[min(100%,16rem)] bg-transparent outline-none focus-visible:ring-2 focus-visible:ring-white/45 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--store-header-bg)] sm:max-w-[min(100%,18rem)] lg:max-w-[20rem]"
             />
           </div>
 

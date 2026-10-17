@@ -54,8 +54,14 @@ export async function generateMetadata(): Promise<Metadata> {
       type: "website",
     },
     icons: {
-      icon: chrome.logoSrc,
-      apple: chrome.logoSrc,
+      icon:
+        chrome.logoSrc === "/logo-aleya-wordmark.png"
+          ? "/logo-aleya-wordmark-color.png"
+          : chrome.logoSrc,
+      apple:
+        chrome.logoSrc === "/logo-aleya-wordmark.png"
+          ? "/logo-aleya-wordmark-color.png"
+          : chrome.logoSrc,
     },
   };
 }

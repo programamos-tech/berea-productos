@@ -148,7 +148,7 @@ export type AdminAccountChrome = {
 const HEX_COLOR = /^#[0-9a-f]{6}$/i;
 
 const ACCOUNT_PLATE_BY_SLUG: Record<string, string> = {
-  aleya: "#FFFFFF",
+  aleya: "#FF76A1",
   "estacion-iphone": "#111111",
   "berea-tech": "#0F766E",
   "toro-technology": "#111111",
@@ -196,7 +196,11 @@ export function tenantBrandToInvoiceFields(
   brand: TenantBrand | null | undefined,
 ): InvoiceBrandFields {
   const b = brand ?? {};
-  const invoiceLogoPath = b.logo_path || envInvoiceLogoPath;
+  const rawLogo = b.logo_path || envInvoiceLogoPath;
+  const invoiceLogoPath =
+    rawLogo === "/logo-aleya-wordmark.png"
+      ? "/logo-aleya-wordmark-color.png"
+      : rawLogo;
   return {
     invoiceTradeName: b.trade_name || envInvoiceTradeName,
     invoiceLegalName: b.legal_name || envInvoiceLegalName,
