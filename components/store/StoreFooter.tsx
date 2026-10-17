@@ -45,14 +45,7 @@ export function StoreFooter({
                   width={560}
                   height={200}
                   unoptimized
-                  className={`h-14 w-auto max-w-[min(88vw,20rem)] bg-transparent object-contain object-center sm:h-16 sm:max-w-[min(85vw,24rem)] md:h-[4.5rem] lg:h-20 lg:max-w-[min(80vw,28rem)] xl:h-24 xl:max-w-[32rem]${
-                    chrome.tenantSlug === "aleya"
-                      ? onLight
-                        ? " brightness-0"
-                        : " brightness-0 invert"
-                      : ""
-                  }`}
-                  style={{ backgroundColor: "transparent" }}
+                  className="h-16 w-auto max-w-[min(88vw,16rem)] rounded-xl bg-white object-contain object-center px-3 py-1.5 sm:h-20 sm:max-w-[18rem] lg:h-24"
                 />
               </Link>
             </div>

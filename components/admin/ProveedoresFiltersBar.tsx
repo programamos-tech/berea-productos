@@ -4,6 +4,7 @@ import { RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
+import { FirstSupplierModal } from "@/components/admin/FirstSupplierModal";
 import {
   adminFilterInputClass,
   adminFilterLabelClass,
@@ -119,16 +120,44 @@ export function ProveedoresFiltersBar({ initialQ }: { initialQ: string }) {
   );
 }
 
-export function ProveedoresHeaderActions() {
+const orderButtonClass =
+  "inline-flex items-center justify-center rounded-lg border border-[var(--admin-coral)] bg-[var(--admin-coral)] px-3 py-2 text-sm font-semibold text-white transition hover:border-[var(--admin-coral-hover)] hover:bg-[var(--admin-coral-hover)]";
+
+export function ProveedoresHeaderActions({
+  needsSupplier,
+  startOpen,
+  supplierError,
+}: {
+  needsSupplier: boolean;
+  startOpen: boolean;
+  supplierError: string | null;
+}) {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const [open, setOpen] = useState(startOpen);
+
+  const closeModal = useCallback(() => {
+    setOpen(false);
+    if (!searchParams.get("crear") && !searchParams.get("error")) return;
+    const next = new URLSearchParams(searchParams.toString());
+    next.delete("crear");
+    next.delete("error");
+    const qs = next.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname);
+  }, [pathname, router, searchParams]);
+
   return (
     <div className="flex items-center gap-2">
-      <Link
-        href="/admin/proveedores/nueva-orden"
-        className="inline-flex items-center justify-center rounded-lg border border-[var(--admin-coral)] bg-[var(--admin-coral)] px-3 py-2 text-sm font-semibold text-white transition hover:border-[var(--admin-coral-hover)] hover:bg-[var(--admin-coral-hover)]"
-      >
-        Nueva orden de compra
-      </Link>
+      {needsSupplier ? (
+        <button type="button" onClick={() => setOpen(true)} className={orderButtonClass}>
+          Nueva orden de compra
+        </button>
+      ) : (
+        <Link href="/admin/proveedores/nueva-orden" className={orderButtonClass}>
+          Nueva orden de compra
+        </Link>
+      )}
       <button
         type="button"
         onClick={() => router.refresh()}
@@ -138,6 +167,14 @@ export function ProveedoresHeaderActions() {
       >
         <RefreshCw className="size-4 shrink-0" strokeWidth={2.25} aria-hidden />
       </button>
+      {open ? (
+        <FirstSupplierModal
+          returnTo="lista"
+          dismissLabel="Ahora no"
+          errorMessage={supplierError}
+          onClose={closeModal}
+        />
+      ) : null}
     </div>
   );
 }

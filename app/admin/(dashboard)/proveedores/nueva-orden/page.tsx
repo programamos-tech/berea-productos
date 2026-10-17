@@ -1,4 +1,9 @@
-import { SupplierNewDebtForm } from "@/components/admin/SupplierNewDebtForm";
+import { redirect } from "next/navigation";
+import {
+  SupplierNewInvoiceForm,
+  SupplierNewInvoiceHeader,
+} from "@/components/admin/SupplierNewInvoiceForm";
+import { AdminNewPageShell } from "@/components/admin/AdminNewPageShell";
 import { todayYmdInReportStore } from "@/lib/admin-report-range";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -22,13 +27,34 @@ export default async function AdminNuevaOrdenProveedorPage({ searchParams }: Pro
     id: String(row.id),
     name: String(row.name ?? "Proveedor"),
   }));
+  if (suppliers.length === 0) redirect("/admin/proveedores?crear=1");
+
+  const proveedor = first(sp.proveedor).trim();
+  const fixed = suppliers.find((s) => s.id === proveedor) ?? null;
+  const error = first(sp.error).trim();
 
   return (
-    <SupplierNewDebtForm
-      suppliers={suppliers}
-      defaultSupplierId={first(sp.proveedor).trim() || null}
-      defaultDate={todayYmdInReportStore()}
-      errorCode={first(sp.error).trim() || null}
-    />
+    <AdminNewPageShell>
+      <SupplierNewInvoiceHeader
+        variant="orden"
+        fixedSupplierId={fixed?.id}
+        supplierName={fixed?.name}
+      />
+      {error === "validation" ? (
+        <p className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950 dark:border-amber-800/60 dark:bg-amber-950/35 dark:text-amber-100">
+          Elegí un proveedor y al menos un producto con cantidad y precio.
+        </p>
+      ) : error === "db" ? (
+        <p className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950 dark:border-amber-800/60 dark:bg-amber-950/35 dark:text-amber-100">
+          No se pudo guardar la orden. Intentá de nuevo.
+        </p>
+      ) : null}
+      <SupplierNewInvoiceForm
+        issueDateDefault={todayYmdInReportStore()}
+        suppliers={suppliers}
+        initialSupplierId={proveedor || null}
+        formContext="orden"
+      />
+    </AdminNewPageShell>
   );
 }

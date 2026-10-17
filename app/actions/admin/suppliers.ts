@@ -67,7 +67,10 @@ export async function createSupplierFromOrderAction(formData: FormData) {
   await assertActionPermission("proveedores_ver");
   const supabase = await createSupabaseServerClient();
   const name = String(formData.get("name") ?? "").trim();
-  const back = "/admin/proveedores/nueva-orden?error=proveedor";
+  const onList = String(formData.get("return_to") ?? "") === "lista";
+  const back = onList
+    ? "/admin/proveedores?crear=1&error=proveedor"
+    : "/admin/proveedores/nueva-orden?error=proveedor";
   if (!name) redirect(back);
 
   const { data, error } = await supabase
@@ -165,18 +168,16 @@ export async function createSupplierInvoiceAction(formData: FormData) {
   const rawPayload = String(formData.get("payload") ?? "").trim();
   const formContext = String(formData.get("form_context") ?? "hub").trim();
 
+  const backPath =
+    formContext === "orden"
+      ? `/admin/proveedores/nueva-orden${supplierId ? `?proveedor=${encodeURIComponent(supplierId)}` : ""}`
+      : formContext === "supplier" && supplierId
+        ? `/admin/proveedores/${supplierId}/nueva-factura`
+        : "/admin/proveedores/nueva-factura";
   const redirectValidation = () =>
-    redirect(
-      formContext === "supplier" && supplierId
-        ? `/admin/proveedores/${supplierId}/nueva-factura?error=validation`
-        : "/admin/proveedores/nueva-factura?error=validation",
-    );
+    redirect(`${backPath}${backPath.includes("?") ? "&" : "?"}error=validation`);
   const redirectDb = () =>
-    redirect(
-      formContext === "supplier" && supplierId
-        ? `/admin/proveedores/${supplierId}/nueva-factura?error=db`
-        : "/admin/proveedores/nueva-factura?error=db",
-    );
+    redirect(`${backPath}${backPath.includes("?") ? "&" : "?"}error=db`);
 
   if (!supplierId) redirectValidation();
 
@@ -260,6 +261,15 @@ export async function createSupplierInvoiceAction(formData: FormData) {
     redirectDb();
   }
 
+  const productIds = [...new Set(lineRows.map((r) => r.product_id))];
+  if (productIds.length > 0) {
+    const { error: linkErr } = await supabase
+      .from("products")
+      .update({ supplier_id: supplierId })
+      .in("id", productIds);
+    if (linkErr) console.error("createSupplierInvoiceAction supplier link", linkErr);
+  }
+
   if (!(await verifyInsertedRowInDev(supabase, "supplier_invoices", invId))) {
     await supabase.from("supplier_invoice_lines").delete().eq("invoice_id", invId);
     await supabase.from("supplier_invoices").delete().eq("id", invId);
@@ -280,6 +290,116 @@ export async function createSupplierInvoiceAction(formData: FormData) {
 
   revalidateSupplierPaths(supplierId, invId);
   redirect(`/admin/proveedores/${supplierId}/facturas/${invId}`);
+}
+
+async function retotalSupplierInvoice(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  invoiceId: string,
+) {
+  const { data: rows } = await supabase
+    .from("supplier_invoice_lines")
+    .select("quantity,unit_price_cents,vat_rate_bps")
+    .eq("invoice_id", invoiceId);
+  let total = 0;
+  for (const row of rows ?? []) {
+    const net = supplierLineNetCents(Number(row.quantity ?? 0), Number(row.unit_price_cents ?? 0));
+    total += supplierLineGrossCents(net, Number(row.vat_rate_bps ?? 0));
+  }
+  await supabase.from("supplier_invoices").update({ total_cents: total }).eq("id", invoiceId);
+}
+
+export async function addSupplierInvoiceLinesAction(formData: FormData) {
+  await assertActionPermission("proveedores_ver");
+  const supabase = await createSupabaseServerClient();
+  const invoiceId = String(formData.get("invoice_id") ?? "").trim();
+  const supplierId = String(formData.get("supplier_id") ?? "").trim();
+  const back = `/admin/proveedores/${supplierId}/facturas/${invoiceId}`;
+  const rawPayload = String(formData.get("payload") ?? "").trim();
+  let parsed: { lines?: ParsedSupplierLine[] };
+  try {
+    parsed = JSON.parse(rawPayload) as { lines?: ParsedSupplierLine[] };
+  } catch {
+    redirect(`${back}?error=validation`);
+  }
+  const rawLines = Array.isArray(parsed.lines) ? parsed.lines : [];
+  if (!invoiceId || !supplierId || rawLines.length === 0) redirect(`${back}?error=validation`);
+
+  const { data: inv } = await supabase
+    .from("supplier_invoices")
+    .select("id,is_cancelled")
+    .eq("id", invoiceId)
+    .eq("supplier_id", supplierId)
+    .maybeSingle();
+  if (!inv || inv.is_cancelled) redirect(`${back}?error=db`);
+
+  const { count } = await supabase
+    .from("supplier_invoice_lines")
+    .select("id", { count: "exact", head: true })
+    .eq("invoice_id", invoiceId);
+  const start = count ?? 0;
+
+  const lineRows: {
+    invoice_id: string;
+    product_id: string;
+    product_name_snapshot: string;
+    quantity: number;
+    unit_price_cents: number;
+    vat_rate_bps: number;
+    sort_order: number;
+  }[] = [];
+  for (let i = 0; i < rawLines.length; i += 1) {
+    const l = rawLines[i];
+    const pid = String(l?.productId ?? "").trim();
+    const name = String(l?.productName ?? "").trim();
+    const qty = Math.floor(Number(l?.quantity));
+    const unit = Math.floor(Number(l?.unitPriceCents));
+    const vatBps = Math.max(0, Math.min(10000, Math.floor(Number(l?.vatRateBps ?? DEFAULT_SUPPLIER_VAT_BPS))));
+    if (!pid || !name || qty < 1 || unit < 0) redirect(`${back}?error=validation`);
+    lineRows.push({
+      invoice_id: invoiceId,
+      product_id: pid,
+      product_name_snapshot: name,
+      quantity: qty,
+      unit_price_cents: unit,
+      vat_rate_bps: vatBps,
+      sort_order: start + i,
+    });
+  }
+
+  const { error } = await supabase.from("supplier_invoice_lines").insert(lineRows);
+  if (error) redirect(`${back}?error=db`);
+
+  await retotalSupplierInvoice(supabase, invoiceId);
+  const productIds = [...new Set(lineRows.map((r) => r.product_id))];
+  const { error: linkErr } = await supabase
+    .from("products")
+    .update({ supplier_id: supplierId })
+    .in("id", productIds);
+  if (linkErr) console.error("addSupplierInvoiceLinesAction supplier link", linkErr);
+
+  revalidateSupplierPaths(supplierId, invoiceId);
+  redirect(back);
+}
+
+export async function toggleSupplierLineDefectAction(formData: FormData) {
+  await assertActionPermission("proveedores_ver");
+  const supabase = await createSupabaseServerClient();
+  const invoiceId = String(formData.get("invoice_id") ?? "").trim();
+  const supplierId = String(formData.get("supplier_id") ?? "").trim();
+  const lineId = String(formData.get("line_id") ?? "").trim();
+  const isDefective = String(formData.get("is_defective") ?? "") === "1";
+  const back = `/admin/proveedores/${supplierId}/facturas/${invoiceId}`;
+  if (!invoiceId || !supplierId || !lineId) redirect(`${back}?error=db`);
+
+  const { error } = await supabase
+    .from("supplier_invoice_lines")
+    .update({ is_defective: isDefective })
+    .eq("id", lineId)
+    .eq("invoice_id", invoiceId);
+  if (error) redirect(`${back}?error=db`);
+
+  revalidateSupplierPaths(supplierId, invoiceId);
+  redirect(back);
 }
 
 export async function registerSupplierInvoicePaymentAction(formData: FormData) {

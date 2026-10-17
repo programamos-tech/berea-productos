@@ -38,15 +38,8 @@ export async function StoreHeader({
               brand={chrome.name}
               logoPath={chrome.logoSrc}
               square={chrome.logoSquare}
-              white={!onLight && chrome.tenantSlug === "aleya"}
-              ink={onLight && chrome.tenantSlug === "aleya"}
-              className="block max-w-[min(100%,18rem)] outline-none focus-visible:ring-2 focus-visible:ring-white/45 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--store-header-bg)] sm:max-w-[min(100%,20rem)] lg:max-w-[22rem] xl:max-w-[24rem]"
+              className="block max-w-[min(100%,16rem)] rounded-xl bg-white px-3 py-1.5 outline-none focus-visible:ring-2 focus-visible:ring-white/45 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--store-header-bg)] sm:max-w-[min(100%,18rem)] lg:max-w-[20rem]"
             />
-            {chrome.tenantSlug === "aleya" ? (
-              <p className="mt-0.5 text-[9px] font-medium uppercase leading-none tracking-[0.22em] text-white/90 sm:text-[10px]">
-                {chrome.name}
-              </p>
-            ) : null}
           </div>
 
           <div className="flex min-w-0 items-center justify-end gap-0.5 sm:gap-1 md:gap-2 lg:justify-end lg:gap-4 lg:pl-4">

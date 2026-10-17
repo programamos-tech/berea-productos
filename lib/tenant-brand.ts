@@ -148,7 +148,7 @@ export type AdminAccountChrome = {
 const HEX_COLOR = /^#[0-9a-f]{6}$/i;
 
 const ACCOUNT_PLATE_BY_SLUG: Record<string, string> = {
-  aleya: "#FF76A1",
+  aleya: "#FFFFFF",
   "estacion-iphone": "#111111",
   "berea-tech": "#0F766E",
   "toro-technology": "#111111",
@@ -156,6 +156,7 @@ const ACCOUNT_PLATE_BY_SLUG: Record<string, string> = {
 };
 
 const ACCOUNT_FULL_COLOR_LOGO = new Set([
+  "aleya",
   "toro-technology",
   "audio-mundial",
 ]);

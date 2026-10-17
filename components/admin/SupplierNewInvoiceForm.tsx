@@ -77,10 +77,21 @@ function lineGrossCents(line: CartLine): number {
 export function SupplierNewInvoiceHeader({
   fixedSupplierId,
   supplierName,
+  variant = "factura",
 }: {
   fixedSupplierId?: string | null;
   supplierName?: string | null;
+  variant?: "factura" | "orden";
 }) {
+  const crumb = variant === "orden" ? "Nueva orden de compra" : "Nueva factura";
+  const title =
+    variant === "orden"
+      ? fixedSupplierId && supplierName
+        ? `Nueva orden · ${supplierName}`
+        : "Nueva orden de compra"
+      : fixedSupplierId && supplierName
+        ? `Nueva factura · ${supplierName}`
+        : "Nueva factura de proveedor";
   return (
     <div className="mb-4 flex min-w-0 flex-col gap-3 sm:mb-5 sm:flex-row sm:items-start sm:justify-between">
       <div className="min-w-0">
@@ -103,17 +114,15 @@ export function SupplierNewInvoiceHeader({
             </>
           ) : null}
           <span className="mx-1.5 text-zinc-300 dark:text-zinc-600">/</span>
-          <span className="text-zinc-700 dark:text-zinc-300">Nueva factura</span>
+          <span className="text-zinc-700 dark:text-zinc-300">{crumb}</span>
         </p>
         <h1 className="mt-1.5 text-lg font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 sm:text-xl md:text-2xl">
-          {fixedSupplierId && supplierName
-            ? `Nueva factura · ${supplierName}`
-            : "Nueva factura de proveedor"}
+          {title}
         </h1>
         <p className="mt-1.5 max-w-2xl text-sm leading-snug text-zinc-500 dark:text-zinc-400">
-          Armá la orden con productos del catálogo: el precio unitario es{" "}
-          <strong className="font-medium text-zinc-700 dark:text-zinc-300">sin IVA</strong> (podés elegir la tasa por
-          ítem). El total incluye IVA; después registrás abonos.
+          {variant === "orden"
+            ? "Elegí el proveedor y los productos que te surte. Quedan asociados a él. El total es a crédito y después registrás abonos."
+            : "Armá la orden con productos del catálogo: el precio unitario es sin IVA. El total incluye IVA; después registrás abonos."}
         </p>
       </div>
       <Link
@@ -134,15 +143,22 @@ export function SupplierNewInvoiceForm({
   suppliers,
   fixedSupplierId = null,
   fixedSupplierName = null,
+  initialSupplierId = null,
+  formContext = "hub",
 }: {
   /** YYYY-MM-DD desde el Server Component para evitar mismatch de hidratación (UTC vs local). */
   issueDateDefault: string;
   suppliers: SupplierOption[];
   fixedSupplierId?: string | null;
   fixedSupplierName?: string | null;
+  initialSupplierId?: string | null;
+  formContext?: "hub" | "supplier" | "orden";
 }) {
   const [supplierId, setSupplierId] = useState(
-    fixedSupplierId ?? (suppliers[0]?.id ?? ""),
+    fixedSupplierId ??
+      (initialSupplierId && suppliers.some((s) => s.id === initialSupplierId)
+        ? initialSupplierId
+        : (suppliers[0]?.id ?? "")),
   );
   const [productQuery, setProductQuery] = useState("");
   const debouncedQ = useDebounced(productQuery, 280);
@@ -248,7 +264,7 @@ export function SupplierNewInvoiceForm({
       <input
         type="hidden"
         name="form_context"
-        value={fixedSupplierId ? "supplier" : "hub"}
+        value={formContext}
         readOnly
       />
 
@@ -510,7 +526,7 @@ export function SupplierNewInvoiceForm({
             </div>
 
             <AdminFormSubmitButton pendingLabel="Creando…" disabled={!canSubmit} className="mt-4 w-full rounded-lg border border-rose-950 bg-rose-950 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-rose-900 hover:border-rose-900 disabled:cursor-not-allowed disabled:border-zinc-200 disabled:bg-zinc-200 disabled:text-zinc-500 dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-white dark:disabled:bg-zinc-800 dark:disabled:text-zinc-500">
-              Crear factura
+              {formContext === "orden" ? "Crear orden" : "Crear factura"}
             </AdminFormSubmitButton>
           </section>
         </div>

@@ -38,6 +38,11 @@ export default async function AdminProveedoresPage({ searchParams }: Props) {
     createSupabaseServerClient(),
   ]);
 
+  const { count: supplierCount } = await supabase
+    .from("suppliers")
+    .select("id", { count: "exact", head: true });
+  const needsSupplier = (supplierCount ?? 0) === 0;
+
   const { data: invoices, error } = await supabase
     .from("supplier_invoices")
     .select("id,supplier_id,folio,total_cents,issue_date,is_cancelled,notes")
@@ -104,7 +109,19 @@ export default async function AdminProveedoresPage({ searchParams }: Props) {
         title="Proveedores"
         branchName={perm?.branchContext?.active.name}
         subtitle="Órdenes de compra y abonos. El saldo baja con cada pago."
-        actions={<ProveedoresHeaderActions />}
+        actions={
+          <Suspense fallback={null}>
+            <ProveedoresHeaderActions
+              needsSupplier={needsSupplier}
+              startOpen={needsSupplier && (first(sp.crear) === "1" || first(sp.error) === "proveedor")}
+              supplierError={
+                first(sp.error) === "proveedor"
+                  ? "No se pudo crear el proveedor. Revisá el nombre e intentá de nuevo."
+                  : null
+              }
+            />
+          </Suspense>
+        }
       />
 
       <Suspense
