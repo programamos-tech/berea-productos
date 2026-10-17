@@ -26,5 +26,11 @@ export default async function AccountModulePreviewPage({ params }: Props) {
     redirect(ADMIN_FORBIDDEN_REDIRECT);
   }
 
-  return <AccountModulePreview module={mod} tenantName={perm.tenantName} />;
+  return (
+    <AccountModulePreview
+      module={mod}
+      tenantName={perm.tenantName}
+      branchName={perm.branchContext.active.name}
+    />
+  );
 }

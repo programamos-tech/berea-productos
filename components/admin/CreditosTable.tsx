@@ -11,7 +11,56 @@ import { formatVentaFecha, ventaNumeroReferencia } from "@/lib/ventas-sales";
 const thClass =
   "pb-2 pr-4 text-left text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500";
 
-export function CreditosTable({ rows }: { rows: CreditListRow[] }) {
+function CreditMobileBody({
+  row,
+}: {
+  row: CreditListRow;
+}) {
+  const ref = ventaNumeroReferencia(row.id);
+  const badge = orderCreditUiStatusBadge(row.uiStatus);
+  return (
+    <>
+      <div className="min-w-0">
+        <p className="font-mono text-sm font-semibold tabular-nums text-zinc-900 dark:text-zinc-100">
+          {ref}
+        </p>
+        <p className="mt-0.5 truncate text-sm text-zinc-800 dark:text-zinc-200">
+          {row.customerName}
+        </p>
+        <p className="mt-1 text-[11px] text-zinc-500">{formatVentaFecha(row.createdAt)}</p>
+        <p className="mt-1.5 text-xs">
+          <span className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium ${badge.className}`}>
+            {badge.label}
+          </span>
+          <span className="mx-1.5 text-zinc-400">·</span>
+          <span className={`tabular-nums ${orderCreditPendingToneClass(row.uiStatus)}`}>
+            Pendiente <StaticCopCents cents={row.pendingCents} />
+          </span>
+        </p>
+      </div>
+      <div className="flex shrink-0 flex-col items-end gap-2">
+        <p className="text-sm font-semibold tabular-nums text-zinc-900 dark:text-zinc-50">
+          <StaticCopCents cents={row.totalCents} />
+        </p>
+        <span
+          className="inline-flex size-8 items-center justify-center rounded-lg text-zinc-500 dark:text-zinc-400"
+          aria-hidden
+        >
+          <Eye className="size-4" strokeWidth={2} />
+        </span>
+      </div>
+    </>
+  );
+}
+
+export function CreditosTable({
+  rows,
+  preview = false,
+}: {
+  rows: CreditListRow[];
+  /** Lista de muestra: se ve igual, sin abrir la factura. */
+  preview?: boolean;
+}) {
   if (rows.length === 0) {
     return (
       <p className="py-8 text-sm text-zinc-500 dark:text-zinc-400">
@@ -28,50 +77,21 @@ export function CreditosTable({ rows }: { rows: CreditListRow[] }) {
       >
         {rows.map((row) => {
           const ref = ventaNumeroReferencia(row.id);
-          const badge = orderCreditUiStatusBadge(row.uiStatus);
+          const body = <CreditMobileBody row={row} />;
           return (
             <li key={row.id} className="min-w-0">
-              <Link
-                href={`/admin/creditos/${row.id}`}
-                prefetch={false}
-                className="flex items-start justify-between gap-3 py-3 no-underline transition hover:bg-zinc-50/60 dark:hover:bg-zinc-900/40"
-                aria-label={`Ver crédito ${ref}, ${row.customerName}`}
-              >
-                <div className="min-w-0">
-                  <p className="font-mono text-sm font-semibold tabular-nums text-zinc-900 dark:text-zinc-100">
-                    {ref}
-                  </p>
-                  <p className="mt-0.5 truncate text-sm text-zinc-800 dark:text-zinc-200">
-                    {row.customerName}
-                  </p>
-                  <p className="mt-1 text-[11px] text-zinc-500">
-                    {formatVentaFecha(row.createdAt)}
-                  </p>
-                  <p className="mt-1.5 text-xs">
-                    <span
-                      className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium ${badge.className}`}
-                    >
-                      {badge.label}
-                    </span>
-                    <span className="mx-1.5 text-zinc-400">·</span>
-                    <span className={`tabular-nums ${orderCreditPendingToneClass(row.uiStatus)}`}>
-                      Pendiente{" "}
-                      <StaticCopCents cents={row.pendingCents} />
-                    </span>
-                  </p>
-                </div>
-                <div className="flex shrink-0 flex-col items-end gap-2">
-                  <p className="text-sm font-semibold tabular-nums text-zinc-900 dark:text-zinc-50">
-                    <StaticCopCents cents={row.totalCents} />
-                  </p>
-                  <span
-                    className="inline-flex size-8 items-center justify-center rounded-lg text-zinc-500 dark:text-zinc-400"
-                    aria-hidden
-                  >
-                    <Eye className="size-4" strokeWidth={2} />
-                  </span>
-                </div>
-              </Link>
+              {preview ? (
+                <div className="flex items-start justify-between gap-3 py-3">{body}</div>
+              ) : (
+                <Link
+                  href={`/admin/creditos/${row.id}`}
+                  prefetch={false}
+                  className="flex items-start justify-between gap-3 py-3 no-underline transition hover:bg-zinc-50/60 dark:hover:bg-zinc-900/40"
+                  aria-label={`Ver crédito ${ref}, ${row.customerName}`}
+                >
+                  {body}
+                </Link>
+              )}
             </li>
           );
         })}
@@ -128,14 +148,20 @@ export function CreditosTable({ rows }: { rows: CreditListRow[] }) {
                     </span>
                   </td>
                   <td className="py-2.5 pr-0 text-right">
-                    <Link
-                      href={`/admin/creditos/${row.id}`}
-                      prefetch={false}
-                      className="inline-flex size-8 items-center justify-center rounded-lg text-zinc-500 transition hover:bg-zinc-50 hover:text-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
-                      aria-label={`Ver crédito ${ref}`}
-                    >
-                      <Eye className="size-4" strokeWidth={2} />
-                    </Link>
+                    {preview ? (
+                      <span className="inline-flex size-8 items-center justify-center rounded-lg text-zinc-500 dark:text-zinc-400">
+                        <Eye className="size-4" strokeWidth={2} />
+                      </span>
+                    ) : (
+                      <Link
+                        href={`/admin/creditos/${row.id}`}
+                        prefetch={false}
+                        className="inline-flex size-8 items-center justify-center rounded-lg text-zinc-500 transition hover:bg-zinc-50 hover:text-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+                        aria-label={`Ver crédito ${ref}`}
+                      >
+                        <Eye className="size-4" strokeWidth={2} />
+                      </Link>
+                    )}
                   </td>
                 </tr>
               );
