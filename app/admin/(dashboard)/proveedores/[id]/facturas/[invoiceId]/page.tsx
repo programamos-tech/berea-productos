@@ -71,23 +71,6 @@ export default async function AdminProveedorFacturaDetailPage({ params, searchPa
   ]);
 
   const paymentsRaw = pays ?? [];
-  const paymentIds = paymentsRaw.map((p) => String(p.id)).filter(Boolean);
-  const expenseByPaymentId = new Map<string, { id: string; is_cancelled: boolean | null }>();
-  if (paymentIds.length > 0) {
-    const { data: linkedExpenses } = await supabase
-      .from("store_expenses")
-      .select("id,supplier_invoice_payment_id,is_cancelled")
-      .in("supplier_invoice_payment_id", paymentIds);
-    for (const expense of linkedExpenses ?? []) {
-      const payId = expense.supplier_invoice_payment_id ? String(expense.supplier_invoice_payment_id) : "";
-      if (payId) {
-        expenseByPaymentId.set(payId, {
-          id: String(expense.id),
-          is_cancelled: expense.is_cancelled ?? null,
-        });
-      }
-    }
-  }
 
   const lines: SupplierOrderLine[] = (lineRows ?? []).map((row) => {
     const quantity = Number(row.quantity ?? 0);
@@ -108,20 +91,19 @@ export default async function AdminProveedorFacturaDetailPage({ params, searchPa
   });
 
   const payments: SupplierOrderPayment[] = paymentsRaw.map((pay) => {
-    const linked = expenseByPaymentId.get(String(pay.id));
     return {
       id: String(pay.id),
       amountCents: Number(pay.amount_cents ?? 0),
       methodLabel: methodLabel(String(pay.payment_method ?? "")),
       paidAt: typeof pay.paid_at === "string" ? pay.paid_at : null,
       notes: pay.notes ? String(pay.notes) : null,
-      expenseId: linked?.id ?? null,
-      expenseCancelled: Boolean(linked?.is_cancelled),
+      isCancelled: Boolean(pay.is_cancelled),
+      cancellationReason: pay.cancellation_reason ? String(pay.cancellation_reason) : null,
     };
   });
 
   const total = Number(inv.total_cents ?? 0);
-  const paid = payments.reduce((sum, pay) => sum + pay.amountCents, 0);
+  const paid = payments.reduce((sum, pay) => (pay.isCancelled ? sum : sum + pay.amountCents), 0);
   const cancelled = Boolean(inv.is_cancelled);
   const pending = cancelled ? 0 : Math.max(0, total - paid);
   const issueDate = typeof inv.issue_date === "string" ? inv.issue_date.slice(0, 10) : "";

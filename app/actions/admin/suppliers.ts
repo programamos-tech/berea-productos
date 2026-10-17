@@ -440,9 +440,12 @@ export async function registerSupplierInvoicePaymentAction(formData: FormData) {
 
   const { data: pays } = await supabase
     .from("supplier_invoice_payments")
-    .select("amount_cents")
+    .select("amount_cents,is_cancelled")
     .eq("invoice_id", invoiceId);
-  const paid = (pays ?? []).reduce((s, r) => s + Number(r.amount_cents ?? 0), 0);
+  const paid = (pays ?? []).reduce(
+    (s, r) => (r.is_cancelled ? s : s + Number(r.amount_cents ?? 0)),
+    0,
+  );
   const total = Number(inv.total_cents ?? 0);
   const pending = Math.max(0, total - paid);
   if (amount > pending) {
@@ -495,6 +498,57 @@ export async function registerSupplierInvoicePaymentAction(formData: FormData) {
 
   revalidateSupplierPaths(supplierId, invoiceId);
   redirect(`/admin/proveedores/${supplierId}/facturas/${invoiceId}`);
+}
+
+export async function cancelSupplierInvoicePaymentAction(input: {
+  paymentId: string;
+  invoiceId: string;
+  supplierId: string;
+  reason: string;
+}): Promise<{ ok: true } | { ok: false; error: "invalid" | "already_cancelled" | "db" }> {
+  await assertActionPermission("proveedores_ver");
+  const paymentId = input.paymentId.trim();
+  const invoiceId = input.invoiceId.trim();
+  const supplierId = input.supplierId.trim();
+  const reason = input.reason.trim();
+  if (!paymentId || !invoiceId || !supplierId || reason.length < 8) {
+    return { ok: false, error: "invalid" };
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const { data: pay } = await supabase
+    .from("supplier_invoice_payments")
+    .select("id,is_cancelled")
+    .eq("id", paymentId)
+    .eq("invoice_id", invoiceId)
+    .maybeSingle();
+  if (!pay) return { ok: false, error: "invalid" };
+  if (pay.is_cancelled) return { ok: false, error: "already_cancelled" };
+
+  const { error } = await supabase
+    .from("supplier_invoice_payments")
+    .update({
+      is_cancelled: true,
+      cancelled_at: new Date().toISOString(),
+      cancellation_reason: reason,
+    })
+    .eq("id", paymentId)
+    .eq("is_cancelled", false);
+  if (error) return { ok: false, error: "db" };
+
+  const { error: expenseErr } = await supabase
+    .from("store_expenses")
+    .update({
+      is_cancelled: true,
+      cancelled_at: new Date().toISOString(),
+      cancellation_reason: reason,
+    })
+    .eq("supplier_invoice_payment_id", paymentId)
+    .eq("is_cancelled", false);
+  if (expenseErr) console.error("cancelSupplierInvoicePaymentAction expense", expenseErr);
+
+  revalidateSupplierPaths(supplierId, invoiceId);
+  return { ok: true };
 }
 
 export async function cancelSupplierInvoiceAction(formData: FormData) {

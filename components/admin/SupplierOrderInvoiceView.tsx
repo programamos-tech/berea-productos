@@ -7,19 +7,17 @@ import {
   uploadSupplierInvoiceAttachmentAction,
 } from "@/app/actions/admin/suppliers";
 import { SupplierAbonoForm } from "@/components/admin/SupplierAbonoForm";
+import { SupplierOrderAbonosPanel } from "@/components/admin/SupplierOrderAbonosPanel";
 import { SupplierCancelInvoiceButton } from "@/components/admin/SupplierCancelInvoiceButton";
 import { SupplierOrderAddProducts } from "@/components/admin/SupplierOrderAddProducts";
 import { SupplierOrderReceiptSelect } from "@/components/admin/SupplierOrderReceiptSelect";
-import { StaticCopCents } from "@/components/admin/ReportsAnimatedFigures";
 import { formatCop } from "@/lib/money";
-import { formatStoreDateTime } from "@/lib/store-datetime-format";
 import {
   isSupplierReceiptStatus,
   type SupplierInvoiceUiStatus,
   type SupplierReceiptStatus,
 } from "@/lib/supplier-invoices";
 import { shouldUnoptimizeStorageImageUrl, storagePublicObjectUrl } from "@/lib/storage-public-url";
-import { ventaCreditoToneClass, ventaPagoRecibidoTone } from "@/lib/ventas-sales";
 
 const th =
   "pb-2 pr-4 text-left text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500";
@@ -45,8 +43,8 @@ export type SupplierOrderPayment = {
   methodLabel: string;
   paidAt: string | null;
   notes: string | null;
-  expenseId: string | null;
-  expenseCancelled: boolean;
+  isCancelled: boolean;
+  cancellationReason: string | null;
 };
 
 export type SupplierOrderAttachment = {
@@ -67,9 +65,7 @@ export function SupplierOrderInvoiceView({
   notes,
   cancelled,
   totalCents,
-  paidCents,
   pendingCents,
-  status,
   receiptStatus,
   lines,
   payments,
@@ -96,7 +92,6 @@ export function SupplierOrderInvoiceView({
   attachments: SupplierOrderAttachment[];
   errorMessage: string | null;
 }) {
-  const pago = ventaPagoRecibidoTone(status);
   const receipt: SupplierReceiptStatus = isSupplierReceiptStatus(receiptStatus)
     ? receiptStatus
     : "sent";
@@ -112,7 +107,7 @@ export function SupplierOrderInvoiceView({
         </p>
       ) : null}
 
-      <header className="flex flex-wrap items-center justify-between gap-2 gap-y-2">
+      <header className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-[11px] text-zinc-500">
             <Link href="/admin/proveedores" className="hover:text-zinc-800 dark:hover:text-zinc-200">
@@ -170,16 +165,32 @@ export function SupplierOrderInvoiceView({
           </p>
           {notes ? <p className="mt-1.5 text-sm text-zinc-600 dark:text-zinc-300">{notes}</p> : null}
         </div>
-        <Link
-          href="/admin/proveedores"
-          className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-zinc-300 bg-white text-zinc-700 transition hover:border-zinc-400 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200 dark:hover:border-zinc-600 dark:hover:bg-zinc-800"
-          title="Volver"
-          aria-label="Volver a proveedores"
-        >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="size-4" aria-hidden>
-            <path d="m15 18-6-6 6-6" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </Link>
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          {!cancelled ? (
+            <SupplierAbonoForm invoiceId={invoiceId} supplierId={supplierId} pendingCents={pendingCents} />
+          ) : null}
+          <div className="w-[11.5rem]">
+            <SupplierOrderReceiptSelect
+              invoiceId={invoiceId}
+              supplierId={supplierId}
+              currentStatus={receipt}
+              disabled={cancelled}
+            />
+          </div>
+          {!cancelled ? (
+            <SupplierCancelInvoiceButton supplierId={supplierId} invoiceId={invoiceId} />
+          ) : null}
+          <Link
+            href="/admin/proveedores"
+            className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-zinc-300 bg-white text-zinc-700 transition hover:border-zinc-400 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200 dark:hover:border-zinc-600 dark:hover:bg-zinc-800"
+            title="Volver"
+            aria-label="Volver a proveedores"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="size-4" aria-hidden>
+              <path d="m15 18-6-6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </Link>
+        </div>
       </header>
 
       <div className="flex flex-col gap-6 border-t border-zinc-200/70 pt-4 dark:border-zinc-800 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(18rem,20rem)] lg:items-start lg:gap-10 xl:gap-12">
@@ -293,57 +304,19 @@ export function SupplierOrderInvoiceView({
         </section>
 
         <aside className="reports-chart-reveal shrink-0 space-y-5 border-t border-zinc-200/70 pt-4 dark:border-zinc-800 lg:sticky lg:top-3 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0 xl:pl-10 dark:lg:border-zinc-800">
-          <div>
-            <p className={labelClass}>Total</p>
-            <p className="mt-2 text-3xl font-semibold tabular-nums tracking-tight text-zinc-900 dark:text-zinc-50">
-              <StaticCopCents cents={totalCents} />
+          <SupplierOrderAbonosPanel
+            invoiceId={invoiceId}
+            supplierId={supplierId}
+            totalCents={totalCents}
+            cancelled={cancelled}
+            payments={payments}
+          />
+
+          {canEnterQty ? (
+            <p className="text-xs leading-relaxed text-zinc-500">
+              Escribí las unidades que llegaron y ingresalas al inventario de esta sucursal.
             </p>
-          </div>
-
-          <div>
-            <p className={labelClass}>Método de pago</p>
-            <p className={`mt-1.5 text-sm ${ventaCreditoToneClass}`}>Crédito</p>
-          </div>
-
-          <div>
-            <p className={labelClass}>Estado del pago</p>
-            <p className={`mt-1.5 text-sm ${pago.className}`}>
-              {cancelled ? "Anulada" : pago.label}
-            </p>
-            {paidCents > 0 ? (
-              <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-300">
-                Pagado <span className="font-semibold tabular-nums text-emerald-700 dark:text-emerald-400"><StaticCopCents cents={paidCents} /></span>
-                {pendingCents > 0 ? (
-                  <>
-                    {" · "}
-                    Pendiente <span className="font-semibold tabular-nums text-amber-700 dark:text-amber-300"><StaticCopCents cents={pendingCents} /></span>
-                  </>
-                ) : null}
-              </p>
-            ) : null}
-            {!cancelled ? (
-              <div className="mt-3">
-                <SupplierAbonoForm invoiceId={invoiceId} supplierId={supplierId} pendingCents={pendingCents} />
-              </div>
-            ) : null}
-          </div>
-
-          <div>
-            <p className={labelClass}>Estado de recepción</p>
-            <div className="mt-1.5">
-              <SupplierOrderReceiptSelect
-                invoiceId={invoiceId}
-                supplierId={supplierId}
-                currentStatus={receipt}
-                disabled={cancelled}
-              />
-            </div>
-            {canEnterQty ? (
-              <p className="mt-2 text-xs leading-relaxed text-zinc-500">
-                Escribí las unidades que llegaron y ingresalas al inventario de esta sucursal.
-              </p>
-            ) : null}
-          </div>
+          ) : null}
 
           <div>
             <p className={labelClass}>Comprobantes</p>
@@ -415,44 +388,8 @@ export function SupplierOrderInvoiceView({
             ) : null}
           </div>
 
-          {!cancelled ? (
-            <SupplierCancelInvoiceButton supplierId={supplierId} invoiceId={invoiceId} />
-          ) : null}
         </aside>
       </div>
-
-      {payments.length > 0 ? (
-        <div>
-          <p className={labelClass}>Abonos</p>
-          <ul className="mt-2 divide-y divide-zinc-100 dark:divide-zinc-800">
-            {payments.map((pay) => (
-              <li key={pay.id} className="flex items-baseline justify-between gap-3 py-2 text-sm">
-                <div>
-                  <p className="font-medium tabular-nums text-zinc-900 dark:text-zinc-100">
-                    {formatCop(pay.amountCents)}
-                  </p>
-                  <p className="text-xs text-zinc-500">
-                    {pay.paidAt
-                      ? formatStoreDateTime(pay.paidAt, { dateStyle: "medium", timeStyle: "short" })
-                      : ""}
-                    {" · "}
-                    {pay.methodLabel}
-                    {pay.notes ? ` · ${pay.notes}` : ""}
-                  </p>
-                  {pay.expenseId ? (
-                    <Link
-                      href={`/admin/egresos/${pay.expenseId}`}
-                      className="text-xs font-medium text-sky-700 underline-offset-2 hover:underline dark:text-sky-400"
-                    >
-                      {pay.expenseCancelled ? "Egreso anulado" : "Egreso de caja"}
-                    </Link>
-                  ) : null}
-                </div>
-              </li>
-            ))}
-          </ul>
-        </div>
-      ) : null}
     </div>
   );
 }

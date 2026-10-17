@@ -61,13 +61,14 @@ export default async function AdminProveedoresPage({ searchParams }: Props) {
     invoiceIds.length > 0
       ? await supabase
           .from("supplier_invoice_payments")
-          .select("invoice_id,amount_cents")
+          .select("invoice_id,amount_cents,is_cancelled")
           .in("invoice_id", invoiceIds)
-      : { data: [] as { invoice_id: string; amount_cents: number }[] };
+      : { data: [] as { invoice_id: string; amount_cents: number; is_cancelled: boolean }[] };
 
   const paidByInvoice = new Map<string, number>();
   for (const pay of payments ?? []) {
     const id = String(pay.invoice_id);
+    if (pay.is_cancelled) continue;
     paidByInvoice.set(id, (paidByInvoice.get(id) ?? 0) + Number(pay.amount_cents ?? 0));
   }
 
