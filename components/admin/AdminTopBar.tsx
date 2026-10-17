@@ -91,7 +91,7 @@ export function AdminTopBar({
             +
           </Link>
           {showNotifications ? <AdminNotificationBell /> : null}
-          <AdminThemeToggle className="rounded-full" />
+          <AdminThemeToggle />
           <AdminUserMenu
             displayName={displayName}
             email={email}

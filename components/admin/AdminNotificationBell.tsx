@@ -75,7 +75,7 @@ export function AdminNotificationBell({ className }: { className?: string }) {
       <button
         type="button"
         onClick={() => setPanelOpen(!panelOpen)}
-        className="relative rounded-lg p-2 text-rose-900/45 transition hover:bg-rose-100/55 hover:text-rose-950 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+        className="relative flex size-9 items-center justify-center rounded-full text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-900 sm:size-10 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
         title="Avisos"
         aria-label={
           unreadCount > 0 ? `Avisos, ${unreadCount} sin leer` : "Avisos"
