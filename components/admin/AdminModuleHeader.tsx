@@ -1,5 +1,4 @@
 import type { ReactNode } from "react";
-import { AdminWolfAvatar } from "@/components/admin/AdminUserAvatar";
 import {
   ArrowLeftRight,
   Banknote,
@@ -64,13 +63,9 @@ export function AdminModuleHeader({
     <header className="rounded-xl border border-zinc-200 bg-white px-4 py-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 sm:px-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex min-w-0 items-start gap-3">
-          {icon === "equipo" ? (
-            <AdminWolfAvatar size={40} />
-          ) : (
-            <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-orange-50 text-orange-600 dark:bg-orange-950/40 dark:text-orange-300">
-              <Icon className="size-5" strokeWidth={1.8} aria-hidden />
-            </span>
-          )}
+          <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-orange-50 text-orange-600 dark:bg-orange-950/40 dark:text-orange-300">
+            <Icon className="size-5" strokeWidth={1.8} aria-hidden />
+          </span>
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-lg font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">

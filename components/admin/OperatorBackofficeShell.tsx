@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Building2, LayoutGrid, Pencil, Receipt, ToggleRight, Users } from "lucide-react";
 import { AdminThemeToggle } from "@/components/admin/AdminThemeToggle";
-import { AdminWolfAvatar } from "@/components/admin/AdminUserAvatar";
+import { AdminUserAvatar } from "@/components/admin/AdminUserAvatar";
 import { AdminUserMenu } from "@/components/admin/AdminUserMenu";
 import { adminProductBrand, adminSidebarLogoPath } from "@/lib/brand";
 
@@ -111,7 +111,13 @@ export function OperatorBackofficeShell({
               displayName={displayName}
               email={email}
               isPlatformOperator
-              avatar={<AdminWolfAvatar size={40} />}
+              avatar={
+                <AdminUserAvatar
+                  displayName={displayName}
+                  seed={email || displayName}
+                  size={40}
+                />
+              }
             />
           </div>
           {onAccount ? (

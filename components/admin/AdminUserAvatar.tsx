@@ -1,6 +1,5 @@
 import { createAvatar } from "@dicebear/core";
 import * as adventurer from "@dicebear/adventurer";
-import Image from "next/image";
 
 /** Iniciales a partir del nombre visible (fallback / otros usos). */
 export function adminUserInitials(displayName: string): string {
@@ -51,38 +50,5 @@ export function AdminUserAvatar({
       role="img"
       aria-label={`Avatar de ${displayName}`}
     />
-  );
-}
-
-/** Lobo de Berea, en negro. `flip` voltea algunos para que el equipo no sea un sello repetido. */
-export function wolfPackFlip(seed: string) {
-  let n = 0;
-  for (const ch of seed) n += ch.charCodeAt(0);
-  return n % 2 === 1;
-}
-
-export function AdminWolfAvatar({
-  size = 40,
-  flip = false,
-}: {
-  size?: number;
-  flip?: boolean;
-}) {
-  return (
-    <span
-      className="inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800"
-      style={{ width: size, height: size }}
-      role="img"
-      aria-label="Berea"
-    >
-      <Image
-        src="/logo-berea-wolf-mark.png"
-        alt=""
-        width={68}
-        height={68}
-        unoptimized
-        className={`h-[78%] w-auto object-contain brightness-0 dark:invert ${flip ? "-scale-x-100" : ""}`}
-      />
-    </span>
   );
 }

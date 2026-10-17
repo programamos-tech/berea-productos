@@ -2,7 +2,7 @@ import Link from "next/link";
 import { AdminGlobalSearch } from "@/components/admin/AdminGlobalSearch";
 import { AdminNotificationBell } from "@/components/admin/AdminNotificationBell";
 import { AdminThemeToggle } from "@/components/admin/AdminThemeToggle";
-import { AdminWolfAvatar } from "@/components/admin/AdminUserAvatar";
+import { AdminUserAvatar } from "@/components/admin/AdminUserAvatar";
 import { AdminUserMenu } from "@/components/admin/AdminUserMenu";
 import { BranchSwitcher } from "@/components/admin/BranchSwitcher";
 import { LeaveAccountButton } from "@/components/admin/LeaveAccountButton";
@@ -96,7 +96,13 @@ export function AdminTopBar({
             displayName={displayName}
             email={email}
             isPlatformOperator={isPlatformOperator}
-            avatar={<AdminWolfAvatar size={40} />}
+            avatar={
+              <AdminUserAvatar
+                displayName={displayName}
+                seed={email || displayName}
+                size={40}
+              />
+            }
           />
         </div>
       </div>
