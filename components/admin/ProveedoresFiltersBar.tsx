@@ -8,10 +8,12 @@ import { FirstSupplierModal } from "@/components/admin/FirstSupplierModal";
 import {
   adminFilterInputClass,
   adminFilterLabelClass,
+  adminToolbarBtnBaseClass,
+  adminToolbarBtnIdleClass,
   adminToolbarIconBtnClass,
 } from "@/lib/admin-ui";
 
-export type SupplierDebtFilter = "pending" | "paid" | "cancelled" | "all";
+export type SupplierDebtFilter = "all" | "balance" | "empty";
 
 function IconSearch() {
   return (
@@ -40,7 +42,7 @@ function buildQuery(
     else p.delete("q");
   }
   if (next.estado !== undefined) {
-    if (next.estado === "pending") p.delete("estado");
+    if (next.estado === "all") p.delete("estado");
     else p.set("estado", next.estado);
   }
   const qs = p.toString();
@@ -52,7 +54,7 @@ export function ProveedoresFiltersBar({ initialQ }: { initialQ: string }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [q, setQ] = useState(initialQ);
-  const estado = (searchParams.get("estado") ?? "pending") as SupplierDebtFilter;
+  const estado = (searchParams.get("estado") ?? "all") as SupplierDebtFilter;
 
   /* eslint-disable react-hooks/set-state-in-effect -- sincronizar con la URL (atrás/adelante), mismo patrón que ventas */
   useEffect(() => {
@@ -77,7 +79,7 @@ export function ProveedoresFiltersBar({ initialQ }: { initialQ: string }) {
   }, [q, pushQuery, searchParams]);
 
   const estadoValue: SupplierDebtFilter =
-    estado === "paid" || estado === "cancelled" || estado === "all" ? estado : "pending";
+    estado === "balance" || estado === "empty" ? estado : "all";
 
   return (
     <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-12 lg:items-end lg:gap-3">
@@ -93,10 +95,10 @@ export function ProveedoresFiltersBar({ initialQ }: { initialQ: string }) {
             id="proveedores-q"
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Proveedor, folio…"
+            placeholder="Nombre, NIT, teléfono…"
             className={`${adminFilterInputClass} pl-8`}
             autoComplete="off"
-            aria-label="Buscar por proveedor o folio"
+            aria-label="Buscar proveedor"
           />
         </div>
       </div>
@@ -110,10 +112,9 @@ export function ProveedoresFiltersBar({ initialQ }: { initialQ: string }) {
           onChange={(e) => pushQuery({ estado: e.target.value as SupplierDebtFilter })}
           className={adminFilterInputClass}
         >
-          <option value="pending">Pendientes</option>
-          <option value="paid">Pagadas</option>
-          <option value="cancelled">Anuladas</option>
-          <option value="all">Todas</option>
+          <option value="all">Todos</option>
+          <option value="balance">Con saldo</option>
+          <option value="empty">Sin órdenes</option>
         </select>
       </div>
     </div>
@@ -148,7 +149,13 @@ export function ProveedoresHeaderActions({
   }, [pathname, router, searchParams]);
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex flex-wrap items-center justify-end gap-2">
+      <Link
+        href="/admin/proveedores/nuevo"
+        className={`${adminToolbarBtnBaseClass} ${adminToolbarBtnIdleClass}`}
+      >
+        Nuevo proveedor
+      </Link>
       {needsSupplier ? (
         <button type="button" onClick={() => setOpen(true)} className={orderButtonClass}>
           Nueva orden de compra

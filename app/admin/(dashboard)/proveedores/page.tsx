@@ -5,9 +5,8 @@ import {
   ProveedoresHeaderActions,
   type SupplierDebtFilter,
 } from "@/components/admin/ProveedoresFiltersBar";
-import { ProveedoresTable, type SupplierDebtRow } from "@/components/admin/ProveedoresTable";
+import { ProveedoresTable, type SupplierDirectoryRow } from "@/components/admin/ProveedoresTable";
 import { loadAdminPermissions } from "@/lib/load-admin-permissions";
-import { supplierInvoiceUiStatus } from "@/lib/supplier-invoices";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -23,8 +22,8 @@ function first(v: string | string[] | undefined): string {
 }
 
 function parseFilter(raw: string): SupplierDebtFilter {
-  if (raw === "paid" || raw === "cancelled" || raw === "all") return raw;
-  return "pending";
+  if (raw === "balance" || raw === "empty") return raw;
+  return "all";
 }
 
 export default async function AdminProveedoresPage({ searchParams }: Props) {
@@ -38,67 +37,73 @@ export default async function AdminProveedoresPage({ searchParams }: Props) {
     createSupabaseServerClient(),
   ]);
 
-  const { count: supplierCount } = await supabase
+  const { data: suppliers, error } = await supabase
     .from("suppliers")
-    .select("id", { count: "exact", head: true });
-  const needsSupplier = (supplierCount ?? 0) === 0;
-
-  const { data: invoices, error } = await supabase
-    .from("supplier_invoices")
-    .select("id,supplier_id,folio,total_cents,issue_date,is_cancelled,notes")
-    .order("issue_date", { ascending: false })
+    .select("id,name,document_id,phone")
+    .order("name", { ascending: true })
     .limit(500);
+
+  const supplierRows = suppliers ?? [];
+  const needsSupplier = supplierRows.length === 0;
+  const supplierIds = supplierRows.map((row) => String(row.id));
+
+  const { data: invoices } =
+    supplierIds.length > 0
+      ? await supabase
+          .from("supplier_invoices")
+          .select("id,supplier_id,total_cents,is_cancelled")
+          .in("supplier_id", supplierIds)
+      : { data: [] as { id: string; supplier_id: string; total_cents: number; is_cancelled: boolean }[] };
 
   const invoiceRows = invoices ?? [];
   const invoiceIds = invoiceRows.map((row) => String(row.id));
-  const supplierIds = [...new Set(invoiceRows.map((row) => String(row.supplier_id)))];
-
-  const [{ data: suppliers }, { data: payments }] = await Promise.all([
-    supplierIds.length > 0
-      ? supabase.from("suppliers").select("id,name").in("id", supplierIds)
-      : Promise.resolve({ data: [] as { id: string; name: string }[] }),
+  const { data: payments } =
     invoiceIds.length > 0
-      ? supabase
+      ? await supabase
           .from("supplier_invoice_payments")
           .select("invoice_id,amount_cents")
           .in("invoice_id", invoiceIds)
-      : Promise.resolve({ data: [] as { invoice_id: string; amount_cents: number }[] }),
-  ]);
+      : { data: [] as { invoice_id: string; amount_cents: number }[] };
 
-  const nameById = new Map((suppliers ?? []).map((s) => [String(s.id), String(s.name ?? "Proveedor")]));
   const paidByInvoice = new Map<string, number>();
   for (const pay of payments ?? []) {
     const id = String(pay.invoice_id);
     paidByInvoice.set(id, (paidByInvoice.get(id) ?? 0) + Number(pay.amount_cents ?? 0));
   }
 
-  const rows: SupplierDebtRow[] = [];
+  const pendingBySupplier = new Map<string, number>();
+  const ordersBySupplier = new Map<string, number>();
   for (const inv of invoiceRows) {
-    const id = String(inv.id);
     const supplierId = String(inv.supplier_id);
-    const supplierName = nameById.get(supplierId) ?? "Proveedor";
-    const folio = String(inv.folio ?? "");
-    const notes = String(inv.notes ?? "");
+    ordersBySupplier.set(supplierId, (ordersBySupplier.get(supplierId) ?? 0) + 1);
+    if (inv.is_cancelled) continue;
     const totalCents = Math.max(0, Math.floor(Number(inv.total_cents ?? 0)));
-    const paidCents = Math.max(0, paidByInvoice.get(id) ?? 0);
-    const cancelled = Boolean(inv.is_cancelled);
-    const pendingCents = cancelled ? 0 : Math.max(0, totalCents - paidCents);
-    const uiStatus = supplierInvoiceUiStatus(totalCents, paidCents, cancelled);
-    if (filter !== "all" && uiStatus !== filter) continue;
+    const paidCents = Math.max(0, paidByInvoice.get(String(inv.id)) ?? 0);
+    const pending = Math.max(0, totalCents - paidCents);
+    pendingBySupplier.set(supplierId, (pendingBySupplier.get(supplierId) ?? 0) + pending);
+  }
+
+  const rows: SupplierDirectoryRow[] = [];
+  for (const supplier of supplierRows) {
+    const id = String(supplier.id);
+    const name = String(supplier.name ?? "Proveedor");
+    const documentId = supplier.document_id ? String(supplier.document_id).trim() : "";
+    const phone = supplier.phone ? String(supplier.phone).trim() : "";
+    const orderCount = ordersBySupplier.get(id) ?? 0;
+    const pendingCents = pendingBySupplier.get(id) ?? 0;
+    if (filter === "balance" && pendingCents <= 0) continue;
+    if (filter === "empty" && orderCount > 0) continue;
     if (q) {
-      const haystack = `${folio} ${supplierName} ${notes}`.toLowerCase();
+      const haystack = `${name} ${documentId} ${phone}`.toLowerCase();
       if (!haystack.includes(q)) continue;
     }
     rows.push({
       id,
-      supplierId,
-      folio,
-      supplierName,
-      issueDate: String(inv.issue_date ?? "").slice(0, 10),
-      totalCents,
-      paidCents,
+      name,
+      documentId: documentId || null,
+      phone: phone || null,
+      orderCount,
       pendingCents,
-      uiStatus,
     });
   }
 
@@ -108,7 +113,7 @@ export default async function AdminProveedoresPage({ searchParams }: Props) {
         icon="proveedores"
         title="Proveedores"
         branchName={perm?.branchContext?.active.name}
-        subtitle="Órdenes de compra y abonos. El saldo baja con cada pago."
+        subtitle="Todos los proveedores, aunque todavía no tengan órdenes de compra."
         actions={
           <Suspense fallback={null}>
             <ProveedoresHeaderActions
