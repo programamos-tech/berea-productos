@@ -24,7 +24,7 @@ const manrope = Manrope({
 });
 
 export const metadata: Metadata = {
-  title: "Berea · Sistema para comercios con varias sedes · Ubicados en Sincelejo y la Costa Caribe",
+  title: "Berea Comercios · Sistema para comercios con varias sedes · Ubicados en Sincelejo y la Costa Caribe",
   description:
     "Todas tus sedes, créditos e inventario en un solo sistema. Ubicados en Sincelejo y la Costa Caribe: implementación presencial y soporte por WhatsApp.",
   alternates: { canonical: "https://bereahouse.com/" },

@@ -4,10 +4,10 @@ import { BereaWord } from "@/components/brand/BereaWord";
 
 export const metadata: Metadata = {
   title: {
-    default: "Berea Productos",
-    template: "%s · Berea Productos",
+    default: "Berea Comercios",
+    template: "%s · Berea Comercios",
   },
-  description: "Creá tu tienda de productos con Berea House",
+  description: "Sistema para comercios. Creá tu tienda de productos con Berea.",
 };
 
 export default function PlatformLayout({

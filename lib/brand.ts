@@ -67,7 +67,7 @@ export const adminSidebarLogoPath =
   "/logo-berea.png";
 
 /** Nombre del producto / sistema en el backoffice (marca Berea). */
-export const adminProductBrand = "Berea Facturas";
+export const adminProductBrand = "Berea Comercios";
 
 /**
  * Cuenta SaaS / workspace en el sidebar.
@@ -169,4 +169,4 @@ export const adminSupportWhatsAppUrl = `https://wa.me/${adminSupportWhatsAppDigi
 
 export const adminSupportWhatsAppPrefilledText =
   process.env.NEXT_PUBLIC_ADMIN_SUPPORT_WHATSAPP_TEXT?.trim() ||
-  "Hola, escribo desde Berea Facturas. Necesito ayuda con el panel.";
+  "Hola, escribo desde Berea Comercios. Necesito ayuda con el panel.";

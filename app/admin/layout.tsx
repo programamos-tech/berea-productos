@@ -5,13 +5,13 @@ import { AdminThemeProvider } from "@/components/admin/AdminThemeProvider";
 
 export const metadata: Metadata = {
   title: {
-    default: "Berea Facturas",
-    template: "%s · Berea Facturas",
+    default: "Berea Comercios",
+    template: "%s · Berea Comercios",
   },
-  applicationName: "Berea Facturas",
+  applicationName: "Berea Comercios",
   appleWebApp: {
     capable: true,
-    title: "Berea Facturas",
+    title: "Berea Comercios",
     statusBarStyle: "default",
   },
   icons: {

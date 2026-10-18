@@ -38,9 +38,9 @@ export default async function manifest(): Promise<MetadataRoute.Manifest> {
   }
 
   return {
-    name: "Berea Facturas",
-    short_name: "Berea Facturas",
-    description: "Berea Facturas · Milagros Guacarí",
+    name: "Berea Comercios",
+    short_name: "Berea",
+    description: "Berea Comercios · Sistema para comercios",
     start_url: "/",
     display: "standalone",
     background_color: TEAL,
