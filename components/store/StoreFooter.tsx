@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { BereaWord } from "@/components/brand/BereaWord";
 import { storeShellClass } from "@/lib/store-theme";
