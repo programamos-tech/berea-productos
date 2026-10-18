@@ -9,6 +9,7 @@ import {
   filterAdminNavSections,
 } from "@/components/admin/admin-nav-config";
 import { BranchSwitcher } from "@/components/admin/BranchSwitcher";
+import { BereaWord } from "@/components/brand/BereaWord";
 import { OperatorAccountLogo } from "@/components/admin/OperatorAccountLogo";
 import {
   adminSupportWhatsAppDisplay,
@@ -232,14 +233,7 @@ function SidebarPoweredBy() {
       <span className={`text-[9px] font-medium uppercase tracking-[0.14em] ${sidebarInkMuted}`}>
         Powered by
       </span>
-      <Image
-        src="/landing/berea-house-logo-white.png"
-        alt="Berea House"
-        width={663}
-        height={312}
-        unoptimized
-        className="h-6 w-auto object-contain"
-      />
+      <BereaWord className="text-[15px] font-semibold text-white" />
     </a>
   );
 }

@@ -15,6 +15,7 @@ import { ProcessSteps } from "./ProcessSteps";
 import { LandingStats, type LandingStat } from "./LandingStats";
 import { LandingVideo } from "./LandingVideo";
 import { WelcomeModal } from "./WelcomeModal";
+import { BereaWord } from "@/components/brand/BereaWord";
 import "./landing.css";
 
 const manrope = Manrope({
@@ -52,8 +53,6 @@ function ColombiaFlag() {
   );
 }
 
-const LOGO = "/landing/berea-house-logo.png";
-const LOGO_WHITE = "/landing/berea-house-logo-white.png";
 const LOGIN_URL = "/admin/login";
 const CITY_PHOTO = "/landing/sincelejo.jpg";
 
@@ -68,43 +67,6 @@ const WHATSAPP_QUOTE_URL = `${adminSupportWhatsAppUrl}?text=${encodeURIComponent
 const WHATSAPP_INTEGRATIONS_URL = `${adminSupportWhatsAppUrl}?text=${encodeURIComponent(
   "Hola, quiero cotizar una automatización o integración con Berea.",
 )}`;
-
-const WHATSAPP_CUSTOM_URL = `${adminSupportWhatsAppUrl}?text=${encodeURIComponent(
-  "Hola, quiero cotizar un desarrollo a la medida para mi negocio.",
-)}`;
-
-const customOffers = [
-  {
-    icon: "calendar",
-    title: "Agendamiento",
-    text: "Citas, turnos y reservas para tu negocio, con recordatorios para que no se te escape nadie.",
-  },
-  {
-    icon: "bag",
-    title: "Tienda virtual",
-    text: "Un catálogo en línea para que te compren desde el celular, con tus productos y tus precios.",
-  },
-  {
-    icon: "globe",
-    title: "Sitio web",
-    text: "Una página de tu negocio: quién eres, qué ofreces y cómo te contactan.",
-  },
-  {
-    icon: "layers",
-    title: "Integraciones",
-    text: "Conectamos las herramientas que ya usas para que la información no se quede en un solo lado.",
-  },
-  {
-    icon: "bolt",
-    title: "Automatizaciones",
-    text: "Avisos, reportes y tareas repetitivas que se hacen solas, sin que tengas que estar encima.",
-  },
-  {
-    icon: "plus",
-    title: "Lo que necesites",
-    text: "Si no está en la lista, cuéntanos. Lo diseñamos contigo, a la medida de tu negocio.",
-  },
-];
 
 const team = [
   {
@@ -204,14 +166,14 @@ export default function BereaLandingPage() {
       <div className="site-head">
         <header className="nav-wrap">
           <div className="nav">
-            <a className="brand" href="#inicio">
-              <img src={LOGO} alt="Berea House, software para negocios" width={663} height={312} />
+            <a className="brand" href="#inicio" aria-label="Berea, software para tu negocio">
+              <BereaWord />
+              <span className="brand-tag">software para tu negocio</span>
             </a>
 
             <nav className="links" id="site-nav" aria-label="Principal">
               <a className="text-link" href="#inicio">Inicio</a>
               <a className="text-link" href="#recorrido">Qué incluye</a>
-              <a className="text-link" href="#medida">A la medida</a>
               <a className="text-link" href="#cotizar">Cotizar</a>
               <a className="text-link" href="#preguntas">Preguntas</a>
               <a className="text-link links-login" href={LOGIN_URL}>Ingresar</a>
@@ -416,39 +378,6 @@ export default function BereaLandingPage() {
           </div>
         </section>
 
-        <section className="custom" id="medida">
-          <div className="wrap">
-            <div className="section-head section-head-center">
-              <p className="eyebrow">A la medida</p>
-              <h2>Hacemos lo que tu negocio necesite</h2>
-              <p className="lead">
-                Lo de arriba es el sistema para comerciantes. Si necesitas otra cosa, la construimos:
-                un agendamiento, una tienda virtual, un sitio web, integraciones o automatizaciones.
-              </p>
-            </div>
-
-            <ul className="custom-grid">
-              {customOffers.map((item) => (
-                <li className={`custom-card${item.icon === "plus" ? " custom-card-open" : ""}`} key={item.title}>
-                  <span className="custom-ico" aria-hidden="true"><Icon id={item.icon} /></span>
-                  <h3>{item.title}</h3>
-                  <p>{item.text}</p>
-                </li>
-              ))}
-            </ul>
-
-            <div className="quote">
-              <div>
-                <h3>Cuéntanos qué necesitas</h3>
-                <p>Nos escribes por WhatsApp, entendemos tu negocio y te enviamos una propuesta.</p>
-              </div>
-              <WhatsAppLink className="btn btn-primary btn-lg" href={WHATSAPP_CUSTOM_URL}>
-                <Icon id="whatsapp" /> Cotizar a la medida
-              </WhatsAppLink>
-            </div>
-          </div>
-        </section>
-
         <section className="pricing" id="cotizar">
           <div className="wrap">
             <div className="section-head">
@@ -539,7 +468,10 @@ export default function BereaLandingPage() {
       <footer className="footer">
         <div className="wrap footer-grid">
           <div>
-            <img className="footer-logo" src={LOGO_WHITE} alt="Berea House, software para negocios" width={663} height={312} loading="lazy" />
+            <a className="footer-brand" href="#inicio" aria-label="Berea, software para tu negocio">
+              <BereaWord />
+              <span className="brand-tag">software para tu negocio</span>
+            </a>
             <p>Sistema para comerciantes y mayoristas. Ubicados en Sincelejo y la Costa Caribe.</p>
             <address className="footer-address">
               <Icon id="pin" />
@@ -551,7 +483,7 @@ export default function BereaLandingPage() {
             <ul className="socials">
               {socials.map((s) => (
                 <li key={s.icon}>
-                  <a href={s.href} target="_blank" rel="noopener noreferrer" aria-label={`Berea House en ${s.label}`}>
+                  <a href={s.href} target="_blank" rel="noopener noreferrer" aria-label={`Berea en ${s.label}`}>
                     <Icon id={s.icon} />
                   </a>
                 </li>
@@ -561,7 +493,6 @@ export default function BereaLandingPage() {
           <div>
             <h3>Berea</h3>
             <a href="#recorrido">Qué incluye</a>
-            <a href="#medida">A la medida</a>
             <a href="#proceso">Cómo empezamos</a>
             <a href="#cotizar">Cotizar</a>
             <a href="#preguntas">Preguntas</a>
@@ -585,7 +516,7 @@ export default function BereaLandingPage() {
           </div>
         </div>
         <div className="wrap footer-bottom">
-          <span>© {new Date().getFullYear()} Berea House</span>
+          <span>© {new Date().getFullYear()} Berea</span>
           <span className="footer-made">Hecho en Sincelejo, Colombia <ColombiaFlag /></span>
         </div>
       </footer>

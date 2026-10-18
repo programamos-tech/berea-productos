@@ -59,12 +59,12 @@ export const storeLogoPath =
   process.env.NEXT_PUBLIC_STORE_LOGO?.trim() || "/logo-finala.png";
 
 /**
- * Logo Berea House (letras #0197b2, fondo transparente) en el sidebar.
+ * Wordmark Berea (B con rayo + «erea») en el backoffice, logins y PDFs.
  * Override: `NEXT_PUBLIC_ADMIN_SIDEBAR_LOGO`.
  */
 export const adminSidebarLogoPath =
   process.env.NEXT_PUBLIC_ADMIN_SIDEBAR_LOGO?.trim() ||
-  "/logo-berea-productos-v3.png";
+  "/logo-berea.png";
 
 /** Nombre del producto / sistema en el backoffice (marca Berea). */
 export const adminProductBrand = "Berea Facturas";
@@ -84,9 +84,9 @@ export const adminTenantLogoPath =
   process.env.NEXT_PUBLIC_ADMIN_TENANT_LOGO?.trim() ||
   "/logo-aleyashop-mark.png";
 
-/** Firma Berea House (wordmark transparente). Override: `NEXT_PUBLIC_BEREA_LOGO`. */
+/** Firma Berea (wordmark transparente). Override: `NEXT_PUBLIC_BEREA_LOGO`. */
 export const bereaSignaturePath =
-  process.env.NEXT_PUBLIC_BEREA_LOGO?.trim() || "/logo-berea-productos-v3.png";
+  process.env.NEXT_PUBLIC_BEREA_LOGO?.trim() || "/logo-berea.png";
 
 /**
  * Nombre en el pie © (independiente del nombre corto de marca si usás env de plantilla).

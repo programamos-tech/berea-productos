@@ -1,13 +1,12 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Building2, LayoutGrid, Pencil, Receipt, ToggleRight, Users } from "lucide-react";
 import { AdminThemeToggle } from "@/components/admin/AdminThemeToggle";
 import { AdminUserAvatar } from "@/components/admin/AdminUserAvatar";
 import { AdminUserMenu } from "@/components/admin/AdminUserMenu";
-import { adminProductBrand, adminSidebarLogoPath } from "@/lib/brand";
+import { BereaWord } from "@/components/brand/BereaWord";
 
 const ACCOUNT_SECTIONS = [
   { href: "#resumen", label: "Resumen", icon: LayoutGrid },
@@ -45,14 +44,7 @@ export function OperatorBackofficeShell({
       <aside className="fixed inset-y-0 left-0 z-[50] hidden w-64 shrink-0 flex-col border-r border-zinc-200 bg-[var(--admin-sidebar-bg)] lg:flex dark:border-zinc-800/90">
         <div className="border-b border-zinc-200 px-4 py-4 dark:border-zinc-800/90">
           <Link href="/admin/cuentas" className="inline-flex rounded-md outline-none focus-visible:ring-2 focus-visible:ring-zinc-400/50">
-            <Image
-              src={adminSidebarLogoPath}
-              alt={adminProductBrand}
-              width={480}
-              height={265}
-              className="h-7 w-auto max-w-[9.5rem] object-contain object-left"
-              priority
-            />
+            <BereaWord className="text-[1.45rem] text-[#0197b2]" />
           </Link>
           <p className="mt-2 text-[10px] font-medium uppercase tracking-[0.14em] text-zinc-500">
             Backoffice

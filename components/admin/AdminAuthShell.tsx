@@ -1,8 +1,7 @@
-import Image from "next/image";
 import type { ReactNode } from "react";
 import { AdminThemeToggle } from "@/components/admin/AdminThemeToggle";
+import { BereaWord } from "@/components/brand/BereaWord";
 import { LoginPhrases } from "@/components/admin/LoginPhrases";
-import { adminProductBrand, adminSidebarLogoPath } from "@/lib/brand";
 
 /** Chrome de autenticación (login en split) y picker de cuentas (canvas). */
 export function AdminAuthShell({
@@ -24,14 +23,7 @@ export function AdminAuthShell({
           <div
             className={`mx-auto flex w-full items-center justify-between gap-4 px-6 py-4 sm:px-8 ${contentWidthClassName}`}
           >
-            <Image
-              src={adminSidebarLogoPath}
-              alt={adminProductBrand}
-              width={480}
-              height={265}
-              className="h-8 w-auto max-w-[10.5rem] object-contain object-left"
-              priority
-            />
+            <BereaWord className="text-[1.7rem] text-[#0197b2] dark:text-white" />
             <div className="flex items-center gap-1 sm:gap-2">
               {headerActions}
               <AdminThemeToggle className="rounded-lg" />
@@ -61,14 +53,7 @@ export function AdminAuthShell({
             aria-hidden
             className="pointer-events-none absolute inset-0 bg-[radial-gradient(60%_50%_at_85%_100%,rgba(1,151,178,0.32),transparent_70%),radial-gradient(40%_35%_at_0%_0%,rgba(1,151,178,0.12),transparent_70%)]"
           />
-          <Image
-            src="/landing/berea-house-logo-white.png"
-            alt="Berea House, software para negocios"
-            width={663}
-            height={312}
-            className="relative h-14 w-auto self-start object-contain lg:h-[4.5rem]"
-            priority
-          />
+          <BereaWord className="relative text-[2rem] font-semibold text-white lg:text-[2.35rem]" />
 
           <div className="relative hidden max-w-md lg:block">
             <p className="text-[2.6rem] font-semibold leading-[1.08] tracking-tight">

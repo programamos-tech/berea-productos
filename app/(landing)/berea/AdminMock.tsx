@@ -1,10 +1,10 @@
 /* eslint-disable @next/next/no-img-element */
+import { BereaWord } from "@/components/brand/BereaWord";
 import { Icon } from "./Icon";
 
 export type Variant = "desktop" | "tablet" | "phone";
 
 const MARK = "/berea-productos-icon.png";
-const BEREA_WORDMARK = "/landing/berea-house-logo-white.png";
 
 const navMain = [
   { icon: "home", label: "Reportes", active: true },
@@ -172,7 +172,9 @@ export function Sidebar({ active = "Reportes" }: { active?: string }) {
           </div>
         </div>
         <small className="am-powered">Powered by</small>
-        <img className="am-powered-logo" src={BEREA_WORDMARK} alt="" />
+        <span className="am-powered-lockup">
+          <BereaWord />
+        </span>
       </div>
     </aside>
   );

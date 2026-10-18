@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
   createContext,
@@ -13,7 +12,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { useAdminTheme } from "@/components/admin/AdminThemeProvider";
-import { adminProductBrand, adminSidebarLogoPath } from "@/lib/brand";
+import { BereaWord } from "@/components/brand/BereaWord";
 
 export type AccountSwitchPayload =
   | {
@@ -60,14 +59,7 @@ function Overlay({ payload }: { payload: AccountSwitchPayload }) {
       aria-label={label}
     >
       <div className="flex flex-col items-center">
-        <Image
-          src={adminSidebarLogoPath}
-          alt={adminProductBrand}
-          width={480}
-          height={265}
-          className="account-switch-overlay-mark h-7 w-auto max-w-[8.5rem] object-contain sm:h-8 sm:max-w-[9.5rem]"
-          priority
-        />
+        <BereaWord className="text-[1.6rem] text-[#0197b2] dark:text-white" />
         <p className="mt-4 text-[13px] font-medium tracking-tight text-zinc-400 dark:text-zinc-500">
           {label}
         </p>

@@ -6,7 +6,7 @@ import {
   writeActiveBranchCookie,
   type BranchRef,
 } from "@/lib/branch-context";
-import { adminProductBrand, adminSidebarLogoPath } from "@/lib/brand";
+import { BereaWord } from "@/components/brand/BereaWord";
 import {
   shouldUnoptimizeStorageImageUrl,
   storagePublicObjectUrl,
@@ -31,14 +31,7 @@ function BranchSwitchLoading({ branchName }: { branchName: string }) {
       aria-label={`Cargando ${branchName}`}
     >
       <div className="flex flex-col items-center">
-        <Image
-          src={adminSidebarLogoPath}
-          alt={adminProductBrand}
-          width={480}
-          height={265}
-          className="account-switch-overlay-mark h-7 w-auto max-w-[8.5rem] object-contain sm:h-8 sm:max-w-[9.5rem]"
-          priority
-        />
+        <BereaWord className="text-[1.6rem] text-[#0197b2] dark:text-white" />
         <p className="mt-4 text-[13px] font-medium tracking-tight text-zinc-400 dark:text-zinc-500">
           Cargando {branchName}…
         </p>

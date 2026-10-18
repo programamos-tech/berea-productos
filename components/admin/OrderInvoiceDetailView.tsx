@@ -7,9 +7,8 @@ import {
 import { OrderQuotationActions } from "@/components/admin/OrderQuotationActions";
 import { OrderInvoiceFulfillmentSelect } from "@/components/admin/OrderInvoiceFulfillmentSelect";
 import { StaticCopCents } from "@/components/admin/ReportsAnimatedFigures";
+import { BereaWord } from "@/components/brand/BereaWord";
 import {
-  adminProductBrand,
-  adminSidebarLogoPath,
   invoiceLegalName as envInvoiceLegalName,
   invoiceLogoPath as envInvoiceLogoPath,
   invoiceStoreAddress as envInvoiceStoreAddress,
@@ -1096,12 +1095,7 @@ export function OrderInvoiceDetailView(props: OrderInvoiceDetailViewProps) {
           <span className="print:text-[6.5pt] print:font-medium print:uppercase print:tracking-[0.14em] print:text-zinc-400">
             Powered by
           </span>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={adminSidebarLogoPath}
-            alt={adminProductBrand}
-            className="print:h-[5mm] print:w-auto print:max-w-[30mm] print:object-contain"
-          />
+          <BereaWord className="text-[11pt] text-[#0197b2]" />
         </div>
         </>
       ) : (

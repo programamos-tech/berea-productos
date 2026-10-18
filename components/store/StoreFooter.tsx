@@ -1,6 +1,5 @@
-import Image from "next/image";
 import Link from "next/link";
-import { adminProductBrand, adminSidebarLogoPath } from "@/lib/brand";
+import { BereaWord } from "@/components/brand/BereaWord";
 import { storeShellClass } from "@/lib/store-theme";
 import { storefrontLogoSrc } from "@/lib/tenant-brand";
 import type { StorefrontChrome } from "@/lib/storefront-brand";
@@ -166,15 +165,7 @@ export function StoreFooter({
               <span className="text-[8px] font-medium uppercase tracking-[0.18em] text-white/40">
                 Powered by
               </span>
-              <Image
-                src={adminSidebarLogoPath}
-                alt={adminProductBrand}
-                width={280}
-                height={146}
-                unoptimized
-                className={`h-7 w-auto max-w-[8.5rem] bg-transparent object-contain object-left sm:h-8 ${onLight ? "brightness-0" : "brightness-0 invert"}`}
-                style={{ backgroundColor: "transparent" }}
-              />
+              <BereaWord className={`text-[1.35rem] sm:text-[1.5rem] ${onLight ? "text-zinc-900" : "text-white"}`} />
             </p>
           </div>
           <nav

@@ -137,7 +137,7 @@ export function storefrontLogoSrc(logoSrc: string, onLight: boolean): string {
 const ACCOUNT_LOGO_BY_SLUG: Record<string, string> = {
   aleya: "/logo-aleya-wordmark.png",
   "estacion-iphone": "/logo-estacion-iphone.png",
-  "berea-tech": "/logo-berea-house-mark.png",
+  "berea-tech": "/logo-berea.png",
   "toro-technology": "/logo-toro-technology.jpg",
   "audio-mundial": "/logo-audio-mundial.png",
 };
@@ -158,13 +158,14 @@ const HEX_COLOR = /^#[0-9a-f]{6}$/i;
 const ACCOUNT_PLATE_BY_SLUG: Record<string, string> = {
   aleya: "#FF76A1",
   "estacion-iphone": "#111111",
-  "berea-tech": "#0F766E",
+  "berea-tech": "#ffffff",
   "toro-technology": "#111111",
   "audio-mundial": "#ffffff",
 };
 
 const ACCOUNT_FULL_COLOR_LOGO = new Set([
   "aleya",
+  "berea-tech",
   "toro-technology",
   "audio-mundial",
 ]);
@@ -195,7 +196,7 @@ export function adminAccountChrome(input: {
       : adminTenantLogoPath,
     plateColor: adminLogoPlateColor(input.slug, parsed.primary_color),
     logoFullColor,
-    logoSquare: logoFullColor,
+    logoSquare: logoFullColor && input.slug !== "berea-tech",
   };
 }
 
